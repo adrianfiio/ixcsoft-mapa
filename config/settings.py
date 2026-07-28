@@ -110,3 +110,11 @@ CORS_ALLOWED_ORIGINS = [
     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
 ]
+
+
+CELERY_BEAT_SCHEDULE = {
+    "synchronize-all-ixc-configurations": {
+        "task": "apps.ixc_integration.tasks.synchronize_all_ixc_configurations",
+        "schedule": 300.0,
+    },
+}

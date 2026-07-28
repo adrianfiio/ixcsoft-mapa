@@ -1,33 +1,29 @@
 # IXCSoft Mapa
 
-Sistema para monitoramento de rede óptica com integração IXCSoft, OLTs FiberHome, Zabbix, Grafana, Telegram e mapa geoespacial.
+Plataforma para monitoramento e correlação de rede óptica, integrando IXCSoft,
+OLTs FiberHome, PostgreSQL/PostGIS, Celery, Redis, Zabbix, Grafana e Telegram.
 
-## Versão atual: 0.2.0
+## Versão 0.3.0
 
-Incluído:
+Esta versão adiciona:
 
-- Django 5
-- Django REST Framework
-- PostgreSQL/PostGIS
-- Redis
-- Celery e Celery Beat
-- Swagger/OpenAPI
-- Health check
-- Modelos de OLT, PON, ONU e histórico óptico
-- Modelos de CTO, rotas, elementos e cabos
-- Clientes e logins sincronizados do IXCSoft
-- Alertas, regras e notificações
-- API REST inicial
-- Administração Django
+- arquitetura em camadas;
+- cliente HTTP do IXCSoft;
+- sincronização de clientes e logins;
+- tarefas Celery;
+- endpoints para testar conexão e iniciar sincronização;
+- base de coletores por fabricante;
+- documentação de arquitetura;
+- GitHub Actions.
 
-## Instalação
+## Executar
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-Em outro terminal:
+Depois:
 
 ```bash
 docker compose exec web python manage.py makemigrations
@@ -35,29 +31,27 @@ docker compose exec web python manage.py migrate
 docker compose exec web python manage.py createsuperuser
 ```
 
-## Endereços
+## Endpoints principais
 
-- API Health: `http://localhost:8000/api/health/`
-- Swagger: `http://localhost:8000/api/docs/`
-- Administração: `http://localhost:8000/admin/`
-- API v1: `http://localhost:8000/api/v1/`
+- `/api/health/`
+- `/api/docs/`
+- `/api/v1/olts/`
+- `/api/v1/onus/`
+- `/api/v1/ctos/`
+- `/api/ixc/configurations/`
+- `/api/ixc/customers/`
+- `/api/ixc/logins/`
+- `/api/ixc/executions/`
 
-## Recursos atuais da API
+## Documentação
 
-```text
-/api/v1/olts/
-/api/v1/pon-ports/
-/api/v1/onus/
-/api/v1/ctos/
-/api/v1/routes/
-/api/v1/network-elements/
-/api/v1/fiber-cables/
-/api/v1/alerts/
-```
+- `docs/ARCHITECTURE.md`
+- `docs/IXC_SETUP.md`
 
 ## Próxima etapa
 
-- Cliente da API IXCSoft
-- Sincronização de caixas, clientes e logins
-- Rotinas Celery
-- Logs e reconciliação entre IXC e OLT
+- perfis de OIDs FiberHome;
+- coleta SNMP real;
+- descoberta de PONs e ONUs;
+- histórico óptico;
+- correlação ONU ↔ login IXC.
