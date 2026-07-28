@@ -50,8 +50,12 @@ services:
       - static_data:/app/staticfiles
       - media_data:/app/media
     networks:
-      - default
-      - easypanel
+      default:
+      easypanel:
+        aliases:
+          - ixcsoft-mapa_afservice-map_web
+          - ixcsoft-mapa_afservice-map-web
+
     healthcheck:
       test:
         [
