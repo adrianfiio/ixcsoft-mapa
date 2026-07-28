@@ -28,6 +28,15 @@ semântico durante o desenvolvimento.
 
 - Versão padrão da aplicação atualizada para `0.6.1`
 
+## [0.6.2] - 2026-07-28
+
+### Corrigido
+
+- Compose de produção adaptado ao EasyPanel sem publicação de portas
+- PostgreSQL, Redis e Nginx removidos do Compose de produção
+- Domínio do EasyPanel direcionado ao serviço `web` na porta interna 8000
+- Stack completo de desenvolvimento movido para `docker-compose.local.yml`
+
 ## [0.6.0] - 2026-07-28
 
 ### Adicionado
