@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IXCSoft Mapa</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 72px;
+            background: #111827;
+            border-bottom: 1px solid #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+        }
+
+        .brand h1 {
+            font-size: 22px;
+        }
+
+        .brand span {
+            color: #38bdf8;
+        }
+
+        .ixc-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            padding: 10px 14px;
+            border-radius: 12px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: calc(100vh - 72px);
+        }
+
+        .sidebar {
+            background: #111827;
+            border-right: 1px solid #1f2937;
+            padding: 24px 16px;
+        }
+
+        .menu-item {
+            padding: 13px 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            color: #cbd5e1;
+        }
+
+        .menu-item.active {
+            background: #0284c7;
+            color: white;
+        }
+
+        .content {
+            padding: 28px;
+        }
+
+        .content h2 {
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 26px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .card p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .card strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 30px;
+        }
+
+        .map-placeholder {
+            height: 420px;
+            border-radius: 18px;
+            background:
+                linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.78)),
+                repeating-linear-gradient(
+                    45deg,
+                    #1e293b,
+                    #1e293b 12px,
+                    #172033 12px,
+                    #172033 24px
+                );
+            border: 1px solid #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <h1><span>IXCSoft</span> Mapa</h1>
+        </div>
+
+        <div class="ixc-status">
+            <div class="status-dot"></div>
+            <div>
+                <strong>IXC conectado</strong><br>
+                <small>Empresa integrada aparecerá aqui</small>
+            </div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="menu-item active">Visão geral</div>
+            <div class="menu-item">Mapa</div>
+            <div class="menu-item">OLTs</div>
+            <div class="menu-item">CTOs</div>
+            <div class="menu-item">Clientes</div>
+            <div class="menu-item">Alertas</div>
+            <div class="menu-item">Configurações</div>
+        </aside>
+
+        <main class="content">
+            <h2>Visão geral da rede</h2>
+            <p class="subtitle">Monitoramento integrado entre IXCSoft, OLTs e mapa de fibra.</p>
+
+            <section class="cards">
+                <div class="card">
+                    <p>OLTs</p>
+                    <strong>0</strong>
+                </div>
+
+                <div class="card">
+                    <p>CTOs</p>
+                    <strong>0</strong>
+                </div>
+
+                <div class="card">
+                    <p>ONUs</p>
+                    <strong>0</strong>
+                </div>
+
+                <div class="card">
+                    <p>Alertas ativos</p>
+                    <strong>0</strong>
+                </div>
+            </section>
+
+            <section class="map-placeholder">
+                O mapa interativo será carregado aqui
+            </section>
+        </main>
+    </div>
+</body>
+</html>

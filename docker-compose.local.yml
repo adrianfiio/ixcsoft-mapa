@@ -54,6 +54,8 @@ services:
       POSTGRES_HOST: db
       REDIS_URL: redis://redis:6379/0
     command: ["worker"]
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
@@ -67,6 +69,8 @@ services:
       POSTGRES_HOST: db
       REDIS_URL: redis://redis:6379/0
     command: ["beat"]
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
