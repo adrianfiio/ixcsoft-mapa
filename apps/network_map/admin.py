@@ -1,34 +1,369 @@
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
-from .models import NetworkRoute, NetworkElement, CTO, FiberCable, NetworkDependency
 
+from .models import (
+    CableModel,
+    CTO,
+    FiberCable,
+    FiberColor,
+    FiberColorStandard,
+    FiberColorStandardItem,
+    FiberStrand,
+    FiberTube,
+    NetworkDependency,
+    NetworkElement,
+    NetworkRoute,
+    POP,
+    Rack,
+    RackEquipment,
+)
+
+
+# ==========================
+# Inlines
+# ==========================
+
+class RackEquipmentInline(admin.TabularInline):
+    model = RackEquipment
+    extra = 0
+
+
+class FiberColorStandardItemInline(admin.TabularInline):
+    model = FiberColorStandardItem
+    extra = 0
+
+
+class FiberTubeInline(admin.TabularInline):
+    model = FiberTube
+    extra = 0
+
+
+class FiberStrandInline(admin.TabularInline):
+    model = FiberStrand
+    extra = 0
+
+
+# ==========================
+# Rede existente
+# ==========================
 
 @admin.register(NetworkRoute)
 class NetworkRouteAdmin(GISModelAdmin):
-    list_display = ("name", "code", "status", "enabled")
-    list_filter = ("status", "enabled")
-    search_fields = ("name", "code")
+    list_display = (
+        "name",
+        "code",
+        "status",
+        "enabled",
+    )
+
+    list_filter = (
+        "status",
+        "enabled",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+    )
 
 
 @admin.register(NetworkElement)
 class NetworkElementAdmin(GISModelAdmin):
-    list_display = ("name", "code", "element_type", "status", "enabled")
-    list_filter = ("element_type", "status", "enabled")
-    search_fields = ("name", "code")
+    list_display = (
+        "name",
+        "code",
+        "element_type",
+        "status",
+        "enabled",
+    )
+
+    list_filter = (
+        "element_type",
+        "status",
+        "enabled",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+    )
 
 
 @admin.register(CTO)
 class CTOAdmin(GISModelAdmin):
-    list_display = ("name", "ixc_box_id", "route", "status", "capacity", "enabled")
-    list_filter = ("status", "route", "enabled")
-    search_fields = ("name", "code", "ixc_box_id")
+    list_display = (
+        "name",
+        "ixc_box_id",
+        "route",
+        "capacity",
+        "status",
+        "enabled",
+    )
+
+    list_filter = (
+        "status",
+        "route",
+        "enabled",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+        "ixc_box_id",
+    )
 
 
 @admin.register(FiberCable)
 class FiberCableAdmin(GISModelAdmin):
-    list_display = ("name", "code", "cable_type", "fiber_count", "used_fibers", "status")
-    list_filter = ("cable_type", "status", "route")
-    search_fields = ("name", "code")
+    list_display = (
+        "name",
+        "code",
+        "cable_type",
+        "cable_model",
+        "fiber_count",
+        "used_fibers",
+        "status",
+    )
+
+    list_filter = (
+        "cable_type",
+        "status",
+        "route",
+        "cable_model",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+    )
+
+    autocomplete_fields = (
+        "origin",
+        "destination",
+        "route",
+        "cable_model",
+    )
+
+    inlines = [
+        FiberTubeInline,
+        FiberStrandInline,
+    ]
 
 
 admin.site.register(NetworkDependency)
+
+
+# ==========================
+# POP
+# ==========================
+
+@admin.register(POP)
+class POPAdmin(GISModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "city",
+        "enabled",
+    )
+
+    list_filter = (
+        "city",
+        "enabled",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+        "city",
+    )
+
+
+# ==========================
+# Rack
+# ==========================
+
+@admin.register(Rack)
+class RackAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "pop",
+        "manufacturer",
+        "model",
+        "height_units",
+        "enabled",
+    )
+
+    list_filter = (
+        "pop",
+        "enabled",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+        "manufacturer",
+        "model",
+    )
+
+    autocomplete_fields = (
+        "pop",
+    )
+
+    inlines = [
+        RackEquipmentInline,
+    ]
+
+
+@admin.register(RackEquipment)
+class RackEquipmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "rack",
+        "name",
+        "equipment_type",
+        "start_unit",
+        "unit_height",
+        "face",
+    )
+
+    list_filter = (
+        "equipment_type",
+        "face",
+    )
+
+    search_fields = (
+        "name",
+        "manufacturer",
+        "model",
+        "serial_number",
+    )
+
+    autocomplete_fields = (
+        "rack",
+    )
+
+
+# ==========================
+# Cores
+# ==========================
+
+@admin.register(FiberColor)
+class FiberColorAdmin(admin.ModelAdmin):
+    list_display = (
+        "order",
+        "name",
+        "code",
+        "hex_color",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+        "hex_color",
+    )
+
+    ordering = (
+        "order",
+    )
+
+
+@admin.register(FiberColorStandard)
+class FiberColorStandardAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "code",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+    )
+
+    inlines = [
+        FiberColorStandardItemInline,
+    ]
+
+
+# ==========================
+# Modelo de cabo
+# ==========================
+
+@admin.register(CableModel)
+class CableModelAdmin(admin.ModelAdmin):
+    list_display = (
+        "manufacturer",
+        "model",
+        "fiber_count",
+        "tube_count",
+        "fibers_per_tube",
+    )
+
+    list_filter = (
+        "construction",
+    )
+
+    search_fields = (
+        "manufacturer",
+        "model",
+    )
+
+    autocomplete_fields = (
+        "color_standard",
+    )
+
+
+# ==========================
+# Tubos
+# ==========================
+
+@admin.register(FiberTube)
+class FiberTubeAdmin(admin.ModelAdmin):
+    list_display = (
+        "cable",
+        "number",
+        "color",
+        "identification",
+    )
+
+    search_fields = (
+        "identification",
+    )
+
+    autocomplete_fields = (
+        "cable",
+        "color",
+    )
+
+
+# ==========================
+# Fibras
+# ==========================
+
+@admin.register(FiberStrand)
+class FiberStrandAdmin(admin.ModelAdmin):
+    list_display = (
+        "cable",
+        "number",
+        "tube",
+        "color",
+        "status",
+        "usage",
+    )
+
+    list_filter = (
+        "status",
+        "color",
+    )
+
+    search_fields = (
+        "usage",
+        "notes",
+    )
+
+    autocomplete_fields = (
+        "cable",
+        "tube",
+        "origin_element",
+        "destination_element",
+        "color",
+    )

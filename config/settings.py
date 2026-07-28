@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "drf_spectacular",
     "apps.core",
+    "apps.access.apps.AccessConfig",
     "apps.ixc_integration.apps.IxcIntegrationConfig",
     "apps.olt_integration",
     "apps.network_map",
@@ -116,7 +117,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "IXCSoft Mapa API",
+    "TITLE": "AFService Map API",
     "DESCRIPTION": "API do sistema de monitoramento de rede óptica.",
     "VERSION": APP_VERSION,
 }
@@ -139,3 +140,8 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
+
+# Diretório de arquivos estáticos do projeto
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]

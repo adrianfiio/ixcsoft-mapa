@@ -1,0 +1,272 @@
+from decimal import Decimal
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+
+from apps.access.models import AccessPoint
+
+
+def get_first_value(instance, field_names, default=None):
+    """
+    Retorna o primeiro atributo existente e preenchido.
+
+    Isso permite compatibilidade enquanto os nomes dos campos
+    do modelo AccessPoint ainda estão sendo consolidados.
+    """
+    for field_name in field_names:
+        if not hasattr(instance, field_name):
+            continue
+
+        value = getattr(instance, field_name)
+
+        if callable(value):
+            value = value()
+
+        if value not in (None, ""):
+            return value
+
+    return default
+
+
+def normalize_value(value):
+    """
+    Converte objetos que não são serializáveis diretamente em JSON.
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, Decimal):
+        return float(value)
+
+    if isinstance(value, (str, int, float, bool)):
+        return value
+
+    return str(value)
+
+
+def normalize_status(value):
+    """
+    Normaliza o status para online, offline ou unknown.
+    """
+    if isinstance(value, bool):
+        return "online" if value else "offline"
+
+    if value is None:
+        return "unknown"
+
+    normalized = str(value).strip().lower()
+
+    online_values = {
+        "online",
+        "on",
+        "ativo",
+        "active",
+        "connected",
+        "conectado",
+        "1",
+        "true",
+    }
+
+    offline_values = {
+        "offline",
+        "off",
+        "inativo",
+        "inactive",
+        "disconnected",
+        "desconectado",
+        "0",
+        "false",
+    }
+
+    if normalized in online_values:
+        return "online"
+
+    if normalized in offline_values:
+        return "offline"
+
+    return normalized or "unknown"
+
+
+@require_GET
+def access_points_geojson(request):
+    """
+    Retorna os acessos com coordenadas no formato GeoJSON.
+
+    Endpoint:
+        GET /api/map/access-points/
+    """
+    features = []
+
+    queryset = AccessPoint.objects.all().iterator(chunk_size=1000)
+
+    for access_point in queryset:
+        latitude = get_first_value(
+            access_point,
+            [
+                "latitude",
+                "lat",
+                "client_latitude",
+                "customer_latitude",
+            ],
+        )
+
+        longitude = get_first_value(
+            access_point,
+            [
+                "longitude",
+                "lon",
+                "lng",
+                "client_longitude",
+                "customer_longitude",
+            ],
+        )
+
+        if latitude in (None, "") or longitude in (None, ""):
+            continue
+
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+        except (TypeError, ValueError):
+            continue
+
+        # Evita coordenadas vazias ou inválidas.
+        if latitude == 0 or longitude == 0:
+            continue
+
+        if not (-90 <= latitude <= 90):
+            continue
+
+        if not (-180 <= longitude <= 180):
+            continue
+
+        customer = get_first_value(
+            access_point,
+            [
+                "customer_name",
+                "client_name",
+                "cliente",
+                "customer",
+                "client",
+                "name",
+            ],
+            default="",
+        )
+
+        login = get_first_value(
+            access_point,
+            [
+                "login",
+                "pppoe_login",
+                "username",
+                "user",
+            ],
+            default="",
+        )
+
+        raw_status = get_first_value(
+            access_point,
+            [
+                "status",
+                "connection_status",
+                "online_status",
+                "is_online",
+                "online",
+            ],
+            default=None,
+        )
+
+        cto = get_first_value(
+            access_point,
+            [
+                "cto",
+                "cto_name",
+                "cto_id_ixc",
+                "ixc_cto",
+                "fiber_box",
+            ],
+            default="",
+        )
+
+        onu = get_first_value(
+            access_point,
+            [
+                "onu_mac",
+                "onu",
+                "onu_serial",
+                "onu_identifier",
+                "mac_onu",
+            ],
+            default="",
+        )
+
+        ftth_port = get_first_value(
+            access_point,
+            [
+                "ftth_port",
+                "fiber_port",
+                "porta_ftth",
+                "port",
+            ],
+            default="",
+        )
+
+        concentrator = get_first_value(
+            access_point,
+            [
+                "concentrator",
+                "concentrador",
+                "nas",
+            ],
+            default="",
+        )
+
+        interface = get_first_value(
+            access_point,
+            [
+                "interface",
+                "connection_interface",
+            ],
+            default="",
+        )
+
+        properties = {
+            "id": access_point.pk,
+            "cliente": normalize_value(customer),
+            "login": normalize_value(login),
+            "status": normalize_status(raw_status),
+            "cto": normalize_value(cto),
+            "onu": normalize_value(onu),
+            "porta_ftth": normalize_value(ftth_port),
+            "concentrador": normalize_value(concentrator),
+            "interface": normalize_value(interface),
+        }
+
+        features.append(
+            {
+                "type": "Feature",
+                "id": access_point.pk,
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        longitude,
+                        latitude,
+                    ],
+                },
+                "properties": properties,
+            }
+        )
+
+    response = {
+        "type": "FeatureCollection",
+        "count": len(features),
+        "features": features,
+    }
+
+    return JsonResponse(
+        response,
+        json_dumps_params={
+            "ensure_ascii": False,
+            "separators": (",", ":"),
+        },
+    )

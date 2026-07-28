@@ -1,0 +1,221 @@
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+
+from apps.access.models import AccessPoint
+from apps.access.repositories.ixc import load_ixc_customers
+
+
+def convert_ixc_coordinate(value):
+    """
+    Converte coordenadas vindas do IXC.
+
+    Exemplos:
+    -25433171 -> -25.433171
+    -24.491418000000 -> -24.491418
+    """
+
+    if not value:
+        return None
+
+    try:
+        text = str(value).strip()
+
+        # IXC formato sem ponto decimal
+        if "." not in text:
+            return round(float(text) / 1000000, 7)
+
+        # IXC formato decimal normal
+        return round(float(text), 7)
+
+    except (ValueError, TypeError):
+        return None
+
+
+def map_online(value):
+    """
+    IXC usa SS para online.
+    """
+
+    return str(value).upper() == "SS"
+
+
+
+def parse_ixc_datetime(value):
+    """
+    Converte datas do IXC para datetime com timezone.
+    """
+
+    if not value:
+        return None
+
+    from datetime import datetime
+    from django.utils import timezone
+
+    try:
+        dt = datetime.strptime(
+            str(value),
+            "%Y-%m-%d %H:%M:%S",
+        )
+
+        return timezone.make_aware(dt)
+
+    except (ValueError, TypeError):
+        return None
+
+
+def sync_radusuarios(client, company):
+    """
+    Sincroniza acessos PPPoE do IXC.
+
+    Fonte:
+    radusuarios
+
+    Destino:
+    AccessPoint
+    """
+
+    created = 0
+    updated = 0
+
+    customers = load_ixc_customers(client)
+
+    for item in client.iter_records(
+        "radusuarios",
+        per_page=200,
+    ):
+
+        external_id = item.get("id")
+
+        if not external_id:
+            continue
+
+        online = map_online(
+            item.get("online")
+        )
+
+        customer_name = customers.get(
+            str(item.get("id_cliente")),
+            "",
+        )
+
+        _, was_created = AccessPoint.objects.update_or_create(
+            company=company,
+            source="ixc",
+            external_id=str(external_id),
+
+            defaults={
+
+                # Cliente
+                "ixc_customer_id": item.get(
+                    "id_cliente",
+                    "",
+                ),
+
+                "ixc_contract_id": item.get(
+                    "id_contrato",
+                    "",
+                ),
+
+                "username": item.get(
+                    "login",
+                    "",
+                ),
+
+                "customer_name": customer_name,
+
+
+                # Status
+                "online": online,
+
+                "status": (
+                    AccessPoint.Status.ONLINE
+                    if online
+                    else AccessPoint.Status.OFFLINE
+                ),
+
+
+                # GPS
+                "latitude": convert_ixc_coordinate(
+                    item.get("latitude")
+                ),
+
+                "longitude": convert_ixc_coordinate(
+                    item.get("longitude")
+                ),
+
+
+                # FTTH
+                "onu_mac": item.get(
+                    "onu_mac",
+                    "",
+                ),
+
+                "cto_ixc_id": item.get(
+                    "id_caixa_ftth",
+                    "",
+                ),
+
+                "ftth_port": item.get(
+                    "ftth_porta",
+                    "",
+                ),
+
+
+                # Rede
+                "concentrator_id": item.get(
+                    "id_concentrador",
+                    "",
+                ),
+
+                "concentrator": item.get(
+                    "concentrador",
+                    "",
+                ),
+
+                "interface_transmission": item.get(
+                    "interface_transmission",
+                    "",
+                ),
+
+                "connection_type": item.get(
+                    "tipo_conexao",
+                    "",
+                ),
+
+
+                # Conexão
+                "last_connection_start": parse_ixc_datetime(
+                    item.get(
+                        "ultima_conexao_inicial"
+                    )
+                ),
+
+                "last_connection_end": parse_ixc_datetime(
+                    item.get(
+                        "ultima_conexao_final"
+                    )
+                ),
+
+                "disconnect_reason": item.get(
+                    "motivo_desconexao",
+                    "",
+                ),
+
+
+                "last_seen_at": timezone.now(),
+
+                "raw_data": item,
+            },
+        )
+
+
+        if was_created:
+            created += 1
+        else:
+            updated += 1
+
+
+    return {
+        "created": created,
+        "updated": updated,
+    }

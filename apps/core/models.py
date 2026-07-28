@@ -9,6 +9,19 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+class CompanyScopedModel(TimeStampedModel):
+    company = models.ForeignKey(
+        "core.Company",
+        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        abstract = True
+
+
 class NamedModel(TimeStampedModel):
     name = models.CharField(max_length=180, db_index=True)
     description = models.TextField(blank=True)
@@ -18,6 +31,7 @@ class NamedModel(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
 
 class Company(TimeStampedModel):
     name = models.CharField(max_length=180)
