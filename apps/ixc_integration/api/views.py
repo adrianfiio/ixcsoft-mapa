@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.ixc_integration.models import IXCConfiguration, IXCSyncExecution
-from apps.ixc_integration.customer_models import IXCCustomer, IXCLogin
+from apps.ixc_integration.models import IXCCustomer, IXCLogin
 from apps.ixc_integration.services.configuration import build_client
 from apps.ixc_integration.tasks import synchronize_ixc_configuration
 from .serializers import (

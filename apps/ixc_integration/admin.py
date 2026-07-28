@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import IXCConfiguration, IXCSyncExecution
-from .customer_models import IXCCustomer, IXCLogin
+from .models import IXCCustomer, IXCLogin
 
 
 @admin.register(IXCConfiguration)

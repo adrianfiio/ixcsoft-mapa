@@ -1,57 +1,41 @@
-# IXCSoft Mapa
+# IXCSoft Mapa — v0.4.0
 
-Plataforma para monitoramento e correlação de rede óptica, integrando IXCSoft,
-OLTs FiberHome, PostgreSQL/PostGIS, Celery, Redis, Zabbix, Grafana e Telegram.
+Plataforma de monitoramento de rede óptica com IXCSoft, OLTs, PostGIS, Celery e Redis.
 
-## Versão 0.3.0
+## O que mudou
 
-Esta versão adiciona:
+- modelos IXC consolidados corretamente;
+- criptografia Fernet para tokens;
+- comando para gerar chave;
+- testes do cliente IXC e da criptografia;
+- diretórios de migrations preparados;
+- versão da API atualizada;
+- validação de sintaxe do projeto.
 
-- arquitetura em camadas;
-- cliente HTTP do IXCSoft;
-- sincronização de clientes e logins;
-- tarefas Celery;
-- endpoints para testar conexão e iniciar sincronização;
-- base de coletores por fabricante;
-- documentação de arquitetura;
-- GitHub Actions.
-
-## Executar
+## Primeiro uso
 
 ```bash
 cp .env.example .env
-docker compose up --build
+docker compose build
+docker compose run --rm web python manage.py generate_encryption_key
 ```
 
-Depois:
+Copie a chave exibida para `FIELD_ENCRYPTION_KEY` no `.env`. Depois:
 
 ```bash
-docker compose exec web python manage.py makemigrations
-docker compose exec web python manage.py migrate
-docker compose exec web python manage.py createsuperuser
+docker compose up -d db redis
+docker compose run --rm web python manage.py makemigrations
+docker compose run --rm web python manage.py migrate
+docker compose run --rm web python manage.py createsuperuser
+docker compose up -d
 ```
 
-## Endpoints principais
+## Testes
 
-- `/api/health/`
-- `/api/docs/`
-- `/api/v1/olts/`
-- `/api/v1/onus/`
-- `/api/v1/ctos/`
-- `/api/ixc/configurations/`
-- `/api/ixc/customers/`
-- `/api/ixc/logins/`
-- `/api/ixc/executions/`
+```bash
+docker compose run --rm web python manage.py test
+```
 
-## Documentação
+## Segurança
 
-- `docs/ARCHITECTURE.md`
-- `docs/IXC_SETUP.md`
-
-## Próxima etapa
-
-- perfis de OIDs FiberHome;
-- coleta SNMP real;
-- descoberta de PONs e ONUs;
-- histórico óptico;
-- correlação ONU ↔ login IXC.
+Nunca publique `.env`, token do IXC ou `FIELD_ENCRYPTION_KEY`. O `.env.example` contém somente marcadores.

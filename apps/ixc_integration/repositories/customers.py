@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.ixc_integration.customer_models import IXCCustomer, IXCLogin
+from apps.ixc_integration.models import IXCCustomer, IXCLogin
 
 
 class CustomerRepository:

@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from apps.ixc_integration.models import IXCConfiguration, IXCSyncExecution
-from apps.ixc_integration.customer_models import IXCCustomer, IXCLogin
+from apps.ixc_integration.services.configuration import encrypt_secret
+from apps.ixc_integration.models import IXCCustomer, IXCLogin
 
 
 class IXCConfigurationSerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class IXCConfigurationSerializer(serializers.ModelSerializer):
         token = validated_data.pop("api_token", "")
         instance = super().create(validated_data)
         if token:
-            instance.api_token_encrypted = token
+            instance.api_token_encrypted = encrypt_secret(token)
             instance.save(update_fields=["api_token_encrypted"])
         return instance
 
@@ -23,7 +24,7 @@ class IXCConfigurationSerializer(serializers.ModelSerializer):
         token = validated_data.pop("api_token", None)
         instance = super().update(instance, validated_data)
         if token is not None:
-            instance.api_token_encrypted = token
+            instance.api_token_encrypted = encrypt_secret(token)
             instance.save(update_fields=["api_token_encrypted"])
         return instance
 

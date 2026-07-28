@@ -96,7 +96,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "IXCSoft Mapa API",
     "DESCRIPTION": "API do sistema de monitoramento de rede óptica.",
-    "VERSION": "0.1.0",
+    "VERSION": "0.4.0",
 }
 
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -118,3 +118,5 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 300.0,
     },
 }
+
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
