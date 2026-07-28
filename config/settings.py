@@ -1,20 +1,33 @@
 from pathlib import Path
+from urllib.parse import urlparse
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def env_list(name, default=""):
+    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+
+
+WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
+WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.6.0")
+APP_VERSION = os.getenv("APP_VERSION", "0.6.1")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [WEB_HOST] if WEB_HOST else ["localhost", "127.0.0.1"]
+
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+if not CSRF_TRUSTED_ORIGINS and WEB_URL:
+    CSRF_TRUSTED_ORIGINS = [WEB_URL]
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "false").lower() == "true"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -114,12 +127,9 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-    if origin.strip()
-]
-
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+if not CORS_ALLOWED_ORIGINS and WEB_URL:
+    CORS_ALLOWED_ORIGINS = [WEB_URL]
 
 CELERY_BEAT_SCHEDULE = {
     "synchronize-all-ixc-configurations": {

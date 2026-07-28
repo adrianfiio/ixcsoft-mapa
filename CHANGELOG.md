@@ -15,6 +15,19 @@ semântico durante o desenvolvimento.
 - Migrations iniciais validadas em Docker
 - Mapa Leaflet
 
+## [0.6.1] - 2026-07-28
+
+### Adicionado
+
+- Variável `WEB_URL` compatível com `https://$(PRIMARY_DOMAIN)` do EasyPanel
+- Derivação automática de host permitido, CSRF e CORS a partir da URL pública
+- `.env.example` completo para deploy no EasyPanel
+- Opção `DJANGO_SECURE_SSL_REDIRECT`
+
+### Alterado
+
+- Versão padrão da aplicação atualizada para `0.6.1`
+
 ## [0.6.0] - 2026-07-28
 
 ### Adicionado
