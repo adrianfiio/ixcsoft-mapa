@@ -1,5 +1,5 @@
 # Produção no EasyPanel
-# PostgreSQL/PostGIS e Redis devem existir como serviços separados.
+# PostgreSQL/PostGIS e Redis são serviços externos.
 
 x-common-environment: &common-environment
   APP_NAME: ${APP_NAME:-IXCSoft Mapa}
@@ -49,6 +49,9 @@ services:
     volumes:
       - static_data:/app/staticfiles
       - media_data:/app/media
+    networks:
+      - default
+      - easypanel
     healthcheck:
       test:
         [
@@ -70,9 +73,10 @@ services:
       <<: *common-environment
       RUN_MIGRATIONS: "false"
       COLLECT_STATIC: "false"
-      # Evita o loop infinito do nc no EasyPanel.
-      # O Celery tentará conectar usando as configurações Django/Redis.
-      WAIT_FOR_POSTGRES: "false"
+      WAIT_FOR_POSTGRES: "true"
+    networks:
+      - default
+      - easypanel
 
   beat:
     build:
@@ -84,9 +88,16 @@ services:
       <<: *common-environment
       RUN_MIGRATIONS: "false"
       COLLECT_STATIC: "false"
-      # Evita o loop infinito do nc no EasyPanel.
-      WAIT_FOR_POSTGRES: "false"
+      WAIT_FOR_POSTGRES: "true"
+    networks:
+      - default
+      - easypanel
 
 volumes:
   static_data:
   media_data:
+
+networks:
+  easypanel:
+    external: true
+    name: easypanel
