@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import base64
 from typing import Any, Iterator
 from urllib.parse import urlparse
 import requests
@@ -38,7 +39,7 @@ class IXCClient:
         self.session.verify = verify_ssl
         self.session.headers.update(
             {
-                "Authorization": f"Basic {token}",
+                "Authorization": f"Basic {base64.b64encode(token.encode()).decode()}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
                 "ixcsoft": "listar",
@@ -119,8 +120,8 @@ class IXCClient:
         if grid_param:
             params["grid_param"] = grid_param
 
-        # A documentação oficial do WebserviceClient usa GET para listagem.
-        payload = self._request("GET", table, params=params)
+        # O IXC desta instalação exige POST com filtros em JSON para listagem.
+        payload = self._request("POST", table, json=params)
         records = payload.get("registros") or payload.get("records") or []
         total = int(payload.get("total") or len(records))
         return IXCResponse(records=records, total=total, page=page)

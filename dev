@@ -1,0 +1,89 @@
+#!/bin/bash
+
+COMPOSE="docker compose -f docker-compose.local.yml"
+
+case "$1" in
+    web)
+        $COMPOSE up -d --build web
+        ;;
+    worker)
+        $COMPOSE up -d --build worker
+        ;;
+    beat)
+        $COMPOSE up -d --build beat
+        ;;
+    all)
+        $COMPOSE up -d --build
+        ;;
+    restart)
+        $COMPOSE restart
+        ;;
+    stop)
+        $COMPOSE down
+        ;;
+    start)
+        $COMPOSE up -d
+        ;;
+    logs)
+        $COMPOSE logs -f
+        ;;
+    weblog)
+        $COMPOSE logs -f web
+        ;;
+    workerlog)
+        $COMPOSE logs -f worker
+        ;;
+    shell)
+        $COMPOSE exec web python manage.py shell
+        ;;
+    bash)
+        $COMPOSE exec web bash
+        ;;
+    check)
+        $COMPOSE exec web python manage.py check
+        ;;
+    migrate)
+        $COMPOSE exec web python manage.py migrate
+        ;;
+    makemigrations)
+        shift
+        $COMPOSE exec web python manage.py makemigrations "$@"
+        ;;
+    collectstatic)
+        $COMPOSE exec web python manage.py collectstatic --noinput
+        ;;
+    createsuperuser)
+        $COMPOSE exec web python manage.py createsuperuser
+        ;;
+    status)
+        $COMPOSE ps
+        ;;
+    git)
+        git status
+        ;;
+    *)
+        echo ""
+        echo "IXCSoft Mapa - Dev Tool"
+        echo ""
+        echo "Uso:"
+        echo "  ./dev web"
+        echo "  ./dev worker"
+        echo "  ./dev beat"
+        echo "  ./dev all"
+        echo "  ./dev start"
+        echo "  ./dev stop"
+        echo "  ./dev restart"
+        echo "  ./dev logs"
+        echo "  ./dev weblog"
+        echo "  ./dev workerlog"
+        echo "  ./dev shell"
+        echo "  ./dev bash"
+        echo "  ./dev check"
+        echo "  ./dev migrate"
+        echo "  ./dev makemigrations <app>"
+        echo "  ./dev collectstatic"
+        echo "  ./dev createsuperuser"
+        echo "  ./dev status"
+        echo "  ./dev git"
+        ;;
+esac

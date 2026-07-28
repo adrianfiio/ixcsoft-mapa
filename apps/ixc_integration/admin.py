@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .forms import IXCConfigurationAdminForm
 from .models import IXCConfiguration, IXCSyncExecution
 from .customer_models import IXCCustomer, IXCLogin
 from .fiber_models import IXCFiberAssignment
@@ -6,7 +7,10 @@ from .fiber_models import IXCFiberAssignment
 
 @admin.register(IXCConfiguration)
 class IXCConfigurationAdmin(admin.ModelAdmin):
-    list_display = ("name", "base_url", "enabled", "sync_interval_minutes", "last_sync_at", "last_sync_status")
+    form = IXCConfigurationAdminForm
+    list_display = ("company", "name", "base_url", "enabled", "sync_interval_minutes", "last_sync_at", "last_sync_status")
+    list_filter = ("company", "enabled", "verify_ssl")
+    search_fields = ("company__name", "company__trade_name", "name", "base_url")
 
 
 @admin.register(IXCSyncExecution)
