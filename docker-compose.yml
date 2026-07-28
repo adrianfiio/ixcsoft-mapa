@@ -1,5 +1,33 @@
 # Produção no EasyPanel
-# PostgreSQL/PostGIS e Redis devem existir como serviços separados no mesmo projeto.
+# PostgreSQL/PostGIS e Redis devem existir como serviços separados.
+
+x-common-environment: &common-environment
+  APP_NAME: ${APP_NAME:-IXCSoft Mapa}
+  APP_ENV: ${APP_ENV:-production}
+  APP_VERSION: ${APP_VERSION:-0.6.2}
+  WEB_URL: ${WEB_URL:-}
+  PORT: ${PORT:-8000}
+
+  DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+  DJANGO_SECURE_SSL_REDIRECT: ${DJANGO_SECURE_SSL_REDIRECT:-false}
+
+  POSTGRES_HOST: ${POSTGRES_HOST}
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  POSTGRES_DB: ${POSTGRES_DB:-ixcsoft_mapa}
+  POSTGRES_USER: ${POSTGRES_USER:-ixcsoft}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  REDIS_URL: ${REDIS_URL}
+  FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-}
+
+  GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+  GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+  GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+  CELERY_LOG_LEVEL: ${CELERY_LOG_LEVEL:-INFO}
+  CELERY_WORKER_CONCURRENCY: ${CELERY_WORKER_CONCURRENCY:-2}
+  TZ: ${TZ:-America/Sao_Paulo}
+
 services:
   web:
     build:
@@ -8,6 +36,7 @@ services:
     restart: unless-stopped
     command: ["web"]
     environment:
+      <<: *common-environment
       RUN_MIGRATIONS: "true"
       COLLECT_STATIC: "true"
       WAIT_FOR_POSTGRES: "true"
@@ -30,6 +59,7 @@ services:
     restart: unless-stopped
     command: ["worker"]
     environment:
+      <<: *common-environment
       RUN_MIGRATIONS: "false"
       COLLECT_STATIC: "false"
       WAIT_FOR_POSTGRES: "true"
@@ -41,6 +71,7 @@ services:
     restart: unless-stopped
     command: ["beat"]
     environment:
+      <<: *common-environment
       RUN_MIGRATIONS: "false"
       COLLECT_STATIC: "false"
       WAIT_FOR_POSTGRES: "true"
