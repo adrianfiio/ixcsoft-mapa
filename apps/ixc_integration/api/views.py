@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.ixc_integration.models import IXCConfiguration, IXCSyncExecution
-from apps.ixc_integration.models import IXCCustomer, IXCLogin
+from apps.ixc_integration.customer_models import IXCCustomer, IXCLogin
+from apps.ixc_integration.fiber_models import IXCFiberAssignment
 from apps.ixc_integration.services.configuration import build_client
 from apps.ixc_integration.tasks import synchronize_ixc_configuration
 from .serializers import (
@@ -12,6 +13,7 @@ from .serializers import (
     IXCSyncExecutionSerializer,
     IXCCustomerSerializer,
     IXCLoginSerializer,
+    IXCFiberAssignmentSerializer,
 )
 
 
@@ -63,3 +65,12 @@ class IXCLoginViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["online", "status", "cto"]
     search_fields = ["username", "ixc_login_id", "customer__name"]
+
+
+class IXCFiberAssignmentViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = IXCFiberAssignment.objects.select_related("login", "cto", "onu").all()
+    serializer_class = IXCFiberAssignmentSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["ixc_project_id", "ixc_cto_id", "ixc_login_id", "cto", "onu"]
+    search_fields = ["name", "mac_address", "pon_id", "city", "neighborhood"]
+    ordering_fields = ["name", "last_synced_at", "rx_power"]

@@ -1,41 +1,31 @@
-# IXCSoft Mapa — v0.4.0
+# IXCSoft Mapa
 
-Plataforma de monitoramento de rede óptica com IXCSoft, OLTs, PostGIS, Celery e Redis.
+Plataforma para monitoramento e correlação de rede óptica, integrando IXCSoft,
+OLTs FiberHome, PostgreSQL/PostGIS, Celery, Redis, Zabbix, Grafana e Telegram.
 
-## O que mudou
+## Versão 0.5.0
 
-- modelos IXC consolidados corretamente;
-- criptografia Fernet para tokens;
-- comando para gerar chave;
-- testes do cliente IXC e da criptografia;
-- diretórios de migrations preparados;
-- versão da API atualizada;
-- validação de sintaxe do projeto.
+Incluído nesta versão:
 
-## Primeiro uso
+- compatibilidade com URL raiz ou `/webservice/v1`;
+- listagem IXC via GET conforme WebserviceClient;
+- suporte a POST, PUT e DELETE no cliente, sem execução automática;
+- sincronização de `cliente`;
+- sincronização de `radusuarios`;
+- sincronização de `radpop_radio_cliente_fibra`;
+- modelo de provisionamento óptico do IXC;
+- campos de projeto, CTO, PON, ONU, VLAN e sinal óptico;
+- associação inicial Login ↔ CTO ↔ ONU;
+- API de consulta para dados de fibra;
+- testes do cliente IXC.
 
-```bash
-cp .env.example .env
-docker compose build
-docker compose run --rm web python manage.py generate_encryption_key
+## Endpoint novo
+
+```text
+/api/ixc/fiber-assignments/
 ```
 
-Copie a chave exibida para `FIELD_ENCRYPTION_KEY` no `.env`. Depois:
+## Próximo passo
 
-```bash
-docker compose up -d db redis
-docker compose run --rm web python manage.py makemigrations
-docker compose run --rm web python manage.py migrate
-docker compose run --rm web python manage.py createsuperuser
-docker compose up -d
-```
-
-## Testes
-
-```bash
-docker compose run --rm web python manage.py test
-```
-
-## Segurança
-
-Nunca publique `.env`, token do IXC ou `FIELD_ENCRYPTION_KEY`. O `.env.example` contém somente marcadores.
+Subir o ambiente Docker, gerar as migrations e testar a conexão com uma
+credencial nova e protegida.

@@ -5,6 +5,7 @@ from .views import (
     IXCSyncExecutionViewSet,
     IXCCustomerViewSet,
     IXCLoginViewSet,
+    IXCFiberAssignmentViewSet,
 )
 
 router = DefaultRouter()
@@ -12,5 +13,6 @@ router.register("configurations", IXCConfigurationViewSet)
 router.register("executions", IXCSyncExecutionViewSet)
 router.register("customers", IXCCustomerViewSet)
 router.register("logins", IXCLoginViewSet)
+router.register("fiber-assignments", IXCFiberAssignmentViewSet)
 
 urlpatterns = router.urls

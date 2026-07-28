@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from apps.ixc_integration.models import IXCConfiguration, IXCSyncExecution
 from apps.ixc_integration.repositories.customers import CustomerRepository
+from apps.ixc_integration.repositories.fiber import FiberAssignmentRepository
 from .configuration import build_client
 
 
@@ -15,6 +16,12 @@ class SyncStats:
     created: int = 0
     updated: int = 0
     failed: int = 0
+
+    def add(self, other: "SyncStats") -> None:
+        self.received += other.received
+        self.created += other.created
+        self.updated += other.updated
+        self.failed += other.failed
 
 
 class IXCSynchronizationService:
@@ -28,41 +35,44 @@ class IXCSynchronizationService:
             started_at=timezone.now(),
         )
 
-    def sync_customers(self) -> SyncStats:
+    def _sync_table(self, table: str, handler) -> SyncStats:
         stats = SyncStats()
-        for record in self.client.iter_records("cliente", per_page=100):
+        for record in self.client.iter_records(table, per_page=100):
             stats.received += 1
             try:
                 with transaction.atomic():
-                    _, created = CustomerRepository.upsert_customer(record)
+                    _, created = handler(record)
                 stats.created += int(created)
                 stats.updated += int(not created)
             except Exception:
                 stats.failed += 1
         return stats
 
+    def sync_customers(self) -> SyncStats:
+        return self._sync_table("cliente", CustomerRepository.upsert_customer)
+
     def sync_logins(self) -> SyncStats:
-        stats = SyncStats()
-        for record in self.client.iter_records("radusuarios", per_page=100):
-            stats.received += 1
-            try:
-                with transaction.atomic():
-                    _, created = CustomerRepository.upsert_login(record)
-                stats.created += int(created)
-                stats.updated += int(not created)
-            except Exception:
-                stats.failed += 1
-        return stats
+        return self._sync_table("radusuarios", CustomerRepository.upsert_login)
+
+    def sync_fiber_assignments(self) -> SyncStats:
+        return self._sync_table(
+            "radpop_radio_cliente_fibra",
+            FiberAssignmentRepository.upsert,
+        )
 
     def run_full_sync(self) -> IXCSyncExecution:
         execution = self._execution()
+        total = SyncStats()
         try:
-            customers = self.sync_customers()
-            logins = self.sync_logins()
-            execution.records_received = customers.received + logins.received
-            execution.records_created = customers.created + logins.created
-            execution.records_updated = customers.updated + logins.updated
-            execution.records_failed = customers.failed + logins.failed
+            # A ordem é importante: fibra depende de clientes/logins existentes.
+            total.add(self.sync_customers())
+            total.add(self.sync_logins())
+            total.add(self.sync_fiber_assignments())
+
+            execution.records_received = total.received
+            execution.records_created = total.created
+            execution.records_updated = total.updated
+            execution.records_failed = total.failed
             execution.status = (
                 IXCSyncExecution.Status.PARTIAL
                 if execution.records_failed
@@ -70,8 +80,8 @@ class IXCSynchronizationService:
             )
             self.configuration.last_sync_status = execution.status
             self.configuration.last_sync_message = (
-                f"Recebidos: {execution.records_received}; "
-                f"falhas: {execution.records_failed}"
+                f"Recebidos: {total.received}; criados: {total.created}; "
+                f"atualizados: {total.updated}; falhas: {total.failed}"
             )
         except Exception as exc:
             execution.status = IXCSyncExecution.Status.FAILED

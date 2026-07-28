@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import IXCConfiguration, IXCSyncExecution
-from .models import IXCCustomer, IXCLogin
+from .customer_models import IXCCustomer, IXCLogin
+from .fiber_models import IXCFiberAssignment
 
 
 @admin.register(IXCConfiguration)
@@ -27,3 +28,16 @@ class IXCLoginAdmin(admin.ModelAdmin):
     list_display = ("username", "customer", "cto", "onu", "online", "status", "last_synced_at")
     list_filter = ("online", "status")
     search_fields = ("username", "ixc_login_id", "customer__name")
+
+
+@admin.register(IXCFiberAssignment)
+class IXCFiberAssignmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "name", "ixc_id", "ixc_login_id", "ixc_cto_id",
+        "mac_address", "pon_id", "onu_number", "rx_power", "last_synced_at",
+    )
+    list_filter = ("ixc_project_id", "city")
+    search_fields = (
+        "name", "ixc_id", "ixc_login_id", "ixc_cto_id",
+        "mac_address", "pon_id", "address",
+    )

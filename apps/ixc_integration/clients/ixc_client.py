@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Iterator
+from urllib.parse import urlparse
 import requests
 
 from .exceptions import IXCAuthenticationError, IXCRequestError
@@ -15,10 +16,12 @@ class IXCResponse:
 
 
 class IXCClient:
-    """Cliente HTTP para a API do IXCSoft.
+    """Cliente HTTP compatível com o Webservice v1 do IXCSoft.
 
-    O IXC usa endpoints do tipo `/webservice/v1/<tabela>` e normalmente recebe
-    filtros em JSON no corpo da requisição.
+    Aceita tanto:
+      https://dominio
+    quanto:
+      https://dominio/webservice/v1
     """
 
     def __init__(
@@ -29,7 +32,7 @@ class IXCClient:
         verify_ssl: bool = True,
         timeout: int = 30,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        self.base_url = self._normalize_base_url(base_url)
         self.timeout = timeout
         self.session = requests.Session()
         self.session.verify = verify_ssl
@@ -42,8 +45,20 @@ class IXCClient:
             }
         )
 
+    @staticmethod
+    def _normalize_base_url(base_url: str) -> str:
+        value = (base_url or "").strip().rstrip("/")
+        if not value:
+            raise ValueError("A URL do IXCSoft não foi informada.")
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("A URL do IXCSoft é inválida.")
+        if value.endswith("/webservice/v1"):
+            return value
+        return f"{value}/webservice/v1"
+
     def _request(self, method: str, endpoint: str, **kwargs: Any) -> dict[str, Any]:
-        url = f"{self.base_url}/webservice/v1/{endpoint.lstrip('/')}"
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
         try:
             response = self.session.request(
                 method=method,
@@ -52,20 +67,27 @@ class IXCClient:
                 **kwargs,
             )
         except requests.RequestException as exc:
-            raise IXCRequestError(f"Falha ao acessar {url}: {exc}") from exc
+            raise IXCRequestError(f"Falha ao acessar o IXCSoft: {exc}") from exc
 
         if response.status_code in {401, 403}:
-            raise IXCAuthenticationError("A API do IXC recusou as credenciais.")
+            raise IXCAuthenticationError(
+                "O IXCSoft recusou as credenciais ou o usuário não possui permissão."
+            )
 
         try:
             payload = response.json()
         except ValueError as exc:
             raise IXCRequestError(
-                f"A API retornou conteúdo inválido (HTTP {response.status_code})."
+                f"O IXCSoft retornou conteúdo inválido (HTTP {response.status_code})."
             ) from exc
 
         if not response.ok:
-            message = payload.get("message") or payload.get("error") or str(payload)
+            message = (
+                payload.get("message")
+                or payload.get("mensagem")
+                or payload.get("error")
+                or str(payload)
+            )
             raise IXCRequestError(f"Erro HTTP {response.status_code}: {message}")
 
         return payload
@@ -76,14 +98,16 @@ class IXCClient:
         *,
         page: int = 1,
         per_page: int = 100,
-        field: str = "id",
+        field: str | None = None,
         operator: str = ">=",
         value: str | int = 0,
-        order_by: str = "id",
+        order_by: str | None = None,
         order_direction: str = "asc",
         grid_param: str = "",
     ) -> IXCResponse:
-        body = {
+        field = field or f"{table}.id"
+        order_by = order_by or f"{table}.id"
+        params = {
             "qtype": field,
             "query": str(value),
             "oper": operator,
@@ -91,9 +115,12 @@ class IXCClient:
             "rp": str(per_page),
             "sortname": order_by,
             "sortorder": order_direction,
-            "grid_param": grid_param,
         }
-        payload = self._request("POST", table, json=body)
+        if grid_param:
+            params["grid_param"] = grid_param
+
+        # A documentação oficial do WebserviceClient usa GET para listagem.
+        payload = self._request("GET", table, params=params)
         records = payload.get("registros") or payload.get("records") or []
         total = int(payload.get("total") or len(records))
         return IXCResponse(records=records, total=total, page=page)
@@ -104,7 +131,7 @@ class IXCClient:
         *,
         per_page: int = 100,
         **kwargs: Any,
-    ):
+    ) -> Iterator[dict[str, Any]]:
         page = 1
         while True:
             result = self.list_records(
@@ -117,6 +144,20 @@ class IXCClient:
             if page * per_page >= result.total or not result.records:
                 break
             page += 1
+
+    def create_record(self, table: str, data: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", table, json=data)
+
+    def update_record(
+        self,
+        table: str,
+        record_id: str | int,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self._request("PUT", f"{table}/{record_id}", json=data)
+
+    def delete_record(self, table: str, record_id: str | int) -> dict[str, Any]:
+        return self._request("DELETE", f"{table}/{record_id}")
 
     def test_connection(self) -> dict[str, Any]:
         result = self.list_records("cliente", page=1, per_page=1)
