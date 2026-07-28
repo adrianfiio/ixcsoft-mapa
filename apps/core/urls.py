@@ -11,7 +11,7 @@ from .api import (
     FiberCableViewSet,
     AlertEventViewSet,
 )
-from .views import health_check
+from .views import health_check, liveness_check, readiness_check
 
 router = DefaultRouter()
 router.register("olts", OLTViewSet)
@@ -25,5 +25,7 @@ router.register("alerts", AlertEventViewSet)
 
 urlpatterns = [
     path("health/", health_check, name="health-check"),
+    path("health/live/", liveness_check, name="liveness-check"),
+    path("health/ready/", readiness_check, name="readiness-check"),
     path("v1/", include(router.urls)),
 ]

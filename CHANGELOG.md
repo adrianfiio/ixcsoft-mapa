@@ -15,6 +15,23 @@ semântico durante o desenvolvimento.
 - Migrations iniciais validadas em Docker
 - Mapa Leaflet
 
+## [0.6.0] - 2026-07-28
+
+### Adicionado
+
+- Deploy de produção com Docker e Gunicorn
+- Modos separados para web, worker e beat
+- Healthchecks de liveness e readiness
+- Configuração opcional do Nginx
+- Documentação do EasyPanel
+- Variáveis de segurança para proxy HTTPS, CSRF e domínio
+
+### Corrigido
+
+- Worker e Beat deixaram de executar migrations concorrentes
+- Versão da API centralizada em `APP_VERSION`
+- Valor padrão inseguro de `ALLOWED_HOSTS` removido
+
 ## [0.5.1] - 2026-07-28
 
 ### Corrigido

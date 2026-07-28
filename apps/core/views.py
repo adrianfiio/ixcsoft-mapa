@@ -1,10 +1,21 @@
+from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
 from django.utils import timezone
 from redis import Redis
-from django.conf import settings
 
-def health_check(request):
+
+def liveness_check(request):
+    return JsonResponse(
+        {
+            "status": "ok",
+            "version": settings.APP_VERSION,
+            "timestamp": timezone.now().isoformat(),
+        }
+    )
+
+
+def readiness_check(request):
     services = {"database": False, "redis": False}
 
     try:
@@ -24,9 +35,13 @@ def health_check(request):
     return JsonResponse(
         {
             "status": "ok" if healthy else "degraded",
+            "version": settings.APP_VERSION,
             "timestamp": timezone.now().isoformat(),
             "services": services,
-            "version": "0.1.0",
         },
         status=200 if healthy else 503,
     )
+
+
+# Compatibilidade com o endpoint anterior.
+health_check = readiness_check
