@@ -4,7 +4,7 @@
 x-common-environment: &common-environment
   APP_NAME: ${APP_NAME:-IXCSoft Mapa}
   APP_ENV: ${APP_ENV:-production}
-  APP_VERSION: ${APP_VERSION:-0.8.1}
+  APP_VERSION: ${APP_VERSION:-0.8.2}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
   TZ: ${TZ:-America/Sao_Paulo}
@@ -47,7 +47,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - static_data:/app/staticfiles
       - media_data:/app/media
     networks:
       - default
@@ -91,5 +90,4 @@ services:
       - default
 
 volumes:
-  static_data:
   media_data:

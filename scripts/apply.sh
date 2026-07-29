@@ -8,6 +8,7 @@ STARTED_AT="$(date +%s)"
 CURRENT_STEP="inicialização"
 BEFORE_COMMIT=""
 AFTER_COMMIT=""
+DEPLOY_VERSION=""
 
 if [[ -t 1 ]]; then
     GREEN=$'\033[0;32m'
@@ -44,7 +45,7 @@ show_report() {
     local finished_at duration version
     finished_at="$(date +%s)"
     duration="$((finished_at - STARTED_AT))"
-    version="$(git -C "$PROJECT_DIR" describe --tags --always 2>/dev/null || printf 'desconhecida')"
+    version="${DEPLOY_VERSION:-$(git -C "$PROJECT_DIR" describe --tags --always 2>/dev/null || printf 'desconhecida')}"
 
     printf '\n'
     printf '========================================\n'
@@ -86,7 +87,7 @@ printf '\nIXCSoft Mapa — atualização automática\n\n'
 
 CURRENT_STEP="verificação do ambiente"
 [[ $EUID -ne 0 ]] || {
-    abort "Execute como usuário normal, sem sudo. O Docker deve estar liberado para esse usuário."
+    warning "Executando como root. Use este modo somente no servidor administrado diretamente como root."
 }
 [[ -d "$PROJECT_DIR/.git" ]] || {
     abort "Repositório não encontrado em $PROJECT_DIR"
@@ -114,6 +115,8 @@ git fetch --prune origin
 git switch "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 AFTER_COMMIT="$(git rev-parse --short HEAD)"
+DEPLOY_VERSION="$(git describe --tags --always --match 'v*')"
+export APP_VERSION="$DEPLOY_VERSION"
 if [[ "$BEFORE_COMMIT" == "$AFTER_COMMIT" ]]; then
     success "Código já estava atualizado ($AFTER_COMMIT)"
 else
@@ -127,7 +130,7 @@ success "Configuração válida"
 
 CURRENT_STEP="construção e inicialização dos serviços"
 info "Construindo e iniciando web, worker e beat"
-docker compose up --build -d --remove-orphans
+docker compose up --build -d
 success "Serviços iniciados"
 
 CURRENT_STEP="health check da aplicação"
