@@ -22,7 +22,7 @@ from apps.network_map.models import (
     SpliceTraySplitter,
     SpliceTraySplitterPort,
 )
-from apps.network_map.serializers import NetworkElementSerializer
+from apps.network_map.serializers import NetworkElementSerializer, sync_splice_box
 from apps.network_map.services import (
     FiberStructureError,
     generate_cable_fibers,
@@ -503,6 +503,26 @@ def element_detail_payload(element):
     except CTO.DoesNotExist:
         cto = None
     if cto is not None:
+        if not element.splice_trays.exists():
+            first_splitter = cto.splitters.order_by("position").first()
+            sync_splice_box(
+                element,
+                1,
+                1,
+                first_splitter.ratio if first_splitter else cto.splitter_ratio,
+            )
+        legacy_splitter = cto.splitters.order_by("position").first()
+        optical_splitter = SpliceTraySplitter.objects.filter(
+            tray__splice_box=element
+        ).order_by("tray__number", "position").first()
+        if (
+            legacy_splitter
+            and legacy_splitter.input_fiber_id
+            and optical_splitter
+            and not optical_splitter.input_fiber_id
+        ):
+            optical_splitter.input_fiber_id = legacy_splitter.input_fiber_id
+            optical_splitter.save(update_fields=["input_fiber", "updated_at"])
         connected_cables = FiberCable.objects.filter(
             Q(origin=cto) | Q(destination=cto)
         ).order_by("name")
@@ -558,7 +578,10 @@ def element_detail_payload(element):
                 ).prefetch_related("ports").all()
             ],
         }
-    if element.element_type == NetworkElement.ElementType.SPLICE_BOX:
+    if element.element_type in {
+        NetworkElement.ElementType.SPLICE_BOX,
+        NetworkElement.ElementType.CTO,
+    }:
         trays = element.splice_trays.prefetch_related("splitters", "splices").all()
         payload["splice_box"] = {
             "tray_count": len(trays),
@@ -1300,7 +1323,10 @@ def splice_box_fibers(request, element_id, splice_id=None):
     element = get_object_or_404(
         NetworkElement,
         pk=element_id,
-        element_type=NetworkElement.ElementType.SPLICE_BOX,
+        element_type__in=[
+            NetworkElement.ElementType.SPLICE_BOX,
+            NetworkElement.ElementType.CTO,
+        ],
     )
     if request.method == "DELETE":
         splice = get_object_or_404(FiberSplice, pk=splice_id, splice_box=element)
@@ -1454,7 +1480,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
     except (TypeError, ValueError, SpliceTray.DoesNotExist, FiberStrand.DoesNotExist):
         return JsonResponse({"success": False, "error": "Bandeja ou fibras inválidas."}, status=400)
     if input_fiber.cable_id not in connected_ids or output_fiber.cable_id not in connected_ids:
-        return JsonResponse({"success": False, "error": "As fibras precisam pertencer a cabos conectados à CEO."}, status=400)
+        return JsonResponse({"success": False, "error": "As fibras precisam pertencer a cabos conectados à caixa."}, status=400)
     if input_fiber.cable_id == output_fiber.cable_id:
         return JsonResponse({"success": False, "error": "A fusão deve ligar fibras de cabos diferentes."}, status=400)
     if fiber_is_connected(input_fiber) or fiber_is_connected(output_fiber):
@@ -1480,7 +1506,10 @@ def splice_box_layout(request, element_id):
     element = get_object_or_404(
         NetworkElement,
         pk=element_id,
-        element_type=NetworkElement.ElementType.SPLICE_BOX,
+        element_type__in=[
+            NetworkElement.ElementType.SPLICE_BOX,
+            NetworkElement.ElementType.CTO,
+        ],
     )
     if request.method == "GET":
         return JsonResponse({
@@ -1503,7 +1532,10 @@ def splice_box_splitters(request, element_id, splitter_id=None):
     element = get_object_or_404(
         NetworkElement,
         pk=element_id,
-        element_type=NetworkElement.ElementType.SPLICE_BOX,
+        element_type__in=[
+            NetworkElement.ElementType.SPLICE_BOX,
+            NetworkElement.ElementType.CTO,
+        ],
     )
     splitter = None
     if splitter_id is not None:

@@ -142,6 +142,11 @@
                     segment.start.lat + (segment.end.lat - segment.start.lat) * ratio,
                     segment.start.lng + (segment.end.lng - segment.start.lng) * ratio,
                 ]);
+                const startPoint = map.latLngToLayerPoint(segment.start);
+                const endPoint = map.latLngToLayerPoint(segment.end);
+                const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x) * 180 / Math.PI;
+                const arrow = marker.getElement()?.querySelector(".light-direction-marker");
+                if (arrow) arrow.style.transform = `rotate(${angle}deg)`;
                 requestAnimationFrame(frame);
             };
             requestAnimationFrame(frame);
@@ -283,7 +288,7 @@
                     method: "POST",
                     body: JSON.stringify({ tray_id: selectedTrayId, input_fiber_id: input, output_fiber_id: output }),
                 });
-                unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada na CEO.");
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada na caixa.");
             };
             content.querySelectorAll(".fiber-port").forEach((chip) => {
                 chip.ondragstart = () => { draggedFiber = chip.dataset.fiberId; };
