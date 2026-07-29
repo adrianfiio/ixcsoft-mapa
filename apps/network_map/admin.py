@@ -14,6 +14,7 @@ from .models import (
     FiberStrand,
     FiberSplice,
     SpliceTray,
+    SpliceTraySplitter,
     FiberTube,
     NetworkDependency,
     NetworkElement,
@@ -431,6 +432,13 @@ class SpliceTrayAdmin(admin.ModelAdmin):
     autocomplete_fields = (
         "splice_box",
     )
+
+
+@admin.register(SpliceTraySplitter)
+class SpliceTraySplitterAdmin(admin.ModelAdmin):
+    list_display = ("tray", "position", "ratio", "output_ports")
+    list_filter = ("ratio",)
+    autocomplete_fields = ("tray",)
 
 
 @admin.register(FiberSplice)

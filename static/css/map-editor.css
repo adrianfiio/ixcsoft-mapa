@@ -89,6 +89,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 7px; }
 .port { padding: 8px 5px; text-align: center; background: #0b192a; border: 1px solid #42617f; border-radius: 6px; font-size: 10px; }
 .port.occupied { border-color: #32cf78; }.port.reserved { border-color: var(--warning); }.port.defective { border-color: var(--danger); }
+.ceo-splitter { padding: 10px; margin-top: 7px; color: #dbeafe; background: #0b192a; border: 1px solid #64748b; border-radius: 7px; font-size: 11px; }
 .network-marker { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: #087f8c; border: 2px solid white; border-radius: 9px; box-shadow: 0 3px 12px rgba(0,0,0,.42); font-size: 9px; font-weight: 900; }
 .network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { background: #1261a0; }.network-marker.splice_box { background: #8a3cac; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }

@@ -8,6 +8,8 @@ from .models import (
     FiberStrand,
     NetworkElement,
     NetworkProject,
+    SpliceTray,
+    SpliceTraySplitter,
 )
 
 
@@ -27,6 +29,28 @@ def sync_splitter_ports(splitter, output_ports):
         number__gt=output_ports,
         status=CTOSplitterPort.Status.FREE,
     ).delete()
+
+
+def sync_splice_box(element, tray_count, splitters_per_tray, ratio):
+    tray_count = max(1, min(int(tray_count), 24))
+    splitters_per_tray = max(0, min(int(splitters_per_tray), 8))
+    for number in range(1, tray_count + 1):
+        tray, _ = SpliceTray.objects.get_or_create(
+            splice_box=element,
+            number=number,
+            defaults={"name": f"Bandeja {number}", "capacity": 12},
+        )
+        for position in range(1, splitters_per_tray + 1):
+            SpliceTraySplitter.objects.update_or_create(
+                tray=tray,
+                position=position,
+                defaults={
+                    "ratio": ratio,
+                    "output_ports": int(ratio.split(":")[1]),
+                },
+            )
+        tray.splitters.filter(position__gt=splitters_per_tray).delete()
+    element.splice_trays.filter(number__gt=tray_count).delete()
 
 
 class NetworkElementMapSerializer(serializers.ModelSerializer):
@@ -94,6 +118,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
     splitter_input_fiber_id = serializers.IntegerField(
         write_only=True, required=False, allow_null=True
     )
+    ceo_tray_count = serializers.IntegerField(write_only=True, required=False, min_value=1, max_value=24, default=1)
+    ceo_splitters_per_tray = serializers.IntegerField(write_only=True, required=False, min_value=0, max_value=8, default=0)
+    ceo_splitter_ratio = serializers.ChoiceField(write_only=True, required=False, choices=CTOSplitter.Ratio.choices, default=CTOSplitter.Ratio.ONE_TO_8)
 
     latitude = serializers.FloatField(
         write_only=True,
@@ -126,6 +153,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             "splitter_ports",
             "splitter_input_cable_id",
             "splitter_input_fiber_id",
+            "ceo_tray_count",
+            "ceo_splitters_per_tray",
+            "ceo_splitter_ratio",
         ]
 
 
@@ -138,6 +168,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         splitter_ports = validated_data.pop("splitter_ports", 8)
         validated_data.pop("splitter_input_cable_id", None)
         validated_data.pop("splitter_input_fiber_id", None)
+        ceo_tray_count = validated_data.pop("ceo_tray_count", 1)
+        ceo_splitters = validated_data.pop("ceo_splitters_per_tray", 0)
+        ceo_ratio = validated_data.pop("ceo_splitter_ratio", CTOSplitter.Ratio.ONE_TO_8)
 
         latitude = validated_data.pop(
             "latitude",
@@ -176,7 +209,10 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             sync_splitter_ports(splitter, splitter_ports)
             return cto
 
-        return NetworkElement.objects.create(**validated_data)
+        element = NetworkElement.objects.create(**validated_data)
+        if element.element_type == NetworkElement.ElementType.SPLICE_BOX:
+            sync_splice_box(element, ceo_tray_count, ceo_splitters, ceo_ratio)
+        return element
 
 
     def update(self, instance, validated_data):
@@ -185,6 +221,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         splitter_ports = validated_data.pop("splitter_ports", None)
         input_cable_id = validated_data.pop("splitter_input_cable_id", None)
         input_fiber_id = validated_data.pop("splitter_input_fiber_id", None)
+        ceo_tray_count = validated_data.pop("ceo_tray_count", None)
+        ceo_splitters = validated_data.pop("ceo_splitters_per_tray", None)
+        ceo_ratio = validated_data.pop("ceo_splitter_ratio", None)
 
         latitude = validated_data.pop(
             "latitude",
@@ -301,5 +340,12 @@ class NetworkElementSerializer(serializers.ModelSerializer):
                 splitter.save(update_fields=[
                     "input_cable", "input_fiber", "updated_at"
                 ])
+        if instance.element_type == NetworkElement.ElementType.SPLICE_BOX and ceo_tray_count is not None:
+            sync_splice_box(
+                instance,
+                ceo_tray_count,
+                ceo_splitters if ceo_splitters is not None else 0,
+                ceo_ratio or CTOSplitter.Ratio.ONE_TO_8,
+            )
 
         return instance

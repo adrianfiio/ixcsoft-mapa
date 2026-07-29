@@ -470,6 +470,7 @@ def element_detail_payload(element):
         "latitude": element.point.y if element.point else None,
         "longitude": element.point.x if element.point else None,
         "cto": None,
+        "splice_box": None,
     }
     try:
         cto = element.cto
@@ -529,6 +530,41 @@ def element_detail_payload(element):
                 for splitter in cto.splitters.select_related(
                     "input_cable", "input_fiber__color"
                 ).prefetch_related("ports").all()
+            ],
+        }
+    if element.element_type == NetworkElement.ElementType.SPLICE_BOX:
+        trays = element.splice_trays.prefetch_related("splitters", "splices").all()
+        payload["splice_box"] = {
+            "tray_count": len(trays),
+            "splitters_per_tray": max(
+                [tray.splitters.count() for tray in trays] or [0]
+            ),
+            "splitter_ratio": next(
+                (
+                    splitter.ratio
+                    for tray in trays
+                    for splitter in tray.splitters.all()
+                ),
+                "1:8",
+            ),
+            "trays": [
+                {
+                    "id": tray.id,
+                    "number": tray.number,
+                    "name": tray.name,
+                    "capacity": tray.capacity,
+                    "splice_count": tray.splices.count(),
+                    "splitters": [
+                        {
+                            "id": splitter.id,
+                            "position": splitter.position,
+                            "ratio": splitter.ratio,
+                            "output_ports": splitter.output_ports,
+                        }
+                        for splitter in tray.splitters.all()
+                    ],
+                }
+                for tray in trays
             ],
         }
     return payload
