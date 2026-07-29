@@ -49,6 +49,47 @@ class Company(TimeStampedModel):
         return self.trade_name or self.name
 
 
+class CompanyMembership(TimeStampedModel):
+    class Role(models.TextChoices):
+        VIEW = "view", "VIEW — somente visualizar"
+        EDIT = "edit", "EDIT — visualizar e editar"
+        ADMIN = "admin", "ADMIN — administrar a empresa"
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+        verbose_name="Empresa",
+    )
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="company_memberships",
+        verbose_name="Usuário",
+    )
+    role = models.CharField(
+        max_length=10,
+        choices=Role.choices,
+        default=Role.VIEW,
+        verbose_name="Nível de acesso",
+    )
+    active = models.BooleanField(default=True, verbose_name="Acesso ativo")
+
+    class Meta:
+        verbose_name = "Acesso à empresa"
+        verbose_name_plural = "Acessos às empresas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("company", "user"),
+                name="core_unique_company_user_membership",
+            ),
+        ]
+        ordering = ("company__name", "user__username")
+
+    def __str__(self):
+        return f"{self.user} · {self.company} · {self.get_role_display()}"
+
+
 class MapBaseConfiguration(TimeStampedModel):
     class DefaultLayer(models.TextChoices):
         GOOGLE_SATELLITE = "google_satellite", "Google Satélite"
