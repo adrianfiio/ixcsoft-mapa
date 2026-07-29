@@ -47,3 +47,30 @@ class Company(TimeStampedModel):
 
     def __str__(self):
         return self.trade_name or self.name
+
+
+class MapBaseConfiguration(TimeStampedModel):
+    class DefaultLayer(models.TextChoices):
+        GOOGLE_SATELLITE = "google_satellite", "Google Satélite"
+        ESRI_SATELLITE = "esri_satellite", "Satélite alternativo"
+        OPENSTREETMAP = "openstreetmap", "Mapa de ruas"
+
+    name = models.CharField(max_length=120, default="Mapa principal")
+    google_tiles_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Ativar Google Map Tiles",
+    )
+    google_api_key_encrypted = models.TextField(blank=True, editable=False)
+    default_layer = models.CharField(
+        max_length=30,
+        choices=DefaultLayer.choices,
+        default=DefaultLayer.GOOGLE_SATELLITE,
+        verbose_name="Camada padrão",
+    )
+
+    class Meta:
+        verbose_name = "Configuração do mapa-base"
+        verbose_name_plural = "Configuração do mapa-base"
+
+    def __str__(self):
+        return self.name

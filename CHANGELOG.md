@@ -11,6 +11,23 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.13.0] - 2026-07-29
+
+### Adicionado
+
+- Configuração administrativa do Google Map Tiles com chave criptografada.
+- Camada oficial Google Satélite 2D no seletor do mapa.
+- Escolha da camada padrão pelo painel administrativo.
+
+### Segurança
+
+- A chave não é gravada no código-fonte ou no repositório.
+
+### Resiliência
+
+- O satélite alternativo permanece disponível e é usado automaticamente quando
+  a sessão do Google não puder ser criada.
+
 ## [0.9.4] - 2026-07-29
 
 ### Corrigido
