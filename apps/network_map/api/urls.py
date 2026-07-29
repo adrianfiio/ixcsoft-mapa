@@ -21,6 +21,7 @@ from apps.network_map.api.views import (
     network_element_detail,
     update_network_element_position,
     update_cable_geometry,
+    unmapped_fiber_cables,
 )
 from apps.network_map.project_api import (
     import_project_file,
@@ -79,6 +80,7 @@ urlpatterns = [
         fiber_cables_geojson,
         name="fiber-cables-geojson",
     ),
+    path("cables/unmapped/", unmapped_fiber_cables, name="unmapped-fiber-cables"),
     path(
         "cable-models/",
         cable_models,
