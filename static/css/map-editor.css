@@ -41,6 +41,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .layer-option input { width: 16px; height: 16px; accent-color: var(--primary); }
 .layer-symbol { width: 9px; height: 9px; border-radius: 50%; }
 .layer-symbol.structure { background: #38bdf8; }.layer-symbol.online { background: #32cf78; }.layer-symbol.offline { background: var(--danger); }.layer-symbol.unknown { background: var(--warning); }
+.layer-symbol.light-flow { background: #facc15; box-shadow: 0 0 8px #facc15; }
 .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tool-button, .secondary-button {
     min-height: 47px; padding: 8px; color: #dbeafe; background: #13263d; border: 1px solid var(--border); border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
@@ -104,6 +105,9 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .optical-graph { position: relative; min-width: 1050px; min-height: 620px; padding: 24px; margin: 12px 0; overflow: auto; background: #070f1d; border: 1px solid var(--border); border-radius: 10px; }
 .optical-links { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .optical-links path { fill: none; stroke-width: 2.5; opacity: .9; filter: drop-shadow(0 0 3px currentColor); }
+.graph-nodes { position: relative; z-index: 2; min-width: 1200px; min-height: 760px; }
+.graph-node { position: absolute; }
+.drag-grip { float: right; padding: 0 5px; color: var(--muted); cursor: move; touch-action: none; user-select: none; }
 .graph-cables { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(2, minmax(210px, 1fr)); gap: 180px; }
 .fiber-cable-node { min-width: 210px; overflow: hidden; background: #121d35; border: 1px solid #334766; border-radius: 7px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
 .fiber-cable-node header { padding: 9px 11px; color: white; background: #1c2b49; border-top: 3px solid #2dd4bf; font-size: 12px; font-weight: 800; }
@@ -117,13 +121,18 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .graph-splitter { display: grid; grid-template-columns: 38px 38px 1fr; align-items: center; gap: 6px; padding: 7px; margin-top: 7px; background: #0b192a; border: 1px solid #64748b; border-radius: 6px; }
 .graph-splitter button { min-height: 25px; color: white; background: #1d3553; border: 1px solid #64748b; border-radius: 4px; font-size: 8px; cursor: crosshair; }
 .graph-splitter button:hover, .graph-splitter button.selected { border-color: #2dd4bf; background: #0b5674; }
+.graph-splitter button.linked { border-color: #22c55e; box-shadow: inset 0 0 0 1px #22c55e; }
 .splitter-output-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.splitter-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 4px; }
+.add-splitter-button { width: 100%; padding: 5px; margin-top: 6px; color: #bffbf3; background: #0b5674; border: 1px solid #2dd4bf; border-radius: 5px; cursor: pointer; }
 .network-marker { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: #087f8c; border: 2px solid white; border-radius: 9px; box-shadow: 0 3px 12px rgba(0,0,0,.42); font-size: 9px; font-weight: 900; }
 .network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { background: #1261a0; }.network-marker.splice_box { background: #8a3cac; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
 .client-dot.online { background: #22c55e; }.client-dot.offline { background: #ef476f; }.client-dot.unknown { background: #f5b942; }
 .reserve-marker { display: grid; place-items: center; width: 32px; height: 32px; color: #111827; background: #f7b731; border: 3px double #111827; border-radius: 50%; box-shadow: 0 2px 9px rgba(0,0,0,.45); font-size: 20px; font-weight: 900; }
 .geometry-handle { width: 16px; height: 16px; background: #2dd4bf; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 7px rgba(0,0,0,.5); }
+.optical-light-path { animation: optical-flow 1.1s linear infinite; filter: drop-shadow(0 0 4px #facc15); }
+@keyframes optical-flow { to { stroke-dashoffset: -24; } }
 .cable-footer { align-items: center; justify-content: space-between !important; gap: 12px; }
 .cable-footer .secondary-button { width: auto; margin: 0; }
 @media (max-width: 760px) {

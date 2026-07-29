@@ -17,6 +17,7 @@
         cableCoordinates: [], drawingLine: null,
         editingElementId: null, editingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
+        lightSourceId: null,
     };
 
     const map = L.map("map", { preferCanvas: true }).setView([-24.45, -50.62], 10);
@@ -177,17 +178,26 @@
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
         const content = document.getElementById("unifilar-content");
         if (element.splice_box) {
-            const optical = await api(`/api/map/elements/${element.id}/splices/`);
+            const [optical, savedLayout] = await Promise.all([
+                api(`/api/map/elements/${element.id}/splices/`),
+                api(`/api/map/elements/${element.id}/layout/`),
+            ]);
+            const layout = savedLayout.layout || {};
             document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
             const trayOptions = element.splice_box.trays.map((tray) => `<option value="${tray.id}">${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</option>`).join("");
-            const cableColumns = optical.cables.map((cable, index) => `
-                <section class="fiber-cable-node side-${index % 2 ? "right" : "left"}"><header>${escapeHtml(cable.name)}</header>
-                <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port" draggable="true" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`).join("");
-            const trayNodes = element.splice_box.trays.map((tray) => `<div class="tray-node" data-tray-id="${tray.id}"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões</span>
-                ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port" data-splitter-id="${splitter.id}">ENT</button><b>1:${splitter.output_ports}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port" data-port-id="${port.id}">P${port.number}</button>`).join("")}</div></div>`).join("")}
-                </div>`).join("");
-            content.innerHTML = `<div class="ceo-instructions">Selecione a bandeja e clique em duas portas de fibras de cabos diferentes. Também é possível arrastar uma porta sobre outra. <select id="ceo-tray-select">${trayOptions}</select>.</div>
-                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-cables">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}</div><div class="graph-trays">${trayNodes}</div></div>
+            const cableColumns = optical.cables.map((cable, index) => {
+                const position = layout[`cable-${cable.id}`] || { x: index % 2 ? 850 : 20, y: 30 + Math.floor(index / 2) * 330 };
+                return `<section class="fiber-cable-node graph-node" data-node-key="cable-${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span class="drag-grip">⋮⋮</span></header>
+                <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port" draggable="true" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`;
+            }).join("");
+            const trayNodes = element.splice_box.trays.map((tray, index) => {
+                const position = layout[`tray-${tray.id}`] || { x: 470, y: 40 + index * 155 };
+                return `<div class="tray-node graph-node" data-node-key="tray-${tray.id}" data-tray-id="${tray.id}" style="left:${position.x}px;top:${position.y}px"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)} <span class="drag-grip">⋮⋮</span></strong><span>${tray.splice_count} fusões</span>
+                ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || ""}" data-splitter-id="${splitter.id}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id ? "linked" : ""}" data-linked="${port.output_fiber_id || ""}" data-port-id="${port.id}">P${port.number}</button>`).join("")}</div><div class="splitter-actions"><button type="button" data-edit-tray-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-tray-splitter="${splitter.id}">×</button></div></div>`).join("")}
+                <button type="button" class="add-splitter-button" data-add-tray-splitter="${tray.id}">+ Splitter</button></div>`;
+            }).join("");
+            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos para organizar. Clique em duas portas para ligar; nas portas do splitter, botão direito remove a ligação. <select id="ceo-tray-select">${trayOptions}</select>.</div>
+                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${trayNodes}</div></div>
                 <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div><span><b>${escapeHtml(splice.input.cable)}</b> · F${splice.input.number} ${escapeHtml(splice.input.color_name)} → <b>${escapeHtml(splice.output.cable)}</b> · F${splice.output.number} ${escapeHtml(splice.output.color_name)}</span><button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>` +
                 element.splice_box.trays.map((tray) => `
                 <article class="splitter-card">
@@ -247,6 +257,15 @@
                         unifilarDialog.close(); await showUnifilar(element.id); notify("Fibra conectada à entrada do splitter.");
                     } catch (error) { notify(error.message, true); }
                 };
+                button.oncontextmenu = async (event) => {
+                    event.preventDefault();
+                    if (!button.dataset.linked || !confirm("Remover a fibra da entrada deste splitter?")) return;
+                    await api(`/api/map/elements/${element.id}/splices/`, {
+                        method: "POST",
+                        body: JSON.stringify({ connection_type: "clear_splitter_input", splitter_id: button.dataset.splitterId }),
+                    });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+                };
             });
             content.querySelectorAll(".splitter-output-port").forEach((button) => {
                 button.onclick = () => {
@@ -256,6 +275,15 @@
                     button.classList.add("selected");
                     notify("Saída do splitter selecionada. Clique na fibra de destino.");
                 };
+                button.oncontextmenu = async (event) => {
+                    event.preventDefault();
+                    if (!button.dataset.linked || !confirm("Remover a fibra desta saída?")) return;
+                    await api(`/api/map/elements/${element.id}/splices/`, {
+                        method: "POST",
+                        body: JSON.stringify({ connection_type: "clear_splitter_output", port_id: button.dataset.portId }),
+                    });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+                };
             });
             content.querySelectorAll("[data-delete-splice]").forEach((button) => {
                 button.onclick = async () => {
@@ -263,11 +291,11 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
                 };
             });
-            unifilarDialog.showModal();
-            requestAnimationFrame(() => {
+            const redrawOpticalLinks = () => {
                 const graph = content.querySelector(".optical-graph");
                 const svg = content.querySelector(".optical-links");
                 const graphRect = graph.getBoundingClientRect();
+                svg.innerHTML = "";
                 svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
                 optical.splices.forEach((splice) => {
                     const source = content.querySelector(`[data-fiber-id="${splice.input_fiber_id}"]`);
@@ -299,7 +327,68 @@
                         );
                     });
                 });
+            };
+            content.querySelectorAll(".graph-node").forEach((node) => {
+                const grip = node.querySelector(".drag-grip");
+                grip.onpointerdown = (event) => {
+                    event.preventDefault();
+                    const graph = content.querySelector(".optical-graph");
+                    const startX = event.clientX, startY = event.clientY;
+                    const originX = parseFloat(node.style.left), originY = parseFloat(node.style.top);
+                    grip.setPointerCapture(event.pointerId);
+                    grip.onpointermove = (move) => {
+                        node.style.left = `${Math.max(0, originX + move.clientX - startX)}px`;
+                        node.style.top = `${Math.max(0, originY + move.clientY - startY)}px`;
+                        redrawOpticalLinks();
+                    };
+                    grip.onpointerup = async () => {
+                        grip.onpointermove = null;
+                        layout[node.dataset.nodeKey] = {
+                            x: Math.round(parseFloat(node.style.left)),
+                            y: Math.round(parseFloat(node.style.top)),
+                        };
+                        await api(`/api/map/elements/${element.id}/layout/`, {
+                            method: "PATCH", body: JSON.stringify({ layout }),
+                        });
+                        notify("Posição salva.");
+                    };
+                };
             });
+            content.querySelectorAll("[data-add-tray-splitter]").forEach((button) => {
+                button.onclick = async () => {
+                    const ratio = prompt("Proporção do novo splitter (1:2, 1:4, 1:8, 1:16, 1:32 ou 1:64):", "1:4");
+                    if (!ratio) return;
+                    try {
+                        await api(`/api/map/elements/${element.id}/splitters/`, {
+                            method: "POST",
+                            body: JSON.stringify({ tray_id: button.dataset.addTraySplitter, ratio, output_ports: Number(ratio.split(":")[1]) }),
+                        });
+                        unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter adicionado à bandeja.");
+                    } catch (error) { notify(error.message, true); }
+                };
+            });
+            content.querySelectorAll("[data-edit-tray-splitter]").forEach((button) => {
+                button.onclick = async () => {
+                    const ratio = prompt("Nova proporção do splitter:", button.dataset.ratio);
+                    if (!ratio) return;
+                    try {
+                        await api(`/api/map/elements/${element.id}/splitters/${button.dataset.editTraySplitter}/`, {
+                            method: "PATCH",
+                            body: JSON.stringify({ ratio, output_ports: Number(ratio.split(":")[1]) }),
+                        });
+                        unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter atualizado.");
+                    } catch (error) { notify(error.message, true); }
+                };
+            });
+            content.querySelectorAll("[data-delete-tray-splitter]").forEach((button) => {
+                button.onclick = async () => {
+                    if (!confirm("Excluir este splitter e suas ligações?")) return;
+                    await api(`/api/map/elements/${element.id}/splitters/${button.dataset.deleteTraySplitter}/`, { method: "DELETE" });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter excluído.");
+                };
+            });
+            unifilarDialog.showModal();
+            requestAnimationFrame(redrawOpticalLinks);
             return;
         }
         const splitters = element.cto?.splitters || [];
@@ -451,6 +540,14 @@
         const query = `?project_id=${encodeURIComponent(state.projectId)}`;
         const [elements, cables, routes] = await Promise.all([api(`/api/map/elements/${query}`), api(`/api/map/cables/${query}`), api(`/api/map/routes/${query}`)]);
         state.elements = elements.features;
+        const lightSelect = document.getElementById("light-source-select");
+        const currentLight = state.lightSourceId || lightSelect.value;
+        lightSelect.innerHTML = '<option value="">Selecione a OLT de origem</option>';
+        elements.features.filter((feature) => feature.properties.tipo === "olt").forEach((feature) => {
+            lightSelect.add(new Option(feature.properties.nome, feature.properties.id));
+        });
+        if (currentLight) lightSelect.value = String(currentLight);
+        state.lightSourceId = lightSelect.value || null;
         populateConnectionSelects();
         const bounds = [];
         elements.features.forEach((feature) => {
@@ -475,9 +572,31 @@
             marker.addTo(structureLayer);
             bounds.push([latitude, longitude]);
         });
+        const illuminatedCables = new Set();
+        if (state.lightSourceId && document.getElementById("layer-light-flow").checked) {
+            const queue = [Number(state.lightSourceId)];
+            const visited = new Set(queue);
+            while (queue.length) {
+                const source = queue.shift();
+                cables.features.forEach((feature) => {
+                    const p = feature.properties;
+                    if (p.origin_id !== source || illuminatedCables.has(p.id)) return;
+                    illuminatedCables.add(p.id);
+                    if (p.destination_id && !visited.has(p.destination_id)) {
+                        visited.add(p.destination_id); queue.push(p.destination_id);
+                    }
+                });
+            }
+        }
         cables.features.forEach((feature) => {
             const p = feature.properties;
-            const line = L.geoJSON(feature, { style: { color: selectedProject()?.color || "#2dd4bf", weight: 4, opacity: .86 } });
+            const illuminated = illuminatedCables.has(p.id);
+            const line = L.geoJSON(feature, { style: {
+                color: illuminated ? "#facc15" : (selectedProject()?.color || "#2dd4bf"),
+                weight: illuminated ? 6 : 4,
+                opacity: .9,
+                dashArray: illuminated ? "14 10" : null,
+            } });
             const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
             line.on("popupopen", () => {
@@ -502,6 +621,7 @@
                 }
             });
             line.addTo(structureLayer);
+            if (illuminated) line.eachLayer((part) => part.getElement()?.classList.add("optical-light-path"));
             (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
                     draggable: canEdit,
@@ -587,7 +707,7 @@
         document.getElementById("ceo-fields").hidden = state.tool !== "splice_box";
         populateSplitterCables(null);
         loadSplitterFibers("");
-        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO" };
+        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", olt: "Nova OLT" };
         document.getElementById("element-dialog-title").textContent = titles[state.tool] || "Novo elemento";
         elementDialog.showModal();
     });
@@ -677,6 +797,11 @@
     [["structure", structureLayer], ["online", clientLayers.online], ["offline", clientLayers.offline], ["unknown", clientLayers.unknown]].forEach(([name, layer]) => {
         document.getElementById(`layer-${name}`).onchange = (event) => { if (event.target.checked) layer.addTo(map); else map.removeLayer(layer); };
     });
+    document.getElementById("light-source-select").onchange = (event) => {
+        state.lightSourceId = event.target.value || null;
+        loadStructure().catch((error) => notify(error.message, true));
+    };
+    document.getElementById("layer-light-flow").onchange = () => loadStructure().catch((error) => notify(error.message, true));
     Promise.all([
         loadProjects(), loadClients(),
         api("/api/map/cable-models/").then((data) => data.models.forEach((model) => cableForm.elements.cable_model_id.add(new Option(`${model.name} · ${model.fiber_count} fibras`, model.id)))),

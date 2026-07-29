@@ -418,6 +418,8 @@ def fiber_cables_geojson(request):
                         if cable.origin
                         else None
                     ),
+                    "origin_id": cable.origin_id,
+                    "destination_id": cable.destination_id,
                     "destino": (
                         cable.destination.name
                         if cable.destination
@@ -1387,6 +1389,24 @@ def splice_box_fibers(request, element_id, splice_id=None):
         fiber.status = FiberStrand.Status.USED
         fiber.save(update_fields=["status", "updated_at"])
         return JsonResponse({"success": True})
+    if connection_type == "clear_splitter_input":
+        splitter = get_object_or_404(
+            SpliceTraySplitter,
+            pk=request.data.get("splitter_id"),
+            tray__splice_box=element,
+        )
+        splitter.input_fiber = None
+        splitter.save(update_fields=["input_fiber", "updated_at"])
+        return JsonResponse({"success": True})
+    if connection_type == "clear_splitter_output":
+        port = get_object_or_404(
+            SpliceTraySplitterPort,
+            pk=request.data.get("port_id"),
+            splitter__tray__splice_box=element,
+        )
+        port.output_fiber = None
+        port.save(update_fields=["output_fiber", "updated_at"])
+        return JsonResponse({"success": True})
     try:
         tray = element.splice_trays.get(pk=int(request.data.get("tray_id")))
         input_fiber = FiberStrand.objects.get(pk=int(request.data.get("input_fiber_id")))
@@ -1410,6 +1430,78 @@ def splice_box_fibers(request, element_id, splice_id=None):
         fiber.status = FiberStrand.Status.USED
         fiber.save(update_fields=["status", "updated_at"])
     return JsonResponse({"success": True, "splice": {"id": splice.id}}, status=201)
+
+
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def splice_box_layout(request, element_id):
+    element = get_object_or_404(
+        NetworkElement,
+        pk=element_id,
+        element_type=NetworkElement.ElementType.SPLICE_BOX,
+    )
+    if request.method == "GET":
+        return JsonResponse({
+            "success": True,
+            "layout": element.metadata.get("unifilar_layout", {}),
+        })
+    layout = request.data.get("layout")
+    if not isinstance(layout, dict):
+        return JsonResponse({"success": False, "error": "Layout inválido."}, status=400)
+    metadata = dict(element.metadata or {})
+    metadata["unifilar_layout"] = layout
+    element.metadata = metadata
+    element.save(update_fields=["metadata", "updated_at"])
+    return JsonResponse({"success": True, "layout": layout})
+
+
+@api_view(["POST", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def splice_box_splitters(request, element_id, splitter_id=None):
+    element = get_object_or_404(
+        NetworkElement,
+        pk=element_id,
+        element_type=NetworkElement.ElementType.SPLICE_BOX,
+    )
+    splitter = None
+    if splitter_id is not None:
+        splitter = get_object_or_404(
+            SpliceTraySplitter,
+            pk=splitter_id,
+            tray__splice_box=element,
+        )
+    if request.method == "DELETE":
+        splitter.delete()
+        return JsonResponse({"success": True})
+    try:
+        ratio = str(request.data.get("ratio", "1:8"))
+        output_ports = int(request.data.get("output_ports", ratio.split(":")[1]))
+        if ratio not in {"1:2", "1:4", "1:8", "1:16", "1:32", "1:64"}:
+            raise ValueError
+    except (TypeError, ValueError, IndexError):
+        return JsonResponse({"success": False, "error": "Configuração do splitter inválida."}, status=400)
+    if splitter is None:
+        tray = get_object_or_404(
+            SpliceTray,
+            pk=request.data.get("tray_id"),
+            splice_box=element,
+        )
+        position = (tray.splitters.order_by("-position").values_list("position", flat=True).first() or 0) + 1
+        splitter = SpliceTraySplitter.objects.create(
+            tray=tray, position=position, ratio=ratio, output_ports=output_ports
+        )
+    else:
+        splitter.ratio = ratio
+        splitter.output_ports = output_ports
+        splitter.save(update_fields=["ratio", "output_ports", "updated_at"])
+    existing = set(splitter.ports.values_list("number", flat=True))
+    SpliceTraySplitterPort.objects.bulk_create([
+        SpliceTraySplitterPort(splitter=splitter, number=number)
+        for number in range(1, output_ports + 1)
+        if number not in existing
+    ])
+    splitter.ports.filter(number__gt=output_ports, output_fiber__isnull=True).delete()
+    return JsonResponse({"success": True, "splitter_id": splitter.id}, status=201 if request.method == "POST" else 200)
 
 
 @api_view(["GET", "PATCH", "DELETE"])
