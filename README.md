@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.8 — Satélite e favicon**
+**v0.8.9 — Alinhamento do menu**
 
-Esta versão remove os textos sob a logo, prepara o favicon oficial e adiciona
-uma camada de satélite sem dependência de API paga.
+Esta versão centraliza a logo no menu lateral e permite que o favicon seja
+mantido diretamente no servidor sem bloquear as atualizações.
 
 ## Funcionalidades implementadas
 
