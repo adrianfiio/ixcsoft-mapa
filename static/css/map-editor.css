@@ -97,6 +97,30 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .map-group-control label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .map-group-control input { accent-color: var(--primary); }
 .editor-dialog { width: min(440px, calc(100% - 30px)); padding: 0; color: var(--text); background: #0d1b2d; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 25px 90px rgba(0,0,0,.55); }
+.container-dialog {
+    width: calc(100vw - 24px);
+    max-width: none;
+    height: calc(100vh - 24px);
+    max-height: none;
+    margin: 12px;
+}
+.container-dialog > section { height: 100%; overflow: auto; box-sizing: border-box; }
+.container-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; }
+.container-workspace > section, .container-workspace > aside > form {
+    padding: 18px; background: #071424; border: 1px solid var(--border); border-radius: 12px;
+}
+.container-topology { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.container-topology article { display: block; border-top: 3px solid #2dd4bf; }
+.container-topology .equipment-head { display: flex; justify-content: space-between; gap: 12px; }
+.equipment-port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin: 12px 0; }
+.equipment-port { padding: 7px; border: 1px solid #35506f; border-radius: 6px; color: #bfdbfe; font-size: 10px; }
+.equipment-port.used { border-color: #22c55e; color: #86efac; }
+.equipment-card-list { display: grid; gap: 7px; margin-top: 10px; }
+.equipment-card-list span { padding: 8px; background: #10233b; border-radius: 6px; font-size: 11px; }
+.equipment-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+@media (max-width: 900px) {
+    .container-workspace { grid-template-columns: 1fr; }
+}
 .editor-dialog::backdrop { background: rgba(1,8,18,.72); backdrop-filter: blur(3px); }
 .editor-dialog form, .editor-dialog > section { padding: 22px; }
 .editor-dialog header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 19px; }

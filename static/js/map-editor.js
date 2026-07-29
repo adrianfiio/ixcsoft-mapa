@@ -17,6 +17,8 @@
     const containerDialog = document.getElementById("container-dialog");
     const containerEquipmentForm = document.getElementById("container-equipment-form");
     const containerLinkForm = document.getElementById("container-link-form");
+    const containerCardForm = document.getElementById("container-card-form");
+    const containerPortForm = document.getElementById("container-port-form");
     const quickInputDialog = document.getElementById("quick-input-dialog");
     const quickInputForm = document.getElementById("quick-input-form");
     const elementForm = document.getElementById("element-form");
@@ -455,28 +457,65 @@
                 const detail = item.type === "olt"
                     ? `${item.card_count} placa(s) · ${item.pon_count} PONs`
                     : item.type === "dio" ? `${item.dio_port_capacity} portas` : (item.management_ip || "Sem IP");
-                return `<article><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></article>`;
+                const cards = item.cards?.length
+                    ? `<div class="equipment-card-list">${item.cards.map((card) => `<span><b>Slot ${card.slot} · ${escapeHtml(card.name)}</b><br>${card.pon_count} PONs${card.model ? ` · ${escapeHtml(card.model)}` : ""}</span>`).join("")}</div>`
+                    : "";
+                const ports = item.ports?.length
+                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<span class="equipment-port ${port.used ? "used" : ""}">${escapeHtml(port.label)}${port.used ? " · ligada" : ""}</span>`).join("")}</div>`
+                    : '<p class="field-help">Nenhuma porta cadastrada.</p>';
+                const configure = item.type === "olt"
+                    ? `<button class="secondary-button" type="button" data-add-equipment-card="${item.id}">+ Placa</button>`
+                    : ["switch", "access_point", "ptp"].includes(item.type)
+                        ? `<button class="secondary-button" type="button" data-add-equipment-ports="${item.id}">+ Portas</button>`
+                        : "";
+                return `<article><div class="equipment-head"><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></div>${cards}${ports}<div class="equipment-actions">${configure}</div></article>`;
             }).join("")
             : "<p>Nenhum equipamento instalado.</p>";
-        const ponPorts = data.equipment.flatMap((item) => item.ports
-            .filter((port) => port.type === "pon" && !port.used)
+        const sourcePorts = data.equipment.flatMap((item) => item.ports
+            .filter((port) => !port.used && (data.container.type === "tower" || port.type === "pon"))
             .map((port) => ({ ...port, equipment: item.name })));
-        const dioPorts = data.equipment.flatMap((item) => item.ports
-            .filter((port) => port.type === "dio" && !port.used)
+        const destinationPorts = data.equipment.flatMap((item) => item.ports
+            .filter((port) => !port.used && (data.container.type === "tower" || port.type === "dio"))
             .map((port) => ({ ...port, equipment: item.name })));
         const opticalLinks = document.getElementById("container-optical-links");
-        opticalLinks.hidden = data.container.type !== "rack";
-        containerLinkForm.elements.source_port_id.innerHTML = ponPorts
+        opticalLinks.hidden = !data.equipment.length;
+        document.getElementById("container-link-title").textContent = data.container.type === "rack"
+            ? "Diagrama e ligações OLT → DIO" : "Diagrama e ligações da torre";
+        document.getElementById("container-link-help").textContent = data.container.type === "rack"
+            ? "Ligue uma PON à porta do DIO e associe o cabo óptico que sai do rack."
+            : "Ligue switch, AP e rádio PTP por RJ45/SFP ou registre o enlace wireless.";
+        containerLinkForm.elements.link_type.value = data.container.type === "rack" ? "fiber" : "copper";
+        containerLinkForm.elements.source_port_id.innerHTML = sourcePorts
             .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
-        containerLinkForm.elements.destination_port_id.innerHTML = dioPorts
+        containerLinkForm.elements.destination_port_id.innerHTML = destinationPorts
             .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
         containerLinkForm.elements.cable_id.innerHTML = '<option value="">Ainda sem cabo vinculado</option>'
             + data.cables.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`).join("");
-        containerLinkForm.querySelector("button[type='submit']").disabled = !ponPorts.length || !dioPorts.length;
+        containerLinkForm.querySelector("button[type='submit']").disabled = !sourcePorts.length || !destinationPorts.length;
         document.getElementById("container-link-list").innerHTML = data.links.length
-            ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${link.cable ? `Cabo: ${escapeHtml(link.cable)}` : "Cabo ainda não associado"}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
+            ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${escapeHtml(link.link_type_label)}${link.cable ? ` · Cabo: ${escapeHtml(link.cable)}` : ""}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
             : "<p>Nenhuma ligação interna registrada.</p>";
         containerDialog.showModal();
+        containerCardForm.hidden = true;
+        containerPortForm.hidden = true;
+        document.querySelectorAll("[data-add-equipment-card]").forEach((button) => {
+            button.onclick = () => {
+                containerCardForm.reset();
+                containerCardForm.elements.equipment_id.value = button.dataset.addEquipmentCard;
+                containerCardForm.hidden = false;
+                containerPortForm.hidden = true;
+                containerCardForm.scrollIntoView({ behavior: "smooth", block: "center" });
+            };
+        });
+        document.querySelectorAll("[data-add-equipment-ports]").forEach((button) => {
+            button.onclick = () => {
+                containerPortForm.reset();
+                containerPortForm.elements.equipment_id.value = button.dataset.addEquipmentPorts;
+                containerPortForm.hidden = false;
+                containerCardForm.hidden = true;
+                containerPortForm.scrollIntoView({ behavior: "smooth", block: "center" });
+            };
+        });
         document.querySelectorAll("[data-delete-container-equipment]").forEach((button) => {
             button.onclick = async () => {
                 if (!confirm("Excluir este equipamento da estrutura?")) return;
@@ -1369,6 +1408,32 @@
             notify("Equipamento adicionado à estrutura.");
         } catch (error) { notify(error.message, true); }
     };
+    containerCardForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.target));
+        const equipmentId = payload.equipment_id;
+        delete payload.equipment_id;
+        try {
+            await api(`/api/map/elements/${state.containerId}/equipment/${equipmentId}/cards/`, {
+                method: "POST", body: JSON.stringify(payload),
+            });
+            await manageContainer(state.containerId);
+            notify("Placa adicionada à OLT.");
+        } catch (error) { notify(error.message, true); }
+    };
+    containerPortForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.target));
+        const equipmentId = payload.equipment_id;
+        delete payload.equipment_id;
+        try {
+            await api(`/api/map/elements/${state.containerId}/equipment/${equipmentId}/ports/`, {
+                method: "POST", body: JSON.stringify(payload),
+            });
+            await manageContainer(state.containerId);
+            notify("Portas adicionadas ao equipamento.");
+        } catch (error) { notify(error.message, true); }
+    };
     containerLinkForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
@@ -1379,7 +1444,7 @@
                 body: JSON.stringify(payload),
             });
             await manageContainer(state.containerId);
-            notify("PON ligada à porta do DIO.");
+            notify("Ligação interna criada.");
         } catch (error) { notify(error.message, true); }
     };
     elementForm.elements.splitter_input_cable_id.onchange = (event) => {

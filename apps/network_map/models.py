@@ -180,16 +180,53 @@ class ContainerEquipment(CompanyScopedModel, NamedModel):
         ]
 
 
+class ContainerEquipmentCard(TimeStampedModel):
+    equipment = models.ForeignKey(
+        ContainerEquipment,
+        on_delete=models.CASCADE,
+        related_name="cards",
+    )
+    slot = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=100, blank=True)
+    model = models.CharField(max_length=120, blank=True)
+    serial_number = models.CharField(max_length=120, blank=True)
+    pon_count = models.PositiveSmallIntegerField(default=8)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["equipment", "slot"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["equipment", "slot"],
+                name="unique_card_slot_per_container_equipment",
+            )
+        ]
+
+    def __str__(self):
+        return self.name or f"{self.equipment} · placa {self.slot}"
+
+
 class ContainerEquipmentPort(TimeStampedModel):
     class PortType(models.TextChoices):
         PON = "pon", "PON"
         DIO = "dio", "Porta de DIO"
-        NETWORK = "network", "Porta de rede"
+        RJ45_100M = "rj45_100m", "RJ45 100 Mb"
+        RJ45_1G = "rj45_1g", "RJ45 1 Gb"
+        SFP_1G = "sfp_1g", "SFP 1 Gb"
+        SFP_PLUS_10G = "sfp_plus_10g", "SFP+ 10 Gb"
+        WIRELESS = "wireless", "Interface wireless"
 
     equipment = models.ForeignKey(
         ContainerEquipment,
         on_delete=models.CASCADE,
         related_name="ports",
+    )
+    card = models.ForeignKey(
+        ContainerEquipmentCard,
+        on_delete=models.CASCADE,
+        related_name="ports",
+        null=True,
+        blank=True,
     )
     port_type = models.CharField(max_length=20, choices=PortType.choices)
     number = models.PositiveSmallIntegerField()
@@ -209,6 +246,11 @@ class ContainerEquipmentPort(TimeStampedModel):
 
 
 class ContainerPortLink(TimeStampedModel):
+    class LinkType(models.TextChoices):
+        FIBER = "fiber", "Fibra óptica"
+        COPPER = "copper", "Cabo de rede"
+        WIRELESS = "wireless", "Enlace wireless"
+
     container = models.ForeignKey(
         NetworkElement,
         on_delete=models.CASCADE,
@@ -232,6 +274,11 @@ class ContainerPortLink(TimeStampedModel):
         related_name="container_port_links",
     )
     notes = models.CharField(max_length=180, blank=True)
+    link_type = models.CharField(
+        max_length=20,
+        choices=LinkType.choices,
+        default=LinkType.FIBER,
+    )
 
     class Meta:
         ordering = ["container", "source_port__equipment", "source_port__number"]

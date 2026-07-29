@@ -22,10 +22,23 @@ class CompanyAdmin(admin.ModelAdmin):
 
 @admin.register(CompanyMembership)
 class CompanyMembershipAdmin(admin.ModelAdmin):
-    list_display = ("user", "company", "role", "active", "updated_at")
-    list_filter = ("role", "active", "company")
+    list_display = ("user", "company", "role", "data_source", "erp_provider", "active", "updated_at")
+    list_filter = ("role", "data_source", "erp_provider", "active", "company")
     search_fields = ("user__username", "user__email", "company__name", "company__trade_name")
     autocomplete_fields = ("user", "company")
+    fieldsets = (
+        ("Acesso", {"fields": ("company", "user", "role", "active")}),
+        (
+            "Perfil de dados",
+            {
+                "fields": ("data_source", "erp_provider", "erp_configuration_id"),
+                "description": (
+                    "Usuário padrão trabalha manualmente. Para usuário ERP, informe "
+                    "o provedor e o ID da configuração da própria empresa."
+                ),
+            },
+        ),
+    )
     actions = ("activate_access", "deactivate_access")
 
     @admin.action(description="Ativar acessos selecionados")

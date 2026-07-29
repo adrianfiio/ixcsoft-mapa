@@ -215,17 +215,54 @@
     <dialog id="container-dialog" class="editor-dialog container-dialog">
         <section>
             <header><div><h2 id="container-dialog-title">Equipamentos internos</h2><p id="container-dialog-subtitle"></p></div><button class="dialog-close" type="button">×</button></header>
-            <div id="container-equipment-list" class="container-equipment-list"></div>
+            <div class="container-workspace">
+                <section>
+                    <h3>Diagrama da estrutura</h3>
+                    <p class="field-help">Cadastre placas e portas por equipamento. As ligações aparecem no diagrama interno.</p>
+                    <div id="container-equipment-list" class="container-equipment-list container-topology"></div>
+                </section>
+                <aside>
+                    <form id="container-card-form" hidden>
+                        <h3>Adicionar placa à OLT</h3>
+                        <input name="equipment_id" type="hidden">
+                        <div class="dialog-grid">
+                            <label>Slot<input name="slot" type="number" min="1" max="64" required></label>
+                            <label>Quantidade de PONs<input name="pon_count" type="number" min="1" max="64" value="8" required></label>
+                        </div>
+                        <label>Nome da placa<input name="name" placeholder="Ex.: HSWA"></label>
+                        <label>Modelo<input name="model"></label>
+                        <footer><button class="primary-button" type="submit">Adicionar placa</button></footer>
+                    </form>
+                    <form id="container-port-form" hidden>
+                        <h3>Adicionar portas</h3>
+                        <input name="equipment_id" type="hidden">
+                        <label>Tipo da porta<select name="port_type">
+                            <option value="rj45_100m">RJ45 100 Mb</option>
+                            <option value="rj45_1g">RJ45 1 Gb</option>
+                            <option value="sfp_1g">SFP 1 Gb</option>
+                            <option value="sfp_plus_10g">SFP+ 10 Gb</option>
+                            <option value="wireless">Interface wireless</option>
+                        </select></label>
+                        <label>Quantidade<input name="count" type="number" min="1" max="256" value="1"></label>
+                        <footer><button class="primary-button" type="submit">Adicionar portas</button></footer>
+                    </form>
+                </aside>
+            </div>
             <section id="container-optical-links" class="container-optical-links" hidden>
-                <h3>Ligação OLT → DIO</h3>
-                <p>Selecione a PON, a porta de destino no DIO e, se já existir, o cabo que sai deste rack.</p>
+                <h3 id="container-link-title">Ligação OLT → DIO</h3>
+                <p id="container-link-help">Selecione duas portas compatíveis e, quando aplicável, o cabo ligado à estrutura.</p>
                 <form id="container-link-form">
                     <div class="dialog-grid">
-                        <label>PON da OLT<select name="source_port_id" required></select></label>
-                        <label>Porta do DIO<select name="destination_port_id" required></select></label>
+                        <label>Porta de origem<select name="source_port_id" required></select></label>
+                        <label>Porta de destino<select name="destination_port_id" required></select></label>
                     </div>
+                    <label>Tipo da ligação<select name="link_type">
+                        <option value="fiber">Fibra óptica</option>
+                        <option value="copper">Cabo de rede</option>
+                        <option value="wireless">Enlace wireless</option>
+                    </select></label>
                     <label>Cabo óptico do rack<select name="cable_id"><option value="">Ainda sem cabo vinculado</option></select></label>
-                    <footer><button class="primary-button" type="submit">Ligar PON ao DIO</button></footer>
+                    <footer><button class="primary-button" type="submit">Criar ligação</button></footer>
                 </form>
                 <div id="container-link-list" class="container-equipment-list"></div>
             </section>
@@ -245,11 +282,12 @@
                 </div>
                 <label>Número de série<input name="serial_number"></label>
                 <fieldset id="container-olt-fields" class="cto-fields" hidden>
-                    <legend>Estrutura da OLT</legend>
+                    <legend>Primeira placa da OLT</legend>
                     <div class="dialog-grid">
-                        <label>Quantidade de placas<input name="card_count" type="number" min="1" max="64" value="1"></label>
-                        <label>PONs por placa<input name="pons_per_card" type="number" min="1" max="64" value="16"></label>
+                        <input name="card_count" type="hidden" value="1">
+                        <label>PONs desta placa<input name="pons_per_card" type="number" min="1" max="64" value="8"></label>
                     </div>
+                    <p class="field-help">Depois de criar a OLT, adicione outras placas individualmente, com 8, 16 ou outra quantidade de PONs.</p>
                 </fieldset>
                 <fieldset id="container-dio-fields" class="cto-fields" hidden>
                     <legend>Estrutura do DIO</legend>
