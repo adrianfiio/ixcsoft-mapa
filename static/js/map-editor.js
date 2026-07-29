@@ -16,7 +16,7 @@
         projectId: null, projects: [], elements: [], tool: null,
         cableCoordinates: [], drawingLine: null,
         editingElementId: null, editingCableId: null,
-        geometryCableId: null, geometryHandles: [], reserveCableId: null,
+        geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
     };
 
     const map = L.map("map", { preferCanvas: true }).setView([-24.45, -50.62], 10);
@@ -177,12 +177,49 @@
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
         const content = document.getElementById("unifilar-content");
         if (element.splice_box) {
+            const optical = await api(`/api/map/elements/${element.id}/splices/`);
             document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
-            content.innerHTML = element.splice_box.trays.map((tray) => `
+            const trayOptions = element.splice_box.trays.map((tray) => `<option value="${tray.id}">${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</option>`).join("");
+            const cableColumns = optical.cables.map((cable) => `
+                <section class="fiber-cable-column"><strong>${escapeHtml(cable.name)}</strong>
+                <div class="fiber-chip-grid">${cable.fibers.map((fiber) => `<div class="fiber-chip" draggable="true" data-fiber-id="${fiber.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}">F${fiber.number} · ${escapeHtml(fiber.color_name)}</div>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`).join("");
+            content.innerHTML = `<div class="ceo-instructions">Arraste uma fibra sobre outra fibra de outro cabo para criar a fusão em <select id="ceo-tray-select">${trayOptions}</select>.</div>
+                <div class="ceo-fiber-workspace">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}</div>
+                <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div>Fibra ${splice.input_fiber_id} → Fibra ${splice.output_fiber_id} <button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>` +
+                element.splice_box.trays.map((tray) => `
                 <article class="splitter-card">
                     <div class="splitter-head"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões · capacidade ${tray.capacity}</span></div>
                     ${tray.splitters.length ? tray.splitters.map((splitter) => `<div class="ceo-splitter">Splitter ${splitter.position} · ${escapeHtml(splitter.ratio)} · ${splitter.output_ports} saídas</div>`).join("") : '<p class="help-text">Bandeja destinada a fusões diretas.</p>'}
                 </article>`).join("");
+            let draggedFiber = null;
+            content.querySelectorAll(".fiber-chip").forEach((chip) => {
+                chip.ondragstart = () => { draggedFiber = chip.dataset.fiberId; };
+                chip.ondragover = (event) => event.preventDefault();
+                chip.ondrop = async (event) => {
+                    event.preventDefault();
+                    const output = chip.dataset.fiberId;
+                    if (!draggedFiber || draggedFiber === output) return;
+                    try {
+                        await api(`/api/map/elements/${element.id}/splices/`, {
+                            method: "POST",
+                            body: JSON.stringify({
+                                tray_id: document.getElementById("ceo-tray-select").value,
+                                input_fiber_id: draggedFiber,
+                                output_fiber_id: output,
+                            }),
+                        });
+                        unifilarDialog.close();
+                        await showUnifilar(element.id);
+                        notify("Fusão criada na CEO.");
+                    } catch (error) { notify(error.message, true); }
+                };
+            });
+            content.querySelectorAll("[data-delete-splice]").forEach((button) => {
+                button.onclick = async () => {
+                    await api(`/api/map/elements/${element.id}/splices/${button.dataset.deleteSplice}/`, { method: "DELETE" });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
+                };
+            });
             unifilarDialog.showModal();
             return;
         }
@@ -221,6 +258,55 @@
         clearTool();
         await loadStructure();
         notify(`Reserva de ${length} m adicionada.`);
+    }
+    async function editReserve(cableId, reserve) {
+        const length = Number(prompt("Nova metragem da reserva:", String(reserve.metragem)));
+        if (!length || length <= 0) return;
+        await api(`/api/map/cables/${cableId}/reserves/${reserve.id}/`, {
+            method: "PATCH",
+            body: JSON.stringify({ latitude: reserve.latitude, longitude: reserve.longitude, length_m: length, label: reserve.label || "" }),
+        });
+        await loadStructure();
+        notify("Reserva atualizada.");
+    }
+    async function deleteReserve(cableId, reserveId) {
+        if (!confirm("Excluir esta reserva técnica?")) return;
+        await api(`/api/map/cables/${cableId}/reserves/${reserveId}/`, { method: "DELETE" });
+        await loadStructure();
+        notify("Reserva excluída.");
+    }
+    async function convertReserve(cableId, reserveId) {
+        const choice = prompt("Transformar em CTO ou CEO? Digite CTO ou CEO:", "CEO");
+        if (!choice) return;
+        const normalized = choice.trim().toUpperCase();
+        if (!["CTO", "CEO"].includes(normalized)) return notify("Escolha CTO ou CEO.", true);
+        const name = prompt(`Nome da nova ${normalized}:`, `${normalized}-${reserveId}`);
+        if (!name) return;
+        await api(`/api/map/cables/${cableId}/reserves/${reserveId}/convert/`, {
+            method: "POST",
+            body: JSON.stringify({ element_type: normalized === "CTO" ? "cto" : "splice_box", name, code: name }),
+        });
+        await loadStructure();
+        notify(`${normalized} inserida e cabo dividido em dois trechos.`);
+    }
+    async function insertElementAt(cableId, latlng) {
+        const choice = prompt("Inserir CTO ou CEO neste ponto?", "CEO");
+        if (!choice) return;
+        const normalized = choice.trim().toUpperCase();
+        if (!["CTO", "CEO"].includes(normalized)) return notify("Escolha CTO ou CEO.", true);
+        const name = prompt(`Nome da nova ${normalized}:`, `${normalized}-NOVO`);
+        if (!name) return;
+        const created = await api(`/api/map/cables/${cableId}/reserves/`, {
+            method: "POST",
+            body: JSON.stringify({ latitude: latlng.lat, longitude: latlng.lng, length_m: 1, label: "Conversão" }),
+        });
+        await api(`/api/map/cables/${cableId}/reserves/${created.reserve.id}/convert/`, {
+            method: "POST",
+            body: JSON.stringify({ element_type: normalized === "CTO" ? "cto" : "splice_box", name, code: name }),
+        });
+        clearTool();
+        await loadStructure();
+        notify(`${normalized} inserida; o cabo foi dividido em dois trechos.`);
     }
     async function editCable(id) {
         const data = await api(`/api/map/cables/${id}/`);
@@ -313,7 +399,7 @@
         cables.features.forEach((feature) => {
             const p = feature.properties;
             const line = L.geoJSON(feature, { style: { color: selectedProject()?.color || "#2dd4bf", weight: 4, opacity: .86 } });
-            const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
+            const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
             line.on("popupopen", () => {
                 popupAction(`[data-edit-cable="${p.id}"]`, () => editCable(p.id).catch((error) => notify(error.message, true)));
@@ -322,17 +408,39 @@
                     map.closePopup(); clearTool(); state.tool = "reserve"; state.reserveCableId = p.id;
                     notify("Clique no ponto do cabo onde ficará a reserva.");
                 });
+                popupAction(`[data-insert-cable="${p.id}"]`, () => {
+                    map.closePopup(); clearTool(); state.tool = "insert"; state.insertCableId = p.id;
+                    notify("Clique no ponto do cabo onde deseja inserir a CTO ou CEO.");
+                });
             });
             line.on("click", (event) => {
-                if (state.tool !== "reserve" || state.reserveCableId !== p.id) return;
-                L.DomEvent.stopPropagation(event);
-                createReserveAt(p.id, event.latlng).catch((error) => notify(error.message, true));
+                if (state.tool === "reserve" && state.reserveCableId === p.id) {
+                    L.DomEvent.stopPropagation(event);
+                    createReserveAt(p.id, event.latlng).catch((error) => notify(error.message, true));
+                } else if (state.tool === "insert" && state.insertCableId === p.id) {
+                    L.DomEvent.stopPropagation(event);
+                    insertElementAt(p.id, event.latlng).catch((error) => notify(error.message, true));
+                }
             });
             line.addTo(structureLayer);
             (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
+                    draggable: canEdit,
                     icon: L.divIcon({ className: "", html: '<div class="reserve-marker">↻</div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
-                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}`);
+                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${canEdit ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
+                marker.on("popupopen", () => {
+                    popupAction(`[data-edit-reserve="${reserve.id}"]`, () => editReserve(p.id, reserve).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-convert-reserve="${reserve.id}"]`, () => convertReserve(p.id, reserve.id).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-delete-reserve="${reserve.id}"]`, () => deleteReserve(p.id, reserve.id).catch((error) => notify(error.message, true)));
+                });
+                if (canEdit) marker.on("dragend", () => {
+                    const point = marker.getLatLng();
+                    api(`/api/map/cables/${p.id}/reserves/${reserve.id}/`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ latitude: point.lat, longitude: point.lng, length_m: reserve.metragem, label: reserve.label || "" }),
+                    }).then(() => { reserve.latitude = point.lat; reserve.longitude = point.lng; notify("Reserva reposicionada."); })
+                      .catch((error) => { notify(error.message, true); loadStructure(); });
+                });
                 marker.addTo(structureLayer);
             });
             line.getLayers().forEach((part) => part.getLatLngs().flat(Infinity).forEach((point) => bounds.push([point.lat, point.lng])));
@@ -368,6 +476,8 @@
         state.geometryHandles.forEach((handle) => map.removeLayer(handle));
         state.geometryHandles = [];
         state.geometryCableId = null;
+        state.reserveCableId = null;
+        state.insertCableId = null;
         state.drawingLine = null;
         drawingBar.hidden = true;
         map.getContainer().style.cursor = "";
@@ -377,6 +487,10 @@
         if (!state.tool) return;
         if (state.tool === "reserve") {
             createReserveAt(state.reserveCableId, event.latlng).catch((error) => notify(error.message, true));
+            return;
+        }
+        if (state.tool === "insert") {
+            insertElementAt(state.insertCableId, event.latlng).catch((error) => notify(error.message, true));
             return;
         }
         if (state.tool === "geometry") return;

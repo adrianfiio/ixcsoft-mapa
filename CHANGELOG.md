@@ -24,6 +24,18 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Splitters opcionais por bandeja com proporção configurável
 - Visualização unifilar inicial das bandejas, fusões e splitters da CEO
 
+## [0.10.0] - 2026-07-29
+
+### Adicionado
+
+- Edição de metragem, posição e exclusão de reservas técnicas
+- Conversão de uma reserva existente em CTO ou CEO
+- Inserção direta de CTO/CEO no meio de um cabo
+- Divisão automática do cabo em dois trechos ligados ao novo elemento
+- Editor unifilar da CEO com fibras dos cabos conectados
+- Criação de fusões por arrastar uma fibra sobre outra e escolha da bandeja
+- Remoção de fusões no próprio unifilar
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado
