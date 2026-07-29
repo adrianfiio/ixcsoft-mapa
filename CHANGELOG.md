@@ -11,6 +11,13 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.7] - 2026-07-29
+
+### Corrigido
+
+- Alinhamento visual do subtítulo sob a logo em todas as interfaces
+- Remoção do título duplicado acima do cartão de login
+
 ## [0.8.6] - 2026-07-29
 
 ### Alterado

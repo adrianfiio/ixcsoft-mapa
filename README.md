@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.6 — Login e identidade de rede**
+**v0.8.7 — Ajustes da identidade visual**
 
-Esta versão simplifica os cabeçalhos, moderniza o login administrativo e amplia
-a identidade do produto para redes ópticas e wireless.
+Esta versão alinha o subtítulo à área visual da logo e remove elementos
+duplicados do login administrativo.
 
 ## Funcionalidades implementadas
 
