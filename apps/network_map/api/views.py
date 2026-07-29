@@ -4,6 +4,7 @@ from django.contrib.gis.geos import LineString, MultiLineString, Point
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from django.db.models import Q
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET
 
@@ -14,8 +15,10 @@ from apps.network_map.models import (
     CTO,
     FiberCable,
     FiberStrand,
+    FiberSplice,
     NetworkElement,
     NetworkProject,
+    SpliceTray,
 )
 from apps.network_map.serializers import NetworkElementSerializer
 from apps.network_map.services import (
@@ -1175,6 +1178,163 @@ def cable_reserves(request, cable_id, reserve_id=None):
             setattr(reserve, field, value)
         reserve.save()
     return JsonResponse({"success": True, "reserve": {"id": reserve.id}}, status=201 if request.method == "POST" else 200)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def reserve_to_element(request, cable_id, reserve_id):
+    cable = get_object_or_404(FiberCable, pk=cable_id)
+    reserve = get_object_or_404(CableReserve, pk=reserve_id, cable=cable)
+    element_type = str(request.data.get("element_type", "")).strip()
+    if element_type not in {
+        NetworkElement.ElementType.CTO,
+        NetworkElement.ElementType.SPLICE_BOX,
+    }:
+        return JsonResponse({"success": False, "error": "Escolha CTO ou CEO."}, status=400)
+    name = str(request.data.get("name", "")).strip()
+    code = str(request.data.get("code", "")).strip()
+    if not name:
+        return JsonResponse({"success": False, "error": "Informe o nome do elemento."}, status=400)
+
+    raw = list(cable.geometry[0].coords)
+    if len(raw) < 2:
+        return JsonResponse({"success": False, "error": "Traçado do cabo inválido."}, status=400)
+    target = (reserve.point.x, reserve.point.y)
+    segment = min(
+        range(len(raw) - 1),
+        key=lambda index: (
+            ((raw[index][0] + raw[index + 1][0]) / 2 - target[0]) ** 2
+            + ((raw[index][1] + raw[index + 1][1]) / 2 - target[1]) ** 2
+        ),
+    )
+    first = raw[: segment + 1] + [target]
+    second = [target] + raw[segment + 1 :]
+    element_data = {
+        "project": cable.project,
+        "company": cable.company,
+        "name": name,
+        "code": code,
+        "element_type": element_type,
+        "point": reserve.point,
+        "status": "no_data",
+        "enabled": True,
+    }
+    if element_type == NetworkElement.ElementType.CTO:
+        element = CTO.objects.create(capacity=8, splitter_ratio="1:8", **element_data)
+        from apps.network_map.models import CTOSplitter
+        from apps.network_map.serializers import sync_splitter_ports
+        splitter = CTOSplitter.objects.create(cto=element, ratio="1:8", output_ports=8)
+        sync_splitter_ports(splitter, 8)
+    else:
+        element = NetworkElement.objects.create(**element_data)
+        from apps.network_map.serializers import sync_splice_box
+        sync_splice_box(element, 1, 0, "1:8")
+
+    old_destination = cable.destination
+    cable.destination = element
+    cable.geometry = MultiLineString(LineString(first, srid=4326), srid=4326)
+    cable.save(update_fields=["destination", "geometry", "updated_at"])
+    new_cable = FiberCable.objects.create(
+        project=cable.project,
+        company=cable.company,
+        name=f"{cable.name} · trecho 2",
+        code=f"{cable.code}-2" if cable.code else "",
+        description=cable.description,
+        cable_type=cable.cable_type,
+        cable_model=cable.cable_model,
+        geometry=MultiLineString(LineString(second, srid=4326), srid=4326),
+        fiber_count=cable.fiber_count,
+        origin=element,
+        destination=old_destination,
+        status=cable.status,
+    )
+    if new_cable.cable_model:
+        try:
+            generate_cable_fibers(new_cable)
+        except FiberStructureError:
+            pass
+    reserve.delete()
+    return JsonResponse({
+        "success": True,
+        "element": {"id": element.id, "name": element.name, "type": element_type},
+        "cables": [cable.id, new_cable.id],
+    }, status=201)
+
+
+@api_view(["GET", "POST", "DELETE"])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def splice_box_fibers(request, element_id, splice_id=None):
+    element = get_object_or_404(
+        NetworkElement,
+        pk=element_id,
+        element_type=NetworkElement.ElementType.SPLICE_BOX,
+    )
+    if request.method == "DELETE":
+        splice = get_object_or_404(FiberSplice, pk=splice_id, splice_box=element)
+        fibers = [splice.input_fiber, splice.output_fiber]
+        splice.delete()
+        for fiber in fibers:
+            fiber.status = FiberStrand.Status.FREE
+            fiber.save(update_fields=["status", "updated_at"])
+        return JsonResponse({"success": True})
+    connected = FiberCable.objects.filter(
+        Q(origin=element) | Q(destination=element)
+    ).prefetch_related("fibers__color")
+    if request.method == "GET":
+        return JsonResponse({
+            "success": True,
+            "cables": [
+                {
+                    "id": cable.id,
+                    "name": cable.name,
+                    "fibers": [
+                        {
+                            "id": fiber.id,
+                            "number": fiber.number,
+                            "color_name": fiber.color.name,
+                            "color_hex": fiber.color.hex_color,
+                            "status": fiber.status,
+                        }
+                        for fiber in cable.fibers.all()
+                    ],
+                }
+                for cable in connected
+            ],
+            "splices": [
+                {
+                    "id": splice.id,
+                    "tray_id": splice.tray_id,
+                    "input_fiber_id": splice.input_fiber_id,
+                    "output_fiber_id": splice.output_fiber_id,
+                }
+                for splice in element.fiber_splices.all()
+            ],
+        })
+    try:
+        tray = element.splice_trays.get(pk=int(request.data.get("tray_id")))
+        input_fiber = FiberStrand.objects.get(pk=int(request.data.get("input_fiber_id")))
+        output_fiber = FiberStrand.objects.get(pk=int(request.data.get("output_fiber_id")))
+    except (TypeError, ValueError, SpliceTray.DoesNotExist, FiberStrand.DoesNotExist):
+        return JsonResponse({"success": False, "error": "Bandeja ou fibras inválidas."}, status=400)
+    connected_ids = set(connected.values_list("id", flat=True))
+    if input_fiber.cable_id not in connected_ids or output_fiber.cable_id not in connected_ids:
+        return JsonResponse({"success": False, "error": "As fibras precisam pertencer a cabos conectados à CEO."}, status=400)
+    if input_fiber.cable_id == output_fiber.cable_id:
+        return JsonResponse({"success": False, "error": "A fusão deve ligar fibras de cabos diferentes."}, status=400)
+    try:
+        splice = FiberSplice.objects.create(
+            tray=tray,
+            splice_box=element,
+            input_fiber=input_fiber,
+            output_fiber=output_fiber,
+        )
+    except (ValueError, Exception) as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+    for fiber in (input_fiber, output_fiber):
+        fiber.status = FiberStrand.Status.USED
+        fiber.save(update_fields=["status", "updated_at"])
+    return JsonResponse({"success": True, "splice": {"id": splice.id}}, status=201)
 
 
 @api_view(["GET", "PATCH", "DELETE"])

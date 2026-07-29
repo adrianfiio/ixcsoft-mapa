@@ -5,6 +5,8 @@ from apps.network_map.api.views import (
     cable_fibers,
     cable_models,
     cable_reserves,
+    reserve_to_element,
+    splice_box_fibers,
     create_fiber_cable,
     delete_fiber_cable,
     create_network_element,
@@ -92,6 +94,9 @@ urlpatterns = [
     ),
     path("cables/<int:cable_id>/reserves/", cable_reserves, name="cable-reserves"),
     path("cables/<int:cable_id>/reserves/<int:reserve_id>/", cable_reserves, name="cable-reserve-detail"),
+    path("cables/<int:cable_id>/reserves/<int:reserve_id>/convert/", reserve_to_element, name="reserve-to-element"),
+    path("elements/<int:element_id>/splices/", splice_box_fibers, name="splice-box-fibers"),
+    path("elements/<int:element_id>/splices/<int:splice_id>/", splice_box_fibers, name="splice-box-splice-detail"),
     path(
         "cables/<int:cable_id>/generate-fibers/",
         generate_fibers,
