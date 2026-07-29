@@ -60,7 +60,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .drawing-bar button:first-of-type { background: var(--primary); }.drawing-bar button:last-of-type { color: white; background: #6b2130; }
 .editor-dialog { width: min(440px, calc(100% - 30px)); padding: 0; color: var(--text); background: #0d1b2d; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 25px 90px rgba(0,0,0,.55); }
 .editor-dialog::backdrop { background: rgba(1,8,18,.72); backdrop-filter: blur(3px); }
-.editor-dialog form { padding: 22px; }
+.editor-dialog form, .editor-dialog > section { padding: 22px; }
 .editor-dialog header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 19px; }
 .editor-dialog h2 { margin: 0; font-size: 18px; }
 .dialog-close { color: var(--muted); background: transparent; border: 0; font-size: 24px; cursor: pointer; }
@@ -68,6 +68,25 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .editor-dialog input, .editor-dialog textarea, .editor-dialog select { margin-top: 7px; }
 .editor-dialog footer { display: flex; justify-content: flex-end; padding-top: 5px; }
 .primary-button { min-height: 40px; padding: 9px 15px; color: #03201c; background: var(--primary); border: 0; border-radius: 8px; font-weight: 800; cursor: pointer; }
+.dialog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cto-fields { padding: 14px; margin: 2px 0 14px; border: 1px solid var(--border); border-radius: 10px; }
+.cto-fields legend { padding: 0 7px; color: var(--primary); font-size: 11px; font-weight: 800; }
+.cto-fields p, #unifilar-subtitle { margin: 0; color: var(--muted); font-size: 11px; }
+.leaflet-popup-content button { margin: 8px 5px 0 0; padding: 6px 9px; color: white; background: #1261a0; border: 0; border-radius: 5px; cursor: pointer; }
+.leaflet-popup-content button.danger { background: #a82b3d; }
+.unifilar-dialog { width: min(720px, calc(100% - 30px)); }
+.unifilar-dialog header { align-items: flex-start; }
+.unifilar-dialog footer { display: flex; justify-content: flex-end; }
+.unifilar-dialog footer .secondary-button { width: auto; min-width: 100px; }
+.splitter-card { padding: 15px; margin-top: 13px; background: #13263d; border: 1px solid var(--border); border-radius: 10px; }
+.splitter-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.splitter-head span { color: var(--muted); font-size: 11px; }
+.unifilar-flow { display: grid; grid-template-columns: minmax(100px, .65fr) 30px minmax(180px, 2fr); align-items: center; gap: 8px; }
+.unifilar-input { padding: 10px; text-align: center; background: #0b192a; border: 1px solid var(--primary); border-radius: 7px; font-size: 11px; }
+.unifilar-line { height: 2px; background: var(--primary); }
+.port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 7px; }
+.port { padding: 8px 5px; text-align: center; background: #0b192a; border: 1px solid #42617f; border-radius: 6px; font-size: 10px; }
+.port.occupied { border-color: #32cf78; }.port.reserved { border-color: var(--warning); }.port.defective { border-color: var(--danger); }
 .network-marker { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: #087f8c; border: 2px solid white; border-radius: 9px; box-shadow: 0 3px 12px rgba(0,0,0,.42); font-size: 9px; font-weight: 900; }
 .network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { background: #1261a0; }.network-marker.splice_box { background: #8a3cac; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
@@ -75,4 +94,6 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 @media (max-width: 760px) {
     .map-sidebar { position: absolute; width: min(340px, 88vw); }
     .drawing-bar { left: 64px; right: 10px; transform: none; font-size: 11px; }
+    .dialog-grid, .unifilar-flow { grid-template-columns: 1fr; }
+    .unifilar-line { width: 2px; height: 18px; margin: auto; }
 }

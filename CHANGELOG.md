@@ -11,6 +11,18 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.9.1] - 2026-07-29
+
+### Adicionado
+
+- Edição de postes, CTOs, CEOs e cabos diretamente pelos pop-ups do mapa
+- Conexão da origem e do destino do cabo aos elementos do mesmo projeto
+- Encaixe automático das pontas do cabo e acompanhamento ao mover o elemento
+- Configuração de capacidade, proporção do splitter e portas ao criar ou editar CTO
+- Cadastro persistente de splitters e portas de atendimento
+- Visualização unifilar de cada CTO com o estado individual das portas
+- Exclusão de cabos diretamente no mapa
+
 ## [0.9.0] - 2026-07-29
 
 ### Adicionado

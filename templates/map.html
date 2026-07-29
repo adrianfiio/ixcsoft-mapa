@@ -113,6 +113,7 @@
             <input name="longitude" type="hidden">
             <label>Nome<input name="name" required maxlength="180" placeholder="Nome do elemento"></label>
             <label>Código<input name="code" maxlength="100" placeholder="Código ou identificação"></label>
+            <label>Descrição<textarea name="description" rows="2" placeholder="Observações do elemento"></textarea></label>
             <label>Status
                 <select name="status">
                     <option value="no_data">Sem dados</option>
@@ -121,13 +122,28 @@
                     <option value="offline">Offline</option>
                 </select>
             </label>
+            <fieldset id="cto-fields" class="cto-fields" hidden>
+                <legend>Atendimento óptico da CTO</legend>
+                <label>Capacidade total da caixa<input name="cto_capacity" type="number" min="1" max="128" value="8"></label>
+                <div class="dialog-grid">
+                    <label>Splitter
+                        <select name="splitter_ratio">
+                            <option value="1:2">1:2</option><option value="1:4">1:4</option>
+                            <option value="1:8" selected>1:8</option><option value="1:16">1:16</option>
+                            <option value="1:32">1:32</option><option value="1:64">1:64</option>
+                        </select>
+                    </label>
+                    <label>Portas de atendimento<input name="splitter_ports" type="number" min="1" max="128" value="8"></label>
+                </div>
+                <p>As portas serão criadas automaticamente e aparecerão no unifilar.</p>
+            </fieldset>
             <footer><button class="primary-button" type="submit">Salvar no projeto</button></footer>
         </form>
     </dialog>
 
     <dialog id="cable-dialog" class="editor-dialog">
         <form id="cable-form">
-            <header><h2>Novo cabo</h2><button class="dialog-close" type="button">×</button></header>
+            <header><h2 id="cable-dialog-title">Novo cabo</h2><button class="dialog-close" type="button">×</button></header>
             <label>Nome<input name="name" required maxlength="180" placeholder="Ex.: Cabo CTO-01 → CTO-02"></label>
             <label>Código<input name="code" maxlength="100" placeholder="Ex.: CAB-001"></label>
             <label>Tipo
@@ -139,9 +155,22 @@
                 </select>
             </label>
             <label>Quantidade de fibras<input name="fiber_count" type="number" min="1" max="4096" value="12"></label>
+            <div class="dialog-grid">
+                <label>Origem<select name="origin_id"><option value="">Sem conexão</option></select></label>
+                <label>Destino<select name="destination_id"><option value="">Sem conexão</option></select></label>
+            </div>
+            <label>Descrição<textarea name="description" rows="2" placeholder="Rota, reserva técnica e observações"></textarea></label>
             <label>Modelo do cabo (opcional)<select name="cable_model_id"><option value="">Sem modelo</option></select></label>
             <footer><button class="primary-button" type="submit">Salvar cabo</button></footer>
         </form>
+    </dialog>
+
+    <dialog id="unifilar-dialog" class="editor-dialog unifilar-dialog">
+        <section>
+            <header><div><h2 id="unifilar-title">Unifilar da CTO</h2><p id="unifilar-subtitle"></p></div><button class="dialog-close" type="button">×</button></header>
+            <div id="unifilar-content"></div>
+            <footer><button class="secondary-button dialog-close" type="button">Fechar</button></footer>
+        </section>
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
