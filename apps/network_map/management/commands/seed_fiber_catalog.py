@@ -11,18 +11,18 @@ from apps.network_map.models import (
 
 
 COLORS = [
-    ("blue", "Azul", "#0066CC", "#FFFFFF"),
-    ("orange", "Laranja", "#FF7900", "#000000"),
-    ("green", "Verde", "#009B3A", "#FFFFFF"),
-    ("brown", "Marrom", "#7A3E00", "#FFFFFF"),
-    ("gray", "Cinza", "#808080", "#FFFFFF"),
+    ("green", "Verde", "#00B050", "#000000"),
+    ("yellow", "Amarelo", "#FFFF00", "#000000"),
     ("white", "Branco", "#FFFFFF", "#000000"),
-    ("red", "Vermelho", "#D00000", "#FFFFFF"),
+    ("blue", "Azul", "#00A6D6", "#000000"),
+    ("red", "Vermelho", "#FF0000", "#000000"),
+    ("violet", "Violeta", "#7030A0", "#FFFFFF"),
+    ("brown", "Marrom", "#996633", "#000000"),
+    ("pink", "Rosa", "#FF3399", "#000000"),
     ("black", "Preto", "#000000", "#FFFFFF"),
-    ("yellow", "Amarelo", "#FFD700", "#000000"),
-    ("violet", "Violeta", "#7F00FF", "#FFFFFF"),
-    ("pink", "Rosa", "#FF69B4", "#000000"),
-    ("aqua", "Aqua", "#00CED1", "#000000"),
+    ("gray", "Cinza", "#808080", "#000000"),
+    ("orange", "Laranja", "#FF9900", "#000000"),
+    ("aqua", "Água", "#00E5E5", "#000000"),
 ]
 
 
@@ -89,9 +89,9 @@ class Command(BaseCommand):
 
         standard, created = FiberColorStandard.objects.update_or_create(
             company=company,
-            code="OPTICO-12",
+            code="ABNT-12",
             defaults={
-                "name": "Padrão óptico de 12 cores",
+                "name": "Padrão ABNT de 12 cores",
                 "description": (
                     "Sequência de 12 cores para fibras e tubos ópticos."
                 ),
@@ -106,7 +106,7 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(
-            f"Padrão OPTICO-12: "
+            f"Padrão ABNT-12: "
             f"{'criado' if created else 'atualizado'}"
         )
 
