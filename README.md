@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.3 — Validação completa da interface**
+**v0.8.4 — Navegação do mapa**
 
-Esta versão garante a entrega do CSS mesmo com o Nginx legado e impede que o
-deploy seja marcado como concluído quando a interface não estiver estilizada.
+Esta versão adiciona o retorno do mapa para o dashboard e consolida a base para
+o próximo ciclo do editor visual da rede.
 
 ## Funcionalidades implementadas
 
