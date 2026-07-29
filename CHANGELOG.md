@@ -11,6 +11,24 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.14.0] - 2026-07-29
+
+### Corrigido
+
+- A mesma fibra física pode ser terminada uma vez em cada extremidade do cabo.
+- O falso conflito “fibra já utilizada” deixa de bloquear ligações em caixas diferentes.
+- Saídas dos splitters voltam a ser identificadas como `F1`, `F2` etc.
+
+### Adicionado
+
+- CPD/POP único por projeto.
+- OLT vinculada ao CPD com modo manual ou descoberta SNMP.
+- Cadastro de placas da OLT e geração das respectivas portas PON.
+- Potência de saída em dBm por porta PON.
+- Geração automática de bandeja e portas do DIO.
+- Gestão, pelo mapa, dos cabos que passam em cada poste.
+- Vínculo de CTOs e CEOs instaladas em postes.
+
 ## [0.13.2] - 2026-07-29
 
 ### Corrigido

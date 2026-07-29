@@ -14,6 +14,24 @@ class OLT(NamedModel):
         V2C = "2c", "SNMP v2c"
         V3 = "3", "SNMP v3"
 
+    class ProvisioningMode(models.TextChoices):
+        MANUAL = "manual", "Cadastro manual"
+        SNMP = "snmp", "Descoberta e coleta SNMP"
+
+    cpd = models.ForeignKey(
+        "network_map.POP",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="olts",
+        verbose_name="CPD / POP",
+    )
+    provisioning_mode = models.CharField(
+        max_length=10,
+        choices=ProvisioningMode.choices,
+        default=ProvisioningMode.MANUAL,
+        verbose_name="Forma de cadastro",
+    )
     hostname = models.CharField(max_length=120, blank=True)
     management_ip = models.GenericIPAddressField(unique=True)
     vendor = models.CharField(max_length=30, choices=Vendor.choices, default=Vendor.FIBERHOME)
@@ -40,8 +58,51 @@ class OLT(NamedModel):
         ]
 
 
+class OLTCard(TimeStampedModel):
+    olt = models.ForeignKey(OLT, on_delete=models.CASCADE, related_name="cards")
+    frame = models.PositiveSmallIntegerField(default=0)
+    slot = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=120, blank=True)
+    model = models.CharField(max_length=120, blank=True)
+    serial_number = models.CharField(max_length=120, blank=True)
+    pon_port_count = models.PositiveSmallIntegerField(default=16)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["olt", "frame", "slot"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["olt", "frame", "slot"],
+                name="unique_olt_card_slot",
+            )
+        ]
+        verbose_name = "Placa da OLT"
+        verbose_name_plural = "Placas da OLT"
+
+    def __str__(self):
+        return f"{self.olt.name} · Placa {self.frame}/{self.slot}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for number in range(1, self.pon_port_count + 1):
+            PONPort.objects.update_or_create(
+                olt=self.olt,
+                frame=self.frame,
+                slot=self.slot,
+                port=number,
+                defaults={"card": self},
+            )
+
+
 class PONPort(TimeStampedModel):
     olt = models.ForeignKey(OLT, on_delete=models.CASCADE, related_name="pon_ports")
+    card = models.ForeignKey(
+        OLTCard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pon_ports",
+    )
     frame = models.PositiveSmallIntegerField(default=0)
     slot = models.PositiveSmallIntegerField()
     port = models.PositiveSmallIntegerField()
@@ -50,6 +111,13 @@ class PONPort(TimeStampedModel):
     capacity = models.PositiveSmallIntegerField(default=128)
     status = models.CharField(max_length=20, choices=OperationalStatus.choices, default=OperationalStatus.NO_DATA)
     last_seen_at = models.DateTimeField(null=True, blank=True)
+    tx_power_dbm = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Potência de saída (dBm)",
+    )
 
     class Meta:
         ordering = ["olt", "frame", "slot", "port"]

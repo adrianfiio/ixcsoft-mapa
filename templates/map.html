@@ -212,6 +212,16 @@
         </section>
     </dialog>
 
+    <dialog id="pole-dialog" class="editor-dialog">
+        <form id="pole-form">
+            <header><h2 id="pole-dialog-title">Infraestrutura do poste</h2><button class="dialog-close" type="button">×</button></header>
+            <input name="pole_id" type="hidden">
+            <fieldset><legend>Cabos que passam pelo poste</legend><div id="pole-cables"></div></fieldset>
+            <fieldset><legend>Equipamentos instalados no poste</legend><div id="pole-equipment"></div></fieldset>
+            <footer><button class="primary-button" type="submit">Salvar infraestrutura</button></footer>
+        </form>
+    </dialog>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>

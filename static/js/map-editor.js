@@ -9,6 +9,8 @@
     const elementDialog = document.getElementById("element-dialog");
     const cableDialog = document.getElementById("cable-dialog");
     const unifilarDialog = document.getElementById("unifilar-dialog");
+    const poleDialog = document.getElementById("pole-dialog");
+    const poleForm = document.getElementById("pole-form");
     const elementForm = document.getElementById("element-form");
     const cableForm = document.getElementById("cable-form");
     const drawingBar = document.getElementById("drawing-bar");
@@ -351,10 +353,10 @@
             const trayNodes = element.splice_box.trays.map((tray, index) => {
                 const position = layout[`tray-${tray.id}`] || { x: 470, y: 40 + index * 155 };
                 return `<div class="tray-node graph-node" data-node-key="tray-${tray.id}" data-tray-id="${tray.id}" style="left:${position.x}px;top:${position.y}px"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)} <span class="drag-grip">⋮⋮</span></strong><span>${tray.splice_count} fusões</span>
-                ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || ""}" data-splitter-id="${splitter.id}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id ? "linked" : ""}" data-linked="${port.output_fiber_id || ""}" data-port-id="${port.id}" title="Saída ${port.number} do splitter">S${port.number}</button>`).join("")}</div><div class="splitter-actions"><button type="button" data-edit-tray-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-tray-splitter="${splitter.id}">×</button></div></div>`).join("")}
+                ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || ""}" data-splitter-id="${splitter.id}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id ? "linked" : ""}" data-linked="${port.output_fiber_id || ""}" data-port-id="${port.id}" title="Fibra ${port.number} de saída do splitter">F${port.number}</button>`).join("")}</div><div class="splitter-actions"><button type="button" data-edit-tray-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-tray-splitter="${splitter.id}">×</button></div></div>`).join("")}
                 <button type="button" class="add-splitter-button" data-add-tray-splitter="${tray.id}">+ Splitter</button></div>`;
             }).join("");
-            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique numa bandeja para selecioná-la e em duas portas para ligar. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">S indica uma saída do splitter. F indica uma fibra do cabo.</div></div>
+            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique numa bandeja para selecioná-la e em duas fibras para ligar. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
                 <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${trayNodes}</div></div>`;
             let draggedFiber = null;
             let selectedFiber = null;
@@ -739,6 +741,18 @@
         document.getElementById("edit-geometry-button").hidden = false;
         cableDialog.showModal();
     }
+    async function managePole(id) {
+        const data = await api(`/api/map/elements/${id}/pole/`);
+        poleForm.elements.pole_id.value = id;
+        document.getElementById("pole-dialog-title").textContent = `Infraestrutura · ${data.pole.name}`;
+        document.getElementById("pole-cables").innerHTML = data.cables.map((item) =>
+            `<label class="layer-option"><input type="checkbox" name="cable_ids" value="${item.id}" ${item.selected ? "checked" : ""}> ${escapeHtml(item.name)}</label>`
+        ).join("") || "<p>Nenhum cabo no projeto.</p>";
+        document.getElementById("pole-equipment").innerHTML = data.equipment.map((item) =>
+            `<label class="layer-option"><input type="checkbox" name="equipment_ids" value="${item.id}" ${item.selected ? "checked" : ""}> ${escapeHtml(item.name)} · ${escapeHtml(item.type.toUpperCase())}</label>`
+        ).join("") || "<p>Nenhuma CTO ou CEO no projeto.</p>";
+        poleDialog.showModal();
+    }
     function nearestElement(latlng) {
         let match = null;
         let distance = 36;
@@ -808,7 +822,7 @@
         elements.features.forEach((feature) => {
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
-            const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
+            const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
                 const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: canEdit });
                 marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
@@ -834,6 +848,7 @@
                 marker.on("popupopen", () => {
                     popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-manage-pole="${p.id}"]`, () => managePole(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-delete-element="${p.id}"]`, () => deleteElement(p.id).catch((error) => notify(error.message, true)));
                 });
                 if (canEdit) marker.on("dragend", async () => {
@@ -1036,6 +1051,22 @@
         try {
             const data = await api("/api/map/projects/", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(event.target))) });
             projectDialog.close(); await loadProjects(data.project.id); await loadStructure(); notify("Projeto criado. Agora você pode adicionar a estrutura.");
+        } catch (error) { notify(error.message, true); }
+    };
+    poleForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const checked = (name) => [...poleForm.querySelectorAll(`[name="${name}"]:checked`)].map((item) => Number(item.value));
+        try {
+            await api(`/api/map/elements/${poleForm.elements.pole_id.value}/pole/`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    cable_ids: checked("cable_ids"),
+                    equipment_ids: checked("equipment_ids"),
+                }),
+            });
+            poleDialog.close();
+            await loadStructure();
+            notify("Infraestrutura do poste atualizada.");
         } catch (error) { notify(error.message, true); }
     };
     elementForm.onsubmit = async (event) => {

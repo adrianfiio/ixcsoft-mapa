@@ -1,17 +1,29 @@
 from django.contrib import admin
-from .models import OLT, PONPort, ONU, ONUSignalHistory
+from .models import OLT, OLTCard, PONPort, ONU, ONUSignalHistory
+
+
+class OLTCardInline(admin.TabularInline):
+    model = OLTCard
+    extra = 1
 
 
 @admin.register(OLT)
 class OLTAdmin(admin.ModelAdmin):
-    list_display = ("name", "management_ip", "vendor", "model", "status", "enabled", "last_poll_at")
-    list_filter = ("vendor", "status", "enabled")
+    list_display = ("name", "cpd", "provisioning_mode", "management_ip", "vendor", "model", "status", "enabled", "last_poll_at")
+    list_filter = ("cpd", "provisioning_mode", "vendor", "status", "enabled")
     search_fields = ("name", "management_ip", "hostname", "model", "serial_number")
+    inlines = [OLTCardInline]
+
+
+@admin.register(OLTCard)
+class OLTCardAdmin(admin.ModelAdmin):
+    list_display = ("olt", "frame", "slot", "name", "model", "pon_port_count", "enabled")
+    list_filter = ("olt", "enabled")
 
 
 @admin.register(PONPort)
 class PONPortAdmin(admin.ModelAdmin):
-    list_display = ("olt", "frame", "slot", "port", "status", "capacity", "last_seen_at")
+    list_display = ("olt", "card", "frame", "slot", "port", "tx_power_dbm", "status", "capacity", "last_seen_at")
     list_filter = ("olt", "status")
     search_fields = ("olt__name", "interface_name", "description")
 

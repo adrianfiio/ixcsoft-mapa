@@ -9,6 +9,8 @@ from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 from apps.access.models import AccessPoint
 from apps.core.crypto import SecretCipher
@@ -22,6 +24,8 @@ from apps.network_map.models import (
     FiberSplice,
     NetworkElement,
     NetworkProject,
+    PoleCableAttachment,
+    PoleEquipmentAttachment,
     SpliceTray,
     SpliceTraySplitter,
     SpliceTraySplitterPort,
@@ -127,6 +131,56 @@ def google_satellite_tile(request, z, x, y):
     )
     tile["Cache-Control"] = response.headers.get("Cache-Control", "private, max-age=0")
     return tile
+
+
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def pole_infrastructure(request, element_id):
+    pole = get_object_or_404(
+        NetworkElement,
+        pk=element_id,
+        element_type=NetworkElement.ElementType.POLE,
+    )
+    project_cables = FiberCable.objects.filter(project=pole.project).order_by("name")
+    project_equipment = NetworkElement.objects.filter(
+        project=pole.project,
+        element_type__in=[
+            NetworkElement.ElementType.CTO,
+            NetworkElement.ElementType.SPLICE_BOX,
+        ],
+    ).exclude(pk=pole.pk).order_by("name")
+    if request.method == "PUT":
+        cable_ids = {int(value) for value in request.data.get("cable_ids", [])}
+        equipment_ids = {int(value) for value in request.data.get("equipment_ids", [])}
+        valid_cables = set(project_cables.filter(pk__in=cable_ids).values_list("id", flat=True))
+        valid_equipment = set(project_equipment.filter(pk__in=equipment_ids).values_list("id", flat=True))
+        if cable_ids != valid_cables or equipment_ids != valid_equipment:
+            return JsonResponse({"error": "Há itens que não pertencem ao projeto."}, status=400)
+        with transaction.atomic():
+            pole.cable_attachments.exclude(cable_id__in=cable_ids).delete()
+            for sequence, cable_id in enumerate(sorted(cable_ids), start=1):
+                PoleCableAttachment.objects.update_or_create(
+                    pole=pole, cable_id=cable_id, defaults={"sequence": sequence}
+                )
+            pole.equipment_attachments.exclude(equipment_id__in=equipment_ids).delete()
+            for equipment in project_equipment.filter(pk__in=equipment_ids):
+                PoleEquipmentAttachment.objects.update_or_create(
+                    equipment=equipment, defaults={"pole": pole}
+                )
+                if pole.point:
+                    equipment.point = pole.point
+                    equipment.save(update_fields=["point", "updated_at"])
+    return JsonResponse({
+        "pole": {"id": pole.id, "name": pole.name, "code": pole.code},
+        "cables": [
+            {"id": cable.id, "name": cable.name, "selected": cable.pole_attachments.filter(pole=pole).exists()}
+            for cable in project_cables
+        ],
+        "equipment": [
+            {"id": item.id, "name": item.name, "type": item.element_type, "selected": PoleEquipmentAttachment.objects.filter(pole=pole, equipment=item).exists()}
+            for item in project_equipment
+        ],
+    })
 
 
 def get_first_value(instance, field_names, default=None):
@@ -1433,7 +1487,18 @@ def splice_box_fibers(request, element_id, splice_id=None):
         fibers = [splice.input_fiber, splice.output_fiber]
         splice.delete()
         for fiber in fibers:
-            fiber.status = FiberStrand.Status.FREE
+            still_connected = (
+                FiberSplice.objects.filter(
+                    Q(input_fiber=fiber) | Q(output_fiber=fiber)
+                ).exists()
+                or SpliceTraySplitter.objects.filter(input_fiber=fiber).exists()
+                or SpliceTraySplitterPort.objects.filter(output_fiber=fiber).exists()
+            )
+            fiber.status = (
+                FiberStrand.Status.USED
+                if still_connected
+                else FiberStrand.Status.FREE
+            )
             fiber.save(update_fields=["status", "updated_at"])
         return JsonResponse({"success": True})
     connected = FiberCable.objects.filter(
@@ -1442,15 +1507,23 @@ def splice_box_fibers(request, element_id, splice_id=None):
 
     def fiber_is_connected(fiber, exclude_splitter=None, exclude_port=None):
         if FiberSplice.objects.filter(
+            splice_box=element,
+        ).filter(
             Q(input_fiber=fiber) | Q(output_fiber=fiber)
         ).exists():
             return True
-        splitter_links = SpliceTraySplitter.objects.filter(input_fiber=fiber)
+        splitter_links = SpliceTraySplitter.objects.filter(
+            tray__splice_box=element,
+            input_fiber=fiber,
+        )
         if exclude_splitter is not None:
             splitter_links = splitter_links.exclude(pk=exclude_splitter)
         if splitter_links.exists():
             return True
-        port_links = SpliceTraySplitterPort.objects.filter(output_fiber=fiber)
+        port_links = SpliceTraySplitterPort.objects.filter(
+            splitter__tray__splice_box=element,
+            output_fiber=fiber,
+        )
         if exclude_port is not None:
             port_links = port_links.exclude(pk=exclude_port)
         return port_links.exists()
@@ -1779,26 +1852,15 @@ def delete_fiber_cable(request, cable_id):
 
     for fiber in cable.fibers.all():
         for relation_name in (
-            "splice_input",
-            "splice_output",
+            "splice_inputs",
+            "splice_outputs",
         ):
-            try:
-                splice = getattr(
-                    fiber,
-                    relation_name,
+            for splice in getattr(fiber, relation_name).all():
+                splice_key = (
+                    splice._meta.label_lower,
+                    splice.pk,
                 )
-            except ObjectDoesNotExist:
-                continue
-
-            if splice is None:
-                continue
-
-            splice_key = (
-                splice._meta.label_lower,
-                splice.pk,
-            )
-
-            splice_objects[splice_key] = splice
+                splice_objects[splice_key] = splice
 
     splice_count = len(splice_objects)
 
@@ -2035,14 +2097,8 @@ def cable_fibers(request, cable_id):
                         "hex": fiber.color.hex_color,
                         "text": fiber.color.text_color,
                     },
-                    "has_input_splice": hasattr(
-                        fiber,
-                        "splice_input",
-                    ),
-                    "has_output_splice": hasattr(
-                        fiber,
-                        "splice_output",
-                    ),
+                    "has_input_splice": fiber.splice_inputs.exists(),
+                    "has_output_splice": fiber.splice_outputs.exists(),
                 }
             )
 
