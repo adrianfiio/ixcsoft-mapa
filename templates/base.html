@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07111f">
+    <title>{% block title %}IXCSoft Mapa{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="app-sidebar" id="app-sidebar">
+            <a class="brand" href="{% url 'dashboard' %}">
+                <span class="brand-mark">IX</span>
+                <span>
+                    <strong>IXCSoft Mapa</strong>
+                    <small>Operação FTTH</small>
+                </span>
+            </a>
+
+            <nav class="main-nav" aria-label="Navegação principal">
+                <a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                   href="{% url 'dashboard' %}">
+                    <span class="nav-icon">▦</span> Visão geral
+                </a>
+                <a class="{% if request.resolver_match.url_name == 'map' %}active{% endif %}"
+                   href="{% url 'map' %}">
+                    <span class="nav-icon">⌖</span> Mapa operacional
+                </a>
+                <a class="{% if 'equipment' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'equipment-list' %}">
+                    <span class="nav-icon">◇</span> Equipamentos
+                </a>
+                <a href="/admin/olt_integration/olt/">
+                    <span class="nav-icon">⌁</span> OLTs e ONUs
+                </a>
+                <a href="/admin/ixc_integration/ixccustomer/">
+                    <span class="nav-icon">◎</span> Clientes IXC
+                </a>
+                <a href="/admin/alerts/alertevent/">
+                    <span class="nav-icon">!</span> Alertas
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span class="system-dot"></span>
+                <span>
+                    <strong>Plataforma ativa</strong>
+                    <small>v{{ app_version|default:"0.7.0" }}</small>
+                </span>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-topbar">
+                <button class="menu-toggle" id="menu-toggle" type="button"
+                        aria-label="Abrir menu" aria-controls="app-sidebar">☰</button>
+                <div>
+                    <strong>{% block topbar_title %}Central de operações{% endblock %}</strong>
+                    <span class="topbar-subtitle">{% now "d \d\e F, H:i" %}</span>
+                </div>
+                <div class="topbar-actions">
+                    <a class="topbar-link" href="/api/docs/">API</a>
+                    <a class="user-chip" href="/admin/" title="Administração">AD</a>
+                </div>
+            </header>
+
+            <main class="{% block main_class %}page-content{% endblock %}">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script>
+        const menuToggle = document.getElementById("menu-toggle");
+        const sidebar = document.getElementById("app-sidebar");
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

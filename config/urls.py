@@ -1,15 +1,13 @@
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+from apps.core.views import DashboardView
 
 
 urlpatterns = [
-    path(
-        "",
-        TemplateView.as_view(template_name="dashboard.html"),
-        name="dashboard",
-    ),
+    path("", DashboardView.as_view(), name="dashboard"),
+    path("mapa/", DashboardView.as_view(template_name="map.html"), name="map"),
     path("admin/", admin.site.urls),
     path("api/", include("apps.core.urls")),
     path("api/ixc/", include("apps.ixc_integration.api.urls")),

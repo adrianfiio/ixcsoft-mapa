@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.7.0 — Infraestrutura óptica e base GIS**
+**v0.8.0 — Dashboard operacional**
 
-Esta versão consolida a integração inicial com o IXCSoft, a modelagem da rede
-óptica, o editor de equipamentos e a primeira interface geográfica com Leaflet.
+Esta versão adiciona a visão geral operacional com dados reais, navegação
+responsiva e uma página dedicada para o mapa geográfico.
 
 ## Funcionalidades implementadas
 
@@ -71,17 +71,14 @@ Esta versão consolida a integração inicial com o IXCSoft, a modelagem da rede
 
 ## Estado atual da interface
 
-O mapa operacional está disponível na página inicial e já consome a API
-GeoJSON. A interface administrativa anterior foi substituída durante a
-implementação do mapa.
+O dashboard operacional está disponível na página inicial e apresenta
+indicadores reais de acessos, clientes, infraestrutura, OLTs, ONUs e alertas.
+O mapa permanece integrado à API GeoJSON em uma página própria, disponível em
+`/mapa/`.
 
-O próximo ciclo do frontend será:
-
-1. criar um layout base reutilizável;
-2. reconstruir o dashboard de visão geral;
-3. manter o mapa em uma página própria;
-4. integrar a navegação de equipamentos, OLTs, CTOs, clientes e alertas;
-5. alimentar os cards do dashboard com dados reais.
+A navegação principal reúne os acessos ao dashboard, mapa, equipamentos, OLTs,
+ONUs, clientes e alertas. O próximo ciclo do frontend será integrar as telas de
+cadastro ao novo layout compartilhado.
 
 ## Funcionalidades pendentes
 
@@ -94,7 +91,7 @@ O próximo ciclo do frontend será:
 - Integração com Zabbix
 - Dashboards no Grafana
 - Importação de KML e KMZ
-- Reconstrução do dashboard administrativo
+- Integração das telas de cadastro ao layout do dashboard
 - Ampliação dos testes automatizados
 
 ## Arquitetura
@@ -193,7 +190,8 @@ O proxy reverso deve encaminhar `X-Forwarded-Proto: https`.
 
 ## Endpoints principais
 
-- Interface atual/mapa: `/`
+- Dashboard: `/`
+- Mapa operacional: `/mapa/`
 - Administração: `/admin/`
 - Equipamentos: `/rede/equipamentos/`
 - Swagger: `/api/docs/`

@@ -6,13 +6,25 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
 ### Planejado
 
-- Reconstruir o dashboard administrativo
-- Separar o dashboard e o mapa em páginas próprias
-- Criar um layout base compartilhado
-- Alimentar os indicadores do dashboard com dados reais
+- Integrar as telas de equipamentos ao novo layout compartilhado
 - Implementar coleta SNMP real em OLTs FiberHome
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
+
+## [0.8.0] - 2026-07-29
+
+### Adicionado
+
+- Dashboard operacional com indicadores reais de acessos, infraestrutura,
+  clientes, OLTs, ONUs e alertas
+- Layout base responsivo com navegação para os módulos principais
+- Página própria para o mapa operacional em `/mapa/`
+- Resumo da última sincronização com o IXCSoft
+
+### Alterado
+
+- Página inicial restaurada como visão geral da operação
+- Mapa deixou de ocupar temporariamente a rota inicial
 
 ## [0.7.0] - 2026-07-29
 
