@@ -278,7 +278,7 @@
             const [longitude, latitude] = feature.geometry.coordinates;
             [clientLayers[status], clientPlainLayers[status]].forEach((layer) => {
                 const marker = L.marker([latitude, longitude], { icon: clientIcon(status) });
-                marker.bindPopup(`<strong>${escapeHtml(p.cliente || "Cliente")}</strong><br>${escapeHtml(p.login || "")}<br>Status: ${escapeHtml(status)}<br>CTO: ${escapeHtml(p.cto || "-")}`);
+                marker.bindPopup(`<strong>${escapeHtml(p.cliente || "Cliente")}</strong><br>PPPoE: ${escapeHtml(p.login || "-")}<br>Status: ${escapeHtml(status)}<br>CTO: ${escapeHtml(p.cto || "-")}<br>Porta da CTO: ${escapeHtml(p.porta_ftth || "-")}<br>ONU: ${escapeHtml(p.onu_number || p.onu || "-")}<br>SN da ONU: ${escapeHtml(p.onu_serial || p.onu || "-")}`);
                 layer.addLayer(marker);
             });
         });
@@ -286,14 +286,16 @@
         document.getElementById("client-count").textContent = data.count || data.features.length;
     }
     function networkIcon(type) {
-        const labels = { cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO" };
+        const labels = { cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO", rack: "RACK", tower: "TORRE" };
         const symbols = {
             pole: '<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 7h18M12 2v23M6 25h12M7 7l5 6 5-6M8 17h8"></path></svg>',
             cto: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="12" rx="2"></rect><path d="M7 6h10M7 10h10M7 14v3m5-3v3m5-3v3"></path></svg><small>CTO</small>',
             splice_box: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CEO</small>',
             olt: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>OLT</small>',
+            rack: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M8 6h8M8 11h8M8 16h8"></path></svg><small>RACK</small>',
+            tower: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 6 22m6-20 6 20M8 15h8M9 10h6M5 22h14"></path></svg><small>TORRE</small>',
         };
-        const large = ["cto", "splice_box", "olt"].includes(type);
+        const large = ["cto", "splice_box", "olt", "rack", "tower"].includes(type);
         return L.divIcon({
             className: "",
             html: `<div class="network-marker ${type}">${symbols[type] || labels[type] || "•"}</div>`,
@@ -404,8 +406,12 @@
         });
         const isCto = element.element_type === "cto";
         const isCeo = element.element_type === "splice_box";
+        const isContainer = ["rack", "tower"].includes(element.element_type);
         document.getElementById("cto-fields").hidden = !isCto;
         document.getElementById("ceo-fields").hidden = !isCeo;
+        document.getElementById("container-fields").hidden = !isContainer;
+        document.getElementById("container-fields-title").textContent = element.element_type === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
+        elementForm.elements.internal_equipment_text.value = (element.internal_equipment || []).join("\n");
         if (isCto && element.cto) {
             const splitter = element.cto.splitters[0];
             elementForm.elements.cto_capacity.value = element.cto.capacity || 8;
@@ -1178,9 +1184,11 @@
         elementForm.elements.longitude.value = event.latlng.lng;
         document.getElementById("cto-fields").hidden = state.tool !== "cto";
         document.getElementById("ceo-fields").hidden = state.tool !== "splice_box";
+        document.getElementById("container-fields").hidden = !["rack", "tower"].includes(state.tool);
+        document.getElementById("container-fields-title").textContent = state.tool === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
         populateSplitterCables(null);
         loadSplitterFibers("");
-        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", olt: "Nova OLT" };
+        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", rack: "Novo rack", tower: "Nova torre" };
         document.getElementById("element-dialog-title").textContent = titles[state.tool] || "Novo elemento";
         elementDialog.showModal();
     });
@@ -1272,6 +1280,9 @@
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
+        payload.internal_equipment = String(payload.internal_equipment_text || "")
+            .split("\n").map((item) => item.trim()).filter(Boolean);
+        delete payload.internal_equipment_text;
         if (!payload.splitter_input_cable_id) delete payload.splitter_input_cable_id;
         if (!payload.splitter_input_fiber_id) delete payload.splitter_input_fiber_id;
         payload.project = state.projectId; payload.enabled = true;

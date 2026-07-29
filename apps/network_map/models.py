@@ -79,6 +79,11 @@ class NetworkElement(CompanyScopedModel, NamedModel):
         SPLICE_BOX = "splice_box", "Caixa de emenda"
         CTO = "cto", "CTO"
         POLE = "pole", "Poste"
+        RACK = "rack", "Rack"
+        TOWER = "tower", "Torre"
+        SWITCH = "switch", "Switch"
+        ACCESS_POINT = "access_point", "Access point"
+        PTP = "ptp", "Rádio PTP"
         CABINET = "cabinet", "Armário"
         OTHER = "other", "Outro"
 

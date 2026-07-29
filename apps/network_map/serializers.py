@@ -130,6 +130,11 @@ class NetworkElementSerializer(serializers.ModelSerializer):
     ceo_tray_count = serializers.IntegerField(write_only=True, required=False, min_value=1, max_value=24, default=1)
     ceo_splitters_per_tray = serializers.IntegerField(write_only=True, required=False, min_value=0, max_value=8, default=0)
     ceo_splitter_ratio = serializers.ChoiceField(write_only=True, required=False, choices=CTOSplitter.Ratio.choices, default=CTOSplitter.Ratio.ONE_TO_8)
+    internal_equipment = serializers.ListField(
+        child=serializers.CharField(max_length=180),
+        write_only=True,
+        required=False,
+    )
 
     latitude = serializers.FloatField(
         write_only=True,
@@ -165,6 +170,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             "ceo_tray_count",
             "ceo_splitters_per_tray",
             "ceo_splitter_ratio",
+            "internal_equipment",
         ]
 
 
@@ -180,6 +186,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         ceo_tray_count = validated_data.pop("ceo_tray_count", 1)
         ceo_splitters = validated_data.pop("ceo_splitters_per_tray", 0)
         ceo_ratio = validated_data.pop("ceo_splitter_ratio", CTOSplitter.Ratio.ONE_TO_8)
+        internal_equipment = validated_data.pop("internal_equipment", [])
 
         latitude = validated_data.pop(
             "latitude",
@@ -220,6 +227,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             return cto
 
         element = NetworkElement.objects.create(**validated_data)
+        if internal_equipment:
+            element.metadata = {**element.metadata, "internal_equipment": internal_equipment}
+            element.save(update_fields=["metadata", "updated_at"])
         if element.element_type == NetworkElement.ElementType.SPLICE_BOX:
             sync_splice_box(element, ceo_tray_count, ceo_splitters, ceo_ratio)
         return element
@@ -234,6 +244,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         ceo_tray_count = validated_data.pop("ceo_tray_count", None)
         ceo_splitters = validated_data.pop("ceo_splitters_per_tray", None)
         ceo_ratio = validated_data.pop("ceo_splitter_ratio", None)
+        internal_equipment = validated_data.pop("internal_equipment", None)
 
         latitude = validated_data.pop(
             "latitude",
@@ -263,6 +274,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
 
 
         instance.save()
+        if internal_equipment is not None:
+            instance.metadata = {**instance.metadata, "internal_equipment": internal_equipment}
+            instance.save(update_fields=["metadata", "updated_at"])
 
         if isinstance(instance, CTO):
             cto = instance
