@@ -93,6 +93,10 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { background: #1261a0; }.network-marker.splice_box { background: #8a3cac; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
 .client-dot.online { background: #22c55e; }.client-dot.offline { background: #ef476f; }.client-dot.unknown { background: #f5b942; }
+.reserve-marker { display: grid; place-items: center; width: 32px; height: 32px; color: #111827; background: #f7b731; border: 3px double #111827; border-radius: 50%; box-shadow: 0 2px 9px rgba(0,0,0,.45); font-size: 20px; font-weight: 900; }
+.geometry-handle { width: 16px; height: 16px; background: #2dd4bf; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 7px rgba(0,0,0,.5); }
+.cable-footer { align-items: center; justify-content: space-between !important; gap: 12px; }
+.cable-footer .secondary-button { width: auto; margin: 0; }
 @media (max-width: 760px) {
     .map-sidebar { position: absolute; width: min(340px, 88vw); }
     .drawing-bar { left: 64px; right: 10px; transform: none; font-size: 11px; }

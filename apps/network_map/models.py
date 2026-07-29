@@ -279,6 +279,26 @@ class FiberCable(CompanyScopedModel, NamedModel):
         ordering = ["name"]
 
 
+class CableReserve(TimeStampedModel):
+    cable = models.ForeignKey(
+        FiberCable,
+        on_delete=models.CASCADE,
+        related_name="reserves",
+    )
+    point = models.PointField(srid=4326)
+    length_m = models.DecimalField(max_digits=8, decimal_places=2)
+    label = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["cable", "id"]
+        verbose_name = "Reserva técnica"
+        verbose_name_plural = "Reservas técnicas"
+
+    def __str__(self):
+        return f"{self.cable.name} · {self.length_m} m"
+
+
 class NetworkDependency(TimeStampedModel):
     upstream = models.ForeignKey(
         NetworkElement,

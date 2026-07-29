@@ -11,6 +11,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.9.3] - 2026-07-29
+
+### Adicionado
+
+- Edição do traçado por vértices arrastáveis diretamente no mapa
+- Encaixe automático das pontas em CTOs, CEOs e demais elementos próximos
+- Reserva técnica posicionada no mapa com metragem identificada
+- Símbolo próprio de bobina para reservas
+- Sequência de cores ABNT: verde, amarelo, branco, azul, vermelho, violeta, marrom, rosa, preto, cinza, laranja e água
+
+### Alterado
+
+- Catálogos ópticos existentes são migrados para a ordem ABNT
+
 ## [0.9.2] - 2026-07-29
 
 ### Adicionado

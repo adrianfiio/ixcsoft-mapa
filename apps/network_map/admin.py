@@ -3,6 +3,7 @@ from django.contrib.gis.admin import GISModelAdmin
 
 from .models import (
     CableModel,
+    CableReserve,
     CTO,
     CTOSplitter,
     CTOSplitterPort,
@@ -178,6 +179,13 @@ class FiberCableAdmin(GISModelAdmin):
         FiberTubeInline,
         FiberStrandInline,
     ]
+
+
+@admin.register(CableReserve)
+class CableReserveAdmin(GISModelAdmin):
+    list_display = ("cable", "length_m", "label", "updated_at")
+    search_fields = ("cable__name", "cable__code", "label")
+    autocomplete_fields = ("cable",)
 
 
 admin.site.register(NetworkDependency)

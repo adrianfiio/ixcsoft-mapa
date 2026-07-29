@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET
 from apps.access.models import AccessPoint
 from apps.network_map.models import (
     CableModel,
+    CableReserve,
     CTO,
     FiberCable,
     FiberStrand,
@@ -417,6 +418,16 @@ def fiber_cables_geojson(request):
                         if cable.destination
                         else None
                     ),
+                    "reservas": [
+                        {
+                            "id": reserve.id,
+                            "latitude": reserve.point.y,
+                            "longitude": reserve.point.x,
+                            "metragem": float(reserve.length_m),
+                            "label": reserve.label,
+                        }
+                        for reserve in cable.reserves.all()
+                    ],
                 },
             }
         )
@@ -1082,7 +1093,52 @@ def cable_detail_payload(cable):
             "type": "MultiLineString",
             "coordinates": cable.geometry.coords,
         },
+        "reserves": [
+            {
+                "id": reserve.id,
+                "latitude": reserve.point.y,
+                "longitude": reserve.point.x,
+                "length_m": float(reserve.length_m),
+                "label": reserve.label,
+            }
+            for reserve in cable.reserves.all()
+        ],
     }
+
+
+@api_view(["GET", "POST", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def cable_reserves(request, cable_id, reserve_id=None):
+    cable = get_object_or_404(FiberCable, pk=cable_id)
+    reserve = None
+    if reserve_id is not None:
+        reserve = get_object_or_404(CableReserve, pk=reserve_id, cable=cable)
+    if request.method == "GET":
+        return JsonResponse({"success": True, "reserves": cable_detail_payload(cable)["reserves"]})
+    if request.method == "DELETE":
+        reserve.delete()
+        return JsonResponse({"success": True})
+    try:
+        latitude = float(request.data.get("latitude"))
+        longitude = float(request.data.get("longitude"))
+        length_m = float(request.data.get("length_m"))
+        if not (0 < length_m <= 100000):
+            raise ValueError
+    except (TypeError, ValueError):
+        return JsonResponse({"success": False, "error": "Coordenadas e metragem da reserva são obrigatórias."}, status=400)
+    values = {
+        "point": Point(longitude, latitude, srid=4326),
+        "length_m": length_m,
+        "label": str(request.data.get("label", "")).strip(),
+        "notes": str(request.data.get("notes", "")).strip(),
+    }
+    if reserve is None:
+        reserve = CableReserve.objects.create(cable=cable, **values)
+    else:
+        for field, value in values.items():
+            setattr(reserve, field, value)
+        reserve.save()
+    return JsonResponse({"success": True, "reserve": {"id": reserve.id}}, status=201 if request.method == "POST" else 200)
 
 
 @api_view(["GET", "PATCH", "DELETE"])

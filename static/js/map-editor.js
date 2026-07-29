@@ -16,6 +16,7 @@
         projectId: null, projects: [], elements: [], tool: null,
         cableCoordinates: [], drawingLine: null,
         editingElementId: null, editingCableId: null,
+        geometryCableId: null, geometryHandles: [], reserveCableId: null,
     };
 
     const map = L.map("map", { preferCanvas: true }).setView([-24.45, -50.62], 10);
@@ -204,7 +205,46 @@
         });
         cableForm.elements.cable_model_id.disabled = true;
         document.getElementById("cable-dialog-title").textContent = `Editar ${cable.name}`;
+        document.getElementById("edit-geometry-button").hidden = false;
         cableDialog.showModal();
+    }
+    function nearestElement(latlng) {
+        let match = null;
+        let distance = 36;
+        state.elements.forEach((feature) => {
+            const point = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
+            const pixels = map.latLngToContainerPoint(latlng).distanceTo(map.latLngToContainerPoint(point));
+            if (pixels < distance) { distance = pixels; match = feature; }
+        });
+        return match;
+    }
+    async function startGeometryEdit() {
+        const data = await api(`/api/map/cables/${state.editingCableId}/`);
+        cableDialog.close();
+        clearTool();
+        state.geometryCableId = data.cable.id;
+        state.tool = "geometry";
+        const coordinates = data.cable.geometry.coordinates[0];
+        state.drawingLine = L.polyline(coordinates.map((p) => [p[1], p[0]]), { color: "#2dd4bf", weight: 5 }).addTo(map);
+        state.geometryHandles = coordinates.map((p, index) => {
+            const handle = L.marker([p[1], p[0]], {
+                draggable: true,
+                icon: L.divIcon({ className: "", html: '<div class="geometry-handle"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }),
+            }).addTo(map);
+            handle.on("drag", () => {
+                const endpoint = index === 0 || index === state.geometryHandles.length - 1;
+                const near = endpoint ? nearestElement(handle.getLatLng()) : null;
+                if (near) {
+                    const coords = near.geometry.coordinates;
+                    handle.setLatLng([coords[1], coords[0]]);
+                }
+                state.drawingLine.setLatLngs(state.geometryHandles.map((item) => item.getLatLng()));
+            });
+            return handle;
+        });
+        drawingBar.hidden = false;
+        drawingBar.querySelector("span").textContent = "Arraste os pontos. As pontas encaixam nos elementos próximos.";
+        notify("Movendo o traçado do cabo.");
     }
     async function loadStructure(fit = false) {
         structureLayer.clearLayers();
@@ -245,13 +285,23 @@
         cables.features.forEach((feature) => {
             const p = feature.properties;
             const line = L.geoJSON(feature, { style: { color: selectedProject()?.color || "#2dd4bf", weight: 4, opacity: .86 } });
-            const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
+            const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
             line.on("popupopen", () => {
                 popupAction(`[data-edit-cable="${p.id}"]`, () => editCable(p.id).catch((error) => notify(error.message, true)));
                 popupAction(`[data-delete-cable="${p.id}"]`, () => deleteCable(p.id).catch((error) => notify(error.message, true)));
+                popupAction(`[data-reserve-cable="${p.id}"]`, () => {
+                    map.closePopup(); clearTool(); state.tool = "reserve"; state.reserveCableId = p.id;
+                    notify("Clique no ponto do cabo onde ficará a reserva.");
+                });
             });
             line.addTo(structureLayer);
+            (p.reservas || []).forEach((reserve) => {
+                const marker = L.marker([reserve.latitude, reserve.longitude], {
+                    icon: L.divIcon({ className: "", html: '<div class="reserve-marker">↻</div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
+                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}`);
+                marker.addTo(structureLayer);
+            });
             line.getLayers().forEach((part) => part.getLatLngs().flat(Infinity).forEach((point) => bounds.push([point.lat, point.lng])));
         });
         routes.features.forEach((feature) => {
@@ -282,6 +332,9 @@
         state.tool = null;
         state.cableCoordinates = [];
         if (state.drawingLine) map.removeLayer(state.drawingLine);
+        state.geometryHandles.forEach((handle) => map.removeLayer(handle));
+        state.geometryHandles = [];
+        state.geometryCableId = null;
         state.drawingLine = null;
         drawingBar.hidden = true;
         map.getContainer().style.cursor = "";
@@ -289,6 +342,17 @@
     }
     map.on("click", (event) => {
         if (!state.tool) return;
+        if (state.tool === "reserve") {
+            const length = Number(prompt("Quantos metros possui esta reserva técnica?", "20"));
+            if (!length || length <= 0) return notify("Informe uma metragem válida.", true);
+            api(`/api/map/cables/${state.reserveCableId}/reserves/`, {
+                method: "POST",
+                body: JSON.stringify({ latitude: event.latlng.lat, longitude: event.latlng.lng, length_m: length }),
+            }).then(() => { clearTool(); loadStructure(); notify(`Reserva de ${length} m adicionada.`); })
+              .catch((error) => notify(error.message, true));
+            return;
+        }
+        if (state.tool === "geometry") return;
         if (state.tool === "cable") {
             state.cableCoordinates.push([event.latlng.lng, event.latlng.lat]);
             state.drawingLine.addLatLng(event.latlng);
@@ -344,11 +408,25 @@
         loadSplitterFibers(event.target.value).catch((error) => notify(error.message, true));
     };
     document.getElementById("finish-drawing").onclick = () => {
+        if (state.tool === "geometry") {
+            const cableId = state.geometryCableId;
+            const points = state.geometryHandles.map((handle) => handle.getLatLng());
+            const coordinates = points.map((point) => [point.lng, point.lat]);
+            const origin = nearestElement(points[0]);
+            const destination = nearestElement(points[points.length - 1]);
+            api(`/api/map/cables/${cableId}/geometry/`, { method: "PATCH", body: JSON.stringify({ coordinates }) })
+                .then(() => api(`/api/map/cables/${cableId}/`, { method: "PATCH", body: JSON.stringify({ origin_id: origin?.properties.id || "", destination_id: destination?.properties.id || "" }) }))
+                .then(() => { clearTool(); loadStructure(); notify("Traçado movido e pontas conectadas."); })
+                .catch((error) => notify(error.message, true));
+            return;
+        }
         if (state.cableCoordinates.length < 2) return notify("O cabo precisa de pelo menos dois pontos.", true);
         state.editingCableId = null; cableForm.reset(); populateConnectionSelects(); cableForm.elements.cable_model_id.disabled = false;
+        document.getElementById("edit-geometry-button").hidden = true;
         document.getElementById("cable-dialog-title").textContent = "Novo cabo";
         cableDialog.showModal();
     };
+    document.getElementById("edit-geometry-button").onclick = () => startGeometryEdit().catch((error) => notify(error.message, true));
     document.getElementById("cancel-drawing").onclick = () => { clearTool(); notify("Desenho cancelado."); };
     cableForm.onsubmit = async (event) => {
         event.preventDefault();

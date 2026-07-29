@@ -4,6 +4,7 @@ from apps.network_map.api.views import (
     access_points_geojson,
     cable_fibers,
     cable_models,
+    cable_reserves,
     create_fiber_cable,
     delete_fiber_cable,
     create_network_element,
@@ -89,6 +90,8 @@ urlpatterns = [
         cable_fibers,
         name="cable-fibers",
     ),
+    path("cables/<int:cable_id>/reserves/", cable_reserves, name="cable-reserves"),
+    path("cables/<int:cable_id>/reserves/<int:reserve_id>/", cable_reserves, name="cable-reserve-detail"),
     path(
         "cables/<int:cable_id>/generate-fibers/",
         generate_fibers,
