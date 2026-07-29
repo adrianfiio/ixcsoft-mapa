@@ -439,6 +439,11 @@ class SpliceTrayAdmin(admin.ModelAdmin):
 class SpliceTraySplitterAdmin(admin.ModelAdmin):
     list_display = ("tray", "position", "ratio", "output_ports")
     list_filter = ("ratio",)
+    search_fields = (
+        "tray__name",
+        "tray__splice_box__name",
+        "tray__splice_box__code",
+    )
     autocomplete_fields = ("tray",)
 
 

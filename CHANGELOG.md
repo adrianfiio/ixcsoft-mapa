@@ -62,6 +62,13 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
 - Popup do unifilar ampliado para até 96% da tela e área de desenho expandida
 
+## [0.10.3] - 2026-07-29
+
+### Corrigido
+
+- Inicialização bloqueada pelo `admin.E040` após adicionar portas de splitter
+- Busca automática do painel administrativo agora encontra splitters por bandeja, CEO, nome e código
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado
