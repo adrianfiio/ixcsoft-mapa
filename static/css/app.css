@@ -143,6 +143,8 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .account-items strong, .account-items small { display: block; }
 .account-items small { margin-top: 3px; color: var(--muted); }
 .account-items b { color: var(--primary); font-size: 11px; }
+.topbar-actions form { margin: 0; }
+.logout-button { padding: 0; color: var(--muted); background: transparent; border: 0; cursor: pointer; }
 
 @media (max-width: 1100px) {
     .metric-grid { grid-template-columns: repeat(2, 1fr); }

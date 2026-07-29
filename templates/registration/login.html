@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entrar | AFService Map</title>
+    <link rel="icon" href="{% static 'img/afservice-map-favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+</head>
+<body class="af-platform-login">
+    <main class="af-login-card">
+        <header>
+            <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
+        </header>
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <h1>Entrar na plataforma</h1>
+            <p>Use a conta fornecida para sua empresa.</p>
+            {% if form.errors %}
+                <div class="af-login-error">Usuário ou senha inválidos. Confira os dados digitados.</div>
+            {% endif %}
+            <label for="{{ form.username.id_for_label }}">Usuário</label>
+            {{ form.username }}
+            <label for="{{ form.password.id_for_label }}">Senha</label>
+            {{ form.password }}
+            <input type="hidden" name="next" value="{{ next|default:'/painel/' }}">
+            <button type="submit">Entrar</button>
+        </form>
+    </main>
+</body>
+</html>

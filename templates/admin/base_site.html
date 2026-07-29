@@ -7,6 +7,12 @@
 {{ block.super }}
 <link rel="icon" type="image/png" href="{% static 'img/afservice-map-favicon.png' %}">
 <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<script>
+if (!localStorage.getItem("afservice.adminMenuInitialized")) {
+    localStorage.setItem("django.admin.navSidebarIsOpen", "false");
+    localStorage.setItem("afservice.adminMenuInitialized", "1");
+}
+</script>
 {% endblock %}
 
 {% block branding %}
@@ -22,6 +28,7 @@
 {% endblock %}
 
 {% block nav-global %}
+{% load log %}
 <nav class="af-admin-shortcuts" aria-label="Atalhos administrativos">
     <a href="{% url 'dashboard' %}">Visão geral</a>
     <a href="{% url 'map' %}">Mapa operacional</a>
@@ -29,5 +36,20 @@
     <a href="{% url 'admin:network_map_pop_changelist' %}">CPDs</a>
     <a href="{% url 'admin:olt_integration_olt_changelist' %}">OLTs</a>
     <a href="{% url 'admin:optical_dio_changelist' %}">DIOs</a>
+    <details class="af-recent">
+        <summary title="Abrir atividade recente"><span>♢</span><b>Atividade</b></summary>
+        <div class="af-recent-popover">
+            <h2>Atividade recente</h2>
+            {% get_admin_log 8 as admin_log for_user user %}
+            {% for entry in admin_log %}
+                <a href="{{ entry.get_admin_url|default:'#' }}">
+                    <strong>{{ entry.object_repr }}</strong>
+                    <small>{{ entry.action_time|timesince }} atrás</small>
+                </a>
+            {% empty %}
+                <p>Nenhuma alteração recente.</p>
+            {% endfor %}
+        </div>
+    </details>
 </nav>
 {% endblock %}

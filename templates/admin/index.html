@@ -74,27 +74,6 @@
         {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
     </div>
 </details>
-{% endblock %}
-
-{% block sidebar %}
-<details class="af-recent">
-    <summary title="Abrir atividade recente"><span>♢</span><b>Atividade recente</b></summary>
-    <div class="af-recent-popover">
-    <h2>Atividade recente</h2>
-    {% load log %}
-    {% get_admin_log 8 as admin_log for_user user %}
-    {% if admin_log %}
-        {% for entry in admin_log %}
-        <a href="{{ entry.get_admin_url|default:'#' }}">
-            <strong>{{ entry.object_repr }}</strong>
-            <small>{{ entry.action_time|timesince }} atrás</small>
-        </a>
-        {% endfor %}
-    {% else %}
-        <p>Nenhuma alteração recente.</p>
-    {% endif %}
-    </div>
-</details>
 <script>
 document.querySelectorAll("[data-admin-card]").forEach((card) => {
     const button = card.querySelector(".af-card-toggle");
@@ -115,3 +94,5 @@ document.getElementById("af-admin-search").addEventListener("input", (event) => 
 });
 </script>
 {% endblock %}
+
+{% block sidebar %}{% endblock %}
