@@ -5,14 +5,16 @@
 
 {% block branding %}
 <div style="display:flex;align-items:center;gap:14px">
-    <img
-        src="{% static 'img/afservice-logo.png' %}"
-        alt="AFService"
-        style="width:120px;height:42px;object-fit:contain;object-position:left center"
-    >
-    <span id="site-name">
-        <a href="{% url 'admin:index' %}">AFService Map</a>
-    </span>
+    <a href="{% url 'admin:index' %}" style="display:flex;flex-direction:column;gap:2px;text-decoration:none">
+        <img
+            src="{% static 'img/afservice-logo.png' %}"
+            alt="AFService"
+            style="width:145px;height:48px;object-fit:contain;object-position:left center"
+        >
+        <small style="color:var(--header-link-color);font-size:10px;letter-spacing:.04em">
+            Mapa e operação de rede
+        </small>
+    </a>
 </div>
 {% endblock %}
 

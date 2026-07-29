@@ -11,6 +11,15 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.6] - 2026-07-29
+
+### Alterado
+
+- Cabeçalhos simplificados para exibir somente a logo oficial
+- Subtítulo atualizado para “Mapa e operação de rede”
+- Login administrativo redesenhado com interface moderna e responsiva
+- Textos da visão geral preparados para redes ópticas e wireless
+
 ## [0.8.5] - 2026-07-29
 
 ### Alterado
