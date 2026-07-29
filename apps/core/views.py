@@ -24,7 +24,7 @@ from apps.network_map.models import POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
 from apps.core.access import editable_company_ids
-from apps.core.forms import DIOPlatformForm, ERPOnboardingForm, OLTPlatformForm, POPPlatformForm
+from apps.core.forms import CompanyOnboardingForm, DIOPlatformForm, ERPOnboardingForm, OLTPlatformForm, POPPlatformForm
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.clients.ixc_client import IXCClient
 from apps.ixc_integration.clients.exceptions import IXCClientError
@@ -117,9 +117,20 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
     template_name = "account_panel.html"
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            membership = CompanyMembership.objects.filter(
+                user=request.user, active=True
+            ).select_related("company").first()
+            if membership and not membership.company.onboarding_completed:
+                return redirect("company-onboarding")
         if (
             not request.user.is_superuser
             and has_any_edit_access(request.user)
+            and CompanyMembership.objects.filter(
+                user=request.user,
+                active=True,
+                company__integration_mode="erp",
+            ).exists()
             and not IXCConfiguration.objects.filter(
                 company_id__in=editable_company_ids(request.user), enabled=True
             ).exists()
@@ -160,6 +171,41 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
             }
         )
         return context
+
+
+@login_required
+def company_onboarding(request):
+    membership = CompanyMembership.objects.filter(
+        user=request.user,
+        active=True,
+        role=CompanyMembership.Role.EDIT,
+    ).select_related("company").first()
+    if request.user.is_superuser or membership is None:
+        return redirect("account-panel")
+    company = membership.company
+    form = CompanyOnboardingForm(request.POST or None, instance=company)
+    if request.method == "POST" and form.is_valid():
+        company = form.save(commit=False)
+        company.onboarding_completed = True
+        company.save()
+        messages.success(request, "Dados da empresa salvos com sucesso.")
+        if company.integration_mode == company.IntegrationMode.ERP:
+            return redirect("erp-onboarding")
+        return redirect("account-panel")
+    return render(request, "company_onboarding.html", {"form": form, "company": company})
+
+
+@login_required
+def company_alerts(request):
+    company_ids = accessible_company_ids(request.user)
+    alerts = AlertEvent.objects.select_related("rule", "olt", "cto")
+    if company_ids is not None:
+        alerts = alerts.filter(
+            Q(cto__company_id__in=company_ids)
+            | Q(olt__cpd__company_id__in=company_ids)
+            | Q(route__company_id__in=company_ids)
+        ).distinct()
+    return render(request, "company_alerts.html", {"alerts": alerts[:200]})
 
 
 @login_required

@@ -34,9 +34,23 @@ class NamedModel(TimeStampedModel):
 
 
 class Company(TimeStampedModel):
+    class IntegrationMode(models.TextChoices):
+        ERP = "erp", "Usar com ERP"
+        MANUAL = "manual", "Usar sem ERP"
+
     name = models.CharField(max_length=180)
     trade_name = models.CharField(max_length=180, blank=True)
     document = models.CharField(max_length=30, blank=True)
+    contact_name = models.CharField(max_length=180, blank=True)
+    contact_phone = models.CharField(max_length=40, blank=True)
+    contact_email = models.EmailField(blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    integration_mode = models.CharField(
+        max_length=20,
+        choices=IntegrationMode.choices,
+        blank=True,
+    )
+    onboarding_completed = models.BooleanField(default=False)
     slug = models.SlugField(max_length=180, unique=True)
     active = models.BooleanField(default=True)
 

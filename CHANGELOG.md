@@ -11,6 +11,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.19.0] - 2026-07-29
+
+### Adicionado
+
+- Primeiro acesso com cadastro obrigatório de nome, contato, endereço e CPF/CNPJ.
+- Escolha entre vincular um ERP ou operar integralmente sem ERP.
+- Página própria de alertas com isolamento por empresa.
+
+### Alterado
+
+- Integração ERP e Alertas agora abrem telas funcionais próprias.
+- O acesso de infraestrutura abre diretamente a seção correta do painel.
+- A configuração ERP da Nic Fibra Telecom é reiniciada uma única vez para o teste de onboarding.
+
 ## [0.18.1] - 2026-07-29
 
 ### Corrigido
