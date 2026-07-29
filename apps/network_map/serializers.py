@@ -216,6 +216,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
                 output_ports=splitter_ports,
             )
             sync_splitter_ports(splitter, splitter_ports)
+            sync_splice_box(cto, 1, 1, splitter_ratio)
             return cto
 
         element = NetworkElement.objects.create(**validated_data)

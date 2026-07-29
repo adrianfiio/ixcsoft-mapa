@@ -81,6 +81,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.12.1] - 2026-07-29
+
+### Adicionado
+
+- CTOs agora possuem o mesmo editor unifilar das CEOs.
+- Passagem direta permite continuar fibras para o próximo cabo na CTO.
+- Splitters da CTO aceitam entrada e derivações para fibras de outros cabos.
+
+### Alterado
+
+- Splitters são exibidos verticalmente, com entrada superior e saídas inferiores.
+- A seta luminosa acompanha o ângulo real de cada trecho do cabo.
+- CTOs existentes recebem a estrutura óptica automaticamente.
+
 ## [0.12.0] - 2026-07-29
 
 ### Adicionado
