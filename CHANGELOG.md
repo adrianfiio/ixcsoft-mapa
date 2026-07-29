@@ -11,6 +11,26 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.9.0] - 2026-07-29
+
+### Adicionado
+
+- Projetos de rede com nome, código, status, empresa e cor
+- Projeto obrigatório para novos elementos e cabos
+- Menu do mapa recolhível e redimensionável
+- Camadas independentes de estrutura, clientes online, offline e sem estado
+- Cadastro de postes, CTOs e CEOs clicando diretamente no mapa
+- Movimentação de elementos por arrastar e soltar
+- Desenho de cabos por múltiplos pontos
+- Importação de arquivos KML e KMZ para o projeto selecionado
+- Alternância entre mapa convencional e imagem de satélite
+- Resumos de elementos, cabos, rotas e clientes
+
+### Segurança
+
+- Criação, alteração, importação e exclusão exigem usuário autenticado
+- Endpoints de leitura permanecem disponíveis para o mapa operacional
+
 ## [0.8.9] - 2026-07-29
 
 ### Corrigido

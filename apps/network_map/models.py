@@ -4,7 +4,45 @@ from apps.core.enums import OperationalStatus
 from apps.core.models import CompanyScopedModel, NamedModel, TimeStampedModel
 
 
+class NetworkProject(CompanyScopedModel, NamedModel):
+    class Status(models.TextChoices):
+        PLANNING = "planning", "Planejamento"
+        ACTIVE = "active", "Ativo"
+        PAUSED = "paused", "Pausado"
+        ARCHIVED = "archived", "Arquivado"
+
+    code = models.CharField(max_length=100, unique=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PLANNING,
+        db_index=True,
+    )
+    color = models.CharField(max_length=7, default="#2dd4bf")
+    enabled = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="network_projects",
+    )
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Projeto de rede"
+        verbose_name_plural = "Projetos de rede"
+        indexes = [models.Index(fields=["status", "enabled"])]
+
+
 class NetworkRoute(CompanyScopedModel, NamedModel):
+    project = models.ForeignKey(
+        NetworkProject,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="routes",
+    )
     code = models.CharField(max_length=80, unique=True)
     geometry = models.MultiLineStringField(srid=4326, null=True, blank=True)
     status = models.CharField(
@@ -37,6 +75,13 @@ class NetworkElement(CompanyScopedModel, NamedModel):
         OTHER = "other", "Outro"
 
     code = models.CharField(max_length=100, blank=True, db_index=True)
+    project = models.ForeignKey(
+        NetworkProject,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="elements",
+    )
     element_type = models.CharField(max_length=30, choices=ElementType.choices)
     point = models.PointField(srid=4326, null=True, blank=True)
     status = models.CharField(
@@ -85,6 +130,13 @@ class FiberCable(CompanyScopedModel, NamedModel):
         BACKBONE = "backbone", "Backbone"
 
     code = models.CharField(max_length=100, blank=True, db_index=True)
+    project = models.ForeignKey(
+        NetworkProject,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cables",
+    )
     cable_type = models.CharField(max_length=30, choices=CableType.choices)
     cable_model = models.ForeignKey(
         "CableModel",

@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.9 — Alinhamento do menu**
+**v0.9.0 — Editor de projetos de rede**
 
-Esta versão centraliza a logo no menu lateral e permite que o favicon seja
-mantido diretamente no servidor sem bloquear as atualizações.
+Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
+cabos, camadas operacionais e importação KML/KMZ.
 
 ## Funcionalidades implementadas
 
@@ -75,6 +75,11 @@ O dashboard operacional está disponível na página inicial e apresenta
 indicadores reais de acessos, clientes, infraestrutura, OLTs, ONUs e alertas.
 O mapa permanece integrado à API GeoJSON em uma página própria, disponível em
 `/mapa/`.
+
+No editor do mapa, toda nova estrutura pertence a um projeto de rede. Usuários
+autenticados podem criar projetos, posicionar postes, CTOs e CEOs, desenhar
+cabos, mover elementos e importar KML/KMZ. A visualização de clientes e
+estrutura pode ser ligada ou desligada por camada.
 
 A navegação principal reúne os acessos ao dashboard, mapa, equipamentos, OLTs,
 ONUs, clientes e alertas. O próximo ciclo do frontend será integrar as telas de

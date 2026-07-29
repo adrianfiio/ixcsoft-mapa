@@ -174,16 +174,24 @@ curl --fail --silent --show-error \
     >/dev/null
 curl --fail --silent --show-error \
     -H "Host: localhost" \
+    "http://127.0.0.1:8000/assets/static/css/map-editor.css?v=$APP_VERSION_VALUE" \
+    >/dev/null
+curl --fail --silent --show-error \
+    -H "Host: localhost" \
+    "http://127.0.0.1:8000/assets/static/js/map-editor.js?v=$APP_VERSION_VALUE" \
+    >/dev/null
+curl --fail --silent --show-error \
+    -H "Host: localhost" \
     "http://127.0.0.1:8000/assets/static/img/afservice-logo.png?v=$APP_VERSION_VALUE" \
     >/dev/null
 if curl --fail --silent \
     -H "Host: localhost" \
     "http://127.0.0.1:8000/assets/static/img/afservice-map-favicon.png?v=$APP_VERSION_VALUE" \
     >/dev/null; then
-    success "CSS da aplicação, Django Admin, logotipo e favicon disponíveis"
+    success "Dashboard, editor do mapa, Django Admin, logotipo e favicon disponíveis"
 else
     warning "Favicon ainda não encontrado em static/img/afservice-map-favicon.png"
-    success "CSS da aplicação, Django Admin e logotipo disponíveis"
+    success "Dashboard, editor do mapa, Django Admin e logotipo disponíveis"
 fi
 
 CURRENT_STEP="verificação final dos serviços"

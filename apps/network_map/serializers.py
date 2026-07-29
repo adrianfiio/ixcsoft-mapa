@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import NetworkElement
+from .models import CTO, NetworkElement, NetworkProject
 
 
 class NetworkElementMapSerializer(serializers.ModelSerializer):
@@ -14,6 +14,7 @@ class NetworkElementMapSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "code",
+            "project",
             "element_type",
             "status",
             "enabled",
@@ -36,6 +37,10 @@ from django.contrib.gis.geos import Point
 
 
 class NetworkElementSerializer(serializers.ModelSerializer):
+    project = serializers.PrimaryKeyRelatedField(
+        queryset=NetworkProject.objects.filter(enabled=True),
+        required=True,
+    )
 
     latitude = serializers.FloatField(
         write_only=True,
@@ -56,6 +61,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "code",
+            "project",
             "element_type",
             "status",
             "enabled",
@@ -77,6 +83,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         )
 
 
+        project = validated_data["project"]
+        validated_data["company"] = project.company
+
         if latitude is not None and longitude is not None:
             validated_data["point"] = Point(
                 longitude,
@@ -85,9 +94,10 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             )
 
 
-        return NetworkElement.objects.create(
-            **validated_data
-        )
+        if validated_data.get("element_type") == NetworkElement.ElementType.CTO:
+            return CTO.objects.create(**validated_data)
+
+        return NetworkElement.objects.create(**validated_data)
 
 
     def update(self, instance, validated_data):
