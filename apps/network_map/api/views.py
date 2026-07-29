@@ -1307,8 +1307,25 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "tray_id": splice.tray_id,
                     "input_fiber_id": splice.input_fiber_id,
                     "output_fiber_id": splice.output_fiber_id,
+                    "input": {
+                        "cable": splice.input_fiber.cable.name,
+                        "number": splice.input_fiber.number,
+                        "color_name": splice.input_fiber.color.name,
+                        "color_hex": splice.input_fiber.color.hex_color,
+                    },
+                    "output": {
+                        "cable": splice.output_fiber.cable.name,
+                        "number": splice.output_fiber.number,
+                        "color_name": splice.output_fiber.color.name,
+                        "color_hex": splice.output_fiber.color.hex_color,
+                    },
                 }
-                for splice in element.fiber_splices.all()
+                for splice in element.fiber_splices.select_related(
+                    "input_fiber__cable",
+                    "input_fiber__color",
+                    "output_fiber__cable",
+                    "output_fiber__color",
+                ).all()
             ],
         })
     try:

@@ -36,6 +36,18 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criação de fusões por arrastar uma fibra sobre outra e escolha da bandeja
 - Remoção de fusões no próprio unifilar
 
+## [0.10.1] - 2026-07-29
+
+### Corrigido
+
+- Fusões não exibem mais IDs internos como “Fibra 122 → Fibra 134”
+- Identificação agora usa cabo, número operacional e cor da fibra
+
+### Alterado
+
+- Unifilar da CEO redesenhado como grafo óptico com cabos, portas, bandejas e linhas coloridas
+- Ligações podem ser feitas clicando em duas portas ou arrastando uma fibra sobre outra
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado

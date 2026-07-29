@@ -180,38 +180,47 @@
             const optical = await api(`/api/map/elements/${element.id}/splices/`);
             document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
             const trayOptions = element.splice_box.trays.map((tray) => `<option value="${tray.id}">${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</option>`).join("");
-            const cableColumns = optical.cables.map((cable) => `
-                <section class="fiber-cable-column"><strong>${escapeHtml(cable.name)}</strong>
-                <div class="fiber-chip-grid">${cable.fibers.map((fiber) => `<div class="fiber-chip" draggable="true" data-fiber-id="${fiber.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}">F${fiber.number} · ${escapeHtml(fiber.color_name)}</div>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`).join("");
-            content.innerHTML = `<div class="ceo-instructions">Arraste uma fibra sobre outra fibra de outro cabo para criar a fusão em <select id="ceo-tray-select">${trayOptions}</select>.</div>
-                <div class="ceo-fiber-workspace">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}</div>
-                <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div>Fibra ${splice.input_fiber_id} → Fibra ${splice.output_fiber_id} <button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>` +
+            const cableColumns = optical.cables.map((cable, index) => `
+                <section class="fiber-cable-node side-${index % 2 ? "right" : "left"}"><header>${escapeHtml(cable.name)}</header>
+                <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port" draggable="true" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`).join("");
+            const trayNodes = element.splice_box.trays.map((tray) => `<div class="tray-node" data-tray-id="${tray.id}"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões</span></div>`).join("");
+            content.innerHTML = `<div class="ceo-instructions">Selecione a bandeja e clique em duas portas de fibras de cabos diferentes. Também é possível arrastar uma porta sobre outra. <select id="ceo-tray-select">${trayOptions}</select>.</div>
+                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-cables">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}</div><div class="graph-trays">${trayNodes}</div></div>
+                <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div><span><b>${escapeHtml(splice.input.cable)}</b> · F${splice.input.number} ${escapeHtml(splice.input.color_name)} → <b>${escapeHtml(splice.output.cable)}</b> · F${splice.output.number} ${escapeHtml(splice.output.color_name)}</span><button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>` +
                 element.splice_box.trays.map((tray) => `
                 <article class="splitter-card">
                     <div class="splitter-head"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões · capacidade ${tray.capacity}</span></div>
                     ${tray.splitters.length ? tray.splitters.map((splitter) => `<div class="ceo-splitter">Splitter ${splitter.position} · ${escapeHtml(splitter.ratio)} · ${splitter.output_ports} saídas</div>`).join("") : '<p class="help-text">Bandeja destinada a fusões diretas.</p>'}
                 </article>`).join("");
             let draggedFiber = null;
-            content.querySelectorAll(".fiber-chip").forEach((chip) => {
+            let selectedFiber = null;
+            const createSplice = async (input, output) => {
+                if (!input || input === output) return;
+                const inputNode = content.querySelector(`[data-fiber-id="${input}"]`);
+                const outputNode = content.querySelector(`[data-fiber-id="${output}"]`);
+                if (inputNode.dataset.cableId === outputNode.dataset.cableId) return notify("Escolha fibras de cabos diferentes.", true);
+                await api(`/api/map/elements/${element.id}/splices/`, {
+                    method: "POST",
+                    body: JSON.stringify({ tray_id: document.getElementById("ceo-tray-select").value, input_fiber_id: input, output_fiber_id: output }),
+                });
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada na CEO.");
+            };
+            content.querySelectorAll(".fiber-port").forEach((chip) => {
                 chip.ondragstart = () => { draggedFiber = chip.dataset.fiberId; };
                 chip.ondragover = (event) => event.preventDefault();
                 chip.ondrop = async (event) => {
                     event.preventDefault();
-                    const output = chip.dataset.fiberId;
-                    if (!draggedFiber || draggedFiber === output) return;
-                    try {
-                        await api(`/api/map/elements/${element.id}/splices/`, {
-                            method: "POST",
-                            body: JSON.stringify({
-                                tray_id: document.getElementById("ceo-tray-select").value,
-                                input_fiber_id: draggedFiber,
-                                output_fiber_id: output,
-                            }),
-                        });
-                        unifilarDialog.close();
-                        await showUnifilar(element.id);
-                        notify("Fusão criada na CEO.");
-                    } catch (error) { notify(error.message, true); }
+                    try { await createSplice(draggedFiber, chip.dataset.fiberId); }
+                    catch (error) { notify(error.message, true); }
+                };
+                chip.onclick = async () => {
+                    if (!selectedFiber) {
+                        selectedFiber = chip.dataset.fiberId; chip.classList.add("selected");
+                        notify("Primeira porta selecionada. Clique na porta de destino.");
+                        return;
+                    }
+                    try { await createSplice(selectedFiber, chip.dataset.fiberId); }
+                    catch (error) { notify(error.message, true); }
                 };
             });
             content.querySelectorAll("[data-delete-splice]").forEach((button) => {
@@ -221,6 +230,21 @@
                 };
             });
             unifilarDialog.showModal();
+            requestAnimationFrame(() => {
+                const graph = content.querySelector(".optical-graph");
+                const svg = content.querySelector(".optical-links");
+                const graphRect = graph.getBoundingClientRect();
+                svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
+                optical.splices.forEach((splice) => {
+                    const source = content.querySelector(`[data-fiber-id="${splice.input_fiber_id}"]`);
+                    const target = content.querySelector(`[data-fiber-id="${splice.output_fiber_id}"]`);
+                    if (!source || !target) return;
+                    const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
+                    const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
+                    const x2 = b.left + b.width / 2 - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
+                    svg.insertAdjacentHTML("beforeend", `<path d="M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}" stroke="${escapeHtml(splice.input.color_hex)}"></path>`);
+                });
+            });
             return;
         }
         const splitters = element.cto?.splitters || [];
