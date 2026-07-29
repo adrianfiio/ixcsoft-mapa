@@ -1294,6 +1294,21 @@ def splice_box_fibers(request, element_id, splice_id=None):
     connected = FiberCable.objects.filter(
         Q(origin=element) | Q(destination=element)
     ).prefetch_related("fibers__color")
+
+    def fiber_is_connected(fiber, exclude_splitter=None, exclude_port=None):
+        if FiberSplice.objects.filter(
+            Q(input_fiber=fiber) | Q(output_fiber=fiber)
+        ).exists():
+            return True
+        splitter_links = SpliceTraySplitter.objects.filter(input_fiber=fiber)
+        if exclude_splitter is not None:
+            splitter_links = splitter_links.exclude(pk=exclude_splitter)
+        if splitter_links.exists():
+            return True
+        port_links = SpliceTraySplitterPort.objects.filter(output_fiber=fiber)
+        if exclude_port is not None:
+            port_links = port_links.exclude(pk=exclude_port)
+        return port_links.exists()
     if request.method == "GET":
         return JsonResponse({
             "success": True,
@@ -1370,6 +1385,8 @@ def splice_box_fibers(request, element_id, splice_id=None):
         fiber = get_object_or_404(FiberStrand, pk=request.data.get("fiber_id"))
         if fiber.cable_id not in connected_ids:
             return JsonResponse({"success": False, "error": "Fibra não pertence a um cabo conectado."}, status=400)
+        if fiber_is_connected(fiber, exclude_splitter=splitter.id):
+            return JsonResponse({"success": False, "error": "Esta fibra já está utilizada em outra ligação."}, status=409)
         splitter.input_fiber = fiber
         splitter.save(update_fields=["input_fiber", "updated_at"])
         fiber.status = FiberStrand.Status.USED
@@ -1384,6 +1401,8 @@ def splice_box_fibers(request, element_id, splice_id=None):
         fiber = get_object_or_404(FiberStrand, pk=request.data.get("fiber_id"))
         if fiber.cable_id not in connected_ids:
             return JsonResponse({"success": False, "error": "Fibra não pertence a um cabo conectado."}, status=400)
+        if fiber_is_connected(fiber, exclude_port=port.id):
+            return JsonResponse({"success": False, "error": "Esta fibra já está utilizada em outra ligação."}, status=409)
         port.output_fiber = fiber
         port.save(update_fields=["output_fiber", "updated_at"])
         fiber.status = FiberStrand.Status.USED
@@ -1417,6 +1436,8 @@ def splice_box_fibers(request, element_id, splice_id=None):
         return JsonResponse({"success": False, "error": "As fibras precisam pertencer a cabos conectados à CEO."}, status=400)
     if input_fiber.cable_id == output_fiber.cable_id:
         return JsonResponse({"success": False, "error": "A fusão deve ligar fibras de cabos diferentes."}, status=400)
+    if fiber_is_connected(input_fiber) or fiber_is_connected(output_fiber):
+        return JsonResponse({"success": False, "error": "Uma das fibras já está utilizada em outra ligação."}, status=409)
     try:
         splice = FiberSplice.objects.create(
             tray=tray,

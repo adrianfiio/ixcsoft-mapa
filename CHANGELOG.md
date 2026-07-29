@@ -81,6 +81,21 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.11.1] - 2026-07-29
+
+### Corrigido
+
+- Uma fibra não pode mais participar de duas ligações simultâneas
+- Ligações duplicadas existentes são limpas automaticamente pela migração
+- Bandejas não são mais repetidas abaixo do canvas
+
+### Adicionado
+
+- Partículas luminosas animadas sobre o cabo mostram o deslocamento do sinal
+- Bandeja selecionada diretamente no canvas para receber a fusão
+- Linhas curvas, retas ou ortogonais com preferência persistente
+- Exclusão de fusão clicando diretamente na linha do desenho
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado
