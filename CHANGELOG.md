@@ -69,6 +69,18 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Inicialização bloqueada pelo `admin.E040` após adicionar portas de splitter
 - Busca automática do painel administrativo agora encontra splitters por bandeja, CEO, nome e código
 
+## [0.11.0] - 2026-07-29
+
+### Adicionado
+
+- Cabos e bandejas podem ser arrastados livremente no canvas unifilar
+- Posições do desenho são persistidas por CEO
+- Inclusão, alteração e exclusão individual de splitters em cada bandeja
+- Remoção de ligações das entradas e saídas dos splitters
+- Cadastro de OLT diretamente no mapa
+- Seleção da OLT de origem e animação do caminho da luz nos cabos
+- Destaque visual da direção origem → destino da rede
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado

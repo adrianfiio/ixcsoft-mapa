@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.10.3 — Correção de inicialização do painel**
+**v0.11.0 — Canvas óptico e rastreamento da luz**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

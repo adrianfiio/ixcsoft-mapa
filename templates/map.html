@@ -51,6 +51,11 @@
                         <input id="layer-unknown" type="checkbox">
                         <span class="layer-symbol unknown"></span> Sem estado
                     </label>
+                    <label class="layer-option">
+                        <input id="layer-light-flow" type="checkbox" checked>
+                        <span class="layer-symbol light-flow"></span> Fluxo óptico da OLT
+                    </label>
+                    <select id="light-source-select" class="editor-control"><option value="">Selecione a OLT de origem</option></select>
                 </section>
 
                 <section class="editor-section">
@@ -60,6 +65,7 @@
                         <button class="tool-button" data-tool="cto" type="button"><b>CTO</b> CTO</button>
                         <button class="tool-button" data-tool="splice_box" type="button"><b>CEO</b> CEO</button>
                         <button class="tool-button" data-tool="cable" type="button"><b>⌁</b> Cabo</button>
+                        <button class="tool-button" data-tool="olt" type="button"><b>OLT</b> OLT</button>
                     </div>
                     <button id="import-button" class="secondary-button" type="button">Importar KML/KMZ</button>
                     <input id="import-file" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" hidden>
