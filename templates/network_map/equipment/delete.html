@@ -1,0 +1,57 @@
+{% extends "network_map/equipment/base.html" %}
+
+{% block title %}Excluir equipamento{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Excluir equipamento</h1>
+
+        <p class="page-description">
+            Esta ação não poderá ser desfeita.
+        </p>
+    </div>
+</div>
+
+<form method="post" class="card">
+    {% csrf_token %}
+
+    <h2 style="margin-top: 0;">
+        Confirma a exclusão de “{{ equipment.name }}”?
+    </h2>
+
+    <p style="color: #94a3b8; line-height: 1.6;">
+        O equipamento será removido permanentemente do sistema.
+        Dependências relacionadas também poderão ser afetadas.
+    </p>
+
+    <div class="detail-grid" style="margin-top: 20px;">
+        <div class="detail-item">
+            <span class="detail-label">Código</span>
+            <div class="detail-value">
+                {{ equipment.code|default:"—" }}
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Tipo</span>
+            <div class="detail-value">
+                {{ equipment.get_element_type_display }}
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a
+            class="button button-secondary"
+            href="{% url 'equipment-detail' equipment.pk %}"
+        >
+            Cancelar
+        </a>
+
+        <button class="button button-danger" type="submit">
+            Excluir permanentemente
+        </button>
+    </div>
+</form>
+{% endblock %}

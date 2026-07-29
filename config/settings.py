@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.access.apps.AccessConfig",
     "apps.ixc_integration.apps.IxcIntegrationConfig",
     "apps.olt_integration",
+    "apps.optical",
     "apps.network_map",
     "apps.alerts",
 ]

@@ -9,6 +9,8 @@ from .models import (
     FiberColorStandard,
     FiberColorStandardItem,
     FiberStrand,
+    FiberSplice,
+    SpliceTray,
     FiberTube,
     NetworkDependency,
     NetworkElement,
@@ -366,4 +368,58 @@ class FiberStrandAdmin(admin.ModelAdmin):
         "origin_element",
         "destination_element",
         "color",
+    )
+
+
+# ==========================
+# Emendas ópticas
+# ==========================
+
+@admin.register(SpliceTray)
+class SpliceTrayAdmin(admin.ModelAdmin):
+    list_display = (
+        "splice_box",
+        "number",
+        "name",
+        "capacity",
+    )
+
+    list_filter = (
+        "splice_box",
+    )
+
+    search_fields = (
+        "name",
+    )
+
+    autocomplete_fields = (
+        "splice_box",
+    )
+
+
+@admin.register(FiberSplice)
+class FiberSpliceAdmin(admin.ModelAdmin):
+    list_display = (
+        "tray",
+        "position",
+        "splice_box",
+        "input_fiber",
+        "output_fiber",
+        "loss_db",
+    )
+
+    list_filter = (
+        "tray",
+        "splice_box",
+    )
+
+    search_fields = (
+        "notes",
+    )
+
+    autocomplete_fields = (
+        "tray",
+        "splice_box",
+        "input_fiber",
+        "output_fiber",
     )

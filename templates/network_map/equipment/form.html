@@ -1,0 +1,147 @@
+{% extends "network_map/equipment/base.html" %}
+
+{% block title %}
+    {% if object %}Editar equipamento{% else %}Novo equipamento{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            {% if object %}
+                Editar equipamento
+            {% else %}
+                Novo equipamento
+            {% endif %}
+        </h1>
+
+        <p class="page-description">
+            Informe os dados e a localização do elemento da rede.
+        </p>
+    </div>
+</div>
+
+<form method="post" class="card">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="error-list">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label" for="{{ form.name.id_for_label }}">
+                {{ form.name.label }}
+            </label>
+
+            {{ form.name }}
+
+            {% if form.name.errors %}
+                <div class="error-list">{{ form.name.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="{{ form.code.id_for_label }}">
+                {{ form.code.label }}
+            </label>
+
+            {{ form.code }}
+
+            {% if form.code.errors %}
+                <div class="error-list">{{ form.code.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="{{ form.element_type.id_for_label }}">
+                {{ form.element_type.label }}
+            </label>
+
+            {{ form.element_type }}
+
+            {% if form.element_type.errors %}
+                <div class="error-list">{{ form.element_type.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="{{ form.status.id_for_label }}">
+                {{ form.status.label }}
+            </label>
+
+            {{ form.status }}
+
+            {% if form.status.errors %}
+                <div class="error-list">{{ form.status.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="{{ form.latitude.id_for_label }}">
+                {{ form.latitude.label }}
+            </label>
+
+            {{ form.latitude }}
+
+            {% if form.latitude.errors %}
+                <div class="error-list">{{ form.latitude.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="{{ form.longitude.id_for_label }}">
+                {{ form.longitude.label }}
+            </label>
+
+            {{ form.longitude }}
+
+            {% if form.longitude.errors %}
+                <div class="error-list">{{ form.longitude.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group form-group-full">
+            <label class="form-label" for="{{ form.description.id_for_label }}">
+                {{ form.description.label }}
+            </label>
+
+            {{ form.description }}
+
+            {% if form.description.errors %}
+                <div class="error-list">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group form-group-full">
+            <label class="form-label">
+                Situação do cadastro
+            </label>
+
+            <div class="checkbox-row">
+                {{ form.enabled }}
+
+                <label for="{{ form.enabled.id_for_label }}">
+                    Equipamento ativo
+                </label>
+            </div>
+
+            {% if form.enabled.errors %}
+                <div class="error-list">{{ form.enabled.errors }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a class="button button-secondary" href="{% url 'equipment-list' %}">
+            Cancelar
+        </a>
+
+        <button class="button" type="submit">
+            Salvar equipamento
+        </button>
+    </div>
+</form>
+{% endblock %}

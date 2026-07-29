@@ -217,3 +217,17 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 docker-compose.override.yml
+
+# Backups temporários
+*.bak
+*.bak-*
+
+# Arquivos Python
+__pycache__/
+*.pyc
+
+# Arquivos gerados pelo Django
+staticfiles/
+
+# Script temporário local
+dash.sh

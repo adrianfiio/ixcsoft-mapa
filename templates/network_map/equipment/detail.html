@@ -1,0 +1,113 @@
+{% extends "network_map/equipment/base.html" %}
+
+{% block title %}{{ equipment.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ equipment.name }}</h1>
+
+        <p class="page-description">
+            Informações completas do equipamento.
+        </p>
+    </div>
+
+    <div>
+        <a
+            class="button button-secondary"
+            href="{% url 'equipment-update' equipment.pk %}"
+        >
+            Editar
+        </a>
+
+        <a
+            class="button button-danger"
+            href="{% url 'equipment-delete' equipment.pk %}"
+        >
+            Excluir
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item">
+            <span class="detail-label">Nome</span>
+            <div class="detail-value">{{ equipment.name }}</div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Código</span>
+            <div class="detail-value">
+                {{ equipment.code|default:"—" }}
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Tipo</span>
+            <div class="detail-value">
+                {{ equipment.get_element_type_display }}
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Status operacional</span>
+
+            <div class="detail-value">
+                <span class="badge badge-{{ equipment.status }}">
+                    {{ equipment.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Latitude</span>
+            <div class="detail-value">
+                {% if equipment.point %}
+                    {{ equipment.point.y|floatformat:7 }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Longitude</span>
+            <div class="detail-value">
+                {% if equipment.point %}
+                    {{ equipment.point.x|floatformat:7 }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Ativo</span>
+            <div class="detail-value">
+                {% if equipment.enabled %}Sim{% else %}Não{% endif %}
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Empresa</span>
+            <div class="detail-value">
+                {{ equipment.company|default:"Não definida" }}
+            </div>
+        </div>
+
+        <div class="detail-item" style="grid-column: 1 / -1;">
+            <span class="detail-label">Descrição</span>
+            <div class="detail-value">
+                {{ equipment.description|default:"Nenhuma descrição cadastrada."|linebreaksbr }}
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a class="button button-secondary" href="{% url 'equipment-list' %}">
+            Voltar
+        </a>
+    </div>
+</div>
+{% endblock %}
