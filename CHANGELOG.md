@@ -81,6 +81,19 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.12.3] - 2026-07-29
+
+### Adicionado
+
+- Expansão individual e persistente para mostrar todas as fibras de cada cabo.
+- Controles inferiores para agrupar ou separar PPPoE e equipamentos.
+
+### Alterado
+
+- Satélite sem API e sem cobrança definido como mapa inicial.
+- Camadas simplificadas para clientes PPPoE online e offline.
+- Painel duplicado de fusões removido do rodapé do unifilar.
+
 ## [0.12.2] - 2026-07-29
 
 ### Adicionado

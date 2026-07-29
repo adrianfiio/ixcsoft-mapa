@@ -24,15 +24,22 @@
     const map = L.map("map", { preferCanvas: true }).setView([-24.45, -50.62], 10);
     const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 20, attribution: "&copy; OpenStreetMap" });
     const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 20, attribution: "Tiles &copy; Esri" });
-    streetLayer.addTo(map);
-    L.control.layers({ "Mapa": streetLayer, "Satélite": satelliteLayer }, {}, { position: "topright" }).addTo(map);
+    satelliteLayer.addTo(map);
+    L.control.layers({ "Satélite (sem API)": satelliteLayer, "Mapa de ruas": streetLayer }, {}, { position: "topright" }).addTo(map);
 
     const clientLayers = {
         online: L.markerClusterGroup({ chunkedLoading: true }),
         offline: L.markerClusterGroup({ chunkedLoading: true }),
         unknown: L.markerClusterGroup({ chunkedLoading: true }),
     };
+    const clientPlainLayers = {
+        online: L.layerGroup(),
+        offline: L.layerGroup(),
+        unknown: L.layerGroup(),
+    };
     const structureLayer = L.layerGroup().addTo(map);
+    const equipmentClusterLayer = L.markerClusterGroup({ chunkedLoading: true }).addTo(map);
+    const equipmentPlainLayer = L.layerGroup();
     clientLayers.online.addTo(map);
     clientLayers.offline.addTo(map);
 
@@ -79,17 +86,36 @@
     function clientIcon(status) {
         return L.divIcon({ className: "", html: `<div class="client-dot ${status}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] });
     }
+    function refreshClientLayers() {
+        const grouped = document.getElementById("group-clients").checked;
+        ["online", "offline"].forEach((status) => {
+            map.removeLayer(clientLayers[status]);
+            map.removeLayer(clientPlainLayers[status]);
+            if (!document.getElementById(`layer-${status}`).checked) return;
+            (grouped ? clientLayers[status] : clientPlainLayers[status]).addTo(map);
+        });
+    }
+    function refreshEquipmentLayer() {
+        map.removeLayer(equipmentClusterLayer);
+        map.removeLayer(equipmentPlainLayer);
+        if (!document.getElementById("layer-structure").checked) return;
+        (document.getElementById("group-equipment").checked ? equipmentClusterLayer : equipmentPlainLayer).addTo(map);
+    }
     async function loadClients() {
         const data = await api("/api/map/access-points/");
         Object.values(clientLayers).forEach((layer) => layer.clearLayers());
+        Object.values(clientPlainLayers).forEach((layer) => layer.clearLayers());
         data.features.forEach((feature) => {
             const p = feature.properties || {};
             const status = ["online", "offline"].includes(p.status) ? p.status : "unknown";
             const [longitude, latitude] = feature.geometry.coordinates;
-            const marker = L.marker([latitude, longitude], { icon: clientIcon(status) });
-            marker.bindPopup(`<strong>${escapeHtml(p.cliente || "Cliente")}</strong><br>${escapeHtml(p.login || "")}<br>Status: ${escapeHtml(status)}<br>CTO: ${escapeHtml(p.cto || "-")}`);
-            clientLayers[status].addLayer(marker);
+            [clientLayers[status], clientPlainLayers[status]].forEach((layer) => {
+                const marker = L.marker([latitude, longitude], { icon: clientIcon(status) });
+                marker.bindPopup(`<strong>${escapeHtml(p.cliente || "Cliente")}</strong><br>${escapeHtml(p.login || "")}<br>Status: ${escapeHtml(status)}<br>CTO: ${escapeHtml(p.cto || "-")}`);
+                layer.addLayer(marker);
+            });
         });
+        refreshClientLayers();
         document.getElementById("client-count").textContent = data.count || data.features.length;
     }
     function networkIcon(type) {
@@ -240,6 +266,7 @@
                 api(`/api/map/elements/${element.id}/layout/`),
             ]);
             const layout = savedLayout.layout || {};
+            const expandedCables = new Set((layout.expandedCables || []).map(String));
             const fiberById = new Map(optical.cables.flatMap((cable) => cable.fibers.map((fiber) => [String(fiber.id), fiber])));
             document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
             let selectedTrayId = element.splice_box.trays[0]?.id || null;
@@ -264,7 +291,7 @@
                         ? { x: 900, y: 30 + outgoingIndex * 330 }
                         : { x: 20 + (otherIndex % 2) * 880, y: 30 + Math.floor(otherIndex / 2) * 330 };
                 const position = layout[`cable-${cable.id}`] || defaultPosition;
-                return `<section class="fiber-cable-node graph-node" data-node-key="cable-${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span class="drag-grip">⋮⋮</span></header>
+                return `<section class="fiber-cable-node graph-node ${expandedCables.has(String(cable.id)) ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span><button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${expandedCables.has(String(cable.id)) ? "−" : "+"}</button><span class="drag-grip">⋮⋮</span></span></header>
                 <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "disabled" : 'draggable="true"'} data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`;
             }).join("");
             const trayNodes = element.splice_box.trays.map((tray, index) => {
@@ -274,8 +301,7 @@
                 <button type="button" class="add-splitter-button" data-add-tray-splitter="${tray.id}">+ Splitter</button></div>`;
             }).join("");
             content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique numa bandeja para selecioná-la e em duas portas para ligar. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
-                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${trayNodes}</div></div>
-                <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div><span><b>${escapeHtml(splice.input.cable)}</b> · F${splice.input.number} ${escapeHtml(splice.input.color_name)} → <b>${escapeHtml(splice.output.cable)}</b> · F${splice.output.number} ${escapeHtml(splice.output.color_name)}</span><button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>`;
+                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${trayNodes}</div></div>`;
             let draggedFiber = null;
             let selectedFiber = null;
             let selectedSplitterPort = null;
@@ -355,12 +381,6 @@
                         body: JSON.stringify({ connection_type: "clear_splitter_output", port_id: button.dataset.portId }),
                     });
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
-                };
-            });
-            content.querySelectorAll("[data-delete-splice]").forEach((button) => {
-                button.onclick = async () => {
-                    await api(`/api/map/elements/${element.id}/splices/${button.dataset.deleteSplice}/`, { method: "DELETE" });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
                 };
             });
             const redrawOpticalLinks = () => {
@@ -466,6 +486,21 @@
                 applyGraphZoom(); saveZoom();
             };
             applyGraphZoom();
+            content.querySelectorAll("[data-expand-cable]").forEach((button) => {
+                button.onclick = async () => {
+                    const cableId = String(button.dataset.expandCable);
+                    const cableNode = content.querySelector(`[data-cable-node-id="${cableId}"]`);
+                    cableNode.classList.toggle("expanded");
+                    if (cableNode.classList.contains("expanded")) expandedCables.add(cableId);
+                    else expandedCables.delete(cableId);
+                    button.textContent = cableNode.classList.contains("expanded") ? "−" : "+";
+                    layout.expandedCables = [...expandedCables];
+                    redrawOpticalLinks();
+                    await api(`/api/map/elements/${element.id}/layout/`, {
+                        method: "PATCH", body: JSON.stringify({ layout }),
+                    });
+                };
+            });
             content.querySelectorAll(".tray-node").forEach((tray) => {
                 if (String(tray.dataset.trayId) === String(selectedTrayId)) tray.classList.add("active");
                 tray.addEventListener("click", (event) => {
@@ -680,6 +715,8 @@
         state.lightAnimationGeneration += 1;
         const lightGeneration = state.lightAnimationGeneration;
         structureLayer.clearLayers();
+        equipmentClusterLayer.clearLayers();
+        equipmentPlainLayer.clearLayers();
         if (!state.projectId) {
             state.elements = [];
             document.getElementById("element-count").textContent = "0";
@@ -704,44 +741,49 @@
         elements.features.forEach((feature) => {
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
-            const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: canEdit });
             const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
-            marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
-            if (showLabels) marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
-            marker.on("click", (event) => {
-                if (state.tool !== "cable") return;
-                if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
-                map.closePopup();
-                const exactPoint = L.latLng(latitude, longitude);
-                if (!state.cableOriginId) {
-                    state.cableOriginId = p.id;
-                    state.cableCoordinates = [[longitude, latitude]];
-                    state.drawingLine.setLatLngs([exactPoint]);
-                    notify(`Origem: ${p.nome}. Desenhe o trajeto e clique no equipamento de destino.`);
-                    return;
-                }
-                if (String(state.cableOriginId) === String(p.id)) return notify("Escolha outro equipamento como destino.", true);
-                state.cableDestinationId = p.id;
-                state.cableCoordinates.push([longitude, latitude]);
-                state.drawingLine.addLatLng(exactPoint);
-                openNewCableDialog();
-            });
-            marker.on("popupopen", () => {
-                popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
-                popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
-                popupAction(`[data-delete-element="${p.id}"]`, () => deleteElement(p.id).catch((error) => notify(error.message, true)));
-            });
-            if (canEdit) marker.on("dragend", async () => {
-                const position = marker.getLatLng();
-                try {
-                    await api(`/api/map/elements/${p.id}/position/`, { method: "PATCH", body: JSON.stringify({ latitude: position.lat, longitude: position.lng }) });
-                    await loadStructure();
-                    notify("Posição e pontas dos cabos atualizadas.");
-                } catch (error) { notify(error.message, true); loadStructure(); }
-            });
-            marker.addTo(structureLayer);
+            const createMarker = () => {
+                const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: canEdit });
+                marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
+                if (showLabels) marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
+                marker.on("click", (event) => {
+                    if (state.tool !== "cable") return;
+                    if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+                    map.closePopup();
+                    const exactPoint = L.latLng(latitude, longitude);
+                    if (!state.cableOriginId) {
+                        state.cableOriginId = p.id;
+                        state.cableCoordinates = [[longitude, latitude]];
+                        state.drawingLine.setLatLngs([exactPoint]);
+                        notify(`Origem: ${p.nome}. Desenhe o trajeto e clique no equipamento de destino.`);
+                        return;
+                    }
+                    if (String(state.cableOriginId) === String(p.id)) return notify("Escolha outro equipamento como destino.", true);
+                    state.cableDestinationId = p.id;
+                    state.cableCoordinates.push([longitude, latitude]);
+                    state.drawingLine.addLatLng(exactPoint);
+                    openNewCableDialog();
+                });
+                marker.on("popupopen", () => {
+                    popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-delete-element="${p.id}"]`, () => deleteElement(p.id).catch((error) => notify(error.message, true)));
+                });
+                if (canEdit) marker.on("dragend", async () => {
+                    const position = marker.getLatLng();
+                    try {
+                        await api(`/api/map/elements/${p.id}/position/`, { method: "PATCH", body: JSON.stringify({ latitude: position.lat, longitude: position.lng }) });
+                        await loadStructure();
+                        notify("Posição e pontas dos cabos atualizadas.");
+                    } catch (error) { notify(error.message, true); loadStructure(); }
+                });
+                return marker;
+            };
+            createMarker().addTo(equipmentClusterLayer);
+            createMarker().addTo(equipmentPlainLayer);
             bounds.push([latitude, longitude]);
         });
+        refreshEquipmentLayer();
         const illuminatedCables = new Set();
         if (state.lightSourceId && document.getElementById("layer-light-flow").checked) {
             const cableById = new Map(cables.features.map((feature) => [feature.properties.id, feature]));
@@ -1013,9 +1055,15 @@
         } catch (error) { notify(error.message, true); }
         event.target.value = "";
     };
-    [["structure", structureLayer], ["online", clientLayers.online], ["offline", clientLayers.offline], ["unknown", clientLayers.unknown]].forEach(([name, layer]) => {
-        document.getElementById(`layer-${name}`).onchange = (event) => { if (event.target.checked) layer.addTo(map); else map.removeLayer(layer); };
+    document.getElementById("layer-structure").onchange = (event) => {
+        if (event.target.checked) structureLayer.addTo(map); else map.removeLayer(structureLayer);
+        refreshEquipmentLayer();
+    };
+    ["online", "offline"].forEach((status) => {
+        document.getElementById(`layer-${status}`).onchange = refreshClientLayers;
     });
+    document.getElementById("group-clients").onchange = refreshClientLayers;
+    document.getElementById("group-equipment").onchange = refreshEquipmentLayer;
     document.getElementById("light-source-select").onchange = (event) => {
         state.lightSourceId = event.target.value || null;
         loadStructure().catch((error) => notify(error.message, true));
