@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.14.0 — CPD, terminações ópticas e infraestrutura de postes**
+**v0.14.1 — postes por proximidade, ações contextuais e novos ícones**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

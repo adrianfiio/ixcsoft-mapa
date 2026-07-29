@@ -11,6 +11,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.14.1] - 2026-07-29
+
+### Corrigido
+
+- A infraestrutura do poste agora lista somente cabos que passam a até 8 metros de sua posição.
+- CTOs e CEOs exibidas no poste agora são apenas as realmente instaladas nele.
+- Reservas técnicas só podem ser criadas quando existe um cabo passando pelo poste.
+
+### Adicionado
+
+- Ações contextuais no poste para instalar uma nova CTO, instalar uma nova CEO e criar reserva.
+- Ícones vetoriais padronizados no editor, nos atalhos recolhidos e nos marcadores do mapa.
+- Novo desenho de poste no mapa, substituindo o marcador textual `P`.
+
 ## [0.14.0] - 2026-07-29
 
 ### Corrigido

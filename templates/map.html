@@ -18,11 +18,11 @@
         <aside class="map-sidebar" id="map-sidebar">
             <button class="collapse-button" id="collapse-sidebar" type="button" title="Recolher menu">‹</button>
             <nav class="collapsed-tools" aria-label="Atalhos do editor">
-                <button type="button" data-quick-tool="cable" title="Desenhar cabo">⌁</button>
-                <button type="button" data-quick-tool="cto" title="Adicionar CTO">C</button>
-                <button type="button" data-quick-tool="splice_box" title="Adicionar CEO">E</button>
-                <button type="button" data-quick-tool="olt" title="Adicionar OLT">O</button>
-                <button type="button" data-quick-action="labels" title="Mostrar ou ocultar nomes">N</button>
+                <button type="button" data-quick-tool="cable" title="Desenhar cabo"><svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg></button>
+                <button type="button" data-quick-tool="cto" title="Adicionar CTO"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg></button>
+                <button type="button" data-quick-tool="splice_box" title="Adicionar CEO"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg></button>
+                <button type="button" data-quick-tool="olt" title="Adicionar OLT"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h7"></path></svg></button>
+                <button type="button" data-quick-action="labels" title="Mostrar ou ocultar nomes"><svg viewBox="0 0 24 24"><path d="M4 5h16M12 5v15M8 20h8"></path></svg></button>
             </nav>
             <div class="sidebar-content">
                 <a class="map-brand" href="{% url 'dashboard' %}">
@@ -69,11 +69,11 @@
                 <section class="editor-section">
                     <div class="section-heading"><span>Adicionar ao mapa</span></div>
                     <div class="tool-grid">
-                        <button class="tool-button" data-tool="pole" type="button"><b>│</b> Poste</button>
-                        <button class="tool-button" data-tool="cto" type="button"><b>CTO</b> CTO</button>
-                        <button class="tool-button" data-tool="splice_box" type="button"><b>CEO</b> CEO</button>
-                        <button class="tool-button" data-tool="cable" type="button"><b>⌁</b> Cabo</button>
-                        <button class="tool-button" data-tool="olt" type="button"><b>OLT</b> OLT</button>
+                        <button class="tool-button" data-tool="pole" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16M12 3v18M7 21h10M8 7l4 5 4-5"></path></svg><span>Poste</span></button>
+                        <button class="tool-button" data-tool="cto" type="button"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg><span>CTO</span></button>
+                        <button class="tool-button" data-tool="splice_box" type="button"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg><span>CEO</span></button>
+                        <button class="tool-button" data-tool="cable" type="button"><svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg><span>Cabo</span></button>
+                        <button class="tool-button" data-tool="olt" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h7"></path></svg><span>OLT</span></button>
                     </div>
                     <button id="import-button" class="secondary-button" type="button">Importar KML/KMZ</button>
                     <input id="import-file" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" hidden>
@@ -213,13 +213,18 @@
     </dialog>
 
     <dialog id="pole-dialog" class="editor-dialog">
-        <form id="pole-form">
+        <section id="pole-form">
             <header><h2 id="pole-dialog-title">Infraestrutura do poste</h2><button class="dialog-close" type="button">×</button></header>
             <input name="pole_id" type="hidden">
-            <fieldset><legend>Cabos que passam pelo poste</legend><div id="pole-cables"></div></fieldset>
-            <fieldset><legend>Equipamentos instalados no poste</legend><div id="pole-equipment"></div></fieldset>
-            <footer><button class="primary-button" type="submit">Salvar infraestrutura</button></footer>
-        </form>
+            <fieldset><legend>Cabos que realmente passam pelo poste</legend><div id="pole-cables"></div></fieldset>
+            <fieldset><legend>Equipamentos instalados neste poste</legend><div id="pole-equipment"></div></fieldset>
+            <div class="pole-actions">
+                <button id="pole-add-cto" class="secondary-button" type="button">+ Instalar CTO</button>
+                <button id="pole-add-ceo" class="secondary-button" type="button">+ Instalar CEO</button>
+                <button id="pole-add-reserve" class="secondary-button" type="button">+ Reserva de cabo</button>
+            </div>
+            <p id="pole-help" class="help-text"></p>
+        </section>
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
