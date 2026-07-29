@@ -19,7 +19,7 @@
     const cableForm = document.getElementById("cable-form");
     const drawingBar = document.getElementById("drawing-bar");
     const state = {
-        projectId: null, projects: [], elements: [], tool: null,
+        projectId: null, projects: [], elements: [], cables: [], tool: null,
         cableCoordinates: [], drawingLine: null,
         cableOriginId: null, cableDestinationId: null, cableModels: new Map(),
         editingElementId: null, editingCableId: null,
@@ -31,19 +31,28 @@
     const googleConfig = googleConfigElement
         ? JSON.parse(googleConfigElement.textContent)
         : { enabled: false, defaultLayer: "esri_satellite" };
-    const map = L.map("map", { preferCanvas: true, maxZoom: 22 }).setView([-24.45, -50.62], 10);
+    const map = L.map("map", { preferCanvas: true, maxZoom: 23 }).setView([-24.45, -50.62], 10);
     const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxNativeZoom: 19, maxZoom: 22, attribution: "&copy; OpenStreetMap",
+        maxNativeZoom: 19, maxZoom: 23, attribution: "&copy; OpenStreetMap",
     });
     const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-        maxNativeZoom: 19, maxZoom: 22, attribution: "Tiles &copy; Esri",
+        maxNativeZoom: 19, maxZoom: 23, attribution: "Tiles &copy; Esri",
     });
+    const hybridImageryLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxNativeZoom: 19, maxZoom: 23, attribution: "Tiles &copy; Esri",
+    });
+    const hybridLabelsLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+        maxNativeZoom: 19, maxZoom: 23, attribution: "Labels &copy; Esri",
+        pane: "overlayPane",
+    });
+    const satelliteHybridLayer = L.layerGroup([hybridImageryLayer, hybridLabelsLayer]);
     const baseLayers = {
-        "Satélite alternativo": satelliteLayer,
+        "Satélite + nomes e ruas": satelliteHybridLayer,
+        "Satélite limpo": satelliteLayer,
         "Mapa de ruas": streetLayer,
     };
     const baseLayerControl = L.control.layers(baseLayers, {}, { position: "topright" }).addTo(map);
-    const configuredFallback = googleConfig.defaultLayer === "openstreetmap" ? streetLayer : satelliteLayer;
+    const configuredFallback = googleConfig.defaultLayer === "openstreetmap" ? streetLayer : satelliteHybridLayer;
     configuredFallback.addTo(map);
 
     async function enableGoogleSatellite() {
@@ -154,6 +163,71 @@
         const item = document.createElement("span");
         item.textContent = value == null ? "" : String(value);
         return item.innerHTML;
+    }
+    function normalizeSearch(value) {
+        return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+    function showMapSearchResults(items) {
+        const results = document.getElementById("map-search-results");
+        results.innerHTML = items.map((item, index) => `<button class="map-search-result" type="button" data-search-result="${index}">${escapeHtml(item.label)}</button>`).join("")
+            || '<p class="help-text">Nenhum resultado encontrado.</p>';
+        results.hidden = false;
+        results.querySelectorAll("[data-search-result]").forEach((button) => {
+            button.onclick = () => {
+                items[Number(button.dataset.searchResult)].focus();
+                results.hidden = true;
+            };
+        });
+    }
+    async function searchAddress(query) {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&countrycodes=br&q=${encodeURIComponent(query)}`, {
+            headers: { "Accept-Language": "pt-BR" },
+        });
+        if (!response.ok) throw new Error("Não foi possível consultar endereços agora.");
+        const data = await response.json();
+        showMapSearchResults(data.map((item) => ({
+            label: item.display_name,
+            focus: () => {
+                const bounds = item.boundingbox?.map(Number);
+                if (bounds?.length === 4) map.fitBounds([[bounds[0], bounds[2]], [bounds[1], bounds[3]]], { maxZoom: 20 });
+                else map.setView([Number(item.lat), Number(item.lon)], 19);
+            },
+        })));
+    }
+    function searchProject(query) {
+        if (!state.projectId) return notify("Selecione um projeto antes de pesquisar sua estrutura.", true);
+        const term = normalizeSearch(query);
+        const typeNames = { cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO", pole: "Poste" };
+        const items = [];
+        state.elements.forEach((feature) => {
+            const properties = feature.properties || {};
+            const haystack = normalizeSearch(`${properties.nome} ${properties.codigo} ${properties.tipo} ${typeNames[properties.tipo] || ""}`);
+            if (!haystack.includes(term)) return;
+            const [longitude, latitude] = feature.geometry.coordinates;
+            items.push({
+                label: `${typeNames[properties.tipo] || properties.tipo} · ${properties.nome}${properties.codigo ? ` · ${properties.codigo}` : ""}`,
+                focus: () => map.setView([latitude, longitude], 21),
+            });
+        });
+        state.cables.forEach((feature) => {
+            const properties = feature.properties || {};
+            const haystack = normalizeSearch(`cabo ${properties.nome} ${properties.codigo}`);
+            if (!haystack.includes(term)) return;
+            const lines = feature.geometry.type === "MultiLineString" ? feature.geometry.coordinates : [feature.geometry.coordinates];
+            const points = lines.flat().map(([longitude, latitude]) => [latitude, longitude]);
+            items.push({
+                label: `Cabo · ${properties.nome}${properties.codigo ? ` · ${properties.codigo}` : ""}`,
+                focus: () => points.length && map.fitBounds(points, { padding: [45, 45], maxZoom: 21 }),
+            });
+        });
+        showMapSearchResults(items.slice(0, 30));
+    }
+    async function executeMapSearch() {
+        const query = document.getElementById("map-search-query").value.trim();
+        if (!query) return notify("Digite o que deseja localizar.", true);
+        const mode = document.getElementById("map-search-mode").value;
+        if (mode === "address") await searchAddress(query);
+        else searchProject(query);
     }
     function selectedProject() {
         return state.projects.find((item) => String(item.id) === String(state.projectId));
@@ -878,6 +952,7 @@
         equipmentPlainLayer.clearLayers();
         if (!state.projectId) {
             state.elements = [];
+            state.cables = [];
             document.getElementById("element-count").textContent = "0";
             document.getElementById("cable-count").textContent = "0";
             populateConnectionSelects();
@@ -886,6 +961,7 @@
         const query = `?project_id=${encodeURIComponent(state.projectId)}`;
         const [elements, cables, routes] = await Promise.all([api(`/api/map/elements/${query}`), api(`/api/map/cables/${query}`), api(`/api/map/routes/${query}`)]);
         state.elements = elements.features;
+        state.cables = cables.features;
         const lightSelect = document.getElementById("light-source-select");
         const currentLight = state.lightSourceId || lightSelect.value;
         lightSelect.innerHTML = '<option value="">Selecione a OLT de origem</option>';
@@ -1104,6 +1180,30 @@
     });
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };
+    document.getElementById("map-search-button").onclick = () => executeMapSearch().catch((error) => notify(error.message, true));
+    document.getElementById("map-search-query").onkeydown = (event) => {
+        if (event.key === "Enter") executeMapSearch().catch((error) => notify(error.message, true));
+    };
+    document.getElementById("map-search-mode").onchange = (event) => {
+        const input = document.getElementById("map-search-query");
+        input.placeholder = event.target.value === "address"
+            ? "Rua, número, cidade e estado"
+            : "CTO, CEO, OLT, poste, código ou cabo";
+        document.getElementById("map-search-results").hidden = true;
+        input.focus();
+    };
+    document.getElementById("map-gps-button").onclick = () => {
+        if (!navigator.geolocation) return notify("Este navegador não oferece localização por GPS.", true);
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                map.setView([coords.latitude, coords.longitude], 20);
+                L.circleMarker([coords.latitude, coords.longitude], { radius: 8, color: "#fff", fillColor: "#2dd4bf", fillOpacity: 1 }).addTo(map)
+                    .bindTooltip("Minha localização", { permanent: false }).openTooltip();
+            },
+            () => notify("Não foi possível obter o GPS. Verifique a permissão do navegador.", true),
+            { enableHighAccuracy: true, timeout: 12000 },
+        );
+    };
     document.querySelectorAll("[data-quick-tool]").forEach((button) => {
         button.onclick = () => setTool(button.dataset.quickTool);
     });

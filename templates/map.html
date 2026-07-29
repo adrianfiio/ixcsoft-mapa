@@ -95,6 +95,17 @@
 
         <main id="map"></main>
 
+        <section class="map-search" id="map-search" aria-label="Pesquisa no mapa">
+            <select id="map-search-mode" aria-label="Tipo de pesquisa">
+                <option value="address">Buscar endereço</option>
+                <option value="project">Procurar no projeto</option>
+            </select>
+            <input id="map-search-query" type="search" autocomplete="off" placeholder="Rua, número, cidade e estado">
+            <button id="map-search-button" type="button">Buscar</button>
+            <button id="map-gps-button" type="button" title="Ir para minha localização">⌖</button>
+            <div id="map-search-results" class="map-search-results" hidden></div>
+        </section>
+
         <div id="drawing-bar" class="drawing-bar" hidden>
             <span>Clique no mapa para traçar o cabo.</span>
             <button id="finish-drawing" type="button">Concluir</button>
