@@ -227,6 +227,38 @@
         </section>
     </dialog>
 
+    <dialog id="pole-action-dialog" class="editor-dialog">
+        <form id="pole-action-form">
+            <header><h2 id="pole-action-title">Adicionar ao poste</h2><button class="dialog-close" type="button">×</button></header>
+            <input name="action" type="hidden">
+            <input name="element_type" type="hidden">
+            <label id="pole-action-name-wrap">Nome
+                <input name="name" maxlength="180" autocomplete="off" placeholder="Ex.: CTO-IMB-001">
+            </label>
+            <label id="pole-action-cable-wrap" hidden>Cabo que passa pelo poste
+                <select name="cable_id"></select>
+            </label>
+            <label id="pole-action-length-wrap" hidden>Metragem da reserva
+                <input name="length_m" type="number" min="0.01" step="0.01" value="20">
+            </label>
+            <label id="pole-action-label-wrap" hidden>Identificação da reserva
+                <input name="label" maxlength="100" placeholder="Ex.: Reserva poste 01">
+            </label>
+            <footer><button class="primary-button" type="submit">Salvar no poste</button></footer>
+        </form>
+    </dialog>
+
+    <dialog id="quick-input-dialog" class="editor-dialog">
+        <form id="quick-input-form">
+            <header><h2 id="quick-input-title">Informar valor</h2><button class="dialog-close" type="button">×</button></header>
+            <label><span id="quick-input-label"></span>
+                <input id="quick-input-value" name="value" autocomplete="off">
+                <select id="quick-input-select" name="selected" hidden></select>
+            </label>
+            <footer><button class="primary-button" type="submit">Continuar</button></footer>
+        </form>
+    </dialog>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>

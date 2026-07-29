@@ -1,7 +1,21 @@
 from django.contrib import admin
-from django.contrib.gis.admin import GISModelAdmin
-
+from apps.core.admin_gis import AFServiceGISAdmin, GeoPointAdminForm
 from .models import DIO, DIOPort, DIOTray
+
+
+class DIOAdminForm(GeoPointAdminForm):
+    class Meta:
+        model = DIO
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("point"):
+            pop = cleaned.get("pop")
+            if pop and pop.point:
+                cleaned["point"] = pop.point
+                self.instance.point = pop.point
+        return cleaned
 
 
 class DIOTrayInline(admin.TabularInline):
@@ -29,7 +43,8 @@ class DIOPortInline(admin.TabularInline):
 
 
 @admin.register(DIO)
-class DIOAdmin(GISModelAdmin):
+class DIOAdmin(AFServiceGISAdmin):
+    form = DIOAdminForm
     list_display = (
         "code",
         "name",

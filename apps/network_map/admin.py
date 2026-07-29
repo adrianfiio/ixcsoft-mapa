@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.contrib.gis.admin import GISModelAdmin
+from apps.core.admin_gis import AFServiceGISAdmin, GeoPointAdminForm
 
 from .models import (
     CableModel,
@@ -83,7 +83,7 @@ class FiberStrandInline(admin.TabularInline):
 # ==========================
 
 @admin.register(NetworkRoute)
-class NetworkRouteAdmin(GISModelAdmin):
+class NetworkRouteAdmin(AFServiceGISAdmin):
     list_display = (
         "name",
         "code",
@@ -103,7 +103,7 @@ class NetworkRouteAdmin(GISModelAdmin):
 
 
 @admin.register(NetworkElement)
-class NetworkElementAdmin(GISModelAdmin):
+class NetworkElementAdmin(AFServiceGISAdmin):
     list_display = (
         "name",
         "code",
@@ -125,7 +125,7 @@ class NetworkElementAdmin(GISModelAdmin):
 
 
 @admin.register(CTO)
-class CTOAdmin(GISModelAdmin):
+class CTOAdmin(AFServiceGISAdmin):
     list_display = (
         "name",
         "ixc_box_id",
@@ -149,7 +149,7 @@ class CTOAdmin(GISModelAdmin):
 
 
 @admin.register(FiberCable)
-class FiberCableAdmin(GISModelAdmin):
+class FiberCableAdmin(AFServiceGISAdmin):
     list_display = (
         "name",
         "code",
@@ -186,7 +186,7 @@ class FiberCableAdmin(GISModelAdmin):
 
 
 @admin.register(CableReserve)
-class CableReserveAdmin(GISModelAdmin):
+class CableReserveAdmin(AFServiceGISAdmin):
     list_display = ("cable", "length_m", "label", "updated_at")
     search_fields = ("cable__name", "cable__code", "label")
     autocomplete_fields = ("cable",)
@@ -199,8 +199,25 @@ admin.site.register(NetworkDependency)
 # POP
 # ==========================
 
+class POPAdminForm(GeoPointAdminForm):
+    class Meta:
+        model = POP
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("point"):
+            project = cleaned.get("project")
+            reference = project.elements.exclude(point__isnull=True).first() if project else None
+            if reference:
+                cleaned["point"] = reference.point
+                self.instance.point = reference.point
+        return cleaned
+
+
 @admin.register(POP)
-class POPAdmin(GISModelAdmin):
+class POPAdmin(AFServiceGISAdmin):
+    form = POPAdminForm
     list_display = (
         "code",
         "name",
