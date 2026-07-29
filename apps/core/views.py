@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import connection
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import TemplateView
 from redis import Redis
@@ -12,6 +12,15 @@ from apps.ixc_integration.models import IXCCustomer, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.olt_integration.models import OLT, ONU
+
+
+def app_stylesheet(request):
+    response = FileResponse(
+        open(settings.BASE_DIR / "static" / "css" / "app.css", "rb"),
+        content_type="text/css; charset=utf-8",
+    )
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 class DashboardView(TemplateView):

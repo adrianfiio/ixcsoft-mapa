@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#07111f">
     <title>{% block title %}IXCSoft Mapa{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="{% url 'app-stylesheet' %}?v={{ app_version|default:'current' }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>

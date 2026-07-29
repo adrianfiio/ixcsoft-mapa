@@ -9,6 +9,7 @@ CURRENT_STEP="inicialização"
 BEFORE_COMMIT=""
 AFTER_COMMIT=""
 DEPLOY_VERSION=""
+APP_VERSION_VALUE=""
 
 if [[ -t 1 ]]; then
     GREEN=$'\033[0;32m'
@@ -116,7 +117,8 @@ git switch "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 AFTER_COMMIT="$(git rev-parse --short HEAD)"
 DEPLOY_VERSION="$(git describe --tags --always --match 'v*')"
-export APP_VERSION="$DEPLOY_VERSION"
+APP_VERSION_VALUE="${DEPLOY_VERSION#v}"
+export APP_VERSION="$APP_VERSION_VALUE"
 if [[ "$BEFORE_COMMIT" == "$AFTER_COMMIT" ]]; then
     success "Código já estava atualizado ($AFTER_COMMIT)"
 else
@@ -159,6 +161,14 @@ while true; do
 done
 printf '\n'
 success "Aplicação saudável"
+
+CURRENT_STEP="verificação dos arquivos da interface"
+info "Verificando o CSS da interface"
+curl --fail --silent --show-error \
+    -H "Host: localhost" \
+    "http://127.0.0.1:8000/assets/app.css?v=$APP_VERSION_VALUE" \
+    >/dev/null
+success "CSS da interface disponível"
 
 CURRENT_STEP="verificação final dos serviços"
 for service in web worker beat; do

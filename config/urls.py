@@ -2,10 +2,11 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from apps.core.views import DashboardView
+from apps.core.views import DashboardView, app_stylesheet
 
 
 urlpatterns = [
+    path("assets/app.css", app_stylesheet, name="app-stylesheet"),
     path("", DashboardView.as_view(), name="dashboard"),
     path("mapa/", DashboardView.as_view(template_name="map.html"), name="map"),
     path("admin/", admin.site.urls),
