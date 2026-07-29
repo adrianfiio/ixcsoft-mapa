@@ -4,6 +4,8 @@ from django.contrib.gis.admin import GISModelAdmin
 from .models import (
     CableModel,
     CTO,
+    CTOSplitter,
+    CTOSplitterPort,
     FiberCable,
     FiberColor,
     FiberColorStandard,
@@ -28,6 +30,19 @@ class NetworkProjectAdmin(admin.ModelAdmin):
     list_filter = ("status", "enabled", "company")
     search_fields = ("name", "code", "description")
     readonly_fields = ("created_at", "updated_at")
+
+
+class CTOSplitterPortInline(admin.TabularInline):
+    model = CTOSplitterPort
+    extra = 0
+
+
+@admin.register(CTOSplitter)
+class CTOSplitterAdmin(admin.ModelAdmin):
+    list_display = ("name", "cto", "ratio", "output_ports", "position", "enabled")
+    list_filter = ("ratio", "enabled")
+    search_fields = ("name", "cto__name", "cto__code")
+    inlines = [CTOSplitterPortInline]
 
 
 # ==========================

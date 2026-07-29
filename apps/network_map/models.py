@@ -122,6 +122,90 @@ class CTO(NetworkElement):
         verbose_name_plural = "CTOs"
 
 
+class CTOSplitter(TimeStampedModel):
+    class Ratio(models.TextChoices):
+        ONE_TO_2 = "1:2", "1:2"
+        ONE_TO_4 = "1:4", "1:4"
+        ONE_TO_8 = "1:8", "1:8"
+        ONE_TO_16 = "1:16", "1:16"
+        ONE_TO_32 = "1:32", "1:32"
+        ONE_TO_64 = "1:64", "1:64"
+
+    cto = models.ForeignKey(
+        CTO,
+        on_delete=models.CASCADE,
+        related_name="splitters",
+    )
+    name = models.CharField(max_length=100, default="Splitter 1")
+    ratio = models.CharField(
+        max_length=10,
+        choices=Ratio.choices,
+        default=Ratio.ONE_TO_8,
+    )
+    output_ports = models.PositiveSmallIntegerField(default=8)
+    input_label = models.CharField(max_length=80, blank=True)
+    position = models.PositiveSmallIntegerField(default=1)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["cto", "position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cto", "position"],
+                name="unique_splitter_position_per_cto",
+            )
+        ]
+        verbose_name = "Splitter de CTO"
+        verbose_name_plural = "Splitters de CTO"
+
+    def __str__(self):
+        return f"{self.cto.name} · {self.name} {self.ratio}"
+
+
+class CTOSplitterPort(TimeStampedModel):
+    class Status(models.TextChoices):
+        FREE = "free", "Livre"
+        RESERVED = "reserved", "Reservada"
+        OCCUPIED = "occupied", "Ocupada"
+        DEFECTIVE = "defective", "Defeituosa"
+
+    splitter = models.ForeignKey(
+        CTOSplitter,
+        on_delete=models.CASCADE,
+        related_name="ports",
+    )
+    number = models.PositiveSmallIntegerField()
+    label = models.CharField(max_length=80, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.FREE,
+        db_index=True,
+    )
+    access_point = models.ForeignKey(
+        "access.AccessPoint",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cto_splitter_ports",
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["splitter", "number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["splitter", "number"],
+                name="unique_port_number_per_splitter",
+            )
+        ]
+        verbose_name = "Porta de splitter"
+        verbose_name_plural = "Portas de splitter"
+
+    def __str__(self):
+        return f"{self.splitter} · Porta {self.number}"
+
+
 class FiberCable(CompanyScopedModel, NamedModel):
     class CableType(models.TextChoices):
         FEEDER = "feeder", "Alimentador"

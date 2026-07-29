@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET
 from apps.access.models import AccessPoint
 from apps.network_map.models import (
     CableModel,
+    CTO,
     FiberCable,
     FiberStrand,
     NetworkElement,
@@ -445,6 +446,52 @@ from rest_framework.permissions import (
 from rest_framework import status
 
 
+def element_detail_payload(element):
+    payload = {
+        "id": element.id,
+        "name": element.name,
+        "code": element.code,
+        "description": element.description,
+        "project_id": element.project_id,
+        "element_type": element.element_type,
+        "status": element.status,
+        "enabled": element.enabled,
+        "latitude": element.point.y if element.point else None,
+        "longitude": element.point.x if element.point else None,
+        "cto": None,
+    }
+    try:
+        cto = element.cto
+    except CTO.DoesNotExist:
+        cto = None
+    if cto is not None:
+        payload["cto"] = {
+            "capacity": cto.capacity,
+            "splitter_ratio": cto.splitter_ratio,
+            "splitters": [
+                {
+                    "id": splitter.id,
+                    "name": splitter.name,
+                    "ratio": splitter.ratio,
+                    "output_ports": splitter.output_ports,
+                    "ports": [
+                        {
+                            "id": port.id,
+                            "number": port.number,
+                            "label": port.label,
+                            "status": port.status,
+                            "status_label": port.get_status_display(),
+                            "access_point_id": port.access_point_id,
+                        }
+                        for port in splitter.ports.all()
+                    ],
+                }
+                for splitter in cto.splitters.prefetch_related("ports").all()
+            ],
+        }
+    return payload
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_network_element(request):
@@ -499,25 +546,7 @@ def network_element_detail(request, element_id):
         return JsonResponse(
             {
                 "success": True,
-                "element": {
-                    "id": element.id,
-                    "name": element.name,
-                    "code": element.code,
-                    "project_id": element.project_id,
-                    "element_type": element.element_type,
-                    "status": element.status,
-                    "enabled": element.enabled,
-                    "latitude": (
-                        element.point.y
-                        if element.point
-                        else None
-                    ),
-                    "longitude": (
-                        element.point.x
-                        if element.point
-                        else None
-                    ),
-                },
+                "element": element_detail_payload(element),
             },
             json_dumps_params={
                 "ensure_ascii": False,
@@ -588,25 +617,7 @@ def network_element_detail(request, element_id):
     return JsonResponse(
         {
             "success": True,
-            "element": {
-                "id": element.id,
-                "name": element.name,
-                "code": element.code,
-                "project_id": element.project_id,
-                "element_type": element.element_type,
-                "status": element.status,
-                "enabled": element.enabled,
-                "latitude": (
-                    element.point.y
-                    if element.point
-                    else None
-                ),
-                "longitude": (
-                    element.point.x
-                    if element.point
-                    else None
-                ),
-            },
+            "element": element_detail_payload(element),
         },
         json_dumps_params={
             "ensure_ascii": False,
@@ -672,6 +683,23 @@ def update_network_element_position(request, element_id):
     element.save(
         update_fields=["point"]
     )
+
+    connected_cables = FiberCable.objects.filter(
+        Q(origin=element) | Q(destination=element)
+    )
+    for cable in connected_cables:
+        lines = [list(line.coords) for line in cable.geometry]
+        if not lines:
+            continue
+        if cable.origin_id == element.id:
+            lines[0][0] = (longitude, latitude)
+        if cable.destination_id == element.id:
+            lines[-1][-1] = (longitude, latitude)
+        cable.geometry = MultiLineString(
+            *[LineString(line, srid=4326) for line in lines],
+            srid=4326,
+        )
+        cable.save(update_fields=["geometry", "updated_at"])
 
     return JsonResponse(
         {
@@ -901,6 +929,17 @@ def create_fiber_cable(request):
                 status=400,
             )
 
+    if origin is not None and origin.point:
+        normalized_coordinates[0] = (
+            origin.point.x,
+            origin.point.y,
+        )
+    if destination is not None and destination.point:
+        normalized_coordinates[-1] = (
+            destination.point.x,
+            destination.point.y,
+        )
+
     company = project.company or (
         cable_model.company if cable_model else None
     )
@@ -994,7 +1033,28 @@ def create_fiber_cable(request):
     )
 
 
-@api_view(["DELETE"])
+def cable_detail_payload(cable):
+    return {
+        "id": cable.id,
+        "project_id": cable.project_id,
+        "name": cable.name,
+        "code": cable.code,
+        "description": cable.description,
+        "cable_type": cable.cable_type,
+        "fiber_count": cable.fiber_count,
+        "used_fibers": cable.used_fibers,
+        "status": cable.status,
+        "origin_id": cable.origin_id,
+        "destination_id": cable.destination_id,
+        "cable_model_id": cable.cable_model_id,
+        "geometry": {
+            "type": "MultiLineString",
+            "coordinates": cable.geometry.coords,
+        },
+    }
+
+
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_fiber_cable(request, cable_id):
     """
@@ -1007,6 +1067,80 @@ def delete_fiber_cable(request, cable_id):
         FiberCable,
         pk=cable_id,
     )
+
+    if request.method == "GET":
+        return JsonResponse(
+            {"success": True, "cable": cable_detail_payload(cable)}
+        )
+
+    if request.method == "PATCH":
+        data = request.data
+        for field in ("name", "code", "description", "status"):
+            if field in data:
+                setattr(cable, field, str(data[field]).strip())
+
+        if "cable_type" in data:
+            cable_type = str(data["cable_type"]).strip()
+            if cable_type not in dict(FiberCable.CableType.choices):
+                return JsonResponse(
+                    {"success": False, "error": "Tipo de cabo inválido."},
+                    status=400,
+                )
+            cable.cable_type = cable_type
+
+        if "fiber_count" in data:
+            try:
+                fiber_count = int(data["fiber_count"])
+            except (TypeError, ValueError):
+                fiber_count = 0
+            if fiber_count < max(1, cable.used_fibers):
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "A capacidade não pode ser menor que as fibras usadas.",
+                    },
+                    status=400,
+                )
+            cable.fiber_count = fiber_count
+
+        for field in ("origin_id", "destination_id"):
+            if field not in data:
+                continue
+            value = data.get(field)
+            element = None
+            if value not in (None, ""):
+                try:
+                    element = NetworkElement.objects.get(
+                        pk=int(value),
+                        project=cable.project,
+                    )
+                except (TypeError, ValueError, NetworkElement.DoesNotExist):
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "error": "A conexão deve usar um elemento do mesmo projeto.",
+                        },
+                        status=400,
+                    )
+            setattr(cable, field, element.id if element else None)
+
+        lines = [list(line.coords) for line in cable.geometry]
+        if lines and cable.origin and cable.origin.point:
+            lines[0][0] = (cable.origin.point.x, cable.origin.point.y)
+        if lines and cable.destination and cable.destination.point:
+            lines[-1][-1] = (
+                cable.destination.point.x,
+                cable.destination.point.y,
+            )
+        if lines:
+            cable.geometry = MultiLineString(
+                *[LineString(line, srid=4326) for line in lines],
+                srid=4326,
+            )
+        cable.save()
+        return JsonResponse(
+            {"success": True, "cable": cable_detail_payload(cable)}
+        )
 
     force_delete = str(
         request.query_params.get("force", "")
