@@ -11,6 +11,19 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.5] - 2026-07-29
+
+### Alterado
+
+- Produto renomeado de IXCSoft Mapa para AFService Map
+- Logotipo oficial aplicado no dashboard, mapa e Django Admin
+- Arquivos estáticos movidos para `/assets/static/`
+
+### Corrigido
+
+- Estilos do Django Admin servidos corretamente atrás do Nginx
+- `apply` agora valida dashboard, Admin e logotipo
+
 ## [0.8.4] - 2026-07-29
 
 ### Adicionado

@@ -166,9 +166,17 @@ CURRENT_STEP="verificação dos arquivos da interface"
 info "Verificando o CSS da interface"
 curl --fail --silent --show-error \
     -H "Host: localhost" \
-    "http://127.0.0.1:8000/assets/app.css?v=$APP_VERSION_VALUE" \
+    "http://127.0.0.1:8000/assets/static/css/app.css?v=$APP_VERSION_VALUE" \
     >/dev/null
-success "CSS da interface disponível"
+curl --fail --silent --show-error \
+    -H "Host: localhost" \
+    "http://127.0.0.1:8000/assets/static/admin/css/base.css?v=$APP_VERSION_VALUE" \
+    >/dev/null
+curl --fail --silent --show-error \
+    -H "Host: localhost" \
+    "http://127.0.0.1:8000/assets/static/img/afservice-logo.png?v=$APP_VERSION_VALUE" \
+    >/dev/null
+success "CSS da aplicação, Django Admin e logotipo disponíveis"
 
 CURRENT_STEP="verificação final dos serviços"
 for service in web worker beat; do

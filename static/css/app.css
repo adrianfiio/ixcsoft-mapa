@@ -30,6 +30,7 @@ a { color: inherit; text-decoration: none; }
     background: rgba(8, 22, 37, .98); border-right: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 28px; }
+.brand-logo { width: 52px; height: 34px; object-fit: contain; object-position: left center; }
 .brand-mark {
     display: grid; place-items: center; width: 42px; height: 42px;
     color: #06131c; background: linear-gradient(135deg, #52e0ce, #22a99b);
