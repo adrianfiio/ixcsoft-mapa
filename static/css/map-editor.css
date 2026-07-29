@@ -105,8 +105,8 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .optical-graph { position: relative; min-width: 1050px; min-height: 620px; padding: 24px; margin: 12px 0; overflow: auto; background: #070f1d; border: 1px solid var(--border); border-radius: 10px; }
 .optical-links { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; }
 .optical-links path { fill: none; stroke-width: 2.5; opacity: .9; filter: drop-shadow(0 0 3px currentColor); pointer-events: stroke; cursor: pointer; }
-.graph-nodes { position: relative; z-index: 2; min-width: 1200px; min-height: 760px; }
-.graph-node { position: absolute; }
+.graph-nodes { position: relative; z-index: 2; min-width: 1200px; min-height: 760px; pointer-events: none; }
+.graph-node { position: absolute; pointer-events: auto; }
 .drag-grip { float: right; padding: 0 5px; color: var(--muted); cursor: move; touch-action: none; user-select: none; }
 .graph-cables { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(2, minmax(210px, 1fr)); gap: 180px; }
 .fiber-cable-node { min-width: 210px; overflow: hidden; background: #121d35; border: 1px solid #334766; border-radius: 7px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
@@ -128,7 +128,10 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .splitter-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 4px; }
 .add-splitter-button { width: 100%; padding: 5px; margin-top: 6px; color: #bffbf3; background: #0b5674; border: 1px solid #2dd4bf; border-radius: 5px; cursor: pointer; }
 .network-marker { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: #087f8c; border: 2px solid white; border-radius: 9px; box-shadow: 0 3px 12px rgba(0,0,0,.42); font-size: 9px; font-weight: 900; }
-.network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { background: #1261a0; }.network-marker.splice_box { background: #8a3cac; }
+.network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { width: 38px; height: 38px; background: #1261a0; }.network-marker.splice_box { width: 38px; height: 42px; background: #8a3cac; border-radius: 15px 15px 10px 10px; }
+.network-marker svg { width: 21px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.network-marker small { margin-top: -4px; font-size: 7px; line-height: 1; }
+.light-direction-marker { display: grid; place-items: center; width: 25px; height: 25px; color: #4a3600; background: #facc15; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px #facc15; font-size: 14px; font-weight: 900; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
 .client-dot.online { background: #22c55e; }.client-dot.offline { background: #ef476f; }.client-dot.unknown { background: #f5b942; }
 .reserve-marker { display: grid; place-items: center; width: 32px; height: 32px; color: #111827; background: #f7b731; border: 3px double #111827; border-radius: 50%; box-shadow: 0 2px 9px rgba(0,0,0,.45); font-size: 20px; font-weight: 900; }

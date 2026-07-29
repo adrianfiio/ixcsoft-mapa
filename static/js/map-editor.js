@@ -17,7 +17,7 @@
         cableCoordinates: [], drawingLine: null,
         editingElementId: null, editingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
-        lightSourceId: null,
+        lightSourceId: null, lightAnimationGeneration: 0,
     };
 
     const map = L.map("map", { preferCanvas: true }).setView([-24.45, -50.62], 10);
@@ -93,7 +93,58 @@
     }
     function networkIcon(type) {
         const labels = { pole: "P", cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO" };
-        return L.divIcon({ className: "", html: `<div class="network-marker ${type}">${labels[type] || "•"}</div>`, iconSize: [31, 31], iconAnchor: [15, 15] });
+        const symbols = {
+            cto: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="12" rx="2"></rect><path d="M7 6h10M7 10h10M7 14v3m5-3v3m5-3v3"></path></svg><small>CTO</small>',
+            splice_box: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CEO</small>',
+            olt: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>OLT</small>',
+        };
+        const large = ["cto", "splice_box", "olt"].includes(type);
+        return L.divIcon({
+            className: "",
+            html: `<div class="network-marker ${type}">${symbols[type] || labels[type] || "•"}</div>`,
+            iconSize: large ? [40, 44] : [31, 31],
+            iconAnchor: large ? [20, 22] : [15, 15],
+        });
+    }
+
+    function animateLightDirection(feature, generation) {
+        const geometry = feature.geometry || {};
+        const lines = geometry.type === "MultiLineString" ? geometry.coordinates : [geometry.coordinates];
+        lines.filter((coordinates) => Array.isArray(coordinates) && coordinates.length > 1).forEach((coordinates) => {
+            const points = coordinates.map(([longitude, latitude]) => L.latLng(latitude, longitude));
+            const segments = [];
+            let total = 0;
+            for (let index = 1; index < points.length; index += 1) {
+                const length = map.distance(points[index - 1], points[index]);
+                segments.push({ start: points[index - 1], end: points[index], from: total, length });
+                total += length;
+            }
+            if (!total) return;
+            const marker = L.marker(points[0], {
+                interactive: false,
+                icon: L.divIcon({
+                    className: "",
+                    html: '<div class="light-direction-marker">➤</div>',
+                    iconSize: [25, 25],
+                    iconAnchor: [12, 12],
+                }),
+                zIndexOffset: 900,
+            }).addTo(structureLayer);
+            const duration = Math.max(2200, Math.min(8500, total * 7));
+            const startedAt = performance.now();
+            const frame = (timestamp) => {
+                if (generation !== state.lightAnimationGeneration || !structureLayer.hasLayer(marker)) return;
+                const travelled = (((timestamp - startedAt) % duration) / duration) * total;
+                const segment = segments.find((item) => travelled <= item.from + item.length) || segments.at(-1);
+                const ratio = segment.length ? (travelled - segment.from) / segment.length : 0;
+                marker.setLatLng([
+                    segment.start.lat + (segment.end.lat - segment.start.lat) * ratio,
+                    segment.start.lng + (segment.end.lng - segment.start.lng) * ratio,
+                ]);
+                requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+        });
     }
     function populateConnectionSelects() {
         ["origin_id", "destination_id"].forEach((name) => {
@@ -183,6 +234,7 @@
                 api(`/api/map/elements/${element.id}/layout/`),
             ]);
             const layout = savedLayout.layout || {};
+            const fiberById = new Map(optical.cables.flatMap((cable) => cable.fibers.map((fiber) => [String(fiber.id), fiber])));
             document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
             let selectedTrayId = element.splice_box.trays[0]?.id || null;
             const usedFiberIds = new Set([
@@ -300,7 +352,7 @@
                 svg.innerHTML = "";
                 svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
                 const lineStyle = document.getElementById("connection-style").value;
-                const drawLink = (source, target, color, spliceId = "") => {
+                const drawLink = (source, target, color, action = null) => {
                     if (!source || !target) return;
                     const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
                     const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
@@ -308,33 +360,46 @@
                     let path = `M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`;
                     if (lineStyle === "straight") path = `M${x1},${y1} L${x2},${y2}`;
                     if (lineStyle === "orthogonal") path = `M${x1},${y1} H${(x1+x2)/2} V${y2} H${x2}`;
-                    svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${color}" ${spliceId ? `data-splice-line="${spliceId}"` : ""}></path>`);
+                    const actionData = action ? `data-link-type="${action.type}" data-link-id="${action.id}"` : "";
+                    svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${escapeHtml(color || "#94a3b8")}" ${actionData}></path>`);
                 };
                 optical.splices.forEach((splice) => drawLink(
                     content.querySelector(`[data-fiber-id="${splice.input_fiber_id}"]`),
                     content.querySelector(`[data-fiber-id="${splice.output_fiber_id}"]`),
                     escapeHtml(splice.input.color_hex),
-                    splice.id
+                    { type: "splice", id: splice.id }
                 ));
                 optical.splitter_links.forEach((link) => {
                     if (link.input_fiber_id) drawLink(
                         content.querySelector(`[data-fiber-id="${link.input_fiber_id}"]`),
                         content.querySelector(`[data-splitter-id="${link.splitter_id}"]`),
-                        "#22c55e"
+                        fiberById.get(String(link.input_fiber_id))?.color_hex,
+                        { type: "splitter_input", id: link.splitter_id }
                     );
                     link.ports.forEach((port) => {
                         if (port.output_fiber_id) drawLink(
                             content.querySelector(`[data-port-id="${port.id}"]`),
                             content.querySelector(`[data-fiber-id="${port.output_fiber_id}"]`),
-                            "#38bdf8"
+                            fiberById.get(String(port.output_fiber_id))?.color_hex,
+                            { type: "splitter_output", id: port.id }
                         );
                     });
                 });
-                svg.querySelectorAll("[data-splice-line]").forEach((path) => {
+                svg.querySelectorAll("[data-link-type]").forEach((path) => {
                     path.onclick = async () => {
-                        if (!confirm("Excluir esta fusão para redesenhar?")) return;
-                        await api(`/api/map/elements/${element.id}/splices/${path.dataset.spliceLine}/`, { method: "DELETE" });
-                        unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
+                        if (!confirm("Excluir esta ligação para redesenhar?")) return;
+                        if (path.dataset.linkType === "splice") {
+                            await api(`/api/map/elements/${element.id}/splices/${path.dataset.linkId}/`, { method: "DELETE" });
+                        } else {
+                            await api(`/api/map/elements/${element.id}/splices/`, {
+                                method: "POST",
+                                body: JSON.stringify({
+                                    connection_type: `clear_${path.dataset.linkType}`,
+                                    [path.dataset.linkType === "splitter_input" ? "splitter_id" : "port_id"]: path.dataset.linkId,
+                                }),
+                            });
+                        }
+                        unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
                     };
                 });
             };
@@ -558,6 +623,8 @@
         notify("Movendo o traçado do cabo.");
     }
     async function loadStructure(fit = false) {
+        state.lightAnimationGeneration += 1;
+        const lightGeneration = state.lightAnimationGeneration;
         structureLayer.clearLayers();
         if (!state.projectId) {
             state.elements = [];
@@ -655,6 +722,7 @@
                     dashArray: "1 20", lineCap: "round",
                 } }).addTo(structureLayer);
                 light.eachLayer((part) => part.getElement()?.classList.add("optical-light-path"));
+                animateLightDirection(feature, lightGeneration);
             }
             (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {

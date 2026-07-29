@@ -81,6 +81,15 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.11.2] - 2026-07-29
+
+### Corrigido
+
+- Linhas de fusão e de splitter agora podem ser clicadas para excluir e redesenhar.
+- Ligações usam a cor ABNT da fibra de origem e, após o splitter, da fibra de destino.
+- Fluxo óptico no mapa ganhou seta luminosa animada indicando o sentido.
+- Marcadores de CTO, CEO e OLT agora possuem ícones próprios e identificação legível.
+
 ## [0.11.1] - 2026-07-29
 
 ### Corrigido
