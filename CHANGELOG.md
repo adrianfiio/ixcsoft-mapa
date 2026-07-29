@@ -11,6 +11,14 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.1] - 2026-07-29
+
+### Adicionado
+
+- Comando global `apply` para atualização automatizada no Debian
+- Relatório de deploy com versão, commits, duração e estado dos serviços
+- Verificação automática do health check após cada atualização
+
 ## [0.8.0] - 2026-07-29
 
 ### Adicionado

@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.0 — Dashboard operacional**
+**v0.8.1 — Deploy automatizado**
 
-Esta versão adiciona a visão geral operacional com dados reais, navegação
-responsiva e uma página dedicada para o mapa geográfico.
+Esta versão adiciona o comando global `apply` para atualizar e validar a
+aplicação no Debian, além do dashboard operacional introduzido na v0.8.0.
 
 ## Funcionalidades implementadas
 
@@ -187,6 +187,26 @@ DJANGO_SECURE_SSL_REDIRECT=false
 ```
 
 O proxy reverso deve encaminhar `X-Forwarded-Proto: https`.
+
+## Atualização automática no Debian
+
+No servidor instalado em `/opt/ixcsoft-mapa`, registre o comando global uma
+única vez:
+
+```bash
+chmod +x scripts/install_apply_command.sh
+./scripts/install_apply_command.sh
+```
+
+Depois, qualquer atualização pode ser aplicada com:
+
+```bash
+apply
+```
+
+O comando atualiza a branch `main`, reconstrói os containers, aguarda o health
+check e exibe um relatório final. Se houver alterações locais ou algum serviço
+falhar, o processo para sem sobrescrever arquivos e mostra os logs recentes.
 
 ## Endpoints principais
 
