@@ -17,7 +17,7 @@ class MapBaseConfigurationAdminForm(forms.ModelForm):
         ),
         help_text=(
             "Armazenada criptografada. Restrinja a chave à Map Tiles API "
-            "no Google Cloud."
+            "e ao endereço IP público do servidor no Google Cloud."
         ),
     )
 

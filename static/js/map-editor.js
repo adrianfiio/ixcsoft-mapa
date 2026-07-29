@@ -24,7 +24,7 @@
     const googleConfigElement = document.getElementById("google-maps-config");
     const googleConfig = googleConfigElement
         ? JSON.parse(googleConfigElement.textContent)
-        : { enabled: false, apiKey: "", defaultLayer: "esri_satellite" };
+        : { enabled: false, defaultLayer: "esri_satellite" };
     const map = L.map("map", { preferCanvas: true, maxZoom: 22 }).setView([-24.45, -50.62], 10);
     const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxNativeZoom: 19, maxZoom: 22, attribution: "&copy; OpenStreetMap",
@@ -41,27 +41,19 @@
     configuredFallback.addTo(map);
 
     async function enableGoogleSatellite() {
-        if (!googleConfig.enabled || !googleConfig.apiKey) return;
+        if (!googleConfig.enabled) return;
         try {
-            const response = await fetch(
-                `https://tile.googleapis.com/v1/createSession?key=${encodeURIComponent(googleConfig.apiKey)}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        mapType: "satellite",
-                        language: "pt-BR",
-                        region: "BR",
-                    }),
-                },
-            );
+            const response = await fetch("/api/map/base-map/google/session/", {
+                headers: { Accept: "application/json" },
+            });
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
                 throw new Error(data.error?.message || `Google Map Tiles: HTTP ${response.status}`);
             }
             const session = await response.json();
+            if (!session.session) throw new Error("O servidor não retornou uma sessão válida.");
             const googleLayer = L.tileLayer(
-                `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${encodeURIComponent(session.session)}&key=${encodeURIComponent(googleConfig.apiKey)}`,
+                `/api/map/base-map/google/tiles/{z}/{x}/{y}/?session=${encodeURIComponent(session.session)}`,
                 {
                     maxNativeZoom: 22,
                     maxZoom: 22,

@@ -14,6 +14,8 @@ from apps.network_map.api.views import (
     create_network_element,
     fiber_cables_geojson,
     generate_fibers,
+    google_satellite_tile,
+    google_tiles_session,
     network_elements_geojson,
     network_element_detail,
     update_network_element_position,
@@ -31,6 +33,12 @@ app_name = "network_map_api"
 
 
 urlpatterns = [
+    path("base-map/google/session/", google_tiles_session, name="google-tiles-session"),
+    path(
+        "base-map/google/tiles/<int:z>/<int:x>/<int:y>/",
+        google_satellite_tile,
+        name="google-satellite-tile",
+    ),
     path("projects/", projects, name="projects"),
     path("routes/", project_routes_geojson, name="project-routes"),
     path("projects/<int:project_id>/", project_detail, name="project-detail"),
