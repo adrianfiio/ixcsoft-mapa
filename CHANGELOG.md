@@ -11,6 +11,25 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.20.0] - 2026-07-29
+
+### Adicionado
+
+- Acompanhamento ao vivo da sincronização, separado por etapa e atualizado a cada 100 registros.
+- Amostras dos erros de cada etapa no relatório.
+- Atualização automática da tela enquanto a importação estiver em execução.
+- Geração dos acessos operacionais PPPoE usados pelos indicadores do dashboard.
+
+### Corrigido
+
+- Bloqueio de sincronizações simultâneas da mesma integração.
+- Clientes sem contrato ativo são removidos quando a opção correspondente estiver marcada.
+- Execuções antigas presas em “Executando” são encerradas durante a atualização.
+
+### Documentado
+
+- Cabos e rotas não são importados sem o endpoint e a geometria correspondentes do IXCSoft.
+
 ## [0.19.1] - 2026-07-29
 
 ### Corrigido

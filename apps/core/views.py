@@ -3,6 +3,7 @@ from django.db import connection
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.utils import timezone
+from datetime import timedelta
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
@@ -288,8 +289,15 @@ def erp_onboarding(request):
         if not existing:
             form.add_error(None, "Salve e teste a integração antes de sincronizar.")
         else:
-            task = synchronize_ixc_configuration.delay(existing.pk)
-            messages.success(request, f"Sincronização iniciada. Tarefa {task.id}.")
+            running = existing.executions.filter(
+                status=IXCSyncExecution.Status.RUNNING,
+                started_at__gte=timezone.now() - timedelta(hours=1),
+            ).exists()
+            if running:
+                messages.warning(request, "Já existe uma sincronização em andamento.")
+            else:
+                task = synchronize_ixc_configuration.delay(existing.pk)
+                messages.success(request, f"Sincronização iniciada. Tarefa {task.id}.")
             return redirect("erp-onboarding")
     elif request.method == "POST" and form.is_valid():
         token = form.cleaned_data.get("api_token", "").strip()
@@ -316,10 +324,22 @@ def erp_onboarding(request):
         if existing
         else []
     )
+    sync_running = bool(
+        existing
+        and existing.executions.filter(
+            status=IXCSyncExecution.Status.RUNNING,
+            started_at__gte=timezone.now() - timedelta(hours=1),
+        ).exists()
+    )
     return render(
         request,
         "erp_onboarding.html",
-        {"form": form, "configuration": existing, "executions": executions},
+        {
+            "form": form,
+            "configuration": existing,
+            "executions": executions,
+            "sync_running": sync_running,
+        },
     )
 
 

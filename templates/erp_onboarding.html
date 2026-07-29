@@ -38,7 +38,7 @@
         </aside>
         <div class="platform-form-actions">
             <button type="submit" name="action" value="save">Testar conexão e salvar →</button>
-            {% if configuration %}<button class="secondary-action" type="submit" name="action" value="synchronize">↻ Sincronizar agora</button>{% endif %}
+            {% if configuration %}<button class="secondary-action" type="submit" name="action" value="synchronize" {% if sync_running %}disabled{% endif %}>↻ {% if sync_running %}Sincronizando…{% else %}Sincronizar agora{% endif %}</button>{% endif %}
         </div>
     </form>
     {% if configuration %}
@@ -46,10 +46,14 @@
         <div class="panel-header"><h2>Relatório de sincronização</h2><small>Últimas 10 execuções</small></div>
         <div class="account-items">
         {% for execution in executions %}
-            <div><span><strong>{{ execution.get_status_display }}</strong><small>{{ execution.started_at }} · recebidos {{ execution.records_received }} · criados {{ execution.records_created }} · atualizados {{ execution.records_updated }} · falhas {{ execution.records_failed }}</small>{% if execution.error_message %}<small class="form-error">{{ execution.error_message }}</small>{% endif %}</span></div>
+            <div class="sync-execution"><span><strong>{{ execution.get_status_display }}{% if execution.current_stage %} · {{ execution.current_stage }}{% endif %}</strong><small>{{ execution.started_at }} · recebidos {{ execution.records_received }} · criados {{ execution.records_created }} · atualizados {{ execution.records_updated }} · falhas {{ execution.records_failed }}</small>{% if execution.error_message %}<small class="form-error">{{ execution.error_message }}</small>{% endif %}
+            {% for stage, result in execution.stage_results.items %}<small class="sync-stage"><b>{{ stage }}</b>: {{ result.received }} recebidos, {{ result.created }} criados, {{ result.updated }} atualizados, {{ result.failed }} falhas{% for error in result.errors %}<em>{{ error }}</em>{% endfor %}</small>{% endfor %}
+            </span></div>
         {% empty %}<p>Nenhuma sincronização executada ainda.</p>{% endfor %}
         </div>
     </section>
     {% endif %}
+    <aside class="ixc-import-note"><strong>Sobre cabos e rotas</strong><small>Esta integração importa projetos, caixas e elementos. Cabos ainda não são criados porque os exemplos fornecidos não incluem o endpoint e a geometria dos cabos do IXCSoft.</small></aside>
 </section>
 {% endblock %}
+{% block scripts %}{% if sync_running %}<script>setTimeout(() => location.reload(), 5000);</script>{% endif %}{% endblock %}

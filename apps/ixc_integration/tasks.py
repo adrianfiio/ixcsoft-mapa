@@ -1,4 +1,5 @@
 from celery import shared_task
+from django.core.cache import cache
 
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.services.synchronization import IXCSynchronizationService
@@ -11,12 +12,18 @@ from apps.ixc_integration.services.synchronization import IXCSynchronizationServ
     retry_kwargs={"max_retries": 3},
 )
 def synchronize_ixc_configuration(self, configuration_id: int) -> int:
-    configuration = IXCConfiguration.objects.get(
-        pk=configuration_id,
-        enabled=True,
-    )
-    execution = IXCSynchronizationService(configuration).run_full_sync()
-    return execution.pk
+    lock_key = f"ixc-sync-running:{configuration_id}"
+    if not cache.add(lock_key, self.request.id or "running", timeout=3600):
+        return 0
+    try:
+        configuration = IXCConfiguration.objects.get(
+            pk=configuration_id,
+            enabled=True,
+        )
+        execution = IXCSynchronizationService(configuration).run_full_sync()
+        return execution.pk
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task
