@@ -11,6 +11,13 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.13.2] - 2026-07-29
+
+### Corrigido
+
+- O mapa agora exibe a mensagem devolvida pelo Google em vez de ocultá-la atrás
+  de um erro HTTP 502 genérico.
+
 ## [0.13.1] - 2026-07-29
 
 ### Corrigido

@@ -48,7 +48,11 @@
             });
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                throw new Error(data.error?.message || `Google Map Tiles: HTTP ${response.status}`);
+                throw new Error(
+                    data.detail
+                    || data.error?.message
+                    || `Google Map Tiles: HTTP ${response.status}`
+                );
             }
             const session = await response.json();
             if (!session.session) throw new Error("O servidor não retornou uma sessão válida.");
