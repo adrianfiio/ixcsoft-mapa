@@ -176,7 +176,15 @@ curl --fail --silent --show-error \
     -H "Host: localhost" \
     "http://127.0.0.1:8000/assets/static/img/afservice-logo.png?v=$APP_VERSION_VALUE" \
     >/dev/null
-success "CSS da aplicação, Django Admin e logotipo disponíveis"
+if curl --fail --silent \
+    -H "Host: localhost" \
+    "http://127.0.0.1:8000/assets/static/img/afservice-map-favicon.png?v=$APP_VERSION_VALUE" \
+    >/dev/null; then
+    success "CSS da aplicação, Django Admin, logotipo e favicon disponíveis"
+else
+    warning "Favicon ainda não encontrado em static/img/afservice-map-favicon.png"
+    success "CSS da aplicação, Django Admin e logotipo disponíveis"
+fi
 
 CURRENT_STEP="verificação final dos serviços"
 for service in web worker beat; do

@@ -12,6 +12,7 @@
     <title>
         {% block title %}Equipamentos{% endblock %} - AFService Map
     </title>
+    <link rel="icon" type="image/png" href="{% static 'img/afservice-map-favicon.png' %}">
 
     <style>
         :root {
@@ -73,7 +74,6 @@
         }
 
         .brand img { width: 145px; height: 45px; object-fit: contain; object-position: left center; }
-        .brand small { width: 128px; color: var(--muted); font-size: 10px; font-weight: 500; text-align: center; }
 
         .topbar-links {
             display: flex;
@@ -342,7 +342,6 @@
     <header class="topbar">
         <a href="{% url 'dashboard' %}" class="brand">
             <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
-            <small>Mapa e operação de rede</small>
         </a>
 
         <nav class="topbar-links">

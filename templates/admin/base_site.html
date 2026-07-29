@@ -3,17 +3,19 @@
 
 {% block title %}{{ title }} | AFService Map{% endblock %}
 
+{% block extrahead %}
+{{ block.super }}
+<link rel="icon" type="image/png" href="{% static 'img/afservice-map-favicon.png' %}">
+{% endblock %}
+
 {% block branding %}
 <div style="display:flex;align-items:center;gap:14px">
-    <a href="{% url 'admin:index' %}" style="display:flex;flex-direction:column;gap:2px;text-decoration:none">
+    <a href="{% url 'admin:index' %}" style="display:flex;text-decoration:none">
         <img
             src="{% static 'img/afservice-logo.png' %}"
             alt="AFService"
             style="width:145px;height:48px;object-fit:contain;object-position:left center"
         >
-        <small style="width:128px;color:var(--header-link-color);font-size:10px;letter-spacing:.04em;text-align:center">
-            Mapa e operação de rede
-        </small>
     </a>
 </div>
 {% endblock %}
