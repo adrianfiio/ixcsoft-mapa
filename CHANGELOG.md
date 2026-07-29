@@ -11,6 +11,15 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.2] - 2026-07-29
+
+### Corrigido
+
+- Comando `apply` liberado para servidores administrados como `root`
+- Remoção segura do `--remove-orphans` para preservar PostgreSQL e Redis
+- Arquivos estáticos deixaram de ser ocultados por um volume Docker
+- Versão do deploy passou a acompanhar automaticamente a tag do Git
+
 ## [0.8.1] - 2026-07-29
 
 ### Adicionado

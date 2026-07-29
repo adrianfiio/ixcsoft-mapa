@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.1 — Deploy automatizado**
+**v0.8.2 — Correções do deploy automatizado**
 
-Esta versão adiciona o comando global `apply` para atualizar e validar a
-aplicação no Debian, além do dashboard operacional introduzido na v0.8.0.
+Esta versão adapta o comando `apply` ao servidor administrado como `root`,
+preserva os serviços de banco e Redis e corrige a publicação do CSS.
 
 ## Funcionalidades implementadas
 
