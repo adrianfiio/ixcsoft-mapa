@@ -5,6 +5,9 @@ from .models import MapBaseConfiguration
 from apps.network_map.models import NetworkProject, POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
+from apps.ixc_integration.models import IXCConfiguration
+from apps.ixc_integration.services.configuration import encrypt_secret
+from django.contrib.gis.geos import Point
 
 
 class MapBaseConfigurationAdminForm(forms.ModelForm):
@@ -51,9 +54,15 @@ class MapBaseConfigurationAdminForm(forms.ModelForm):
 
 
 class POPPlatformForm(forms.ModelForm):
+    latitude = forms.DecimalField(required=True, min_value=-90, max_value=90, decimal_places=7)
+    longitude = forms.DecimalField(required=True, min_value=-180, max_value=180, decimal_places=7)
+
     class Meta:
         model = POP
-        fields = ("company", "project", "name", "code", "address", "city", "enabled")
+        fields = (
+            "company", "project", "name", "code", "address", "city",
+            "latitude", "longitude", "enabled",
+        )
 
     def __init__(self, *args, company_ids=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -63,6 +72,18 @@ class POPPlatformForm(forms.ModelForm):
             self.fields["project"].queryset = NetworkProject.objects.filter(company_id__in=company_ids)
             if len(company_ids) == 1:
                 self.fields["company"].initial = company_ids[0]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.point = Point(
+            float(self.cleaned_data["longitude"]),
+            float(self.cleaned_data["latitude"]),
+            srid=4326,
+        )
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class OLTPlatformForm(forms.ModelForm):
@@ -93,3 +114,40 @@ class DIOPlatformForm(forms.ModelForm):
         if company_ids is not None:
             self.fields["pop"].queryset = POP.objects.filter(company_id__in=company_ids)
             self.fields["project"].queryset = NetworkProject.objects.filter(company_id__in=company_ids)
+
+
+class ERPOnboardingForm(forms.ModelForm):
+    api_token = forms.CharField(
+        label="Token da API",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="O token será armazenado criptografado.",
+    )
+
+    class Meta:
+        model = IXCConfiguration
+        fields = (
+            "company", "provider", "name", "base_url", "api_token", "verify_ssl",
+            "sync_active_contracts_only", "sync_customers", "sync_pppoe",
+            "sync_projects", "sync_ctos", "sync_map_elements",
+            "sync_interval_minutes", "enabled",
+        )
+
+    def __init__(self, *args, company_ids=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["api_token"].required = False
+            self.fields["api_token"].widget.attrs["placeholder"] = "Deixe em branco para manter o token atual"
+        self.fields["company"].required = True
+        if company_ids is not None:
+            self.fields["company"].queryset = self.fields["company"].queryset.filter(id__in=company_ids)
+            if len(company_ids) == 1:
+                self.fields["company"].initial = company_ids[0]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        token = self.cleaned_data.get("api_token", "").strip()
+        if token:
+            instance.api_token_encrypted = encrypt_secret(token)
+        if commit:
+            instance.save()
+        return instance

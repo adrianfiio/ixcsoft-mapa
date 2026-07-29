@@ -24,7 +24,10 @@ from apps.network_map.models import POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
 from apps.core.access import editable_company_ids
-from apps.core.forms import DIOPlatformForm, OLTPlatformForm, POPPlatformForm
+from apps.core.forms import DIOPlatformForm, ERPOnboardingForm, OLTPlatformForm, POPPlatformForm
+from apps.ixc_integration.models import IXCConfiguration
+from apps.ixc_integration.clients.ixc_client import IXCClient
+from apps.ixc_integration.clients.exceptions import IXCClientError
 from apps.olt_integration.models import OLT, ONU
 
 
@@ -113,6 +116,17 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 class AccountPanelView(LoginRequiredMixin, TemplateView):
     template_name = "account_panel.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        if (
+            not request.user.is_superuser
+            and has_any_edit_access(request.user)
+            and not IXCConfiguration.objects.filter(
+                company_id__in=editable_company_ids(request.user), enabled=True
+            ).exists()
+        ):
+            return redirect("erp-onboarding")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         company_ids = accessible_company_ids(self.request.user)
@@ -187,6 +201,42 @@ def create_company_asset(request, asset_type):
         "company_asset_form.html",
         {"form": form, "asset_label": label, "asset_type": asset_type},
     )
+
+
+@login_required
+def erp_onboarding(request):
+    if not has_any_edit_access(request.user):
+        return redirect("account-panel")
+    company_ids = editable_company_ids(request.user)
+    existing = IXCConfiguration.objects.filter(
+        company_id__in=company_ids or []
+    ).first() if company_ids is not None else None
+    form = ERPOnboardingForm(
+        request.POST or None,
+        instance=existing,
+        company_ids=company_ids,
+    )
+    if request.method == "POST" and form.is_valid():
+        token = form.cleaned_data.get("api_token", "").strip()
+        client = None
+        if token:
+            client = IXCClient(
+                form.cleaned_data["base_url"],
+                token,
+                verify_ssl=form.cleaned_data["verify_ssl"],
+            )
+        try:
+            result = client.test_connection() if client else {"total_clientes": "já vinculados"}
+        except (IXCClientError, ValueError) as exc:
+            form.add_error(None, f"Não foi possível validar o IXCSoft: {exc}")
+        else:
+            form.save()
+            messages.success(
+                request,
+                f"IXCSoft conectado. {result['total_clientes']} clientes disponíveis.",
+            )
+            return redirect("account-panel")
+    return render(request, "erp_onboarding.html", {"form": form})
 
 
 def liveness_check(request):

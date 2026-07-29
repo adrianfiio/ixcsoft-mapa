@@ -60,16 +60,16 @@
             <div class="panel-header"><h2 class="panel-title">Atalhos operacionais</h2></div>
             <div class="quick-grid">
                 <a class="quick-link" href="{% url 'equipment-list' %}"><strong>Equipamentos</strong><small>{{ element_count|default:0 }} elementos cadastrados</small></a>
-                <a class="quick-link" href="/admin/olt_integration/olt/"><strong>OLTs e ONUs</strong><small>{{ olt_count|default:0 }} OLTs · {{ onus.total|default:0 }} ONUs</small></a>
-                <a class="quick-link" href="/admin/ixc_integration/ixccustomer/"><strong>Clientes IXC</strong><small>{{ customer_count|default:0 }} clientes sincronizados</small></a>
-                <a class="quick-link" href="/admin/alerts/alertevent/"><strong>Central de alertas</strong><small>{{ active_alert_count|default:0 }} ocorrências ativas</small></a>
+                <a class="quick-link" href="{% url 'account-panel' %}#infraestrutura"><strong>OLTs e ONUs</strong><small>{{ olt_count|default:0 }} OLTs · {{ onus.total|default:0 }} ONUs</small></a>
+                <a class="quick-link" href="{% url 'account-panel' %}#integracao"><strong>Integração ERP</strong><small>{{ customer_count|default:0 }} clientes sincronizados</small></a>
+                <a class="quick-link" href="{% url 'account-panel' %}#alertas"><strong>Central de alertas</strong><small>{{ active_alert_count|default:0 }} ocorrências ativas</small></a>
             </div>
         </article>
     </div>
 
     <div class="dashboard-column">
         <article class="panel">
-            <div class="panel-header"><h2 class="panel-title">Alertas recentes</h2><a class="panel-link" href="/admin/alerts/alertevent/">Ver todos</a></div>
+            <div class="panel-header"><h2 class="panel-title">Alertas recentes</h2><a class="panel-link" href="{% url 'account-panel' %}#alertas">Ver todos</a></div>
             <div class="alert-list">
                 {% for alert in recent_alerts %}
                     <div class="alert-item">
