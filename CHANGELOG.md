@@ -48,6 +48,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Unifilar da CEO redesenhado como grafo óptico com cabos, portas, bandejas e linhas coloridas
 - Ligações podem ser feitas clicando em duas portas ou arrastando uma fibra sobre outra
 
+## [0.10.2] - 2026-07-29
+
+### Adicionado
+
+- Splitters aparecem dentro de suas respectivas bandejas no grafo
+- Porta de entrada e portas de saída numeradas para cada splitter
+- Ligação de fibra do cabo à entrada do splitter
+- Ligação das saídas do splitter às fibras dos cabos derivados
+- Linhas específicas para alimentação e derivações
+
+### Alterado
+
+- Popup do unifilar ampliado para até 96% da tela e área de desenho expandida
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado

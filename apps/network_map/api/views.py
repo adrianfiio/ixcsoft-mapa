@@ -19,6 +19,8 @@ from apps.network_map.models import (
     NetworkElement,
     NetworkProject,
     SpliceTray,
+    SpliceTraySplitter,
+    SpliceTraySplitterPort,
 )
 from apps.network_map.serializers import NetworkElementSerializer
 from apps.network_map.services import (
@@ -563,8 +565,17 @@ def element_detail_payload(element):
                             "position": splitter.position,
                             "ratio": splitter.ratio,
                             "output_ports": splitter.output_ports,
+                            "input_fiber_id": splitter.input_fiber_id,
+                            "ports": [
+                                {
+                                    "id": port.id,
+                                    "number": port.number,
+                                    "output_fiber_id": port.output_fiber_id,
+                                }
+                                for port in splitter.ports.all()
+                            ],
                         }
-                        for splitter in tray.splitters.all()
+                        for splitter in tray.splitters.prefetch_related("ports").all()
                     ],
                 }
                 for tray in trays
@@ -1327,14 +1338,61 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "output_fiber__color",
                 ).all()
             ],
+            "splitter_links": [
+                {
+                    "splitter_id": splitter.id,
+                    "tray_id": splitter.tray_id,
+                    "input_fiber_id": splitter.input_fiber_id,
+                    "ports": [
+                        {
+                            "id": port.id,
+                            "number": port.number,
+                            "output_fiber_id": port.output_fiber_id,
+                        }
+                        for port in splitter.ports.all()
+                    ],
+                }
+                for splitter in SpliceTraySplitter.objects.filter(
+                    tray__splice_box=element
+                ).prefetch_related("ports")
+            ],
         })
+    connection_type = str(request.data.get("connection_type", "splice"))
+    connected_ids = set(connected.values_list("id", flat=True))
+    if connection_type == "splitter_input":
+        splitter = get_object_or_404(
+            SpliceTraySplitter,
+            pk=request.data.get("splitter_id"),
+            tray__splice_box=element,
+        )
+        fiber = get_object_or_404(FiberStrand, pk=request.data.get("fiber_id"))
+        if fiber.cable_id not in connected_ids:
+            return JsonResponse({"success": False, "error": "Fibra não pertence a um cabo conectado."}, status=400)
+        splitter.input_fiber = fiber
+        splitter.save(update_fields=["input_fiber", "updated_at"])
+        fiber.status = FiberStrand.Status.USED
+        fiber.save(update_fields=["status", "updated_at"])
+        return JsonResponse({"success": True})
+    if connection_type == "splitter_output":
+        port = get_object_or_404(
+            SpliceTraySplitterPort,
+            pk=request.data.get("port_id"),
+            splitter__tray__splice_box=element,
+        )
+        fiber = get_object_or_404(FiberStrand, pk=request.data.get("fiber_id"))
+        if fiber.cable_id not in connected_ids:
+            return JsonResponse({"success": False, "error": "Fibra não pertence a um cabo conectado."}, status=400)
+        port.output_fiber = fiber
+        port.save(update_fields=["output_fiber", "updated_at"])
+        fiber.status = FiberStrand.Status.USED
+        fiber.save(update_fields=["status", "updated_at"])
+        return JsonResponse({"success": True})
     try:
         tray = element.splice_trays.get(pk=int(request.data.get("tray_id")))
         input_fiber = FiberStrand.objects.get(pk=int(request.data.get("input_fiber_id")))
         output_fiber = FiberStrand.objects.get(pk=int(request.data.get("output_fiber_id")))
     except (TypeError, ValueError, SpliceTray.DoesNotExist, FiberStrand.DoesNotExist):
         return JsonResponse({"success": False, "error": "Bandeja ou fibras inválidas."}, status=400)
-    connected_ids = set(connected.values_list("id", flat=True))
     if input_fiber.cable_id not in connected_ids or output_fiber.cable_id not in connected_ids:
         return JsonResponse({"success": False, "error": "As fibras precisam pertencer a cabos conectados à CEO."}, status=400)
     if input_fiber.cable_id == output_fiber.cable_id:

@@ -183,7 +183,9 @@
             const cableColumns = optical.cables.map((cable, index) => `
                 <section class="fiber-cable-node side-${index % 2 ? "right" : "left"}"><header>${escapeHtml(cable.name)}</header>
                 <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port" draggable="true" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`).join("");
-            const trayNodes = element.splice_box.trays.map((tray) => `<div class="tray-node" data-tray-id="${tray.id}"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões</span></div>`).join("");
+            const trayNodes = element.splice_box.trays.map((tray) => `<div class="tray-node" data-tray-id="${tray.id}"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões</span>
+                ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port" data-splitter-id="${splitter.id}">ENT</button><b>1:${splitter.output_ports}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port" data-port-id="${port.id}">P${port.number}</button>`).join("")}</div></div>`).join("")}
+                </div>`).join("");
             content.innerHTML = `<div class="ceo-instructions">Selecione a bandeja e clique em duas portas de fibras de cabos diferentes. Também é possível arrastar uma porta sobre outra. <select id="ceo-tray-select">${trayOptions}</select>.</div>
                 <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-cables">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}</div><div class="graph-trays">${trayNodes}</div></div>
                 <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div><span><b>${escapeHtml(splice.input.cable)}</b> · F${splice.input.number} ${escapeHtml(splice.input.color_name)} → <b>${escapeHtml(splice.output.cable)}</b> · F${splice.output.number} ${escapeHtml(splice.output.color_name)}</span><button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>` +
@@ -194,6 +196,7 @@
                 </article>`).join("");
             let draggedFiber = null;
             let selectedFiber = null;
+            let selectedSplitterPort = null;
             const createSplice = async (input, output) => {
                 if (!input || input === output) return;
                 const inputNode = content.querySelector(`[data-fiber-id="${input}"]`);
@@ -214,6 +217,16 @@
                     catch (error) { notify(error.message, true); }
                 };
                 chip.onclick = async () => {
+                    if (selectedSplitterPort) {
+                        try {
+                            await api(`/api/map/elements/${element.id}/splices/`, {
+                                method: "POST",
+                                body: JSON.stringify({ connection_type: "splitter_output", port_id: selectedSplitterPort, fiber_id: chip.dataset.fiberId }),
+                            });
+                            unifilarDialog.close(); await showUnifilar(element.id); notify("Saída do splitter conectada à fibra.");
+                        } catch (error) { notify(error.message, true); }
+                        return;
+                    }
                     if (!selectedFiber) {
                         selectedFiber = chip.dataset.fiberId; chip.classList.add("selected");
                         notify("Primeira porta selecionada. Clique na porta de destino.");
@@ -221,6 +234,27 @@
                     }
                     try { await createSplice(selectedFiber, chip.dataset.fiberId); }
                     catch (error) { notify(error.message, true); }
+                };
+            });
+            content.querySelectorAll(".splitter-input-port").forEach((button) => {
+                button.onclick = async () => {
+                    if (!selectedFiber) return notify("Selecione primeiro a fibra que alimentará o splitter.", true);
+                    try {
+                        await api(`/api/map/elements/${element.id}/splices/`, {
+                            method: "POST",
+                            body: JSON.stringify({ connection_type: "splitter_input", splitter_id: button.dataset.splitterId, fiber_id: selectedFiber }),
+                        });
+                        unifilarDialog.close(); await showUnifilar(element.id); notify("Fibra conectada à entrada do splitter.");
+                    } catch (error) { notify(error.message, true); }
+                };
+            });
+            content.querySelectorAll(".splitter-output-port").forEach((button) => {
+                button.onclick = () => {
+                    selectedFiber = null;
+                    selectedSplitterPort = button.dataset.portId;
+                    content.querySelectorAll(".splitter-output-port").forEach((item) => item.classList.remove("selected"));
+                    button.classList.add("selected");
+                    notify("Saída do splitter selecionada. Clique na fibra de destino.");
                 };
             });
             content.querySelectorAll("[data-delete-splice]").forEach((button) => {
@@ -243,6 +277,27 @@
                     const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
                     const x2 = b.left + b.width / 2 - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
                     svg.insertAdjacentHTML("beforeend", `<path d="M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}" stroke="${escapeHtml(splice.input.color_hex)}"></path>`);
+                });
+                const drawLink = (source, target, color) => {
+                    if (!source || !target) return;
+                    const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
+                    const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
+                    const x2 = b.left + b.width / 2 - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
+                    svg.insertAdjacentHTML("beforeend", `<path d="M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}" stroke="${color}"></path>`);
+                };
+                optical.splitter_links.forEach((link) => {
+                    if (link.input_fiber_id) drawLink(
+                        content.querySelector(`[data-fiber-id="${link.input_fiber_id}"]`),
+                        content.querySelector(`[data-splitter-id="${link.splitter_id}"]`),
+                        "#22c55e"
+                    );
+                    link.ports.forEach((port) => {
+                        if (port.output_fiber_id) drawLink(
+                            content.querySelector(`[data-port-id="${port.id}"]`),
+                            content.querySelector(`[data-fiber-id="${port.output_fiber_id}"]`),
+                            "#38bdf8"
+                        );
+                    });
                 });
             });
             return;
