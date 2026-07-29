@@ -16,6 +16,7 @@ from apps.network_map.api.views import (
     generate_fibers,
     google_satellite_tile,
     google_tiles_session,
+    pole_infrastructure,
     network_elements_geojson,
     network_element_detail,
     update_network_element_position,
@@ -40,6 +41,7 @@ urlpatterns = [
         name="google-satellite-tile",
     ),
     path("projects/", projects, name="projects"),
+    path("elements/<int:element_id>/pole/", pole_infrastructure, name="pole-infrastructure"),
     path("routes/", project_routes_geojson, name="project-routes"),
     path("projects/<int:project_id>/", project_detail, name="project-detail"),
     path(

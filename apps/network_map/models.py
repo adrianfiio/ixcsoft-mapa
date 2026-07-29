@@ -326,6 +326,14 @@ class NetworkDependency(TimeStampedModel):
 
 
 class POP(CompanyScopedModel, NamedModel):
+    project = models.OneToOneField(
+        NetworkProject,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cpd",
+        verbose_name="Projeto de rede",
+    )
     code = models.CharField(
         max_length=100,
         db_index=True,
@@ -353,8 +361,8 @@ class POP(CompanyScopedModel, NamedModel):
     )
 
     class Meta:
-        verbose_name = "POP"
-        verbose_name_plural = "POPs"
+        verbose_name = "CPD / POP"
+        verbose_name_plural = "CPDs / POPs"
         ordering = ["name"]
         constraints = [
             models.UniqueConstraint(
@@ -365,6 +373,70 @@ class POP(CompanyScopedModel, NamedModel):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+
+class PoleCableAttachment(TimeStampedModel):
+    pole = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="cable_attachments",
+        limit_choices_to={"element_type": NetworkElement.ElementType.POLE},
+        verbose_name="Poste",
+    )
+    cable = models.ForeignKey(
+        FiberCable,
+        on_delete=models.CASCADE,
+        related_name="pole_attachments",
+        verbose_name="Cabo",
+    )
+    sequence = models.PositiveIntegerField(default=1, verbose_name="Sequência")
+    height_m = models.DecimalField(
+        max_digits=4, decimal_places=2, null=True, blank=True,
+        verbose_name="Altura (m)",
+    )
+    notes = models.CharField(max_length=255, blank=True, verbose_name="Observações")
+
+    class Meta:
+        ordering = ["cable", "sequence"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["pole", "cable"],
+                name="unique_cable_attachment_per_pole",
+            )
+        ]
+        verbose_name = "Passagem de cabo no poste"
+        verbose_name_plural = "Passagens de cabos nos postes"
+
+
+class PoleEquipmentAttachment(TimeStampedModel):
+    pole = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="equipment_attachments",
+        limit_choices_to={"element_type": NetworkElement.ElementType.POLE},
+        verbose_name="Poste",
+    )
+    equipment = models.OneToOneField(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="pole_attachment",
+        limit_choices_to={
+            "element_type__in": [
+                NetworkElement.ElementType.CTO,
+                NetworkElement.ElementType.SPLICE_BOX,
+            ]
+        },
+        verbose_name="Equipamento",
+    )
+    height_m = models.DecimalField(
+        max_digits=4, decimal_places=2, null=True, blank=True,
+        verbose_name="Altura (m)",
+    )
+    notes = models.CharField(max_length=255, blank=True, verbose_name="Observações")
+
+    class Meta:
+        verbose_name = "Equipamento instalado no poste"
+        verbose_name_plural = "Equipamentos instalados nos postes"
 
 
 class Rack(CompanyScopedModel, NamedModel):
@@ -869,17 +941,17 @@ class FiberSplice(TimeStampedModel):
         verbose_name="Caixa de emenda",
     )
 
-    input_fiber = models.OneToOneField(
+    input_fiber = models.ForeignKey(
         "FiberStrand",
         on_delete=models.PROTECT,
-        related_name="splice_output",
+        related_name="splice_outputs",
         verbose_name="Fibra de entrada",
     )
 
-    output_fiber = models.OneToOneField(
+    output_fiber = models.ForeignKey(
         "FiberStrand",
         on_delete=models.PROTECT,
-        related_name="splice_input",
+        related_name="splice_inputs",
         verbose_name="Fibra de saída",
     )
 
@@ -901,11 +973,22 @@ class FiberSplice(TimeStampedModel):
         ordering = ["splice_box", "id"]
         verbose_name = "Emenda óptica"
         verbose_name_plural = "Emendas ópticas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["splice_box", "input_fiber"],
+                name="unique_input_fiber_per_splice_box",
+            ),
+            models.UniqueConstraint(
+                fields=["splice_box", "output_fiber"],
+                name="unique_output_fiber_per_splice_box",
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         if self.input_fiber_id:
             exists = FiberSplice.objects.filter(
-                input_fiber=self.input_fiber
+                splice_box=self.splice_box,
+                input_fiber=self.input_fiber,
             ).exclude(pk=self.pk).exists()
 
             if exists:
@@ -915,7 +998,8 @@ class FiberSplice(TimeStampedModel):
 
         if self.output_fiber_id:
             exists = FiberSplice.objects.filter(
-                output_fiber=self.output_fiber
+                splice_box=self.splice_box,
+                output_fiber=self.output_fiber,
             ).exclude(pk=self.pk).exists()
 
             if exists:

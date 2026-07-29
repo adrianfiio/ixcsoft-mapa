@@ -113,6 +113,17 @@ class DIO(NetworkElement):
     def save(self, *args, **kwargs):
         self.element_type = NetworkElement.ElementType.DIO
         super().save(*args, **kwargs)
+        tray, _ = DIOTray.objects.get_or_create(
+            dio=self,
+            number=1,
+            defaults={"name": "Bandeja 1", "splice_capacity": self.port_capacity},
+        )
+        for number in range(1, self.port_capacity + 1):
+            DIOPort.objects.get_or_create(
+                dio=self,
+                number=number,
+                defaults={"tray": tray},
+            )
 
     def __str__(self):
         return f"{self.pop.code} / {self.code} - {self.name}"

@@ -22,6 +22,8 @@ from .models import (
     NetworkProject,
     NetworkRoute,
     POP,
+    PoleCableAttachment,
+    PoleEquipmentAttachment,
     Rack,
     RackEquipment,
 )
@@ -203,6 +205,7 @@ class POPAdmin(GISModelAdmin):
         "code",
         "name",
         "city",
+        "project",
         "enabled",
     )
 
@@ -216,6 +219,21 @@ class POPAdmin(GISModelAdmin):
         "name",
         "city",
     )
+    autocomplete_fields = ("project",)
+
+
+@admin.register(PoleCableAttachment)
+class PoleCableAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("pole", "cable", "sequence", "height_m")
+    search_fields = ("pole__name", "pole__code", "cable__name", "cable__code")
+    autocomplete_fields = ("pole", "cable")
+
+
+@admin.register(PoleEquipmentAttachment)
+class PoleEquipmentAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("pole", "equipment", "height_m")
+    search_fields = ("pole__name", "pole__code", "equipment__name", "equipment__code")
+    autocomplete_fields = ("pole", "equipment")
 
 
 # ==========================
