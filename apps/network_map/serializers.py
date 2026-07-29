@@ -4,6 +4,8 @@ from .models import (
     CTO,
     CTOSplitter,
     CTOSplitterPort,
+    FiberCable,
+    FiberStrand,
     NetworkElement,
     NetworkProject,
 )
@@ -86,6 +88,12 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         max_value=128,
         default=8,
     )
+    splitter_input_cable_id = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True
+    )
+    splitter_input_fiber_id = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True
+    )
 
     latitude = serializers.FloatField(
         write_only=True,
@@ -116,6 +124,8 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             "cto_capacity",
             "splitter_ratio",
             "splitter_ports",
+            "splitter_input_cable_id",
+            "splitter_input_fiber_id",
         ]
 
 
@@ -126,6 +136,8 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             CTOSplitter.Ratio.ONE_TO_8,
         )
         splitter_ports = validated_data.pop("splitter_ports", 8)
+        validated_data.pop("splitter_input_cable_id", None)
+        validated_data.pop("splitter_input_fiber_id", None)
 
         latitude = validated_data.pop(
             "latitude",
@@ -171,6 +183,8 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         cto_capacity = validated_data.pop("cto_capacity", None)
         splitter_ratio = validated_data.pop("splitter_ratio", None)
         splitter_ports = validated_data.pop("splitter_ports", None)
+        input_cable_id = validated_data.pop("splitter_input_cable_id", None)
+        input_fiber_id = validated_data.pop("splitter_input_fiber_id", None)
 
         latitude = validated_data.pop(
             "latitude",
@@ -229,5 +243,63 @@ class NetworkElementSerializer(serializers.ModelSerializer):
                 splitter.save(update_fields=["ratio", "updated_at"])
             if splitter_ports is not None:
                 sync_splitter_ports(splitter, splitter_ports)
+            if input_cable_id is not None:
+                previous_fiber = splitter.input_fiber
+                try:
+                    input_cable = FiberCable.objects.get(
+                        pk=input_cable_id,
+                        project=cto.project,
+                    )
+                except FiberCable.DoesNotExist:
+                    raise serializers.ValidationError({
+                        "splitter_input_cable_id": "Cabo não pertence ao projeto."
+                    })
+                if not (
+                    input_cable.origin_id == cto.id
+                    or input_cable.destination_id == cto.id
+                ):
+                    raise serializers.ValidationError({
+                        "splitter_input_cable_id": "O cabo não está conectado a esta CTO."
+                    })
+                splitter.input_cable = input_cable
+                splitter.input_fiber = None
+                if previous_fiber is not None:
+                    previous_fiber.status = FiberStrand.Status.FREE
+                    previous_fiber.destination_element = None
+                    previous_fiber.usage = ""
+                    previous_fiber.save(update_fields=[
+                        "status", "destination_element", "usage", "updated_at"
+                    ])
+                    previous_cable = previous_fiber.cable
+                    previous_cable.used_fibers = previous_cable.fibers.filter(
+                        status=FiberStrand.Status.USED
+                    ).count()
+                    previous_cable.save(update_fields=["used_fibers", "updated_at"])
+            if input_fiber_id is not None:
+                try:
+                    input_fiber = FiberStrand.objects.select_related("cable").get(
+                        pk=input_fiber_id,
+                        cable=splitter.input_cable,
+                    )
+                except FiberStrand.DoesNotExist:
+                    raise serializers.ValidationError({
+                        "splitter_input_fiber_id": "Fibra não pertence ao cabo selecionado."
+                    })
+                splitter.input_fiber = input_fiber
+                input_fiber.status = FiberStrand.Status.USED
+                input_fiber.destination_element = cto
+                input_fiber.usage = f"Entrada do {splitter.name} em {cto.name}"
+                input_fiber.save(update_fields=[
+                    "status", "destination_element", "usage", "updated_at"
+                ])
+                input_cable = input_fiber.cable
+                input_cable.used_fibers = input_cable.fibers.filter(
+                    status=FiberStrand.Status.USED
+                ).count()
+                input_cable.save(update_fields=["used_fibers", "updated_at"])
+            if input_cable_id is not None or input_fiber_id is not None:
+                splitter.save(update_fields=[
+                    "input_cable", "input_fiber", "updated_at"
+                ])
 
         return instance

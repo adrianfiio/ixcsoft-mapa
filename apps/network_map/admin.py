@@ -39,9 +39,13 @@ class CTOSplitterPortInline(admin.TabularInline):
 
 @admin.register(CTOSplitter)
 class CTOSplitterAdmin(admin.ModelAdmin):
-    list_display = ("name", "cto", "ratio", "output_ports", "position", "enabled")
+    list_display = (
+        "name", "cto", "ratio", "output_ports",
+        "input_cable", "input_fiber", "position", "enabled",
+    )
     list_filter = ("ratio", "enabled")
     search_fields = ("name", "cto__name", "cto__code")
+    autocomplete_fields = ("cto", "input_cable", "input_fiber")
     inlines = [CTOSplitterPortInline]
 
 
