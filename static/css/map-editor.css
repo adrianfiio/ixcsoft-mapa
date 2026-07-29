@@ -56,6 +56,8 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .tool-button:hover, .tool-button.active { border-color: var(--primary); background: rgba(45,212,191,.12); }
 .tool-button:disabled, .secondary-button:disabled { cursor: not-allowed; opacity: .38; }
 .secondary-button { width: 100%; min-height: 38px; margin-top: 8px; }
+.pending-cables { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(41,67,94,.7); }
+.pending-cables label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .login-notice { margin-top: 9px; color: #fde68a; border-color: #7c5b19; }
 .summary-row { display: flex; justify-content: space-between; padding: 4px 0; color: var(--muted); font-size: 11px; }
 .summary-row strong { color: var(--text); }
@@ -202,4 +204,57 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
     .unifilar-line { width: 2px; height: 18px; margin: auto; }
     .map-search { top: 8px; right: 8px; left: 66px; grid-template-columns: 1fr auto auto; width: auto; transform: none; }
     .map-search select { grid-column: 1 / -1; }
+}
+.map-mode-control {
+    position: absolute;
+    z-index: 1140;
+    top: 76px;
+    left: calc(50% + 90px);
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid #26415b;
+    border-radius: 12px;
+    background: rgba(7, 17, 31, .94);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .3);
+    color: #94a3b8;
+}
+
+.map-mode-control > span {
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.map-mode-control button {
+    border: 0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: transparent;
+    color: #b8c7d9;
+    cursor: pointer;
+}
+
+.map-mode-control button:hover,
+.map-mode-control button.active {
+    background: #123149;
+    color: #2dd4bf;
+}
+
+.map-search.attention {
+    outline: 2px solid #2dd4bf;
+}
+
+@media (max-width: 760px) {
+    .map-mode-control {
+        top: 116px;
+        left: 50%;
+    }
+    .map-mode-control b,
+    .map-mode-control > span {
+        display: none;
+    }
 }

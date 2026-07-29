@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from typing import Any
 
 from django.contrib.gis.geos import Point
 
 from apps.core.enums import OperationalStatus
-from apps.network_map.models import CTO, NetworkElement, NetworkProject
+from apps.network_map.models import CTO, FiberCable, NetworkElement, NetworkProject
 
 
 def _point(record: dict[str, Any]):
@@ -19,6 +21,52 @@ def _point(record: dict[str, Any]):
     return None
 
 
+def _normalized(value: Any) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    return "".join(char for char in text if not unicodedata.combining(char)).upper()
+
+
+def _description(record: dict[str, Any]) -> str:
+    return str(record.get("descricao") or record.get("nome") or record.get("tipo") or "").strip()
+
+
+def _is_cable(description: str, record: dict[str, Any]) -> bool:
+    source = " ".join(
+        _normalized(value)
+        for value in (
+            description,
+            record.get("tipo"),
+            record.get("id_tipo_elemento"),
+        )
+    )
+    return bool(re.search(r"\bCABO\b|\bCABLE\b", source))
+
+
+def _is_splice_box(description: str, record: dict[str, Any]) -> bool:
+    source = " ".join(
+        _normalized(value)
+        for value in (description, record.get("tipo"), record.get("tipo_caixa"))
+    )
+    return bool(
+        re.search(
+            r"\b(?:CEO|C\s*E\s*O|CF|CFO)\b|CAIXA\s+(?:DE\s+)?EMENDA|\bEMENDA\b",
+            source,
+        )
+    )
+
+
+def _fiber_count(description: str, record: dict[str, Any]) -> int:
+    for key in ("quantidade_fibras", "qtd_fibras", "fibras", "capacidade"):
+        raw = record.get(key)
+        if raw not in (None, ""):
+            try:
+                return max(1, min(int(float(raw)), 65535))
+            except (TypeError, ValueError):
+                pass
+    match = re.search(r"(?<!\d)(\d{1,3})\s*(?:F\.?\s*O\.?|FO|FIBRAS?)\b", _normalized(description))
+    return max(1, min(int(match.group(1)), 65535)) if match else 12
+
+
 class IXCMapRepository:
     @staticmethod
     def upsert_element(record: dict[str, Any], company):
@@ -30,14 +78,49 @@ class IXCMapRepository:
             company=company,
             ixc_project_id=project_id,
         ).first()
-        description = str(
-            record.get("descricao") or record.get("tipo") or record.get("nome") or ""
-        )
-        normalized = description.upper()
+        description = _description(record)
+        if _is_cable(description, record):
+            legacy = NetworkElement.objects.filter(
+                company=company,
+                code=f"IXC-ELEM-{external_id}",
+                element_type=NetworkElement.ElementType.OTHER,
+            ).first()
+            if legacy and legacy.metadata.get("ixc"):
+                legacy.delete()
+            return FiberCable.objects.update_or_create(
+                company=company,
+                code=f"IXC-CAB-{external_id}",
+                defaults={
+                    "project": project,
+                    "name": description or f"Cabo IXC {external_id}",
+                    "description": (
+                        "Importado do inventário IXCSoft. Aguardando traçado "
+                        "manual ou geometria fornecida pelo ERP."
+                    ),
+                    "cable_type": FiberCable.CableType.DISTRIBUTION,
+                    "fiber_count": _fiber_count(description, record),
+                    "status": OperationalStatus.NO_DATA,
+                },
+            )
+        # A mesma caixa pode aparecer em rad_caixa_ftth e df_elemento. Nesse
+        # caso preservamos o registro georreferenciado, em vez de duplicá-lo.
+        matching_box = NetworkElement.objects.filter(
+            company=company,
+            project=project,
+            name__iexact=description,
+            element_type__in=(
+                NetworkElement.ElementType.CTO,
+                NetworkElement.ElementType.SPLICE_BOX,
+            ),
+        ).first()
+        if matching_box:
+            return matching_box, False
+        normalized = _normalized(description)
         element_type = NetworkElement.ElementType.OTHER
         for key, value in (
             ("POSTE", NetworkElement.ElementType.POLE),
             ("CEO", NetworkElement.ElementType.SPLICE_BOX),
+            ("CAIXA DE EMENDA", NetworkElement.ElementType.SPLICE_BOX),
             ("EMENDA", NetworkElement.ElementType.SPLICE_BOX),
             ("OLT", NetworkElement.ElementType.OLT),
             ("DIO", NetworkElement.ElementType.DIO),
@@ -101,12 +184,39 @@ class IXCMapRepository:
         except (TypeError, ValueError):
             capacity = 16
         active = str(record.get("status") or "A").upper() not in {"I", "INATIVO", "N", "0"}
+        description = _description(record)
+        if _is_splice_box(description, record):
+            imported_cto = CTO.objects.filter(company=company, ixc_box_id=external_id).first()
+            if imported_cto and imported_cto.metadata.get("ixc"):
+                imported_cto.delete()
+            return NetworkElement.objects.update_or_create(
+                company=company,
+                code=f"IXC-BOX-{external_id}",
+                defaults={
+                    "project": project,
+                    "name": description or f"Caixa de emenda IXC {external_id}",
+                    "description": "Caixa de emenda importada automaticamente do IXCSoft.",
+                    "element_type": NetworkElement.ElementType.SPLICE_BOX,
+                    "point": _point(record),
+                    "status": OperationalStatus.NORMAL if active else OperationalStatus.OFFLINE,
+                    "enabled": active,
+                    "metadata": {"ixc": record, "ixc_box_id": external_id},
+                },
+            )
+
+        imported_splice = NetworkElement.objects.filter(
+            company=company,
+            code=f"IXC-BOX-{external_id}",
+            element_type=NetworkElement.ElementType.SPLICE_BOX,
+        ).first()
+        if imported_splice and imported_splice.metadata.get("ixc"):
+            imported_splice.delete()
         return CTO.objects.update_or_create(
             company=company,
             ixc_box_id=external_id,
             defaults={
                 "project": project,
-                "name": record.get("descricao") or f"CTO IXC {external_id}",
+                "name": description or f"CTO IXC {external_id}",
                 "code": f"IXC-CTO-{external_id}",
                 "description": "Importada automaticamente do IXCSoft.",
                 "element_type": NetworkElement.ElementType.CTO,

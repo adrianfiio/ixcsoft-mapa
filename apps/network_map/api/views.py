@@ -664,6 +664,32 @@ def fiber_cables_geojson(request):
     )
 
 
+@require_GET
+def unmapped_fiber_cables(request):
+    """Lista cabos do inventário que ainda aguardam desenho no mapa."""
+    queryset = scope_company_queryset(
+        FiberCable.objects.filter(geometry__isnull=True).select_related("project"),
+        request.user,
+    )
+    project_id = request.GET.get("project_id")
+    if project_id:
+        queryset = queryset.filter(project_id=project_id)
+    return JsonResponse(
+        {
+            "count": queryset.count(),
+            "results": [
+                {
+                    "id": cable.id,
+                    "name": cable.name,
+                    "fiber_count": cable.fiber_count,
+                    "project_id": cable.project_id,
+                }
+                for cable in queryset.order_by("name")[:500]
+            ],
+        }
+    )
+
+
 from rest_framework.decorators import (
     api_view,
     permission_classes,
@@ -1391,10 +1417,14 @@ def cable_detail_payload(cable):
         "origin_id": cable.origin_id,
         "destination_id": cable.destination_id,
         "cable_model_id": cable.cable_model_id,
-        "geometry": {
-            "type": "MultiLineString",
-            "coordinates": cable.geometry.coords,
-        },
+        "geometry": (
+            {
+                "type": "MultiLineString",
+                "coordinates": cable.geometry.coords,
+            }
+            if cable.geometry
+            else None
+        ),
         "reserves": [
             {
                 "id": reserve.id,

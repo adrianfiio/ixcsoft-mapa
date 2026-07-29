@@ -120,7 +120,7 @@ class IXCSynchronizationService:
         return self._sync_table(
             "rad_caixa_ftth",
             lambda record: IXCMapRepository.upsert_cto(record, self.configuration.company),
-            "CTOs e caixas",
+            "CTOs, CDOs e caixas de emenda",
         )
 
     def sync_map_elements(self) -> SyncStats:

@@ -11,6 +11,25 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.21.0] - 2026-07-29
+
+### Adicionado
+
+- Importação de itens do `df_elemento` cujo nome/tipo contém “CABO” como cabo óptico aguardando traçado.
+- Identificação automática da quantidade de fibras em nomes como `CABO 6FO`, `12 F.O` e `24 fibras`.
+- Seletor para escolher e desenhar no mapa um cabo importado que ainda não possui geometria.
+- Barra de modos do mapa com ações de visualizar, editar, desenhar e pesquisar.
+
+### Corrigido
+
+- CDOs e caixas de atendimento permanecem no grupo de CTOs, enquanto CEO, CF e caixas de emenda passam a ser classificadas como caixas de emenda.
+- Elementos repetidos entre `rad_caixa_ftth` e `df_elemento` deixam de aparecer duplicados quando o nome e o projeto coincidem.
+- Uma nova sincronização preserva o traçado manual já desenhado para um cabo importado.
+
+### Observação
+
+- Os exemplos de API IXCSoft fornecidos não incluem geometria, origem ou destino em `df_elemento`; por isso os cabos entram no inventário sem linha até serem desenhados ou importados por KML/KMZ.
+
 ## [0.20.0] - 2026-07-29
 
 ### Adicionado

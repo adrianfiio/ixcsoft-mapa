@@ -24,6 +24,7 @@
         cableCoordinates: [], drawingLine: null,
         cableOriginId: null, cableDestinationId: null, cableModels: new Map(),
         editingElementId: null, editingCableId: null,
+        drawingExistingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lightAnimationGeneration: 0,
     };
@@ -958,6 +959,7 @@
             document.getElementById("element-count").textContent = "0";
             document.getElementById("cable-count").textContent = "0";
             populateConnectionSelects();
+            await loadUnmappedCables();
             return;
         }
         const query = `?project_id=${encodeURIComponent(state.projectId)}`;
@@ -1115,6 +1117,7 @@
         });
         document.getElementById("element-count").textContent = elements.count;
         document.getElementById("cable-count").textContent = cables.count + routes.count;
+        await loadUnmappedCables();
         if (fit && bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
     }
     function setTool(tool) {
@@ -1144,6 +1147,7 @@
         state.geometryCableId = null;
         state.reserveCableId = null;
         state.insertCableId = null;
+        state.drawingExistingCableId = null;
         state.drawingLine = null;
         drawingBar.hidden = true;
         map.getContainer().style.cursor = "";
@@ -1182,6 +1186,29 @@
     });
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };
+    document.querySelectorAll("[data-map-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+            document.querySelectorAll("[data-map-mode]").forEach((item) => item.classList.remove("active"));
+            button.classList.add("active");
+            const mode = button.dataset.mapMode;
+            if (mode === "search") {
+                document.getElementById("map-search").classList.add("attention");
+                document.getElementById("map-search-query").focus();
+            } else {
+                document.getElementById("map-search").classList.remove("attention");
+            }
+            if (mode === "edit" && document.getElementById("map-sidebar").classList.contains("collapsed")) {
+                document.getElementById("collapse-sidebar").click();
+            }
+            if (mode === "view" && !document.getElementById("map-sidebar").classList.contains("collapsed")) {
+                document.getElementById("collapse-sidebar").click();
+            }
+            if (mode === "draw") {
+                document.querySelector('[data-tool="cable"]')?.click();
+            }
+        });
+    });
+
     document.getElementById("map-search-button").onclick = () => executeMapSearch().catch((error) => notify(error.message, true));
     document.getElementById("map-search-query").onkeydown = (event) => {
         if (event.key === "Enter") executeMapSearch().catch((error) => notify(error.message, true));
@@ -1296,6 +1323,27 @@
             return;
         }
         if (!state.cableDestinationId) return notify("Finalize clicando no equipamento de destino.", true);
+        if (state.drawingExistingCableId) {
+            const cableId = state.drawingExistingCableId;
+            api(`/api/map/cables/${cableId}/geometry/`, {
+                method: "PATCH",
+                body: JSON.stringify({ coordinates: state.cableCoordinates }),
+            })
+                .then(() => api(`/api/map/cables/${cableId}/`, {
+                    method: "PATCH",
+                    body: JSON.stringify({
+                        origin_id: state.cableOriginId,
+                        destination_id: state.cableDestinationId,
+                    }),
+                }))
+                .then(() => {
+                    clearTool();
+                    loadStructure();
+                    notify("Cabo importado ligado e traçado no mapa.");
+                })
+                .catch((error) => notify(error.message, true));
+            return;
+        }
         openNewCableDialog();
     };
     document.getElementById("edit-geometry-button").onclick = () => startGeometryEdit().catch((error) => notify(error.message, true));
@@ -1315,6 +1363,26 @@
         } catch (error) { notify(error.message, true); }
     };
     document.getElementById("import-button").onclick = () => document.getElementById("import-file").click();
+    const unmappedCableSelect = document.getElementById("unmapped-cable-select");
+    async function loadUnmappedCables() {
+        if (!state.projectId) {
+            unmappedCableSelect.innerHTML = '<option value="">Selecione um projeto</option>';
+            return;
+        }
+        const data = await api(`/api/map/cables/unmapped/?project_id=${state.projectId}`);
+        unmappedCableSelect.innerHTML = data.results.length
+            ? '<option value="">Selecione um cabo</option>' + data.results.map((cable) =>
+                `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`
+            ).join("")
+            : '<option value="">Nenhum cabo aguardando</option>';
+        document.getElementById("draw-unmapped-cable").disabled = !data.results.length;
+    }
+    document.getElementById("draw-unmapped-cable").onclick = () => {
+        if (!unmappedCableSelect.value) return notify("Selecione um cabo importado.", true);
+        setTool("cable");
+        state.drawingExistingCableId = Number(unmappedCableSelect.value);
+        notify("Clique na origem, desenhe o trajeto e finalize no destino.");
+    };
     document.getElementById("import-file").onchange = async (event) => {
         const file = event.target.files[0];
         if (!file || !state.projectId) return;

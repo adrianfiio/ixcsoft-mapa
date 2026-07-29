@@ -252,7 +252,9 @@ class FiberCable(CompanyScopedModel, NamedModel):
         related_name="installed_cables",
         verbose_name="Modelo do cabo",
     )
-    geometry = models.MultiLineStringField(srid=4326)
+    # Cabos importados de ERPs podem existir no inventário antes de o provedor
+    # disponibilizar (ou o operador desenhar) o respectivo traçado.
+    geometry = models.MultiLineStringField(srid=4326, null=True, blank=True)
     fiber_count = models.PositiveSmallIntegerField(default=12)
     used_fibers = models.PositiveSmallIntegerField(default=0)
     origin = models.ForeignKey(
