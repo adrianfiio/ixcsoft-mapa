@@ -1,0 +1,620 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>IXCSoft Mapa</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f172a;
+        }
+
+        .layout {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 330px;
+            min-width: 330px;
+            height: 100%;
+            padding: 20px;
+            color: #e2e8f0;
+            background: #0f172a;
+            overflow-y: auto;
+            border-right: 1px solid #334155;
+        }
+
+        .sidebar h1 {
+            margin: 0 0 6px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            margin: 0 0 22px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 7px;
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 11px 12px;
+            margin-bottom: 18px;
+            color: #f8fafc;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #38bdf8;
+        }
+
+        .filters {
+            padding: 14px;
+            margin-bottom: 18px;
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .filter-option:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-option input {
+            width: 17px;
+            height: 17px;
+        }
+
+        .status-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .status-online {
+            background: #22c55e;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        .status-unknown {
+            background: #f59e0b;
+        }
+
+        .summary {
+            padding: 14px;
+            margin-bottom: 18px;
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .summary-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .summary-value {
+            font-weight: bold;
+        }
+
+        .loading {
+            padding: 12px;
+            color: #bae6fd;
+            background: #075985;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .error {
+            padding: 12px;
+            color: #fecaca;
+            background: #7f1d1d;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .button {
+            width: 100%;
+            padding: 11px;
+            color: #ffffff;
+            background: #0284c7;
+            border: 0;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background: #0369a1;
+        }
+
+        #map {
+            flex: 1;
+            height: 100%;
+        }
+
+        .client-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
+        }
+
+        .marker-online {
+            background: #22c55e;
+        }
+
+        .marker-offline {
+            background: #ef4444;
+        }
+
+        .marker-unknown {
+            background: #f59e0b;
+        }
+
+        .popup-title {
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .popup-row {
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .popup-label {
+            font-weight: bold;
+        }
+
+        @media (max-width: 800px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: 100%;
+                height: auto;
+                max-height: 45%;
+            }
+
+            #map {
+                min-height: 55%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <h1>IXCSoft Mapa</h1>
+
+            <p class="subtitle">
+                Monitoramento geográfico da rede FTTH
+            </p>
+
+            <label class="field-label" for="search">
+                Pesquisar cliente
+            </label>
+
+            <input
+                id="search"
+                class="search-input"
+                type="search"
+                placeholder="Cliente, login, CTO ou ONU"
+                autocomplete="off"
+            >
+
+            <div class="filters">
+                <label class="filter-option">
+                    <input
+                        id="filter-online"
+                        type="checkbox"
+                        checked
+                    >
+
+                    <span class="status-dot status-online"></span>
+                    Online
+                </label>
+
+                <label class="filter-option">
+                    <input
+                        id="filter-offline"
+                        type="checkbox"
+                        checked
+                    >
+
+                    <span class="status-dot status-offline"></span>
+                    Offline
+                </label>
+
+                <label class="filter-option">
+                    <input
+                        id="filter-unknown"
+                        type="checkbox"
+                        checked
+                    >
+
+                    <span class="status-dot status-unknown"></span>
+                    Desconhecido
+                </label>
+            </div>
+
+            <div class="summary">
+                <div class="summary-row">
+                    <span>Total carregado</span>
+                    <span id="total-count" class="summary-value">0</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Exibidos</span>
+                    <span id="visible-count" class="summary-value">0</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Online</span>
+                    <span id="online-count" class="summary-value">0</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Offline</span>
+                    <span id="offline-count" class="summary-value">0</span>
+                </div>
+            </div>
+
+            <button id="fit-map" class="button" type="button">
+                Enquadrar marcadores
+            </button>
+
+            <div id="message" class="loading" style="margin-top: 18px;">
+                Carregando clientes...
+            </div>
+        </aside>
+
+        <main id="map"></main>
+    </div>
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    ></script>
+
+    <script
+        src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    ></script>
+
+    <script>
+        const map = L.map("map", {
+            preferCanvas: true,
+        }).setView([-24.45, -50.62], 10);
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution: "&copy; OpenStreetMap",
+            }
+        ).addTo(map);
+
+        const markerCluster = L.markerClusterGroup({
+            chunkedLoading: true,
+            chunkInterval: 100,
+            chunkDelay: 20,
+            maxClusterRadius: 55,
+            disableClusteringAtZoom: 17,
+        });
+
+        map.addLayer(markerCluster);
+
+        const searchInput = document.getElementById("search");
+        const filterOnline = document.getElementById("filter-online");
+        const filterOffline = document.getElementById("filter-offline");
+        const filterUnknown = document.getElementById("filter-unknown");
+        const totalCount = document.getElementById("total-count");
+        const visibleCount = document.getElementById("visible-count");
+        const onlineCount = document.getElementById("online-count");
+        const offlineCount = document.getElementById("offline-count");
+        const message = document.getElementById("message");
+        const fitMapButton = document.getElementById("fit-map");
+
+        let accessPoints = [];
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function normalizeStatus(status) {
+            const value = String(status || "unknown").toLowerCase();
+
+            if (value === "online") {
+                return "online";
+            }
+
+            if (value === "offline") {
+                return "offline";
+            }
+
+            return "unknown";
+        }
+
+        function markerIcon(status) {
+            const normalizedStatus = normalizeStatus(status);
+
+            return L.divIcon({
+                className: "",
+                html: `
+                    <div class="client-marker marker-${normalizedStatus}"></div>
+                `,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+                popupAnchor: [0, -10],
+            });
+        }
+
+        function popupContent(properties) {
+            return `
+                <div class="popup-title">
+                    ${escapeHtml(properties.cliente || "Cliente sem nome")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">Login:</span>
+                    ${escapeHtml(properties.login || "-")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">Status:</span>
+                    ${escapeHtml(properties.status || "-")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">ONU:</span>
+                    ${escapeHtml(properties.onu || "-")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">CTO:</span>
+                    ${escapeHtml(properties.cto || "-")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">Porta FTTH:</span>
+                    ${escapeHtml(properties.porta_ftth || "-")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">Concentrador:</span>
+                    ${escapeHtml(properties.concentrador || "-")}
+                </div>
+
+                <div class="popup-row">
+                    <span class="popup-label">Interface:</span>
+                    ${escapeHtml(properties.interface || "-")}
+                </div>
+            `;
+        }
+
+        function createAccessPoint(feature) {
+            const coordinates = feature.geometry.coordinates;
+            const properties = feature.properties;
+            const status = normalizeStatus(properties.status);
+
+            const marker = L.marker(
+                [coordinates[1], coordinates[0]],
+                {
+                    icon: markerIcon(status),
+                    title: properties.cliente || properties.login || "",
+                }
+            );
+
+            marker.bindPopup(
+                popupContent(properties),
+                {
+                    maxWidth: 340,
+                }
+            );
+
+            const searchableText = [
+                properties.cliente,
+                properties.login,
+                properties.cto,
+                properties.onu,
+                properties.concentrador,
+                properties.porta_ftth,
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+            return {
+                feature,
+                marker,
+                status,
+                searchableText,
+            };
+        }
+
+        function statusIsEnabled(status) {
+            if (status === "online") {
+                return filterOnline.checked;
+            }
+
+            if (status === "offline") {
+                return filterOffline.checked;
+            }
+
+            return filterUnknown.checked;
+        }
+
+        function applyFilters() {
+            const query = searchInput.value.trim().toLowerCase();
+
+            markerCluster.clearLayers();
+
+            const filtered = accessPoints.filter((item) => {
+                const matchesSearch =
+                    !query || item.searchableText.includes(query);
+
+                const matchesStatus = statusIsEnabled(item.status);
+
+                return matchesSearch && matchesStatus;
+            });
+
+            markerCluster.addLayers(
+                filtered.map((item) => item.marker)
+            );
+
+            visibleCount.textContent = filtered.length;
+
+            message.className = "loading";
+            message.textContent =
+                `${filtered.length} acessos exibidos no mapa`;
+        }
+
+        function updateSummary() {
+            totalCount.textContent = accessPoints.length;
+
+            onlineCount.textContent = accessPoints.filter(
+                (item) => item.status === "online"
+            ).length;
+
+            offlineCount.textContent = accessPoints.filter(
+                (item) => item.status === "offline"
+            ).length;
+        }
+
+        function fitVisibleMarkers() {
+            const bounds = markerCluster.getBounds();
+
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, {
+                    padding: [30, 30],
+                    maxZoom: 16,
+                });
+            }
+        }
+
+        async function loadAccessPoints() {
+            try {
+                const response = await fetch(
+                    "/api/map/access-points/",
+                    {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Erro HTTP ${response.status}`
+                    );
+                }
+
+                const geojson = await response.json();
+
+                accessPoints = geojson.features.map(
+                    createAccessPoint
+                );
+
+                updateSummary();
+                applyFilters();
+                fitVisibleMarkers();
+
+                message.className = "loading";
+                message.textContent =
+                    `${accessPoints.length} acessos carregados`;
+            } catch (error) {
+                console.error(error);
+
+                message.className = "error";
+                message.textContent =
+                    "Não foi possível carregar os acessos.";
+            }
+        }
+
+        let searchTimeout = null;
+
+        searchInput.addEventListener("input", () => {
+            clearTimeout(searchTimeout);
+
+            searchTimeout = setTimeout(
+                applyFilters,
+                250
+            );
+        });
+
+        filterOnline.addEventListener("change", applyFilters);
+        filterOffline.addEventListener("change", applyFilters);
+        filterUnknown.addEventListener("change", applyFilters);
+        fitMapButton.addEventListener("click", fitVisibleMarkers);
+
+        loadAccessPoints();
+    </script>
+</body>
+</html>
