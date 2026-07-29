@@ -81,6 +81,13 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.12.4] - 2026-07-29
+
+### Corrigido
+
+- O mapa não solicita mais tiles inexistentes nos níveis máximos.
+- A última imagem disponível é ampliada até o zoom 22, evitando blocos cinza.
+
 ## [0.12.3] - 2026-07-29
 
 ### Adicionado

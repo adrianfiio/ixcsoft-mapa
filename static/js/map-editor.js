@@ -21,9 +21,13 @@
         lightSourceId: null, lightAnimationGeneration: 0,
     };
 
-    const map = L.map("map", { preferCanvas: true }).setView([-24.45, -50.62], 10);
-    const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 20, attribution: "&copy; OpenStreetMap" });
-    const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 20, attribution: "Tiles &copy; Esri" });
+    const map = L.map("map", { preferCanvas: true, maxZoom: 22 }).setView([-24.45, -50.62], 10);
+    const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxNativeZoom: 19, maxZoom: 22, attribution: "&copy; OpenStreetMap",
+    });
+    const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxNativeZoom: 19, maxZoom: 22, attribution: "Tiles &copy; Esri",
+    });
     satelliteLayer.addTo(map);
     L.control.layers({ "Satélite (sem API)": satelliteLayer, "Mapa de ruas": streetLayer }, {}, { position: "topright" }).addTo(map);
 
