@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from apps.access.models import AccessPoint
 from apps.core.crypto import SecretCipher
 from apps.core.models import MapBaseConfiguration
+from apps.core.access import can_edit_company, can_view_company, scope_company_queryset
 from apps.network_map.models import (
     CableModel,
     CableReserve,
@@ -314,7 +315,7 @@ def access_points_geojson(request):
     # O filtro também impede que registros inativos antigos apareçam
     # antes da próxima sincronização.
     queryset = (
-        AccessPoint.objects.filter(
+        scope_company_queryset(AccessPoint.objects, request.user).filter(
             raw_data__ativo__in=[
                 "S",
                 "SS",
@@ -517,6 +518,7 @@ def network_elements_geojson(request):
     queryset = NetworkElement.objects.filter(
         enabled=True
     )
+    queryset = scope_company_queryset(queryset, request.user)
     project_id = request.GET.get("project_id")
     if project_id:
         queryset = queryset.filter(project_id=project_id)
@@ -577,6 +579,7 @@ def fiber_cables_geojson(request):
     ).filter(
         status__isnull=False
     )
+    queryset = scope_company_queryset(queryset, request.user)
     project_id = request.GET.get("project_id")
     if project_id:
         queryset = queryset.filter(project_id=project_id)
@@ -832,6 +835,14 @@ def create_network_element(request):
     )
 
     if serializer.is_valid():
+        project = serializer.validated_data.get("project")
+        company = serializer.validated_data.get("company")
+        company_id = project.company_id if project else getattr(company, "id", None)
+        if not can_edit_company(request.user, company_id):
+            return JsonResponse(
+                {"success": False, "error": "Seu acesso não permite editar esta empresa."},
+                status=403,
+            )
 
         element = serializer.save()
 
@@ -867,6 +878,8 @@ def network_element_detail(request, element_id):
         NetworkElement,
         pk=element_id,
     )
+    if not can_view_company(request.user, element.company_id):
+        return JsonResponse({"success": False, "error": "Item não disponível."}, status=403)
 
     if request.method == "GET":
         return JsonResponse(
@@ -878,6 +891,9 @@ def network_element_detail(request, element_id):
                 "ensure_ascii": False,
             },
         )
+
+    if not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"success": False, "error": "Seu acesso é somente VIEW."}, status=403)
 
     if request.method == "DELETE":
         connected_cables = FiberCable.objects.filter(
@@ -963,6 +979,8 @@ def update_network_element_position(request, element_id):
         NetworkElement,
         pk=element_id,
     )
+    if not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"success": False, "error": "Seu acesso é somente VIEW."}, status=403)
 
     try:
         latitude = float(

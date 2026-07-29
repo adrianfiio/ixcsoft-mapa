@@ -11,6 +11,28 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.16.0] - 2026-07-29
+
+### Adicionado
+
+- Login obrigatório desde a entrada da plataforma.
+- Painel operacional próprio para cada empresa, com projetos, equipamentos e cabos autorizados.
+- Pesquisa central no painel do cliente limitada ao conteúdo que sua conta pode acessar.
+- Administração da empresa baseada nos níveis VIEW, EDIT e ADMIN.
+
+### Melhorado
+
+- Atividade recente do painel técnico transformada em sino recolhido.
+- Categorias administrativas fechadas por padrão e abertas sob demanda.
+- Menu lateral técnico removido da página inicial para reduzir poluição visual.
+- Pesquisa moderna no topo da Central de Controle.
+- Links do painel da empresa abrem o projeto correto diretamente no mapa.
+
+### Segurança
+
+- Acessos, elementos e cabos do mapa são filtrados no servidor pela empresa do usuário.
+- Operações principais de elementos validam o nível de edição da empresa.
+
 ## [0.15.0] - 2026-07-29
 
 ### Adicionado

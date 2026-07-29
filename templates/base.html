@@ -60,7 +60,7 @@
                 </div>
                 <div class="topbar-actions">
                     <a class="topbar-link" href="/api/docs/">API</a>
-                    <a class="user-chip" href="/admin/" title="Administração">AD</a>
+                    <a class="user-chip" href="{% if request.user.is_superuser %}/admin/{% else %}{% url 'account-panel' %}{% endif %}" title="Minha administração">AD</a>
                 </div>
             </header>
 

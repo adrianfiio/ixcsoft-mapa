@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Minha administração | AFService Map{% endblock %}
+{% block topbar_title %}Minha administração{% endblock %}
+
+{% block content %}
+<section class="page-heading account-heading">
+    <div>
+        <p class="eyebrow">{% if is_platform_admin %}ADMIN DA PLATAFORMA{% else %}AMBIENTE DA EMPRESA{% endif %}</p>
+        <h1>Olá, {{ request.user.get_full_name|default:request.user.username }}</h1>
+        <p>Você visualiza somente os dados liberados para sua conta.</p>
+    </div>
+    {% if is_platform_admin %}<a class="primary-action" href="/admin/">Painel técnico completo →</a>{% endif %}
+</section>
+
+<div class="account-search">
+    <span>⌕</span>
+    <input id="account-search" type="search" placeholder="Pesquisar projeto, equipamento, cabo ou empresa…">
+</div>
+
+<section class="access-badges">
+    {% if is_platform_admin %}<span>ADMIN · Todas as empresas</span>{% endif %}
+    {% for membership in memberships %}
+        <span>{{ membership.company }} · {{ membership.role|upper }}</span>
+    {% endfor %}
+</section>
+
+<div class="account-accordion">
+    <details open data-account-section>
+        <summary><strong>Projetos</strong><small>{{ projects|length }} disponíveis</small></summary>
+        <div class="account-items">
+            {% for project in projects %}
+            <a data-searchable href="{% url 'map' %}?project={{ project.id }}">
+                <span><strong>{{ project.name }}</strong><small>{{ project.company }} · {{ project.code }}</small></span><b>Ver no mapa →</b>
+            </a>
+            {% empty %}<p>Nenhum projeto liberado.</p>{% endfor %}
+        </div>
+    </details>
+    <details data-account-section>
+        <summary><strong>Equipamentos e caixas</strong><small>{{ elements|length }} encontrados</small></summary>
+        <div class="account-items">
+            {% for element in elements %}
+            <a data-searchable href="{% url 'map' %}?project={{ element.project_id }}">
+                <span><strong>{{ element.name }}</strong><small>{{ element.company }} · {{ element.get_element_type_display }}</small></span><b>Localizar →</b>
+            </a>
+            {% empty %}<p>Nenhum equipamento liberado.</p>{% endfor %}
+        </div>
+    </details>
+    <details data-account-section>
+        <summary><strong>Cabos e rotas</strong><small>{{ cables|length }} encontrados</small></summary>
+        <div class="account-items">
+            {% for cable in cables %}
+            <a data-searchable href="{% url 'map' %}?project={{ cable.project_id }}">
+                <span><strong>{{ cable.name }}</strong><small>{{ cable.company }} · {{ cable.fiber_count }} fibras</small></span><b>Ver rota →</b>
+            </a>
+            {% empty %}<p>Nenhum cabo liberado.</p>{% endfor %}
+        </div>
+    </details>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById("account-search").addEventListener("input", (event) => {
+    const query = event.target.value.trim().toLocaleLowerCase("pt-BR");
+    document.querySelectorAll("[data-searchable]").forEach((item) => {
+        item.hidden = query && !item.textContent.toLocaleLowerCase("pt-BR").includes(query);
+    });
+});
+</script>
+{% endblock %}
