@@ -1,8 +1,9 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import re
 
 import requests
 from django.contrib.gis.geos import LineString, MultiLineString, Point
+from django.contrib.gis.measure import D
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
@@ -133,7 +134,7 @@ def google_satellite_tile(request, z, x, y):
     return tile
 
 
-@api_view(["GET", "PUT"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def pole_infrastructure(request, element_id):
     pole = get_object_or_404(
@@ -141,44 +142,79 @@ def pole_infrastructure(request, element_id):
         pk=element_id,
         element_type=NetworkElement.ElementType.POLE,
     )
-    project_cables = FiberCable.objects.filter(project=pole.project).order_by("name")
-    project_equipment = NetworkElement.objects.filter(
-        project=pole.project,
-        element_type__in=[
-            NetworkElement.ElementType.CTO,
-            NetworkElement.ElementType.SPLICE_BOX,
-        ],
-    ).exclude(pk=pole.pk).order_by("name")
-    if request.method == "PUT":
-        cable_ids = {int(value) for value in request.data.get("cable_ids", [])}
-        equipment_ids = {int(value) for value in request.data.get("equipment_ids", [])}
-        valid_cables = set(project_cables.filter(pk__in=cable_ids).values_list("id", flat=True))
-        valid_equipment = set(project_equipment.filter(pk__in=equipment_ids).values_list("id", flat=True))
-        if cable_ids != valid_cables or equipment_ids != valid_equipment:
-            return JsonResponse({"error": "Há itens que não pertencem ao projeto."}, status=400)
-        with transaction.atomic():
-            pole.cable_attachments.exclude(cable_id__in=cable_ids).delete()
-            for sequence, cable_id in enumerate(sorted(cable_ids), start=1):
-                PoleCableAttachment.objects.update_or_create(
-                    pole=pole, cable_id=cable_id, defaults={"sequence": sequence}
+    passing_cables = FiberCable.objects.none()
+    if pole.point:
+        passing_cables = FiberCable.objects.filter(
+            project=pole.project,
+            geometry__distance_lte=(pole.point, D(m=8)),
+        ).order_by("name")
+
+    if request.method == "POST":
+        action = request.data.get("action")
+        if action == "add_equipment":
+            if not pole.point:
+                return JsonResponse({"error": "O poste não possui localização no mapa."}, status=400)
+            element_type = request.data.get("element_type")
+            if element_type not in {
+                NetworkElement.ElementType.CTO,
+                NetworkElement.ElementType.SPLICE_BOX,
+            }:
+                return JsonResponse({"error": "Escolha CTO ou CEO."}, status=400)
+            name = str(request.data.get("name", "")).strip()
+            if not name:
+                return JsonResponse({"error": "Informe o nome do equipamento."}, status=400)
+            serializer = NetworkElementSerializer(data={
+                "project": pole.project_id,
+                "element_type": element_type,
+                "name": name,
+                "code": str(request.data.get("code", "")).strip() or name,
+                "latitude": pole.point.y,
+                "longitude": pole.point.x,
+                "enabled": True,
+            })
+            if not serializer.is_valid():
+                return JsonResponse({"error": serializer.errors}, status=400)
+            with transaction.atomic():
+                equipment = serializer.save()
+                PoleEquipmentAttachment.objects.create(pole=pole, equipment=equipment)
+            return JsonResponse({"created": {"id": equipment.id, "name": equipment.name}}, status=201)
+
+        if action == "add_reserve":
+            try:
+                cable_id = int(request.data.get("cable_id"))
+                length_m = Decimal(str(request.data.get("length_m")))
+            except (TypeError, ValueError, InvalidOperation):
+                return JsonResponse({"error": "Informe o cabo e a metragem da reserva."}, status=400)
+            cable = passing_cables.filter(pk=cable_id).first()
+            if not cable:
+                return JsonResponse(
+                    {"error": "A reserva só pode ser adicionada a um cabo que passa pelo poste."},
+                    status=400,
                 )
-            pole.equipment_attachments.exclude(equipment_id__in=equipment_ids).delete()
-            for equipment in project_equipment.filter(pk__in=equipment_ids):
-                PoleEquipmentAttachment.objects.update_or_create(
-                    equipment=equipment, defaults={"pole": pole}
-                )
-                if pole.point:
-                    equipment.point = pole.point
-                    equipment.save(update_fields=["point", "updated_at"])
+            if not length_m.is_finite() or length_m <= 0:
+                return JsonResponse({"error": "A metragem deve ser maior que zero."}, status=400)
+            reserve = CableReserve.objects.create(
+                cable=cable,
+                point=pole.point,
+                length_m=length_m,
+                label=str(request.data.get("label", "")).strip() or f"Reserva · {pole.name}",
+            )
+            return JsonResponse({"created": {"id": reserve.id, "label": reserve.label}}, status=201)
+
+        return JsonResponse({"error": "Ação inválida."}, status=400)
+
+    installed_equipment = NetworkElement.objects.filter(
+        pole_attachment__pole=pole,
+    ).order_by("name")
     return JsonResponse({
         "pole": {"id": pole.id, "name": pole.name, "code": pole.code},
         "cables": [
-            {"id": cable.id, "name": cable.name, "selected": cable.pole_attachments.filter(pole=pole).exists()}
-            for cable in project_cables
+            {"id": cable.id, "name": cable.name}
+            for cable in passing_cables
         ],
         "equipment": [
-            {"id": item.id, "name": item.name, "type": item.element_type, "selected": PoleEquipmentAttachment.objects.filter(pole=pole, equipment=item).exists()}
-            for item in project_equipment
+            {"id": item.id, "name": item.name, "type": item.element_type}
+            for item in installed_equipment
         ],
     })
 

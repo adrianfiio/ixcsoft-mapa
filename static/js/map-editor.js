@@ -175,8 +175,9 @@
         document.getElementById("client-count").textContent = data.count || data.features.length;
     }
     function networkIcon(type) {
-        const labels = { pole: "P", cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO" };
+        const labels = { cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO" };
         const symbols = {
+            pole: '<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 7h18M12 2v23M6 25h12M7 7l5 6 5-6M8 17h8"></path></svg>',
             cto: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="12" rx="2"></rect><path d="M7 6h10M7 10h10M7 14v3m5-3v3m5-3v3"></path></svg><small>CTO</small>',
             splice_box: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CEO</small>',
             olt: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>OLT</small>',
@@ -743,15 +744,54 @@
     }
     async function managePole(id) {
         const data = await api(`/api/map/elements/${id}/pole/`);
-        poleForm.elements.pole_id.value = id;
+        poleForm.querySelector('[name="pole_id"]').value = id;
+        poleForm.dataset.cables = JSON.stringify(data.cables);
         document.getElementById("pole-dialog-title").textContent = `Infraestrutura · ${data.pole.name}`;
         document.getElementById("pole-cables").innerHTML = data.cables.map((item) =>
-            `<label class="layer-option"><input type="checkbox" name="cable_ids" value="${item.id}" ${item.selected ? "checked" : ""}> ${escapeHtml(item.name)}</label>`
-        ).join("") || "<p>Nenhum cabo no projeto.</p>";
+            `<div class="pole-list-item"><svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg>${escapeHtml(item.name)}</div>`
+        ).join("") || '<p class="help-text">Nenhum cabo passa a até 8 metros deste poste.</p>';
         document.getElementById("pole-equipment").innerHTML = data.equipment.map((item) =>
-            `<label class="layer-option"><input type="checkbox" name="equipment_ids" value="${item.id}" ${item.selected ? "checked" : ""}> ${escapeHtml(item.name)} · ${escapeHtml(item.type.toUpperCase())}</label>`
-        ).join("") || "<p>Nenhuma CTO ou CEO no projeto.</p>";
+            `<div class="pole-list-item">${escapeHtml(item.name)} · ${escapeHtml(item.type === "splice_box" ? "CEO" : "CTO")}</div>`
+        ).join("") || '<p class="help-text">Nenhuma CTO ou CEO instalada neste poste.</p>';
+        document.getElementById("pole-add-reserve").disabled = !data.cables.length;
+        document.getElementById("pole-help").textContent = data.cables.length
+            ? "A reserva será vinculada a um dos cabos detectados neste poste."
+            : "Para adicionar reserva, primeiro desenhe ou mova um cabo para passar pelo poste.";
         poleDialog.showModal();
+    }
+    async function addPoleEquipment(elementType) {
+        const label = elementType === "cto" ? "CTO" : "CEO";
+        const name = window.prompt(`Nome da nova ${label}:`);
+        if (!name?.trim()) return;
+        const poleId = poleForm.querySelector('[name="pole_id"]').value;
+        await api(`/api/map/elements/${poleId}/pole/`, {
+            method: "POST",
+            body: JSON.stringify({ action: "add_equipment", element_type: elementType, name: name.trim(), code: name.trim() }),
+        });
+        await loadStructure();
+        await managePole(poleId);
+        notify(`${label} instalada no poste.`);
+    }
+    async function addPoleReserve() {
+        const cables = JSON.parse(poleForm.dataset.cables || "[]");
+        if (!cables.length) return notify("Nenhum cabo passa por este poste.", true);
+        let cable = cables[0];
+        if (cables.length > 1) {
+            const choice = window.prompt(`Escolha o cabo:\n${cables.map((item, index) => `${index + 1}. ${item.name}`).join("\n")}`, "1");
+            const index = Number(choice) - 1;
+            if (!Number.isInteger(index) || !cables[index]) return;
+            cable = cables[index];
+        }
+        const length = window.prompt(`Metros de reserva em ${cable.name}:`, "20");
+        if (!length) return;
+        const poleId = poleForm.querySelector('[name="pole_id"]').value;
+        await api(`/api/map/elements/${poleId}/pole/`, {
+            method: "POST",
+            body: JSON.stringify({ action: "add_reserve", cable_id: cable.id, length_m: length }),
+        });
+        poleDialog.close();
+        await loadStructure();
+        notify(`Reserva adicionada ao cabo ${cable.name}.`);
     }
     function nearestElement(latlng) {
         let match = null;
@@ -1053,22 +1093,9 @@
             projectDialog.close(); await loadProjects(data.project.id); await loadStructure(); notify("Projeto criado. Agora você pode adicionar a estrutura.");
         } catch (error) { notify(error.message, true); }
     };
-    poleForm.onsubmit = async (event) => {
-        event.preventDefault();
-        const checked = (name) => [...poleForm.querySelectorAll(`[name="${name}"]:checked`)].map((item) => Number(item.value));
-        try {
-            await api(`/api/map/elements/${poleForm.elements.pole_id.value}/pole/`, {
-                method: "PUT",
-                body: JSON.stringify({
-                    cable_ids: checked("cable_ids"),
-                    equipment_ids: checked("equipment_ids"),
-                }),
-            });
-            poleDialog.close();
-            await loadStructure();
-            notify("Infraestrutura do poste atualizada.");
-        } catch (error) { notify(error.message, true); }
-    };
+    document.getElementById("pole-add-cto").onclick = () => addPoleEquipment("cto").catch((error) => notify(error.message, true));
+    document.getElementById("pole-add-ceo").onclick = () => addPoleEquipment("splice_box").catch((error) => notify(error.message, true));
+    document.getElementById("pole-add-reserve").onclick = () => addPoleReserve().catch((error) => notify(error.message, true));
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
