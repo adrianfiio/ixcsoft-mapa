@@ -11,6 +11,13 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.9] - 2026-07-29
+
+### Corrigido
+
+- Logo centralizada no eixo visual do menu lateral
+- Favicon local permitido sem bloquear o comando `apply`
+
 ## [0.8.8] - 2026-07-29
 
 ### Adicionado

@@ -231,3 +231,5 @@ staticfiles/
 
 # Script temporário local
 dash.sh
+# Arquivo visual gerenciado diretamente no servidor.
+static/img/afservice-map-favicon.png
