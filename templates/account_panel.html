@@ -37,11 +37,19 @@
 
 <div class="account-accordion">
     <details id="infraestrutura" data-account-section>
-        <summary><strong>CPD, OLT e DIO</strong><small>{{ cpds|length }} CPDs · {{ olts|length }} OLTs · {{ dios|length }} DIOs</small></summary>
+        <summary><strong>CPD, OLT, DIO e ONUs</strong><small>{{ cpds|length }} CPDs · {{ olts|length }} OLTs · {{ dios|length }} DIOs · {{ assigned_onu_count }} ONUs vinculadas</small></summary>
         <div class="account-items">
             {% for cpd in cpds %}<div data-searchable><span><strong>CPD · {{ cpd.name }}</strong><small>{{ cpd.company }} · {{ cpd.code }}</small></span></div>{% endfor %}
             {% for olt in olts %}<div data-searchable><span><strong>OLT · {{ olt.name }}</strong><small>{{ olt.cpd.company }} · {{ olt.management_ip }}</small></span></div>{% endfor %}
             {% for dio in dios %}<div data-searchable><span><strong>DIO · {{ dio.name }}</strong><small>{{ dio.company }} · {{ dio.port_capacity }} portas</small></span></div>{% endfor %}
+            {% for assignment in assigned_onus %}
+            <div data-searchable>
+                <span>
+                    <strong>ONU {{ assignment.onu_number|default:"—" }} · {{ assignment.login.customer.name }}</strong>
+                    <small>{{ assignment.login.username }} · {{ assignment.mac_address|default:"sem MAC" }} · CTO {{ assignment.cto.name|default:"não vinculada" }}</small>
+                </span>
+            </div>
+            {% endfor %}
         </div>
     </details>
     <details id="integracao" data-account-section>

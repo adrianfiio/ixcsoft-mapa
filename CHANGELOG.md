@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.22.0] - 2026-07-29
+
+### Alterado
+
+- O mapa agora usa apenas três atalhos visuais: visualizar, editar/desenhar e pesquisar.
+- A pesquisa permanece recolhida até o operador clicar na lupa.
+- No modo de visualização, CTOs, CEOs, postes, reservas e cabos exibem somente informações, sem ações ou movimentação.
+- A sincronização completa passa a respeitar o intervalo configurado por empresa; o estado PPPoE é atualizado separadamente a cada cinco minutos.
+- ONUs do IXC são consideradas somente quando possuem login/cliente relacionado.
+
+### Removido
+
+- Cabos detectados pelo nome no inventário IXC não são mais importados automaticamente. Cabos devem ser identificados e desenhados manualmente.
+- Cabos IXC pendentes, sem geometria, criados pela versão anterior são removidos na migração.
+
 Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
 ## [Não lançado]

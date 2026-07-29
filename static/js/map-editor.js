@@ -26,7 +26,7 @@
         editingElementId: null, editingCableId: null,
         drawingExistingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
-        lightSourceId: null, lightAnimationGeneration: 0,
+        lightSourceId: null, lightAnimationGeneration: 0, mapMode: "view",
     };
 
     const googleConfigElement = document.getElementById("google-maps-config");
@@ -959,7 +959,6 @@
             document.getElementById("element-count").textContent = "0";
             document.getElementById("cable-count").textContent = "0";
             populateConnectionSelects();
-            await loadUnmappedCables();
             return;
         }
         const query = `?project_id=${encodeURIComponent(state.projectId)}`;
@@ -980,9 +979,10 @@
         elements.features.forEach((feature) => {
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
-            const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
+            const editing = canEdit && state.mapMode === "edit";
+            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
-                const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: canEdit });
+                const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: editing });
                 marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
                 if (showLabels) marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
                 marker.on("click", (event) => {
@@ -1009,7 +1009,7 @@
                     popupAction(`[data-manage-pole="${p.id}"]`, () => managePole(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-delete-element="${p.id}"]`, () => deleteElement(p.id).catch((error) => notify(error.message, true)));
                 });
-                if (canEdit) marker.on("dragend", async () => {
+                if (editing) marker.on("dragend", async () => {
                     const position = marker.getLatLng();
                     try {
                         await api(`/api/map/elements/${p.id}/position/`, { method: "PATCH", body: JSON.stringify({ latitude: position.lat, longitude: position.lng }) });
@@ -1053,7 +1053,8 @@
                 weight: 4,
                 opacity: .86,
             } });
-            const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
+            const editing = canEdit && state.mapMode === "edit";
+            const actions = editing ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
             if (showLabels) line.bindTooltip(escapeHtml(p.nome), { permanent: true, sticky: true, className: "cable-name-label" });
             line.on("popupopen", () => {
@@ -1088,15 +1089,15 @@
             }
             (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
-                    draggable: canEdit,
+                    draggable: editing,
                     icon: L.divIcon({ className: "", html: '<div class="reserve-marker">↻</div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
-                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${canEdit ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
+                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${editing ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
                 marker.on("popupopen", () => {
                     popupAction(`[data-edit-reserve="${reserve.id}"]`, () => editReserve(p.id, reserve).catch((error) => notify(error.message, true)));
                     popupAction(`[data-convert-reserve="${reserve.id}"]`, () => convertReserve(p.id, reserve.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-delete-reserve="${reserve.id}"]`, () => deleteReserve(p.id, reserve.id).catch((error) => notify(error.message, true)));
                 });
-                if (canEdit) marker.on("dragend", () => {
+                if (editing) marker.on("dragend", () => {
                     const point = marker.getLatLng();
                     api(`/api/map/cables/${p.id}/reserves/${reserve.id}/`, {
                         method: "PATCH",
@@ -1117,7 +1118,6 @@
         });
         document.getElementById("element-count").textContent = elements.count;
         document.getElementById("cable-count").textContent = cables.count + routes.count;
-        await loadUnmappedCables();
         if (fit && bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
     }
     function setTool(tool) {
@@ -1187,27 +1187,28 @@
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };
     document.querySelectorAll("[data-map-mode]").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
             document.querySelectorAll("[data-map-mode]").forEach((item) => item.classList.remove("active"));
             button.classList.add("active");
             const mode = button.dataset.mapMode;
-            if (mode === "search") {
-                document.getElementById("map-search").classList.add("attention");
-                document.getElementById("map-search-query").focus();
-            } else {
-                document.getElementById("map-search").classList.remove("attention");
-            }
+            state.mapMode = mode;
+            sidebar.classList.toggle("edit-mode", mode === "edit");
+            clearTool();
             if (mode === "edit" && document.getElementById("map-sidebar").classList.contains("collapsed")) {
                 document.getElementById("collapse-sidebar").click();
             }
             if (mode === "view" && !document.getElementById("map-sidebar").classList.contains("collapsed")) {
                 document.getElementById("collapse-sidebar").click();
             }
-            if (mode === "draw") {
-                document.querySelector('[data-tool="cable"]')?.click();
-            }
+            await loadStructure();
         });
     });
+    document.getElementById("map-search-toggle").onclick = () => {
+        const search = document.getElementById("map-search");
+        search.hidden = !search.hidden;
+        document.getElementById("map-search-toggle").classList.toggle("active", !search.hidden);
+        if (!search.hidden) document.getElementById("map-search-query").focus();
+    };
 
     document.getElementById("map-search-button").onclick = () => executeMapSearch().catch((error) => notify(error.message, true));
     document.getElementById("map-search-query").onkeydown = (event) => {
@@ -1363,26 +1364,6 @@
         } catch (error) { notify(error.message, true); }
     };
     document.getElementById("import-button").onclick = () => document.getElementById("import-file").click();
-    const unmappedCableSelect = document.getElementById("unmapped-cable-select");
-    async function loadUnmappedCables() {
-        if (!state.projectId) {
-            unmappedCableSelect.innerHTML = '<option value="">Selecione um projeto</option>';
-            return;
-        }
-        const data = await api(`/api/map/cables/unmapped/?project_id=${state.projectId}`);
-        unmappedCableSelect.innerHTML = data.results.length
-            ? '<option value="">Selecione um cabo</option>' + data.results.map((cable) =>
-                `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`
-            ).join("")
-            : '<option value="">Nenhum cabo aguardando</option>';
-        document.getElementById("draw-unmapped-cable").disabled = !data.results.length;
-    }
-    document.getElementById("draw-unmapped-cable").onclick = () => {
-        if (!unmappedCableSelect.value) return notify("Selecione um cabo importado.", true);
-        setTool("cable");
-        state.drawingExistingCableId = Number(unmappedCableSelect.value);
-        notify("Clique na origem, desenhe o trajeto e finalize no destino.");
-    };
     document.getElementById("import-file").onchange = async (event) => {
         const file = event.target.files[0];
         if (!file || !state.projectId) return;

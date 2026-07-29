@@ -7,7 +7,7 @@ from typing import Any
 from django.contrib.gis.geos import Point
 
 from apps.core.enums import OperationalStatus
-from apps.network_map.models import CTO, FiberCable, NetworkElement, NetworkProject
+from apps.network_map.models import CTO, NetworkElement, NetworkProject
 
 
 def _point(record: dict[str, Any]):
@@ -30,18 +30,6 @@ def _description(record: dict[str, Any]) -> str:
     return str(record.get("descricao") or record.get("nome") or record.get("tipo") or "").strip()
 
 
-def _is_cable(description: str, record: dict[str, Any]) -> bool:
-    source = " ".join(
-        _normalized(value)
-        for value in (
-            description,
-            record.get("tipo"),
-            record.get("id_tipo_elemento"),
-        )
-    )
-    return bool(re.search(r"\bCABO\b|\bCABLE\b", source))
-
-
 def _is_splice_box(description: str, record: dict[str, Any]) -> bool:
     source = " ".join(
         _normalized(value)
@@ -53,18 +41,6 @@ def _is_splice_box(description: str, record: dict[str, Any]) -> bool:
             source,
         )
     )
-
-
-def _fiber_count(description: str, record: dict[str, Any]) -> int:
-    for key in ("quantidade_fibras", "qtd_fibras", "fibras", "capacidade"):
-        raw = record.get(key)
-        if raw not in (None, ""):
-            try:
-                return max(1, min(int(float(raw)), 65535))
-            except (TypeError, ValueError):
-                pass
-    match = re.search(r"(?<!\d)(\d{1,3})\s*(?:F\.?\s*O\.?|FO|FIBRAS?)\b", _normalized(description))
-    return max(1, min(int(match.group(1)), 65535)) if match else 12
 
 
 class IXCMapRepository:
@@ -79,29 +55,14 @@ class IXCMapRepository:
             ixc_project_id=project_id,
         ).first()
         description = _description(record)
-        if _is_cable(description, record):
-            legacy = NetworkElement.objects.filter(
+        if re.search(r"\bCABO\b|\bCABLE\b", _normalized(description)):
+            # O IXC não fornece uma geometria confiável nem identidade suficiente
+            # para reconstruir o cabo. O traçado deve ser feito manualmente.
+            NetworkElement.objects.filter(
                 company=company,
                 code=f"IXC-ELEM-{external_id}",
-                element_type=NetworkElement.ElementType.OTHER,
-            ).first()
-            if legacy and legacy.metadata.get("ixc"):
-                legacy.delete()
-            return FiberCable.objects.update_or_create(
-                company=company,
-                code=f"IXC-CAB-{external_id}",
-                defaults={
-                    "project": project,
-                    "name": description or f"Cabo IXC {external_id}",
-                    "description": (
-                        "Importado do inventário IXCSoft. Aguardando traçado "
-                        "manual ou geometria fornecida pelo ERP."
-                    ),
-                    "cable_type": FiberCable.CableType.DISTRIBUTION,
-                    "fiber_count": _fiber_count(description, record),
-                    "status": OperationalStatus.NO_DATA,
-                },
-            )
+            ).delete()
+            return None, False
         # A mesma caixa pode aparecer em rad_caixa_ftth e df_elemento. Nesse
         # caso preservamos o registro georreferenciado, em vez de duplicá-lo.
         matching_box = NetworkElement.objects.filter(

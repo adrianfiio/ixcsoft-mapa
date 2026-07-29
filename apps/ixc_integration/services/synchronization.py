@@ -210,3 +210,24 @@ class IXCSynchronizationService:
                 ]
             )
         return execution
+
+    def run_pppoe_status_sync(self) -> IXCSyncExecution:
+        """Atualiza somente o estado operacional PPPoE, sem repetir a carga completa."""
+        execution = self._execution()
+        self.execution = execution
+        try:
+            stats = self.sync_access_points()
+            execution.status = (
+                IXCSyncExecution.Status.PARTIAL
+                if stats.failed
+                else IXCSyncExecution.Status.SUCCESS
+            )
+            execution.current_stage = "PPPoE atualizado"
+        except Exception as exc:
+            execution.status = IXCSyncExecution.Status.FAILED
+            execution.error_message = str(exc)
+            execution.current_stage = "Falha no PPPoE"
+        finally:
+            execution.finished_at = timezone.now()
+            execution.save()
+        return execution
