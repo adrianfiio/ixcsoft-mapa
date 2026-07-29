@@ -70,6 +70,8 @@ class IXCSyncExecution(TimeStampedModel):
     records_updated = models.PositiveIntegerField(default=0)
     records_failed = models.PositiveIntegerField(default=0)
     error_message = models.TextField(blank=True)
+    current_stage = models.CharField(max_length=120, blank=True)
+    stage_results = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-started_at"]
