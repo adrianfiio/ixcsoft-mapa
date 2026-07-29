@@ -139,12 +139,25 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .account-accordion summary small { color: var(--muted); }
 .account-items { padding: 0 12px 12px; }
 .account-items a { display: flex; align-items: center; justify-content: space-between; padding: 12px; color: var(--text); background: rgba(7,17,31,.55); border-top: 1px solid var(--border); }
+.account-items > div { display: flex; align-items: center; justify-content: space-between; padding: 12px; color: var(--text); background: rgba(7,17,31,.55); border-top: 1px solid var(--border); }
 .account-items a:hover { background: rgba(45,212,191,.08); }
 .account-items strong, .account-items small { display: block; }
 .account-items small { margin-top: 3px; color: var(--muted); }
 .account-items b { color: var(--primary); font-size: 11px; }
 .topbar-actions form { margin: 0; }
 .logout-button { padding: 0; color: var(--muted); background: transparent; border: 0; cursor: pointer; }
+.company-create-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; padding: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
+.company-create-actions strong { margin-right: 6px; font-size: 11px; }
+.company-create-actions a { padding: 9px 11px; color: #05201d; background: var(--primary); border-radius: 8px; font-size: 11px; font-weight: 800; }
+.platform-form { padding: 22px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+.platform-form-grid { display: grid; grid-template-columns: repeat(2, minmax(240px, 1fr)); gap: 17px; }
+.platform-form-grid label { display: grid; align-content: start; gap: 7px; color: var(--muted); font-size: 11px; }
+.platform-form-grid input, .platform-form-grid select, .platform-form-grid textarea { width: 100%; min-height: 42px; box-sizing: border-box; padding: 10px; color: var(--text); background: #101f34; border: 1px solid #355371; border-radius: 8px; }
+.platform-form-grid .check-row { display: flex; align-items: center; }
+.platform-form-grid .check-row input { width: auto; min-height: auto; }
+.platform-form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; }
+.platform-form-actions button { padding: 12px 18px; color: #05201d; background: var(--primary); border: 0; border-radius: 8px; font-weight: 850; }
+.form-error { color: #fda4af; }
 
 @media (max-width: 1100px) {
     .metric-grid { grid-template-columns: repeat(2, 1fr); }

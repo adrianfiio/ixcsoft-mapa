@@ -25,7 +25,25 @@
     {% endfor %}
 </section>
 
+{% if can_manage_assets %}
+<nav class="company-create-actions">
+    <strong>Adicionar à empresa</strong>
+    <a href="{% url 'company-asset-create' 'cpd' %}">+ CPD / POP</a>
+    <a href="{% url 'company-asset-create' 'olt' %}">+ OLT</a>
+    <a href="{% url 'company-asset-create' 'dio' %}">+ DIO</a>
+    <a href="{% url 'map' %}">+ Projeto ou equipamento no mapa</a>
+</nav>
+{% endif %}
+
 <div class="account-accordion">
+    <details data-account-section>
+        <summary><strong>CPD, OLT e DIO</strong><small>{{ cpds|length }} CPDs · {{ olts|length }} OLTs · {{ dios|length }} DIOs</small></summary>
+        <div class="account-items">
+            {% for cpd in cpds %}<div data-searchable><span><strong>CPD · {{ cpd.name }}</strong><small>{{ cpd.company }} · {{ cpd.code }}</small></span></div>{% endfor %}
+            {% for olt in olts %}<div data-searchable><span><strong>OLT · {{ olt.name }}</strong><small>{{ olt.cpd.company }} · {{ olt.management_ip }}</small></span></div>{% endfor %}
+            {% for dio in dios %}<div data-searchable><span><strong>DIO · {{ dio.name }}</strong><small>{{ dio.company }} · {{ dio.port_capacity }} portas</small></span></div>{% endfor %}
+        </div>
+    </details>
     <details open data-account-section>
         <summary><strong>Projetos</strong><small>{{ projects|length }} disponíveis</small></summary>
         <div class="account-items">

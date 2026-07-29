@@ -11,6 +11,28 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.17.0] - 2026-07-29
+
+### Adicionado
+
+- Área operacional para usuários EDIT criarem CPD/POP, OLT e DIO sem acessar o
+  Django Admin.
+- Formulários da plataforma limitados às empresas e projetos vinculados à conta.
+- Listagem integrada de CPDs, OLTs e DIOs no painel da empresa.
+- Atalhos para criação de infraestrutura e edição do projeto no mapa.
+
+### Segurança
+
+- Empresas passam a ter somente os níveis VIEW e EDIT.
+- ADMIN fica reservado exclusivamente ao superusuário proprietário da plataforma.
+- Telas de equipamentos agora filtram registros pela empresa e validam permissão
+  EDIT antes de criar, alterar ou excluir.
+
+### Melhorado
+
+- Login redesenhado com composição moderna, responsiva e identidade da plataforma.
+- Formulários de infraestrutura seguem o mesmo padrão visual do painel operacional.
+
 ## [0.16.1] - 2026-07-29
 
 ### Corrigido

@@ -2,6 +2,9 @@ from django import forms
 
 from .crypto import SecretCipher
 from .models import MapBaseConfiguration
+from apps.network_map.models import NetworkProject, POP
+from apps.olt_integration.models import OLT
+from apps.optical.models import DIO
 
 
 class MapBaseConfigurationAdminForm(forms.ModelForm):
@@ -45,3 +48,48 @@ class MapBaseConfigurationAdminForm(forms.ModelForm):
             instance.save()
             self.save_m2m()
         return instance
+
+
+class POPPlatformForm(forms.ModelForm):
+    class Meta:
+        model = POP
+        fields = ("company", "project", "name", "code", "address", "city", "enabled")
+
+    def __init__(self, *args, company_ids=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["company"].required = True
+        if company_ids is not None:
+            self.fields["company"].queryset = self.fields["company"].queryset.filter(id__in=company_ids)
+            self.fields["project"].queryset = NetworkProject.objects.filter(company_id__in=company_ids)
+            if len(company_ids) == 1:
+                self.fields["company"].initial = company_ids[0]
+
+
+class OLTPlatformForm(forms.ModelForm):
+    class Meta:
+        model = OLT
+        fields = (
+            "cpd", "name", "description", "provisioning_mode", "hostname",
+            "management_ip", "vendor", "model", "serial_number", "enabled",
+        )
+
+    def __init__(self, *args, company_ids=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if company_ids is not None:
+            self.fields["cpd"].queryset = POP.objects.filter(company_id__in=company_ids)
+
+
+class DIOPlatformForm(forms.ModelForm):
+    class Meta:
+        model = DIO
+        fields = (
+            "pop", "project", "name", "code", "description", "manufacturer",
+            "model", "serial_number", "connector_type", "tray_capacity",
+            "port_capacity", "status", "enabled",
+        )
+
+    def __init__(self, *args, company_ids=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if company_ids is not None:
+            self.fields["pop"].queryset = POP.objects.filter(company_id__in=company_ids)
+            self.fields["project"].queryset = NetworkProject.objects.filter(company_id__in=company_ids)

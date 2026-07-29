@@ -8,22 +8,42 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+
+from apps.core.access import can_edit_company, editable_company_ids, scope_company_queryset
 
 from .forms import NetworkElementForm
 from .models import NetworkElement
 
 
-class EquipmentListView(ListView):
+class CompanyEquipmentMixin(LoginRequiredMixin):
+    def get_queryset(self):
+        return scope_company_queryset(
+            super().get_queryset(),
+            self.request.user,
+        )
+
+
+class CompanyEquipmentFormMixin(CompanyEquipmentMixin):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["company_ids"] = editable_company_ids(self.request.user)
+        return kwargs
+
+
+class EquipmentListView(CompanyEquipmentMixin, ListView):
     model = NetworkElement
     template_name = "network_map/equipment/list.html"
     context_object_name = "equipments"
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = (
+        queryset = scope_company_queryset(
             NetworkElement.objects
             .select_related("company")
-            .order_by("element_type", "name")
+            .order_by("element_type", "name"),
+            self.request.user,
         )
 
         search = self.request.GET.get("q", "").strip()
@@ -73,19 +93,23 @@ class EquipmentListView(ListView):
         return context
 
 
-class EquipmentDetailView(DetailView):
+class EquipmentDetailView(CompanyEquipmentMixin, DetailView):
     model = NetworkElement
     template_name = "network_map/equipment/detail.html"
     context_object_name = "equipment"
 
 
-class EquipmentCreateView(CreateView):
+class EquipmentCreateView(CompanyEquipmentFormMixin, CreateView):
     model = NetworkElement
     form_class = NetworkElementForm
     template_name = "network_map/equipment/form.html"
     success_url = reverse_lazy("equipment-list")
 
     def form_valid(self, form):
+        project = form.cleaned_data.get("project")
+        if not project or not can_edit_company(self.request.user, project.company_id):
+            raise PermissionDenied
+        form.instance.company = project.company
         messages.success(
             self.request,
             "Equipamento cadastrado com sucesso.",
@@ -93,7 +117,7 @@ class EquipmentCreateView(CreateView):
         return super().form_valid(form)
 
 
-class EquipmentUpdateView(UpdateView):
+class EquipmentUpdateView(CompanyEquipmentFormMixin, UpdateView):
     model = NetworkElement
     form_class = NetworkElementForm
     template_name = "network_map/equipment/form.html"
@@ -101,6 +125,10 @@ class EquipmentUpdateView(UpdateView):
     success_url = reverse_lazy("equipment-list")
 
     def form_valid(self, form):
+        project = form.cleaned_data.get("project")
+        if not project or not can_edit_company(self.request.user, project.company_id):
+            raise PermissionDenied
+        form.instance.company = project.company
         messages.success(
             self.request,
             "Equipamento atualizado com sucesso.",
@@ -108,13 +136,15 @@ class EquipmentUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class EquipmentDeleteView(DeleteView):
+class EquipmentDeleteView(CompanyEquipmentMixin, DeleteView):
     model = NetworkElement
     template_name = "network_map/equipment/delete.html"
     context_object_name = "equipment"
     success_url = reverse_lazy("equipment-list")
 
     def form_valid(self, form):
+        if not can_edit_company(self.request.user, self.object.company_id):
+            raise PermissionDenied
         messages.success(
             self.request,
             "Equipamento excluído com sucesso.",

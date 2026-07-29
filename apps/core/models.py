@@ -53,7 +53,6 @@ class CompanyMembership(TimeStampedModel):
     class Role(models.TextChoices):
         VIEW = "view", "VIEW — somente visualizar"
         EDIT = "edit", "EDIT — visualizar e editar"
-        ADMIN = "admin", "ADMIN — administrar a empresa"
 
     company = models.ForeignKey(
         Company,

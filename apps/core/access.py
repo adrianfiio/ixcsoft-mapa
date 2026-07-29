@@ -3,7 +3,7 @@ from django.db.models import Q
 from .models import CompanyMembership
 
 
-EDIT_ROLES = (CompanyMembership.Role.EDIT, CompanyMembership.Role.ADMIN)
+EDIT_ROLES = (CompanyMembership.Role.EDIT,)
 
 
 def accessible_company_ids(user):

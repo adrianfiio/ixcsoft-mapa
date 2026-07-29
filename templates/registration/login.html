@@ -12,6 +12,11 @@
     <main class="af-login-card">
         <header>
             <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
+            <div>
+                <span>GESTÃO DE INFRAESTRUTURA</span>
+                <h2>Sua rede em um só lugar.</h2>
+                <p>Projetos, mapa, fibra óptica e operação com acesso seguro por empresa.</p>
+            </div>
         </header>
         <form method="post" action="{% url 'login' %}">
             {% csrf_token %}
@@ -25,7 +30,7 @@
             <label for="{{ form.password.id_for_label }}">Senha</label>
             {{ form.password }}
             <input type="hidden" name="next" value="{{ next|default:'/painel/' }}">
-            <button type="submit">Entrar</button>
+            <button type="submit">Entrar na plataforma →</button>
         </form>
     </main>
 </body>
