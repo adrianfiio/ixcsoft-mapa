@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.26.0] - 2026-07-29
+
+### Adicionado
+
+- Seleção de todos os equipamentos da página e exclusão em lote, respeitando a empresa e a permissão EDIT.
+- Cadastro SNMP de OLT com IP, modelo e community armazenada criptografada.
+- Próximo slot livre calculado automaticamente ao adicionar uma placa à OLT.
+
+### Alterado
+
+- OLT manual solicita apenas o nome; placas e PONs passam a ser cadastradas individualmente.
+- DIO deixa de exibir campos de IP e identificação incompatíveis.
+- Ligações internas de rack e torre ficam recolhidas até o operador abrir o diagrama.
+- Empresas manuais novas recebem acesso EDIT por padrão e não visualizam opções de ERP.
+
+### Corrigido
+
+- Loop de redirecionamento no primeiro acesso de usuários manuais.
+- Logout da plataforma retornando incorretamente ao login técnico do Django.
+- Mensagens de conflito da API agora aparecem ao operador, inclusive slot de placa já ocupado.
+- Ações de edição e exclusão ocultas e bloqueadas para perfis somente VIEW.
+
 ## [0.25.0] - 2026-07-29
 
 ### Adicionado

@@ -67,6 +67,8 @@
         gap: 8px;
         margin-top: 22px;
     }
+    .bulk-toolbar { display:flex; align-items:center; gap:12px; margin:0 0 14px; }
+    .row-check { width:18px; height:18px; accent-color:#2dd4bf; }
 
     @media (max-width: 1000px) {
         .filters {
@@ -92,9 +94,9 @@
         </p>
     </div>
 
-    <a class="button" href="{% url 'equipment-create' %}">
+    {% if can_edit_equipment %}<a class="button" href="{% url 'equipment-create' %}">
         + Novo equipamento
-    </a>
+    </a>{% endif %}
 </div>
 
 <div class="card">
@@ -148,10 +150,21 @@
         </button>
     </form>
 
+    {% if can_edit_equipment %}<form id="bulk-form" method="post" class="bulk-toolbar"
+          onsubmit="return confirm('Excluir os equipamentos selecionados? Esta ação não pode ser desfeita.');">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        <button class="button button-small button-danger" type="submit">
+            Excluir selecionados
+        </button>
+        <span id="selected-count">0 selecionados</span>
+    </form>{% endif %}
+
     <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
+                    {% if can_edit_equipment %}<th><input id="select-page" class="row-check" type="checkbox" aria-label="Selecionar todos desta página"></th>{% endif %}
                     <th>Nome</th>
                     <th>Código</th>
                     <th>Tipo</th>
@@ -165,6 +178,7 @@
             <tbody>
                 {% for item in equipments %}
                     <tr>
+                        {% if can_edit_equipment %}<td><input class="row-check equipment-select" type="checkbox" name="selected" value="{{ item.pk }}" form="bulk-form" aria-label="Selecionar {{ item.name }}"></td>{% endif %}
                         <td class="equipment-name">
                             {{ item.name }}
                         </td>
@@ -209,7 +223,7 @@
                                     Ver
                                 </a>
 
-                                <a
+                                {% if can_edit_equipment %}<a
                                     class="button button-small button-secondary"
                                     href="{% url 'equipment-update' item.pk %}"
                                 >
@@ -221,13 +235,13 @@
                                     href="{% url 'equipment-delete' item.pk %}"
                                 >
                                     Excluir
-                                </a>
+                                </a>{% endif %}
                             </div>
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7">
+                        <td colspan="{% if can_edit_equipment %}8{% else %}7{% endif %}">
                             <div class="empty-state">
                                 Nenhum equipamento encontrado.
                             </div>
@@ -264,4 +278,25 @@
         </nav>
     {% endif %}
 </div>
+<script>
+(() => {
+    const all = document.getElementById("select-page");
+    const rows = [...document.querySelectorAll(".equipment-select")];
+    const count = document.getElementById("selected-count");
+    const refresh = () => {
+        const total = rows.filter((item) => item.checked).length;
+        if (count) count.textContent = `${total} selecionado${total === 1 ? "" : "s"}`;
+        if (all) {
+            all.checked = rows.length > 0 && total === rows.length;
+            all.indeterminate = total > 0 && total < rows.length;
+        }
+    };
+    all?.addEventListener("change", () => {
+        rows.forEach((item) => { item.checked = all.checked; });
+        refresh();
+    });
+    rows.forEach((item) => item.addEventListener("change", refresh));
+    refresh();
+})();
+</script>
 {% endblock %}

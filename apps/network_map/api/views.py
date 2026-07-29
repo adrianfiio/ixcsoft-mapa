@@ -894,8 +894,18 @@ def container_equipment(request, element_id):
             12, 24, 36, 48, 72, 96, 144, 192, 244,
         }:
             return JsonResponse({"detail": "Escolha uma capacidade padrão para o DIO."}, status=400)
-        if equipment_type == ContainerEquipment.EquipmentType.OLT and (card_count < 1 or pons_per_card < 1):
-            return JsonResponse({"detail": "Informe a quantidade de placas e PONs da OLT."}, status=400)
+        provisioning_mode = request.data.get("provisioning_mode") or "manual"
+        management_ip = request.data.get("management_ip") or None
+        if (
+            equipment_type == ContainerEquipment.EquipmentType.OLT
+            and provisioning_mode == ContainerEquipment.ProvisioningMode.SNMP
+            and not management_ip
+        ):
+            return JsonResponse({"detail": "Informe o IP de gerência para cadastro por SNMP."}, status=400)
+        metadata = {}
+        snmp_community = str(request.data.get("snmp_community", "")).strip()
+        if snmp_community:
+            metadata["snmp_community_encrypted"] = SecretCipher().encrypt(snmp_community)
         with transaction.atomic():
             equipment = ContainerEquipment.objects.create(
                 company=container.company,
@@ -903,14 +913,15 @@ def container_equipment(request, element_id):
                 name=equipment_name,
                 description=str(request.data.get("description", "")).strip(),
                 equipment_type=equipment_type,
-                management_ip=request.data.get("management_ip") or None,
-                provisioning_mode=request.data.get("provisioning_mode") or "manual",
+                management_ip=management_ip if equipment_type != ContainerEquipment.EquipmentType.DIO else None,
+                provisioning_mode=provisioning_mode,
                 vendor=str(request.data.get("vendor", "")).strip(),
                 model=str(request.data.get("model", "")).strip(),
                 serial_number=str(request.data.get("serial_number", "")).strip(),
                 card_count=max(0, min(card_count, 64)),
                 pons_per_card=max(0, min(pons_per_card, 64)),
                 dio_port_capacity=dio_capacity,
+                metadata=metadata,
             )
             _generate_container_equipment_ports(equipment)
         return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
@@ -970,6 +981,7 @@ def _container_equipment_payload(item):
         "vendor": item.vendor,
         "model": item.model,
         "serial_number": item.serial_number,
+        "has_snmp_community": bool(item.metadata.get("snmp_community_encrypted")),
         "card_count": item.card_count,
         "pons_per_card": item.pons_per_card,
         "pon_count": item.ports.filter(port_type=ContainerEquipmentPort.PortType.PON).count(),

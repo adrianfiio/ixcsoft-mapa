@@ -248,8 +248,8 @@
                     </form>
                 </aside>
             </div>
-            <section id="container-optical-links" class="container-optical-links" hidden>
-                <h3 id="container-link-title">Ligação OLT → DIO</h3>
+            <details id="container-optical-links" class="container-optical-links" hidden>
+                <summary><strong id="container-link-title">Configurar ligações internas</strong><span>abrir diagrama</span></summary>
                 <p id="container-link-help">Selecione duas portas compatíveis e, quando aplicável, o cabo ligado à estrutura.</p>
                 <form id="container-link-form">
                     <div class="dialog-grid">
@@ -265,7 +265,7 @@
                     <footer><button class="primary-button" type="submit">Criar ligação</button></footer>
                 </form>
                 <div id="container-link-list" class="container-equipment-list"></div>
-            </section>
+            </details>
             <form id="container-equipment-form">
                 <h3>Adicionar equipamento</h3>
                 <div class="dialog-grid">
@@ -273,21 +273,24 @@
                     <label>Nome<input name="name" required maxlength="180" placeholder="Ex.: OLT FiberHome principal"></label>
                 </div>
                 <div class="dialog-grid">
-                    <label>IP de gerência<input name="management_ip" placeholder="192.0.2.10"></label>
-                    <label>Cadastro<select name="provisioning_mode"><option value="manual">Manual</option><option value="snmp">SNMP</option></select></label>
+                    <label id="container-management-fields">IP de gerência<input name="management_ip" placeholder="192.0.2.10"></label>
+                    <label id="container-provisioning-field">Cadastro<select name="provisioning_mode"><option value="manual">Manual</option><option value="snmp">SNMP</option></select></label>
                 </div>
-                <div class="dialog-grid">
+                <div id="container-identification-fields" class="dialog-grid">
                     <label>Fabricante<input name="vendor" placeholder="FiberHome, Huawei, ZTE..."></label>
                     <label>Modelo<input name="model"></label>
                 </div>
-                <label>Número de série<input name="serial_number"></label>
+                <fieldset id="container-snmp-fields" class="cto-fields" hidden>
+                    <legend>Acesso SNMP</legend>
+                    <label>Community<input name="snmp_community" type="password" autocomplete="new-password" placeholder="Community SNMP"></label>
+                    <p class="field-help">A community será armazenada criptografada.</p>
+                </fieldset>
+                <label id="container-serial-field">Número de série<input name="serial_number"></label>
                 <fieldset id="container-olt-fields" class="cto-fields" hidden>
-                    <legend>Primeira placa da OLT</legend>
-                    <div class="dialog-grid">
-                        <input name="card_count" type="hidden" value="1">
-                        <label>PONs desta placa<input name="pons_per_card" type="number" min="1" max="64" value="8"></label>
-                    </div>
-                    <p class="field-help">Depois de criar a OLT, adicione outras placas individualmente, com 8, 16 ou outra quantidade de PONs.</p>
+                    <legend>Estrutura da OLT</legend>
+                    <input name="card_count" type="hidden" value="0">
+                    <input name="pons_per_card" type="hidden" value="0">
+                    <p class="field-help">Crie a OLT e depois adicione cada placa individualmente, escolhendo slot e quantidade de PONs.</p>
                 </fieldset>
                 <fieldset id="container-dio-fields" class="cto-fields" hidden>
                     <legend>Estrutura do DIO</legend>

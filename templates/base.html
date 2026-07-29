@@ -33,9 +33,11 @@
                 <a href="{% url 'account-panel' %}?section=infraestrutura">
                     <span class="nav-icon">⌁</span> OLTs e ONUs
                 </a>
-                <a class="{% if request.resolver_match.url_name == 'erp-onboarding' %}active{% endif %}" href="{% url 'erp-onboarding' %}">
-                    <span class="nav-icon">◎</span> Integração ERP
-                </a>
+                {% if show_erp_navigation %}
+                    <a class="{% if request.resolver_match.url_name == 'erp-onboarding' %}active{% endif %}" href="{% url 'erp-onboarding' %}">
+                        <span class="nav-icon">◎</span> Integração ERP
+                    </a>
+                {% endif %}
                 <a class="{% if request.resolver_match.url_name == 'company-alerts' %}active{% endif %}" href="{% url 'company-alerts' %}">
                     <span class="nav-icon">!</span> Alertas
                 </a>

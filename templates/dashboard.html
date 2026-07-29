@@ -61,7 +61,7 @@
             <div class="quick-grid">
                 <a class="quick-link" href="{% url 'equipment-list' %}"><strong>Equipamentos</strong><small>{{ element_count|default:0 }} elementos cadastrados</small></a>
                 <a class="quick-link" href="{% url 'account-panel' %}#infraestrutura"><strong>OLTs e ONUs</strong><small>{{ olt_count|default:0 }} OLTs · {{ onus.total|default:0 }} ONUs</small></a>
-                <a class="quick-link" href="{% url 'erp-onboarding' %}"><strong>Integração ERP</strong><small>{{ customer_count|default:0 }} clientes sincronizados</small></a>
+                {% if show_erp_navigation %}<a class="quick-link" href="{% url 'erp-onboarding' %}"><strong>Integração ERP</strong><small>{{ customer_count|default:0 }} clientes sincronizados</small></a>{% endif %}
                 <a class="quick-link" href="{% url 'company-alerts' %}"><strong>Central de alertas</strong><small>{{ active_alert_count|default:0 }} ocorrências ativas</small></a>
             </div>
         </article>
