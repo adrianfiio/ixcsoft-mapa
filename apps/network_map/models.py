@@ -795,6 +795,29 @@ class SpliceTray(TimeStampedModel):
         return f"{self.splice_box} - Bandeja {self.number}"
 
 
+class SpliceTraySplitter(TimeStampedModel):
+    tray = models.ForeignKey(
+        SpliceTray,
+        on_delete=models.CASCADE,
+        related_name="splitters",
+    )
+    position = models.PositiveSmallIntegerField(default=1)
+    ratio = models.CharField(max_length=10, choices=CTOSplitter.Ratio.choices)
+    output_ports = models.PositiveSmallIntegerField(default=8)
+
+    class Meta:
+        ordering = ["tray", "position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tray", "position"],
+                name="unique_splitter_position_per_splice_tray",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tray} · Splitter {self.position} {self.ratio}"
+
+
 class FiberSplice(TimeStampedModel):
     tray = models.ForeignKey(
         "SpliceTray",

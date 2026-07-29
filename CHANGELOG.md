@@ -11,6 +11,19 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.9.4] - 2026-07-29
+
+### Corrigido
+
+- Clique diretamente sobre o cabo agora registra a reserva técnica
+- Fibras e tubos já existentes são remapeados para suas posições ABNT; não é necessário excluir cabos
+
+### Adicionado
+
+- Configuração de quantidade de bandejas na CEO
+- Splitters opcionais por bandeja com proporção configurável
+- Visualização unifilar inicial das bandejas, fusões e splitters da CEO
+
 ## [0.9.3] - 2026-07-29
 
 ### Adicionado

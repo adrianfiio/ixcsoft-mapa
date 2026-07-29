@@ -151,7 +151,9 @@
             elementForm.elements[name].value = element[name] ?? "";
         });
         const isCto = element.element_type === "cto";
+        const isCeo = element.element_type === "splice_box";
         document.getElementById("cto-fields").hidden = !isCto;
+        document.getElementById("ceo-fields").hidden = !isCeo;
         if (isCto && element.cto) {
             const splitter = element.cto.splitters[0];
             elementForm.elements.cto_capacity.value = element.cto.capacity || 8;
@@ -159,6 +161,11 @@
             elementForm.elements.splitter_ports.value = splitter?.output_ports || element.cto.capacity || 8;
             populateSplitterCables(element.cto, splitter?.input_cable?.id);
             await loadSplitterFibers(splitter?.input_cable?.id, splitter?.input_fiber?.id);
+        }
+        if (isCeo && element.splice_box) {
+            elementForm.elements.ceo_tray_count.value = element.splice_box.tray_count || 1;
+            elementForm.elements.ceo_splitters_per_tray.value = element.splice_box.splitters_per_tray || 0;
+            elementForm.elements.ceo_splitter_ratio.value = element.splice_box.splitter_ratio || "1:8";
         }
         document.getElementById("element-dialog-title").textContent = `Editar ${element.name}`;
         elementDialog.showModal();
@@ -169,6 +176,16 @@
         document.getElementById("unifilar-title").textContent = `Unifilar · ${element.name}`;
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
         const content = document.getElementById("unifilar-content");
+        if (element.splice_box) {
+            document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
+            content.innerHTML = element.splice_box.trays.map((tray) => `
+                <article class="splitter-card">
+                    <div class="splitter-head"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</strong><span>${tray.splice_count} fusões · capacidade ${tray.capacity}</span></div>
+                    ${tray.splitters.length ? tray.splitters.map((splitter) => `<div class="ceo-splitter">Splitter ${splitter.position} · ${escapeHtml(splitter.ratio)} · ${splitter.output_ports} saídas</div>`).join("") : '<p class="help-text">Bandeja destinada a fusões diretas.</p>'}
+                </article>`).join("");
+            unifilarDialog.showModal();
+            return;
+        }
         const splitters = element.cto?.splitters || [];
         content.innerHTML = splitters.length ? splitters.map((splitter) => `
             <article class="splitter-card">
@@ -193,6 +210,17 @@
         }
         await loadStructure();
         notify("Cabo excluído.");
+    }
+    async function createReserveAt(cableId, latlng) {
+        const length = Number(prompt("Quantos metros possui esta reserva técnica?", "20"));
+        if (!length || length <= 0) return notify("Informe uma metragem válida.", true);
+        await api(`/api/map/cables/${cableId}/reserves/`, {
+            method: "POST",
+            body: JSON.stringify({ latitude: latlng.lat, longitude: latlng.lng, length_m: length }),
+        });
+        clearTool();
+        await loadStructure();
+        notify(`Reserva de ${length} m adicionada.`);
     }
     async function editCable(id) {
         const data = await api(`/api/map/cables/${id}/`);
@@ -264,7 +292,7 @@
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
             const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: canEdit });
-            const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${p.tipo === "cto" ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
+            const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
             marker.on("popupopen", () => {
                 popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
@@ -294,6 +322,11 @@
                     map.closePopup(); clearTool(); state.tool = "reserve"; state.reserveCableId = p.id;
                     notify("Clique no ponto do cabo onde ficará a reserva.");
                 });
+            });
+            line.on("click", (event) => {
+                if (state.tool !== "reserve" || state.reserveCableId !== p.id) return;
+                L.DomEvent.stopPropagation(event);
+                createReserveAt(p.id, event.latlng).catch((error) => notify(error.message, true));
             });
             line.addTo(structureLayer);
             (p.reservas || []).forEach((reserve) => {
@@ -343,13 +376,7 @@
     map.on("click", (event) => {
         if (!state.tool) return;
         if (state.tool === "reserve") {
-            const length = Number(prompt("Quantos metros possui esta reserva técnica?", "20"));
-            if (!length || length <= 0) return notify("Informe uma metragem válida.", true);
-            api(`/api/map/cables/${state.reserveCableId}/reserves/`, {
-                method: "POST",
-                body: JSON.stringify({ latitude: event.latlng.lat, longitude: event.latlng.lng, length_m: length }),
-            }).then(() => { clearTool(); loadStructure(); notify(`Reserva de ${length} m adicionada.`); })
-              .catch((error) => notify(error.message, true));
+            createReserveAt(state.reserveCableId, event.latlng).catch((error) => notify(error.message, true));
             return;
         }
         if (state.tool === "geometry") return;
@@ -364,6 +391,7 @@
         elementForm.elements.latitude.value = event.latlng.lat;
         elementForm.elements.longitude.value = event.latlng.lng;
         document.getElementById("cto-fields").hidden = state.tool !== "cto";
+        document.getElementById("ceo-fields").hidden = state.tool !== "splice_box";
         populateSplitterCables(null);
         loadSplitterFibers("");
         const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO" };
