@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Alertas | AFService Map{% endblock %}
+{% block topbar_title %}Alertas da empresa{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">MONITORAMENTO</p><h1>Central de alertas</h1><p>Somente ocorrências relacionadas à sua empresa.</p></div></section>
+<div class="account-items alert-list">
+{% for alert in alerts %}
+  <div><span><strong>{{ alert.title }}</strong><small>{{ alert.message }}</small></span><b>{{ alert.get_state_display }}</b></div>
+{% empty %}<p>Nenhum alerta registrado para sua empresa.</p>{% endfor %}
+</div>
+{% endblock %}

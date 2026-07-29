@@ -197,3 +197,9 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
     .metric-grid { grid-template-columns: 1fr; }
     .status-layout { grid-template-columns: 1fr; }
 }
+.onboarding-shell{max-width:1100px;margin:0 auto;display:grid;gap:24px}
+.onboarding-intro{max-width:760px}
+.onboarding-intro h1{font-size:clamp(2rem,4vw,3.4rem);margin:.2rem 0}
+.onboarding-form{margin:0}
+.onboarding-choice-note{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;padding:18px;border:1px solid #21415f;border-radius:12px;background:#0d2135;color:#9fc4e6}
+.alert-list{border:1px solid #21415f;border-radius:14px;background:#0d2135}

@@ -3,7 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from apps.core.views import AccountPanelView, DashboardView, create_company_asset, erp_onboarding
+from apps.core.views import AccountPanelView, DashboardView, company_alerts, company_onboarding, create_company_asset, erp_onboarding
 
 
 urlpatterns = [
@@ -19,6 +19,8 @@ urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
     path("mapa/", DashboardView.as_view(template_name="map.html"), name="map"),
     path("painel/", AccountPanelView.as_view(), name="account-panel"),
+    path("painel/primeiro-acesso/", company_onboarding, name="company-onboarding"),
+    path("painel/alertas/", company_alerts, name="company-alerts"),
     path("painel/novo/<str:asset_type>/", create_company_asset, name="company-asset-create"),
     path("painel/integracao/", erp_onboarding, name="erp-onboarding"),
     path("admin/", admin.site.urls),

@@ -1,7 +1,7 @@
 from django import forms
 
 from .crypto import SecretCipher
-from .models import MapBaseConfiguration
+from .models import Company, MapBaseConfiguration
 from apps.network_map.models import NetworkProject, POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
@@ -151,3 +151,27 @@ class ERPOnboardingForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class CompanyOnboardingForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = (
+            "name", "trade_name", "document", "contact_name", "contact_phone",
+            "contact_email", "address", "integration_mode",
+        )
+        labels = {
+            "name": "Razão social ou nome",
+            "trade_name": "Nome fantasia",
+            "document": "CPF ou CNPJ",
+            "contact_name": "Pessoa de contato",
+            "contact_phone": "Telefone / WhatsApp",
+            "contact_email": "E-mail",
+            "address": "Endereço",
+            "integration_mode": "Como deseja começar?",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("name", "document", "contact_name", "contact_phone", "contact_email", "address", "integration_mode"):
+            self.fields[name].required = True

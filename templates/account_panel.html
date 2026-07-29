@@ -97,5 +97,12 @@ document.getElementById("account-search").addEventListener("input", (event) => {
         item.hidden = query && !item.textContent.toLocaleLowerCase("pt-BR").includes(query);
     });
 });
+const requestedSection = new URLSearchParams(window.location.search).get("section");
+if (requestedSection) {
+    document.querySelectorAll("[data-account-section]").forEach((section) => {
+        section.open = section.id === requestedSection;
+    });
+    document.getElementById(requestedSection)?.scrollIntoView({block: "start"});
+}
 </script>
 {% endblock %}
