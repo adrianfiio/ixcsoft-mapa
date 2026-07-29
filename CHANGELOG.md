@@ -4,6 +4,15 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
 ## [Não lançado]
 
+### Planejado
+
+- Integrar as telas de equipamentos ao novo layout compartilhado
+- Implementar coleta SNMP real em OLTs FiberHome
+- Criar perfis de OIDs por modelo e firmware
+- Implementar descoberta de portas PON e ONUs
+
+## [0.8.0] - 2026-07-29
+
 ### Adicionado
 
 - Dashboard operacional com indicadores reais de acessos, infraestrutura,
@@ -16,13 +25,6 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
 - Página inicial restaurada como visão geral da operação
 - Mapa deixou de ocupar temporariamente a rota inicial
-
-### Planejado
-
-- Integrar as telas de equipamentos ao novo layout compartilhado
-- Implementar coleta SNMP real em OLTs FiberHome
-- Criar perfis de OIDs por modelo e firmware
-- Implementar descoberta de portas PON e ONUs
 
 ## [0.7.0] - 2026-07-29
 

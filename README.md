@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.7.0 — Infraestrutura óptica e base GIS**
+**v0.8.0 — Dashboard operacional**
 
-Esta versão consolida a integração inicial com o IXCSoft, a modelagem da rede
-óptica, o editor de equipamentos e a primeira interface geográfica com Leaflet.
+Esta versão adiciona a visão geral operacional com dados reais, navegação
+responsiva e uma página dedicada para o mapa geográfico.
 
 ## Funcionalidades implementadas
 
