@@ -21,6 +21,10 @@
         lightSourceId: null, lightAnimationGeneration: 0,
     };
 
+    const googleConfigElement = document.getElementById("google-maps-config");
+    const googleConfig = googleConfigElement
+        ? JSON.parse(googleConfigElement.textContent)
+        : { enabled: false, apiKey: "", defaultLayer: "esri_satellite" };
     const map = L.map("map", { preferCanvas: true, maxZoom: 22 }).setView([-24.45, -50.62], 10);
     const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxNativeZoom: 19, maxZoom: 22, attribution: "&copy; OpenStreetMap",
@@ -28,8 +32,51 @@
     const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
         maxNativeZoom: 19, maxZoom: 22, attribution: "Tiles &copy; Esri",
     });
-    satelliteLayer.addTo(map);
-    L.control.layers({ "Satélite (sem API)": satelliteLayer, "Mapa de ruas": streetLayer }, {}, { position: "topright" }).addTo(map);
+    const baseLayers = {
+        "Satélite alternativo": satelliteLayer,
+        "Mapa de ruas": streetLayer,
+    };
+    const baseLayerControl = L.control.layers(baseLayers, {}, { position: "topright" }).addTo(map);
+    const configuredFallback = googleConfig.defaultLayer === "openstreetmap" ? streetLayer : satelliteLayer;
+    configuredFallback.addTo(map);
+
+    async function enableGoogleSatellite() {
+        if (!googleConfig.enabled || !googleConfig.apiKey) return;
+        try {
+            const response = await fetch(
+                `https://tile.googleapis.com/v1/createSession?key=${encodeURIComponent(googleConfig.apiKey)}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        mapType: "satellite",
+                        language: "pt-BR",
+                        region: "BR",
+                    }),
+                },
+            );
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error?.message || `Google Map Tiles: HTTP ${response.status}`);
+            }
+            const session = await response.json();
+            const googleLayer = L.tileLayer(
+                `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${encodeURIComponent(session.session)}&key=${encodeURIComponent(googleConfig.apiKey)}`,
+                {
+                    maxNativeZoom: 22,
+                    maxZoom: 22,
+                    attribution: "&copy; Google",
+                },
+            );
+            baseLayerControl.addBaseLayer(googleLayer, "Google Satélite");
+            if (googleConfig.defaultLayer === "google_satellite") {
+                map.removeLayer(configuredFallback);
+                googleLayer.addTo(map);
+            }
+        } catch (error) {
+            notify(`Google Satélite indisponível; usando mapa alternativo. ${error.message}`, true);
+        }
+    }
 
     const clientLayers = {
         online: L.markerClusterGroup({ chunkedLoading: true }),
@@ -69,6 +116,8 @@
             feedback.classList.toggle("error", isError);
         }
     }
+    enableGoogleSatellite();
+
     function escapeHtml(value) {
         const item = document.createElement("span");
         item.textContent = value == null ? "" : String(value);

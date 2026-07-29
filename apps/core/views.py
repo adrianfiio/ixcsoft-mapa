@@ -11,6 +11,8 @@ from apps.alerts.models import AlertEvent
 from apps.ixc_integration.models import IXCCustomer, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
+from apps.core.crypto import SecretCipher
+from apps.core.models import MapBaseConfiguration
 from apps.olt_integration.models import OLT, ONU
 
 
@@ -68,6 +70,29 @@ class DashboardView(TemplateView):
                 ).first(),
             }
         )
+        if self.template_name == "map.html":
+            map_config = MapBaseConfiguration.objects.first()
+            google_api_key = ""
+            if (
+                map_config
+                and map_config.google_tiles_enabled
+                and map_config.google_api_key_encrypted
+            ):
+                try:
+                    google_api_key = SecretCipher().decrypt(
+                        map_config.google_api_key_encrypted
+                    )
+                except (RuntimeError, ValueError):
+                    google_api_key = ""
+            context["google_maps_config"] = {
+                "enabled": bool(google_api_key),
+                "apiKey": google_api_key,
+                "defaultLayer": (
+                    map_config.default_layer
+                    if map_config
+                    else MapBaseConfiguration.DefaultLayer.ESRI_SATELLITE
+                ),
+            }
         return context
 
 
