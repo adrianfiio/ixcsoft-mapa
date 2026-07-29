@@ -21,6 +21,9 @@ from apps.core.access import can_edit_company, can_view_company, scope_company_q
 from apps.network_map.models import (
     CableModel,
     CableReserve,
+    ContainerEquipment,
+    ContainerEquipmentPort,
+    ContainerPortLink,
     CTO,
     FiberCable,
     FiberStrand,
@@ -852,6 +855,220 @@ def element_detail_payload(element):
             ],
         }
     return payload
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def container_equipment(request, element_id):
+    container = get_object_or_404(
+        scope_company_queryset(NetworkElement.objects, request.user),
+        pk=element_id,
+        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
+    )
+    if request.method == "POST":
+        if not can_edit_company(request.user, container.company_id):
+            return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+        equipment_type = str(request.data.get("equipment_type", "")).strip()
+        allowed = (
+            {ContainerEquipment.EquipmentType.OLT, ContainerEquipment.EquipmentType.DIO}
+            if container.element_type == NetworkElement.ElementType.RACK
+            else {
+                ContainerEquipment.EquipmentType.SWITCH,
+                ContainerEquipment.EquipmentType.ACCESS_POINT,
+                ContainerEquipment.EquipmentType.PTP,
+            }
+        )
+        if equipment_type not in allowed:
+            return JsonResponse({"detail": "Tipo de equipamento inválido para esta estrutura."}, status=400)
+        equipment_name = str(request.data.get("name", "")).strip()
+        if not equipment_name:
+            return JsonResponse({"detail": "Informe o nome do equipamento."}, status=400)
+        try:
+            dio_capacity = int(request.data.get("dio_port_capacity") or 0)
+            card_count = int(request.data.get("card_count") or 0)
+            pons_per_card = int(request.data.get("pons_per_card") or 0)
+        except (TypeError, ValueError):
+            return JsonResponse({"detail": "Capacidades informadas são inválidas."}, status=400)
+        if equipment_type == ContainerEquipment.EquipmentType.DIO and dio_capacity not in {
+            12, 24, 36, 48, 72, 96, 144, 192, 244,
+        }:
+            return JsonResponse({"detail": "Escolha uma capacidade padrão para o DIO."}, status=400)
+        if equipment_type == ContainerEquipment.EquipmentType.OLT and (card_count < 1 or pons_per_card < 1):
+            return JsonResponse({"detail": "Informe a quantidade de placas e PONs da OLT."}, status=400)
+        with transaction.atomic():
+            equipment = ContainerEquipment.objects.create(
+                company=container.company,
+                container=container,
+                name=equipment_name,
+                description=str(request.data.get("description", "")).strip(),
+                equipment_type=equipment_type,
+                management_ip=request.data.get("management_ip") or None,
+                provisioning_mode=request.data.get("provisioning_mode") or "manual",
+                vendor=str(request.data.get("vendor", "")).strip(),
+                model=str(request.data.get("model", "")).strip(),
+                serial_number=str(request.data.get("serial_number", "")).strip(),
+                card_count=max(0, min(card_count, 64)),
+                pons_per_card=max(0, min(pons_per_card, 64)),
+                dio_port_capacity=dio_capacity,
+            )
+            _generate_container_equipment_ports(equipment)
+        return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
+    return JsonResponse({
+        "container": {"id": container.id, "name": container.name, "type": container.element_type},
+        "equipment": [
+            _container_equipment_payload(item)
+            for item in container.internal_equipments.prefetch_related("ports").all()
+        ],
+        "cables": [
+            {"id": cable.id, "name": cable.name, "fiber_count": cable.fiber_count}
+            for cable in FiberCable.objects.filter(company=container.company)
+            .filter(Q(origin=container) | Q(destination=container))
+            .order_by("name")
+        ],
+        "links": [
+            {
+                "id": link.id,
+                "source_port_id": link.source_port_id,
+                "source": f"{link.source_port.equipment.name} · {link.source_port.label}",
+                "destination_port_id": link.destination_port_id,
+                "destination": f"{link.destination_port.equipment.name} · {link.destination_port.label}",
+                "cable_id": link.cable_id,
+                "cable": link.cable.name if link.cable else "",
+            }
+            for link in container.internal_port_links.select_related(
+                "source_port__equipment", "destination_port__equipment", "cable"
+            )
+        ],
+    })
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def container_equipment_detail(request, element_id, equipment_id):
+    equipment = get_object_or_404(
+        ContainerEquipment.objects.select_related("container"),
+        pk=equipment_id,
+        container_id=element_id,
+    )
+    if not can_edit_company(request.user, equipment.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    equipment.delete()
+    return HttpResponse(status=204)
+
+
+def _container_equipment_payload(item):
+    return {
+        "id": item.id,
+        "name": item.name,
+        "type": item.equipment_type,
+        "type_label": item.get_equipment_type_display(),
+        "management_ip": item.management_ip,
+        "provisioning_mode": item.provisioning_mode,
+        "vendor": item.vendor,
+        "model": item.model,
+        "serial_number": item.serial_number,
+        "card_count": item.card_count,
+        "pons_per_card": item.pons_per_card,
+        "pon_count": item.card_count * item.pons_per_card,
+        "dio_port_capacity": item.dio_port_capacity,
+        "ports": [
+            {
+                "id": port.id,
+                "type": port.port_type,
+                "number": port.number,
+                "card_number": port.card_number,
+                "port_number": port.port_number,
+                "label": port.label,
+                "used": hasattr(port, "outgoing_link") or hasattr(port, "incoming_link"),
+            }
+            for port in item.ports.all()
+        ],
+    }
+
+
+def _generate_container_equipment_ports(equipment):
+    ports = []
+    if equipment.equipment_type == ContainerEquipment.EquipmentType.OLT:
+        number = 0
+        for card in range(1, equipment.card_count + 1):
+            for pon in range(1, equipment.pons_per_card + 1):
+                number += 1
+                ports.append(ContainerEquipmentPort(
+                    equipment=equipment,
+                    port_type=ContainerEquipmentPort.PortType.PON,
+                    number=number,
+                    card_number=card,
+                    port_number=pon,
+                    label=f"Placa {card} / PON {pon}",
+                ))
+    elif equipment.equipment_type == ContainerEquipment.EquipmentType.DIO:
+        ports = [
+            ContainerEquipmentPort(
+                equipment=equipment,
+                port_type=ContainerEquipmentPort.PortType.DIO,
+                number=number,
+                port_number=number,
+                label=f"Porta {number}",
+            )
+            for number in range(1, equipment.dio_port_capacity + 1)
+        ]
+    ContainerEquipmentPort.objects.bulk_create(ports)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def container_port_links(request, element_id):
+    container = get_object_or_404(
+        scope_company_queryset(NetworkElement.objects, request.user),
+        pk=element_id,
+        element_type=NetworkElement.ElementType.RACK,
+    )
+    if not can_edit_company(request.user, container.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    source = get_object_or_404(
+        ContainerEquipmentPort.objects.select_related("equipment"),
+        pk=request.data.get("source_port_id"),
+        equipment__container=container,
+        port_type=ContainerEquipmentPort.PortType.PON,
+    )
+    destination = get_object_or_404(
+        ContainerEquipmentPort.objects.select_related("equipment"),
+        pk=request.data.get("destination_port_id"),
+        equipment__container=container,
+        port_type=ContainerEquipmentPort.PortType.DIO,
+    )
+    cable = None
+    if request.data.get("cable_id"):
+        cable = get_object_or_404(
+            FiberCable.objects.filter(Q(origin=container) | Q(destination=container)),
+            pk=request.data.get("cable_id"),
+            company=container.company,
+        )
+    if ContainerPortLink.objects.filter(
+        Q(source_port=source) | Q(destination_port=destination)
+    ).exists():
+        return JsonResponse({"detail": "A PON ou a porta do DIO já está em uso."}, status=409)
+    link = ContainerPortLink.objects.create(
+        container=container,
+        source_port=source,
+        destination_port=destination,
+        cable=cable,
+    )
+    return JsonResponse({"link": {"id": link.id}}, status=201)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def container_port_link_detail(request, element_id, link_id):
+    link = get_object_or_404(
+        ContainerPortLink.objects.select_related("container"),
+        pk=link_id,
+        container_id=element_id,
+    )
+    if not can_edit_company(request.user, link.container.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    link.delete()
+    return HttpResponse(status=204)
 
 
 @api_view(["POST"])

@@ -205,14 +205,64 @@
                 </label>
             </fieldset>
             <fieldset id="container-fields" class="cto-fields" hidden>
-                <legend id="container-fields-title">Equipamentos internos</legend>
-                <label>Um equipamento por linha
-                    <textarea name="internal_equipment_text" rows="5" placeholder="OLT FiberHome&#10;DIO 24 portas"></textarea>
-                </label>
-                <p id="container-fields-help">No rack, cadastre OLTs e DIOs. Na torre, cadastre switches, APs e rádios PTP.</p>
+                <legend id="container-fields-title">Estrutura interna</legend>
+                <p>Salve a estrutura e depois use o botão <strong>Equipamentos</strong> no mapa para cadastrar cada item com seus dados técnicos.</p>
             </fieldset>
             <footer><button class="primary-button" type="submit">Salvar no projeto</button></footer>
         </form>
+    </dialog>
+
+    <dialog id="container-dialog" class="editor-dialog container-dialog">
+        <section>
+            <header><div><h2 id="container-dialog-title">Equipamentos internos</h2><p id="container-dialog-subtitle"></p></div><button class="dialog-close" type="button">×</button></header>
+            <div id="container-equipment-list" class="container-equipment-list"></div>
+            <section id="container-optical-links" class="container-optical-links" hidden>
+                <h3>Ligação OLT → DIO</h3>
+                <p>Selecione a PON, a porta de destino no DIO e, se já existir, o cabo que sai deste rack.</p>
+                <form id="container-link-form">
+                    <div class="dialog-grid">
+                        <label>PON da OLT<select name="source_port_id" required></select></label>
+                        <label>Porta do DIO<select name="destination_port_id" required></select></label>
+                    </div>
+                    <label>Cabo óptico do rack<select name="cable_id"><option value="">Ainda sem cabo vinculado</option></select></label>
+                    <footer><button class="primary-button" type="submit">Ligar PON ao DIO</button></footer>
+                </form>
+                <div id="container-link-list" class="container-equipment-list"></div>
+            </section>
+            <form id="container-equipment-form">
+                <h3>Adicionar equipamento</h3>
+                <div class="dialog-grid">
+                    <label>Tipo<select name="equipment_type" required></select></label>
+                    <label>Nome<input name="name" required maxlength="180" placeholder="Ex.: OLT FiberHome principal"></label>
+                </div>
+                <div class="dialog-grid">
+                    <label>IP de gerência<input name="management_ip" placeholder="192.0.2.10"></label>
+                    <label>Cadastro<select name="provisioning_mode"><option value="manual">Manual</option><option value="snmp">SNMP</option></select></label>
+                </div>
+                <div class="dialog-grid">
+                    <label>Fabricante<input name="vendor" placeholder="FiberHome, Huawei, ZTE..."></label>
+                    <label>Modelo<input name="model"></label>
+                </div>
+                <label>Número de série<input name="serial_number"></label>
+                <fieldset id="container-olt-fields" class="cto-fields" hidden>
+                    <legend>Estrutura da OLT</legend>
+                    <div class="dialog-grid">
+                        <label>Quantidade de placas<input name="card_count" type="number" min="1" max="64" value="1"></label>
+                        <label>PONs por placa<input name="pons_per_card" type="number" min="1" max="64" value="16"></label>
+                    </div>
+                </fieldset>
+                <fieldset id="container-dio-fields" class="cto-fields" hidden>
+                    <legend>Estrutura do DIO</legend>
+                    <label>Quantidade de portas
+                        <select name="dio_port_capacity">
+                            <option>12</option><option selected>24</option><option>36</option><option>48</option>
+                            <option>72</option><option>96</option><option>144</option><option>192</option><option>244</option>
+                        </select>
+                    </label>
+                </fieldset>
+                <footer><button class="primary-button" type="submit">Adicionar à estrutura</button></footer>
+            </form>
+        </section>
     </dialog>
 
     <dialog id="cable-dialog" class="editor-dialog">
