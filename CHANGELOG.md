@@ -11,6 +11,14 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.3] - 2026-07-29
+
+### Corrigido
+
+- CSS principal servido por uma rota que não é interceptada pelo Nginx
+- `apply` agora valida o CSS antes de informar sucesso
+- Removido o prefixo duplicado na versão exibida pela interface
+
 ## [0.8.2] - 2026-07-29
 
 ### Corrigido

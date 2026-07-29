@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.2 — Correções do deploy automatizado**
+**v0.8.3 — Validação completa da interface**
 
-Esta versão adapta o comando `apply` ao servidor administrado como `root`,
-preserva os serviços de banco e Redis e corrige a publicação do CSS.
+Esta versão garante a entrega do CSS mesmo com o Nginx legado e impede que o
+deploy seja marcado como concluído quando a interface não estiver estilizada.
 
 ## Funcionalidades implementadas
 
