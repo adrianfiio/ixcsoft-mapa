@@ -11,6 +11,21 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.16.1] - 2026-07-29
+
+### Corrigido
+
+- Login de usuários VIEW, EDIT e ADMIN da empresa agora utiliza a autenticação da
+  plataforma e não exige a permissão interna “membro da equipe” do Django.
+- Categorias da Central de Controle permanecem realmente recolhidas até o clique.
+- Menu técnico lateral inicia fechado e continua disponível pelo botão de expansão.
+- Atividade recente permanece disponível em todas as páginas administrativas sem
+  sobrepor os atalhos do cabeçalho.
+
+### Adicionado
+
+- Botão seguro para encerrar a sessão no painel operacional.
+
 ## [0.16.0] - 2026-07-29
 
 ### Adicionado

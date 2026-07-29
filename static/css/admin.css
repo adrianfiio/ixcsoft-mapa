@@ -144,6 +144,7 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 .af-card-toggle span { float: right; }
 .af-control-card.open { border-color: #2b8f8b; }
 .af-control-card nav { display: grid; gap: 6px; }
+.af-control-card nav[hidden] { display: none !important; }
 .af-control-card nav:not([hidden]) { margin-top: 8px; }
 .af-control-card nav a { display: flex; justify-content: space-between; padding: 10px 12px; color: #dce9f5; background: #091627; border: 1px solid #21364f; border-radius: 8px; text-decoration: none; }
 .af-control-card nav a:hover { color: #06211e; background: #2dd4bf; }
@@ -151,7 +152,7 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 .af-advanced summary { cursor: pointer; color: #cbd5e1; font-weight: 750; }
 .af-advanced > p { color: #9fb0c3; }
 .af-app-list .module { margin-bottom: 12px; }
-.af-recent { position: fixed; z-index: 40; top: 22px; right: 28px; }
+.af-recent { position: relative; z-index: 40; }
 .af-recent > summary { display: flex; align-items: center; gap: 8px; padding: 9px 13px; color: #dce9f5; background: #13263d; border: 1px solid #355371; border-radius: 9px; cursor: pointer; list-style: none; }
 .af-recent > summary span { color: #5eead4; font-size: 20px; }
 .af-recent-popover { position: absolute; top: 48px; right: 0; width: 310px; max-height: 70vh; overflow: auto; padding: 18px; background: #0d1b2d; border: 1px solid #29435e; border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.4); }
@@ -159,6 +160,17 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 .af-recent a { display: block; padding: 9px 0; color: #dce9f5; border-bottom: 1px solid #21364f; text-decoration: none; }
 .af-recent small { display: block; margin-top: 3px; color: #8194aa; }
 .deletelink, .deletelink-box a { background: #b42342 !important; border-radius: 7px !important; }
+.af-platform-login { display: grid; min-height: 100vh; place-items: center; margin: 0; background: radial-gradient(circle at 20% 10%, #0c3340, #07111f 45%); }
+.af-login-card { width: min(430px, calc(100% - 32px)); overflow: hidden; background: #0d1b2d; border: 1px solid #29435e; border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.af-login-card header { display: grid; min-height: 160px; place-items: center; background: linear-gradient(145deg, #0d2639, #102f42); border-bottom: 1px solid #29435e; }
+.af-login-card header img { width: 245px; max-height: 105px; object-fit: contain; }
+.af-login-card form { display: grid; gap: 10px; padding: 30px 34px 34px; }
+.af-login-card h1 { margin: 0; color: #f8fafc; font-size: 25px; }
+.af-login-card p { margin: 0 0 14px; color: #9fb0c3; }
+.af-login-card label { margin-top: 6px; color: #dce9f5; font-weight: 750; }
+.af-login-card input { width: 100%; box-sizing: border-box; }
+.af-login-card button { margin-top: 14px; padding: 13px; color: #03201c; background: #2dd4bf; border: 0; border-radius: 9px; font-weight: 850; cursor: pointer; }
+.af-login-error { padding: 11px 13px; color: #fecdd3; background: #3a1830; border: 1px solid #8b3451; border-radius: 8px; }
 
 @media (max-width: 1100px) {
     .af-admin-shortcuts { display: none; }
