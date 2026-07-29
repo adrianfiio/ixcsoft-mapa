@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.25.0] - 2026-07-29
+
+### Adicionado
+
+- Placas de OLT individuais por slot, cada uma com sua própria quantidade de PONs.
+- Portas configuráveis para switches, APs e rádios: RJ45 100 Mb/1 Gb, SFP 1 Gb, SFP+ 10 Gb e wireless.
+- Ligações internas de torre por cobre, fibra ou enlace wireless.
+- Perfil de acesso por empresa para usuário manual ou vinculado a ERP.
+- Comando seguro e repetível para limpar somente dados importados de uma empresa.
+
+### Alterado
+
+- Editor de rack e torre passou a usar praticamente toda a tela.
+- Estrutura interna mostra equipamentos, placas, portas e ligações em uma visão técnica única.
+- Cadastro inicial de OLT cria somente a primeira placa; as demais são adicionadas individualmente.
+
 ## [0.24.0] - 2026-07-29
 
 ### Adicionado

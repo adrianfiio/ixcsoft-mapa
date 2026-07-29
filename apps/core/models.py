@@ -68,6 +68,10 @@ class CompanyMembership(TimeStampedModel):
         VIEW = "view", "VIEW — somente visualizar"
         EDIT = "edit", "EDIT — visualizar e editar"
 
+    class DataSource(models.TextChoices):
+        MANUAL = "manual", "Usuário padrão — sem ERP"
+        ERP = "erp", "Usuário vinculado a ERP"
+
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
@@ -87,6 +91,23 @@ class CompanyMembership(TimeStampedModel):
         verbose_name="Nível de acesso",
     )
     active = models.BooleanField(default=True, verbose_name="Acesso ativo")
+    data_source = models.CharField(
+        max_length=20,
+        choices=DataSource.choices,
+        default=DataSource.MANUAL,
+        verbose_name="Origem dos dados",
+    )
+    erp_provider = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="ERP vinculado",
+        help_text="Informe o provedor somente para usuários vinculados a ERP.",
+    )
+    erp_configuration_id = models.PositiveBigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID da configuração ERP",
+    )
 
     class Meta:
         verbose_name = "Acesso à empresa"

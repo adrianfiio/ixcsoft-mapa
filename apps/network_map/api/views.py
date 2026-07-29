@@ -22,6 +22,7 @@ from apps.network_map.models import (
     CableModel,
     CableReserve,
     ContainerEquipment,
+    ContainerEquipmentCard,
     ContainerEquipmentPort,
     ContainerPortLink,
     CTO,
@@ -917,7 +918,7 @@ def container_equipment(request, element_id):
         "container": {"id": container.id, "name": container.name, "type": container.element_type},
         "equipment": [
             _container_equipment_payload(item)
-            for item in container.internal_equipments.prefetch_related("ports").all()
+            for item in container.internal_equipments.prefetch_related("cards", "ports").all()
         ],
         "cables": [
             {"id": cable.id, "name": cable.name, "fiber_count": cable.fiber_count}
@@ -934,6 +935,8 @@ def container_equipment(request, element_id):
                 "destination": f"{link.destination_port.equipment.name} · {link.destination_port.label}",
                 "cable_id": link.cable_id,
                 "cable": link.cable.name if link.cable else "",
+                "link_type": link.link_type,
+                "link_type_label": link.get_link_type_display(),
             }
             for link in container.internal_port_links.select_related(
                 "source_port__equipment", "destination_port__equipment", "cable"
@@ -969,8 +972,19 @@ def _container_equipment_payload(item):
         "serial_number": item.serial_number,
         "card_count": item.card_count,
         "pons_per_card": item.pons_per_card,
-        "pon_count": item.card_count * item.pons_per_card,
+        "pon_count": item.ports.filter(port_type=ContainerEquipmentPort.PortType.PON).count(),
         "dio_port_capacity": item.dio_port_capacity,
+        "cards": [
+            {
+                "id": card.id,
+                "slot": card.slot,
+                "name": card.name or f"Placa {card.slot}",
+                "model": card.model,
+                "serial_number": card.serial_number,
+                "pon_count": card.pon_count,
+            }
+            for card in item.cards.all()
+        ],
         "ports": [
             {
                 "id": port.id,
@@ -991,10 +1005,17 @@ def _generate_container_equipment_ports(equipment):
     if equipment.equipment_type == ContainerEquipment.EquipmentType.OLT:
         number = 0
         for card in range(1, equipment.card_count + 1):
+            card_obj = ContainerEquipmentCard.objects.create(
+                equipment=equipment,
+                slot=card,
+                name=f"Placa {card}",
+                pon_count=equipment.pons_per_card,
+            )
             for pon in range(1, equipment.pons_per_card + 1):
                 number += 1
                 ports.append(ContainerEquipmentPort(
                     equipment=equipment,
+                    card=card_obj,
                     port_type=ContainerEquipmentPort.PortType.PON,
                     number=number,
                     card_number=card,
@@ -1017,11 +1038,97 @@ def _generate_container_equipment_ports(equipment):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def container_equipment_cards(request, element_id, equipment_id):
+    equipment = get_object_or_404(
+        ContainerEquipment.objects.select_related("container"),
+        pk=equipment_id,
+        container_id=element_id,
+        equipment_type=ContainerEquipment.EquipmentType.OLT,
+    )
+    if not can_edit_company(request.user, equipment.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    try:
+        slot = int(request.data.get("slot") or 0)
+        pon_count = int(request.data.get("pon_count") or 0)
+    except (TypeError, ValueError):
+        return JsonResponse({"detail": "Slot e quantidade de PONs devem ser números."}, status=400)
+    if slot < 1 or slot > 64 or pon_count < 1 or pon_count > 64:
+        return JsonResponse({"detail": "Use slot e quantidade de PONs entre 1 e 64."}, status=400)
+    if equipment.cards.filter(slot=slot).exists():
+        return JsonResponse({"detail": "Já existe uma placa neste slot."}, status=409)
+    with transaction.atomic():
+        card = ContainerEquipmentCard.objects.create(
+            equipment=equipment,
+            slot=slot,
+            name=str(request.data.get("name", "")).strip() or f"Placa {slot}",
+            model=str(request.data.get("model", "")).strip(),
+            serial_number=str(request.data.get("serial_number", "")).strip(),
+            pon_count=pon_count,
+        )
+        next_number = equipment.ports.order_by("-number").values_list("number", flat=True).first() or 0
+        ContainerEquipmentPort.objects.bulk_create([
+            ContainerEquipmentPort(
+                equipment=equipment,
+                card=card,
+                port_type=ContainerEquipmentPort.PortType.PON,
+                number=next_number + pon,
+                card_number=slot,
+                port_number=pon,
+                label=f"{card.name} / PON {pon}",
+            )
+            for pon in range(1, pon_count + 1)
+        ])
+        equipment.card_count = equipment.cards.count()
+        equipment.save(update_fields=["card_count", "updated_at"])
+    return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def container_equipment_ports(request, element_id, equipment_id):
+    equipment = get_object_or_404(
+        ContainerEquipment.objects.select_related("container"),
+        pk=equipment_id,
+        container_id=element_id,
+    )
+    if not can_edit_company(request.user, equipment.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    allowed_types = {
+        ContainerEquipmentPort.PortType.RJ45_100M,
+        ContainerEquipmentPort.PortType.RJ45_1G,
+        ContainerEquipmentPort.PortType.SFP_1G,
+        ContainerEquipmentPort.PortType.SFP_PLUS_10G,
+        ContainerEquipmentPort.PortType.WIRELESS,
+    }
+    port_type = str(request.data.get("port_type", "")).strip()
+    try:
+        count = int(request.data.get("count") or 0)
+    except (TypeError, ValueError):
+        count = 0
+    if port_type not in allowed_types or count < 1 or count > 256:
+        return JsonResponse({"detail": "Informe um tipo válido e de 1 a 256 portas."}, status=400)
+    start = equipment.ports.order_by("-number").values_list("number", flat=True).first() or 0
+    label = dict(ContainerEquipmentPort.PortType.choices)[port_type]
+    ContainerEquipmentPort.objects.bulk_create([
+        ContainerEquipmentPort(
+            equipment=equipment,
+            port_type=port_type,
+            number=start + offset,
+            port_number=offset,
+            label=f"{label} {offset}",
+        )
+        for offset in range(1, count + 1)
+    ])
+    return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def container_port_links(request, element_id):
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type=NetworkElement.ElementType.RACK,
+        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
     )
     if not can_edit_company(request.user, container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
@@ -1029,13 +1136,11 @@ def container_port_links(request, element_id):
         ContainerEquipmentPort.objects.select_related("equipment"),
         pk=request.data.get("source_port_id"),
         equipment__container=container,
-        port_type=ContainerEquipmentPort.PortType.PON,
     )
     destination = get_object_or_404(
         ContainerEquipmentPort.objects.select_related("equipment"),
         pk=request.data.get("destination_port_id"),
         equipment__container=container,
-        port_type=ContainerEquipmentPort.PortType.DIO,
     )
     cable = None
     if request.data.get("cable_id"):
@@ -1044,15 +1149,26 @@ def container_port_links(request, element_id):
             pk=request.data.get("cable_id"),
             company=container.company,
         )
+    if source.pk == destination.pk or source.equipment_id == destination.equipment_id:
+        return JsonResponse({"detail": "Escolha portas de equipamentos diferentes."}, status=400)
     if ContainerPortLink.objects.filter(
-        Q(source_port=source) | Q(destination_port=destination)
+        Q(source_port=source) | Q(destination_port=source)
+        | Q(source_port=destination) | Q(destination_port=destination)
     ).exists():
-        return JsonResponse({"detail": "A PON ou a porta do DIO já está em uso."}, status=409)
+        return JsonResponse({"detail": "Uma das portas já está em uso."}, status=409)
+    link_type = str(request.data.get("link_type", "fiber"))
+    if container.element_type == NetworkElement.ElementType.RACK:
+        if source.port_type != ContainerEquipmentPort.PortType.PON or destination.port_type != ContainerEquipmentPort.PortType.DIO:
+            return JsonResponse({"detail": "No rack, ligue uma PON da OLT a uma porta do DIO."}, status=400)
+        link_type = ContainerPortLink.LinkType.FIBER
+    elif link_type not in dict(ContainerPortLink.LinkType.choices):
+        return JsonResponse({"detail": "Tipo de ligação inválido."}, status=400)
     link = ContainerPortLink.objects.create(
         container=container,
         source_port=source,
         destination_port=destination,
         cable=cable,
+        link_type=link_type,
     )
     return JsonResponse({"link": {"id": link.id}}, status=201)
 
