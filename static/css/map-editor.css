@@ -99,6 +99,19 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .fiber-chip:active { cursor: grabbing; }
 .splice-list { padding: 10px; background: #0b192a; border-radius: 8px; font-size: 11px; }
 .splice-list > div { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.optical-graph { position: relative; min-height: 430px; padding: 18px; margin: 12px 0; overflow: auto; background: #070f1d; border: 1px solid var(--border); border-radius: 10px; }
+.optical-links { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.optical-links path { fill: none; stroke-width: 2.5; opacity: .9; filter: drop-shadow(0 0 3px currentColor); }
+.graph-cables { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(2, minmax(210px, 1fr)); gap: 180px; }
+.fiber-cable-node { min-width: 210px; overflow: hidden; background: #121d35; border: 1px solid #334766; border-radius: 7px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.fiber-cable-node header { padding: 9px 11px; color: white; background: #1c2b49; border-top: 3px solid #2dd4bf; font-size: 12px; font-weight: 800; }
+.fiber-port-list { display: grid; max-height: 260px; overflow: auto; }
+.fiber-port { position: relative; display: flex; align-items: center; gap: 7px; padding: 6px 9px; color: #cbd5e1; background: transparent; border: 0; border-bottom: 1px solid #202e49; font-size: 10px; text-align: left; cursor: crosshair; }
+.fiber-port:hover, .fiber-port.selected { color: white; background: #243758; }
+.fiber-port i { width: 9px; height: 9px; flex: none; background: var(--fiber-color); border: 1px solid rgba(255,255,255,.7); border-radius: 50%; }
+.graph-trays { position: absolute; z-index: 3; top: 50%; left: 50%; display: grid; gap: 8px; width: 140px; transform: translate(-50%, -50%); }
+.tray-node { padding: 9px; color: #dbeafe; background: #17283f; border: 1px solid #f7b731; border-radius: 6px; text-align: center; }
+.tray-node strong, .tray-node span { display: block; }.tray-node span { margin-top: 3px; color: var(--muted); font-size: 9px; }
 .network-marker { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: #087f8c; border: 2px solid white; border-radius: 9px; box-shadow: 0 3px 12px rgba(0,0,0,.42); font-size: 9px; font-weight: 900; }
 .network-marker.pole { border-radius: 50%; background: #7c5b19; }.network-marker.cto { background: #1261a0; }.network-marker.splice_box { background: #8a3cac; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
