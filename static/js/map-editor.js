@@ -1345,7 +1345,7 @@
         updateCableDefaults();
     };
     Promise.all([
-        loadProjects(), loadClients(),
+        loadProjects(new URLSearchParams(window.location.search).get("project")), loadClients(),
         api("/api/map/cable-models/").then((data) => {
             const availableCounts = new Set();
             data.models.forEach((model) => {

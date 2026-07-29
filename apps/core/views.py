@@ -4,6 +4,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from redis import Redis
 
 from apps.access.models import AccessPoint
@@ -13,17 +14,21 @@ from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
 from apps.core.models import MapBaseConfiguration
-from apps.core.access import has_any_edit_access
+from apps.core.access import accessible_company_ids, has_any_edit_access
+from apps.core.models import CompanyMembership
+from apps.network_map.models import FiberCable, NetworkProject
 from apps.olt_integration.models import OLT, ONU
 
 
-class DashboardView(TemplateView):
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        company_ids = accessible_company_ids(self.request.user)
+        company_filter = {} if company_ids is None else {"company_id__in": company_ids}
 
-        access_summary = AccessPoint.objects.aggregate(
+        access_summary = AccessPoint.objects.filter(**company_filter).aggregate(
             total=Count("id"),
             online=Count("id", filter=Q(status=AccessPoint.Status.ONLINE)),
             offline=Count("id", filter=Q(status=AccessPoint.Status.OFFLINE)),
@@ -56,7 +61,7 @@ class DashboardView(TemplateView):
                 "app_version": settings.APP_VERSION,
                 "access": access_summary,
                 "onus": onu_summary,
-                "customer_count": IXCCustomer.objects.count(),
+                "customer_count": IXCCustomer.objects.count() if company_ids is None else 0,
                 "olt_count": OLT.objects.count(),
                 "element_count": NetworkElement.objects.count(),
                 "cto_count": CTO.objects.count(),
@@ -94,6 +99,33 @@ class DashboardView(TemplateView):
                     else MapBaseConfiguration.DefaultLayer.ESRI_SATELLITE
                 ),
             }
+        return context
+
+
+class AccountPanelView(LoginRequiredMixin, TemplateView):
+    template_name = "account_panel.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company_ids = accessible_company_ids(self.request.user)
+        project_queryset = NetworkProject.objects.select_related("company").order_by("name")
+        element_queryset = NetworkElement.objects.select_related("project", "company").order_by("name")
+        cable_queryset = FiberCable.objects.select_related("project", "company").order_by("name")
+        if company_ids is not None:
+            project_queryset = project_queryset.filter(company_id__in=company_ids)
+            element_queryset = element_queryset.filter(company_id__in=company_ids)
+            cable_queryset = cable_queryset.filter(company_id__in=company_ids)
+        context.update(
+            {
+                "memberships": CompanyMembership.objects.filter(
+                    user=self.request.user, active=True
+                ).select_related("company"),
+                "projects": project_queryset[:100],
+                "elements": element_queryset[:100],
+                "cables": cable_queryset[:100],
+                "is_platform_admin": self.request.user.is_superuser,
+            }
+        )
         return context
 
 

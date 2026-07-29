@@ -1,5 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load i18n %}
+{% block content_title %}{% endblock %}
 
 {% block content %}
 <div class="af-control-head">
@@ -14,42 +15,51 @@
     </div>
 </div>
 
+<label class="af-admin-search">
+    <span>⌕</span>
+    <input id="af-admin-search" type="search" placeholder="Pesquisar empresa, usuário, projeto, equipamento ou configuração…">
+</label>
+
 <div class="af-control-grid">
-    <section class="af-control-card">
+    <section class="af-control-card" data-admin-card>
         <span class="af-card-icon">◎</span>
         <h2>Empresas e acessos</h2>
         <p>Cadastre clientes da plataforma e defina VIEW, EDIT ou ADMIN.</p>
-        <nav>
+        <button class="af-card-toggle" type="button">Abrir opções <span>⌄</span></button>
+        <nav hidden>
             <a href="{% url 'admin:core_company_changelist' %}">Empresas <span>→</span></a>
             <a href="{% url 'admin:core_companymembership_changelist' %}">Níveis de acesso <span>→</span></a>
             <a href="{% url 'admin:auth_user_changelist' %}">Usuários <span>→</span></a>
         </nav>
     </section>
-    <section class="af-control-card">
+    <section class="af-control-card" data-admin-card>
         <span class="af-card-icon">⌁</span>
         <h2>Projetos e mapa</h2>
         <p>Controle os projetos, elementos, cabos e rotas da rede.</p>
-        <nav>
+        <button class="af-card-toggle" type="button">Abrir opções <span>⌄</span></button>
+        <nav hidden>
             <a href="{% url 'admin:network_map_networkproject_changelist' %}">Projetos <span>→</span></a>
             <a href="{% url 'admin:network_map_networkelement_changelist' %}">Elementos <span>→</span></a>
             <a href="{% url 'admin:network_map_fibercable_changelist' %}">Cabos e rotas <span>→</span></a>
         </nav>
     </section>
-    <section class="af-control-card">
+    <section class="af-control-card" data-admin-card>
         <span class="af-card-icon">▤</span>
         <h2>CPD e rede óptica</h2>
         <p>Organize POPs, OLTs, DIOs e a infraestrutura interna.</p>
-        <nav>
+        <button class="af-card-toggle" type="button">Abrir opções <span>⌄</span></button>
+        <nav hidden>
             <a href="{% url 'admin:network_map_pop_changelist' %}">CPDs / POPs <span>→</span></a>
             <a href="{% url 'admin:olt_integration_olt_changelist' %}">OLTs <span>→</span></a>
             <a href="{% url 'admin:optical_dio_changelist' %}">DIOs <span>→</span></a>
         </nav>
     </section>
-    <section class="af-control-card">
+    <section class="af-control-card" data-admin-card>
         <span class="af-card-icon">↻</span>
         <h2>Integrações</h2>
         <p>Gerencie ERPs, coleta de dados, alertas e monitoramento.</p>
-        <nav>
+        <button class="af-card-toggle" type="button">Abrir opções <span>⌄</span></button>
+        <nav hidden>
             <a href="{% url 'admin:ixc_integration_ixcconfiguration_changelist' %}">Integrações ERP <span>→</span></a>
             <a href="{% url 'admin:alerts_alertevent_changelist' %}">Alertas <span>→</span></a>
             <a href="{% url 'admin:core_mapbaseconfiguration_changelist' %}">Mapa-base <span>→</span></a>
@@ -67,7 +77,9 @@
 {% endblock %}
 
 {% block sidebar %}
-<aside class="af-recent">
+<details class="af-recent">
+    <summary title="Abrir atividade recente"><span>♢</span><b>Atividade recente</b></summary>
+    <div class="af-recent-popover">
     <h2>Atividade recente</h2>
     {% load log %}
     {% get_admin_log 8 as admin_log for_user user %}
@@ -81,5 +93,25 @@
     {% else %}
         <p>Nenhuma alteração recente.</p>
     {% endif %}
-</aside>
+    </div>
+</details>
+<script>
+document.querySelectorAll("[data-admin-card]").forEach((card) => {
+    const button = card.querySelector(".af-card-toggle");
+    const nav = card.querySelector("nav");
+    button.addEventListener("click", () => {
+        nav.hidden = !nav.hidden;
+        button.firstChild.textContent = nav.hidden ? "Abrir opções " : "Fechar opções ";
+        card.classList.toggle("open", !nav.hidden);
+    });
+});
+document.getElementById("af-admin-search").addEventListener("input", (event) => {
+    const query = event.target.value.trim().toLocaleLowerCase("pt-BR");
+    document.querySelectorAll("[data-admin-card]").forEach((card) => {
+        const matches = !query || card.textContent.toLocaleLowerCase("pt-BR").includes(query);
+        card.hidden = !matches;
+        if (query && matches) card.querySelector("nav").hidden = false;
+    });
+});
+</script>
 {% endblock %}
