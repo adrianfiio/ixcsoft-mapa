@@ -10,6 +10,7 @@ from .models import (
     NetworkProject,
     SpliceTray,
     SpliceTraySplitter,
+    SpliceTraySplitterPort,
 )
 
 
@@ -49,6 +50,14 @@ def sync_splice_box(element, tray_count, splitters_per_tray, ratio):
                     "output_ports": int(ratio.split(":")[1]),
                 },
             )
+            splitter = tray.splitters.get(position=position)
+            existing_ports = set(splitter.ports.values_list("number", flat=True))
+            SpliceTraySplitterPort.objects.bulk_create([
+                SpliceTraySplitterPort(splitter=splitter, number=number)
+                for number in range(1, splitter.output_ports + 1)
+                if number not in existing_ports
+            ])
+            splitter.ports.filter(number__gt=splitter.output_ports).delete()
         tray.splitters.filter(position__gt=splitters_per_tray).delete()
     element.splice_trays.filter(number__gt=tray_count).delete()
 

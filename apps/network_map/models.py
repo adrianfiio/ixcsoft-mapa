@@ -804,6 +804,13 @@ class SpliceTraySplitter(TimeStampedModel):
     position = models.PositiveSmallIntegerField(default=1)
     ratio = models.CharField(max_length=10, choices=CTOSplitter.Ratio.choices)
     output_ports = models.PositiveSmallIntegerField(default=8)
+    input_fiber = models.ForeignKey(
+        FiberStrand,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="splice_box_splitter_inputs",
+    )
 
     class Meta:
         ordering = ["tray", "position"]
@@ -816,6 +823,34 @@ class SpliceTraySplitter(TimeStampedModel):
 
     def __str__(self):
         return f"{self.tray} · Splitter {self.position} {self.ratio}"
+
+
+class SpliceTraySplitterPort(TimeStampedModel):
+    splitter = models.ForeignKey(
+        SpliceTraySplitter,
+        on_delete=models.CASCADE,
+        related_name="ports",
+    )
+    number = models.PositiveSmallIntegerField()
+    output_fiber = models.ForeignKey(
+        FiberStrand,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="splice_box_splitter_outputs",
+    )
+
+    class Meta:
+        ordering = ["splitter", "number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["splitter", "number"],
+                name="unique_port_per_splice_tray_splitter",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.splitter} · P{self.number}"
 
 
 class FiberSplice(TimeStampedModel):
