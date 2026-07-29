@@ -11,6 +11,10 @@
     const unifilarDialog = document.getElementById("unifilar-dialog");
     const poleDialog = document.getElementById("pole-dialog");
     const poleForm = document.getElementById("pole-form");
+    const poleActionDialog = document.getElementById("pole-action-dialog");
+    const poleActionForm = document.getElementById("pole-action-form");
+    const quickInputDialog = document.getElementById("quick-input-dialog");
+    const quickInputForm = document.getElementById("quick-input-form");
     const elementForm = document.getElementById("element-form");
     const cableForm = document.getElementById("cable-form");
     const drawingBar = document.getElementById("drawing-bar");
@@ -113,6 +117,36 @@
             feedback.textContent = text;
             feedback.classList.toggle("error", isError);
         }
+    }
+    function askValue({ title, label, value = "", type = "text", options = null }) {
+        document.getElementById("quick-input-title").textContent = title;
+        document.getElementById("quick-input-label").textContent = label;
+        const input = document.getElementById("quick-input-value");
+        const select = document.getElementById("quick-input-select");
+        input.hidden = Boolean(options);
+        select.hidden = !options;
+        input.type = type;
+        input.value = value;
+        input.min = type === "number" ? "0.01" : "";
+        input.step = type === "number" ? "0.01" : "";
+        if (options) {
+            select.innerHTML = options.map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("");
+        }
+        quickInputDialog.showModal();
+        if (!options) input.focus();
+        return new Promise((resolve) => {
+            let completed = false;
+            quickInputForm.onsubmit = (event) => {
+                event.preventDefault();
+                completed = true;
+                const result = options ? select.value : input.value;
+                quickInputDialog.close();
+                resolve(result);
+            };
+            quickInputDialog.onclose = () => {
+                if (!completed) resolve(null);
+            };
+        });
     }
     enableGoogleSatellite();
 
@@ -607,7 +641,7 @@
             });
             content.querySelectorAll("[data-add-tray-splitter]").forEach((button) => {
                 button.onclick = async () => {
-                    const ratio = prompt("Proporção do novo splitter (1:2, 1:4, 1:8, 1:16, 1:32 ou 1:64):", "1:4");
+                    const ratio = await askValue({ title: "Adicionar splitter", label: "Proporção", value: "1:4", options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64"].map((item) => ({ value: item, label: item })) });
                     if (!ratio) return;
                     try {
                         await api(`/api/map/elements/${element.id}/splitters/`, {
@@ -620,7 +654,7 @@
             });
             content.querySelectorAll("[data-edit-tray-splitter]").forEach((button) => {
                 button.onclick = async () => {
-                    const ratio = prompt("Nova proporção do splitter:", button.dataset.ratio);
+                    const ratio = await askValue({ title: "Editar splitter", label: "Nova proporção", value: button.dataset.ratio, options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64"].map((item) => ({ value: item, label: item })) });
                     if (!ratio) return;
                     try {
                         await api(`/api/map/elements/${element.id}/splitters/${button.dataset.editTraySplitter}/`, {
@@ -668,7 +702,7 @@
         notify("Cabo excluído.");
     }
     async function createReserveAt(cableId, latlng) {
-        const length = Number(prompt("Quantos metros possui esta reserva técnica?", "20"));
+        const length = Number(await askValue({ title: "Nova reserva técnica", label: "Metragem da reserva", value: "20", type: "number" }));
         if (!length || length <= 0) return notify("Informe uma metragem válida.", true);
         await api(`/api/map/cables/${cableId}/reserves/`, {
             method: "POST",
@@ -679,7 +713,7 @@
         notify(`Reserva de ${length} m adicionada.`);
     }
     async function editReserve(cableId, reserve) {
-        const length = Number(prompt("Nova metragem da reserva:", String(reserve.metragem)));
+        const length = Number(await askValue({ title: "Editar reserva técnica", label: "Nova metragem", value: String(reserve.metragem), type: "number" }));
         if (!length || length <= 0) return;
         await api(`/api/map/cables/${cableId}/reserves/${reserve.id}/`, {
             method: "PATCH",
@@ -695,11 +729,11 @@
         notify("Reserva excluída.");
     }
     async function convertReserve(cableId, reserveId) {
-        const choice = prompt("Transformar em CTO ou CEO? Digite CTO ou CEO:", "CEO");
+        const choice = await askValue({ title: "Transformar reserva", label: "Novo equipamento", value: "CEO", options: [{ value: "CEO", label: "CEO" }, { value: "CTO", label: "CTO" }] });
         if (!choice) return;
         const normalized = choice.trim().toUpperCase();
         if (!["CTO", "CEO"].includes(normalized)) return notify("Escolha CTO ou CEO.", true);
-        const name = prompt(`Nome da nova ${normalized}:`, `${normalized}-${reserveId}`);
+        const name = await askValue({ title: `Nova ${normalized}`, label: "Nome do equipamento", value: `${normalized}-${reserveId}` });
         if (!name) return;
         await api(`/api/map/cables/${cableId}/reserves/${reserveId}/convert/`, {
             method: "POST",
@@ -709,11 +743,11 @@
         notify(`${normalized} inserida e cabo dividido em dois trechos.`);
     }
     async function insertElementAt(cableId, latlng) {
-        const choice = prompt("Inserir CTO ou CEO neste ponto?", "CEO");
+        const choice = await askValue({ title: "Inserir no cabo", label: "Equipamento", value: "CEO", options: [{ value: "CEO", label: "CEO" }, { value: "CTO", label: "CTO" }] });
         if (!choice) return;
         const normalized = choice.trim().toUpperCase();
         if (!["CTO", "CEO"].includes(normalized)) return notify("Escolha CTO ou CEO.", true);
-        const name = prompt(`Nome da nova ${normalized}:`, `${normalized}-NOVO`);
+        const name = await askValue({ title: `Nova ${normalized}`, label: "Nome do equipamento", value: `${normalized}-NOVO` });
         if (!name) return;
         const created = await api(`/api/map/cables/${cableId}/reserves/`, {
             method: "POST",
@@ -757,41 +791,45 @@
         document.getElementById("pole-help").textContent = data.cables.length
             ? "A reserva será vinculada a um dos cabos detectados neste poste."
             : "Para adicionar reserva, primeiro desenhe ou mova um cabo para passar pelo poste.";
-        poleDialog.showModal();
+        if (!poleDialog.open) poleDialog.showModal();
     }
-    async function addPoleEquipment(elementType) {
+    function openPoleEquipmentForm(elementType) {
         const label = elementType === "cto" ? "CTO" : "CEO";
-        const name = window.prompt(`Nome da nova ${label}:`);
-        if (!name?.trim()) return;
-        const poleId = poleForm.querySelector('[name="pole_id"]').value;
-        await api(`/api/map/elements/${poleId}/pole/`, {
-            method: "POST",
-            body: JSON.stringify({ action: "add_equipment", element_type: elementType, name: name.trim(), code: name.trim() }),
-        });
-        await loadStructure();
-        await managePole(poleId);
-        notify(`${label} instalada no poste.`);
+        poleActionForm.reset();
+        poleActionForm.elements.action.value = "add_equipment";
+        poleActionForm.elements.element_type.value = elementType;
+        document.getElementById("pole-action-title").textContent = `Instalar ${label} no poste`;
+        document.getElementById("pole-action-name-wrap").hidden = false;
+        document.getElementById("pole-action-cable-wrap").hidden = true;
+        document.getElementById("pole-action-length-wrap").hidden = true;
+        document.getElementById("pole-action-label-wrap").hidden = true;
+        poleActionDialog.showModal();
+        poleActionForm.elements.name.focus();
     }
-    async function addPoleReserve() {
+    function openPoleReserveForm() {
         const cables = JSON.parse(poleForm.dataset.cables || "[]");
         if (!cables.length) return notify("Nenhum cabo passa por este poste.", true);
-        let cable = cables[0];
-        if (cables.length > 1) {
-            const choice = window.prompt(`Escolha o cabo:\n${cables.map((item, index) => `${index + 1}. ${item.name}`).join("\n")}`, "1");
-            const index = Number(choice) - 1;
-            if (!Number.isInteger(index) || !cables[index]) return;
-            cable = cables[index];
-        }
-        const length = window.prompt(`Metros de reserva em ${cable.name}:`, "20");
-        if (!length) return;
+        poleActionForm.reset();
+        poleActionForm.elements.action.value = "add_reserve";
+        poleActionForm.elements.cable_id.innerHTML = cables.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("");
+        document.getElementById("pole-action-title").textContent = "Adicionar reserva no poste";
+        document.getElementById("pole-action-name-wrap").hidden = true;
+        document.getElementById("pole-action-cable-wrap").hidden = false;
+        document.getElementById("pole-action-length-wrap").hidden = false;
+        document.getElementById("pole-action-label-wrap").hidden = false;
+        poleActionDialog.showModal();
+    }
+    async function savePoleAction() {
         const poleId = poleForm.querySelector('[name="pole_id"]').value;
+        const payload = Object.fromEntries(new FormData(poleActionForm));
         await api(`/api/map/elements/${poleId}/pole/`, {
             method: "POST",
-            body: JSON.stringify({ action: "add_reserve", cable_id: cable.id, length_m: length }),
+            body: JSON.stringify(payload),
         });
-        poleDialog.close();
+        poleActionDialog.close();
         await loadStructure();
-        notify(`Reserva adicionada ao cabo ${cable.name}.`);
+        await managePole(poleId);
+        notify(payload.action === "add_reserve" ? "Reserva adicionada ao cabo." : "Equipamento instalado no poste.");
     }
     function nearestElement(latlng) {
         let match = null;
@@ -1093,9 +1131,13 @@
             projectDialog.close(); await loadProjects(data.project.id); await loadStructure(); notify("Projeto criado. Agora você pode adicionar a estrutura.");
         } catch (error) { notify(error.message, true); }
     };
-    document.getElementById("pole-add-cto").onclick = () => addPoleEquipment("cto").catch((error) => notify(error.message, true));
-    document.getElementById("pole-add-ceo").onclick = () => addPoleEquipment("splice_box").catch((error) => notify(error.message, true));
-    document.getElementById("pole-add-reserve").onclick = () => addPoleReserve().catch((error) => notify(error.message, true));
+    document.getElementById("pole-add-cto").onclick = () => openPoleEquipmentForm("cto");
+    document.getElementById("pole-add-ceo").onclick = () => openPoleEquipmentForm("splice_box");
+    document.getElementById("pole-add-reserve").onclick = () => openPoleReserveForm();
+    poleActionForm.onsubmit = (event) => {
+        event.preventDefault();
+        savePoleAction().catch((error) => notify(error.message, true));
+    };
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));

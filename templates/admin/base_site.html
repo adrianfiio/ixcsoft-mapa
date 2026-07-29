@@ -6,6 +6,7 @@
 {% block extrahead %}
 {{ block.super }}
 <link rel="icon" type="image/png" href="{% static 'img/afservice-map-favicon.png' %}">
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
 {% endblock %}
 
 {% block branding %}
@@ -20,4 +21,13 @@
 </div>
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% block nav-global %}
+<nav class="af-admin-shortcuts" aria-label="Atalhos administrativos">
+    <a href="{% url 'dashboard' %}">Visão geral</a>
+    <a href="{% url 'map' %}">Mapa operacional</a>
+    <a href="{% url 'admin:network_map_networkproject_changelist' %}">Projetos</a>
+    <a href="{% url 'admin:network_map_pop_changelist' %}">CPDs</a>
+    <a href="{% url 'admin:olt_integration_olt_changelist' %}">OLTs</a>
+    <a href="{% url 'admin:optical_dio_changelist' %}">DIOs</a>
+</nav>
+{% endblock %}

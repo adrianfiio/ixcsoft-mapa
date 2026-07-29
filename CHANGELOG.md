@@ -11,6 +11,21 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.14.2] - 2026-07-29
+
+### Melhorado
+
+- Formulários de CTO, CEO, reservas e splitters agora usam modais internos, sem caixas de entrada nativas do navegador.
+- Administração recebeu navegação por atalhos, melhor hierarquia visual, formulários e listagens mais legíveis.
+- Mapas GIS administrativos passam a abrir centralizados na região de Imbaú.
+
+### Adicionado
+
+- Localização rápida no cadastro de CPD e DIO por endereço, GPS ou coordenadas.
+- DIO sem coordenadas próprias herda automaticamente a localização do CPD.
+- CPD sem coordenadas próprias pode herdar uma localização existente do projeto.
+- Atalhos diretos no admin para visão geral, mapa, projetos, CPDs, OLTs e DIOs.
+
 ## [0.14.1] - 2026-07-29
 
 ### Corrigido

@@ -1,0 +1,132 @@
+:root {
+    --primary: #2dd4bf;
+    --secondary: #0b5674;
+    --accent: #5eead4;
+    --header-bg: #091627;
+    --header-color: #f8fafc;
+    --breadcrumbs-bg: #10243a;
+    --breadcrumbs-fg: #cbd5e1;
+    --body-bg: #07111f;
+    --body-fg: #e5edf6;
+    --body-quiet-color: #9fb0c3;
+    --darkened-bg: #0c1b2d;
+    --selected-bg: #17304a;
+    --selected-row: #13263d;
+    --hairline-color: #29435e;
+    --border-color: #29435e;
+    --link-fg: #67e8f9;
+    --link-hover-color: #99f6e4;
+}
+
+html, body { background: var(--body-bg); }
+#header {
+    min-height: 72px;
+    padding: 8px 24px;
+    background: linear-gradient(100deg, #091627 0%, #10243a 68%, #0b3441 100%);
+    border-top: 4px solid #6a3d43;
+    border-bottom: 1px solid #29435e;
+}
+#branding { min-width: 190px; }
+#user-tools { font-size: 11px; }
+.af-admin-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    margin-right: 22px;
+}
+.af-admin-shortcuts a {
+    padding: 8px 11px;
+    color: #dce9f5 !important;
+    background: #13263d;
+    border: 1px solid #29435e;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+.af-admin-shortcuts a:hover { color: #05201d !important; background: #2dd4bf; }
+div.breadcrumbs { padding: 11px 30px; border-bottom: 1px solid #29435e; }
+#content { padding: 28px 34px; }
+#content h1 { margin-bottom: 24px; color: #f8fafc; font-size: 24px; font-weight: 750; }
+#nav-sidebar {
+    flex: 0 0 290px;
+    background: #091627;
+    border-right: 1px solid #29435e;
+}
+#nav-sidebar .module { margin-bottom: 10px; }
+#nav-sidebar .module caption {
+    padding: 11px 14px;
+    color: #dffdfa;
+    background: #0b5674;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .05em;
+}
+#nav-sidebar .module th,
+#nav-sidebar .module td { padding: 9px 12px; border-bottom-color: #21364f; }
+#nav-sidebar .current-model { background: #17304a; border-left: 3px solid #2dd4bf; }
+.module, .inline-group {
+    overflow: hidden;
+    background: #0d1b2d;
+    border: 1px solid #29435e;
+    border-radius: 10px;
+}
+.module h2, .inline-group h2 {
+    padding: 12px 15px;
+    color: #eafffb;
+    background: #0b5674;
+    font-size: 12px;
+    font-weight: 800;
+}
+.form-row { padding: 15px 12px; border-bottom-color: #21364f; }
+.form-row > div { max-width: 1050px; }
+input[type=text], input[type=password], input[type=email], input[type=url],
+input[type=number], input[type=tel], textarea, select {
+    min-height: 38px;
+    color: #eef6ff;
+    background: #101f34;
+    border: 1px solid #355371;
+    border-radius: 7px;
+}
+input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0 0 0 2px rgba(45,212,191,.15); }
+.submit-row {
+    padding: 12px;
+    background: #0d1b2d;
+    border: 1px solid #29435e;
+    border-radius: 10px;
+}
+.button, input[type=submit], input[type=button], .submit-row input {
+    min-height: 36px;
+    padding: 8px 13px;
+    background: #0b7890;
+    border-radius: 7px;
+}
+.button.default, input[type=submit].default { color: #03201c; background: #2dd4bf; font-weight: 800; }
+#changelist-filter { background: #0d1b2d; border-left-color: #29435e; }
+#changelist-filter h2 { background: #0b5674; }
+#changelist .results { border: 1px solid #29435e; border-radius: 9px; overflow: auto; }
+#changelist table thead th { padding: 11px 9px; background: #13263d; }
+#changelist table tbody tr:hover { background: #17283f; }
+.olMap { border: 1px solid #355371 !important; border-radius: 9px; overflow: hidden; }
+.af-location-panel {
+    padding: 14px;
+    margin: 4px 0 14px;
+    background: #10243a;
+    border: 1px solid #2f5873;
+    border-left: 4px solid #2dd4bf;
+    border-radius: 9px;
+}
+.af-location-panel strong, .af-location-panel small, .af-location-panel output { display: block; }
+.af-location-panel strong { margin-bottom: 9px; color: #eafffb; }
+.af-location-panel small { margin-top: 8px; color: #9fb0c3; }
+.af-location-row { display: flex; align-items: center; gap: 8px; }
+.af-location-row .af-address-search { flex: 1; min-width: 260px; }
+.af-location-feedback { margin-top: 8px; color: #99f6e4; font-size: 12px; }
+.af-location-feedback.error { color: #fda4af; }
+
+@media (max-width: 1100px) {
+    .af-admin-shortcuts { display: none; }
+    #content { padding: 20px 18px; }
+    .af-location-row { align-items: stretch; flex-direction: column; }
+}
