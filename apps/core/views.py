@@ -86,7 +86,6 @@ class DashboardView(TemplateView):
                     google_api_key = ""
             context["google_maps_config"] = {
                 "enabled": bool(google_api_key),
-                "apiKey": google_api_key,
                 "defaultLayer": (
                     map_config.default_layer
                     if map_config

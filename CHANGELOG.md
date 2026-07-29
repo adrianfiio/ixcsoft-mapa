@@ -11,6 +11,15 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.13.1] - 2026-07-29
+
+### Corrigido
+
+- Sessão e blocos do Google Map Tiles agora são solicitados pelo backend.
+- A restrição de IP da chave passa a validar o IP público do servidor, não o
+  computador do operador.
+- A chave da API não é mais enviada ao navegador.
+
 ## [0.13.0] - 2026-07-29
 
 ### Adicionado

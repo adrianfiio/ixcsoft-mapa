@@ -1,14 +1,18 @@
 from decimal import Decimal
+import re
 
+import requests
 from django.contrib.gis.geos import LineString, MultiLineString, Point
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET
 
 from apps.access.models import AccessPoint
+from apps.core.crypto import SecretCipher
+from apps.core.models import MapBaseConfiguration
 from apps.network_map.models import (
     CableModel,
     CableReserve,
@@ -27,6 +31,102 @@ from apps.network_map.services import (
     FiberStructureError,
     generate_cable_fibers,
 )
+
+
+GOOGLE_TILES_BASE_URL = "https://tile.googleapis.com/v1"
+GOOGLE_SESSION_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,2048}$")
+
+
+def _google_tiles_configuration():
+    configuration = MapBaseConfiguration.objects.filter(
+        google_tiles_enabled=True
+    ).first()
+    if not configuration or not configuration.google_api_key_encrypted:
+        return None, ""
+    try:
+        return configuration, SecretCipher().decrypt(
+            configuration.google_api_key_encrypted
+        )
+    except (RuntimeError, ValueError):
+        return configuration, ""
+
+
+@require_GET
+def google_tiles_session(request):
+    configuration, api_key = _google_tiles_configuration()
+    if not configuration or not api_key:
+        return JsonResponse(
+            {"detail": "Google Map Tiles não está configurado."},
+            status=503,
+        )
+    try:
+        response = requests.post(
+            f"{GOOGLE_TILES_BASE_URL}/createSession",
+            params={"key": api_key},
+            json={
+                "mapType": "satellite",
+                "language": "pt-BR",
+                "region": "BR",
+            },
+            timeout=15,
+        )
+    except requests.RequestException:
+        return JsonResponse(
+            {"detail": "Não foi possível conectar ao Google Map Tiles."},
+            status=502,
+        )
+    if not response.ok:
+        try:
+            detail = response.json().get("error", {}).get("message")
+        except ValueError:
+            detail = None
+        return JsonResponse(
+            {"detail": detail or f"Google Map Tiles respondeu HTTP {response.status_code}."},
+            status=502,
+        )
+    data = response.json()
+    return JsonResponse(
+        {
+            "session": data.get("session"),
+            "expiry": data.get("expiry"),
+            "tileWidth": data.get("tileWidth", 256),
+            "tileHeight": data.get("tileHeight", 256),
+        }
+    )
+
+
+@require_GET
+def google_satellite_tile(request, z, x, y):
+    if z < 0 or z > 22 or x < 0 or y < 0 or x >= 2**z or y >= 2**z:
+        return JsonResponse({"detail": "Coordenada de bloco inválida."}, status=400)
+    session = request.GET.get("session", "")
+    if not GOOGLE_SESSION_PATTERN.fullmatch(session):
+        return JsonResponse({"detail": "Sessão do mapa inválida."}, status=400)
+    configuration, api_key = _google_tiles_configuration()
+    if not configuration or not api_key:
+        return JsonResponse(
+            {"detail": "Google Map Tiles não está configurado."},
+            status=503,
+        )
+    try:
+        response = requests.get(
+            f"{GOOGLE_TILES_BASE_URL}/2dtiles/{z}/{x}/{y}",
+            params={"session": session, "key": api_key},
+            timeout=15,
+        )
+    except requests.RequestException:
+        return JsonResponse({"detail": "Falha ao carregar o bloco."}, status=502)
+    if not response.ok:
+        return JsonResponse(
+            {"detail": f"Google Map Tiles respondeu HTTP {response.status_code}."},
+            status=response.status_code if response.status_code < 500 else 502,
+        )
+    tile = HttpResponse(
+        response.content,
+        content_type=response.headers.get("Content-Type", "image/jpeg"),
+    )
+    tile["Cache-Control"] = response.headers.get("Cache-Control", "private, max-age=0")
+    return tile
 
 
 def get_first_value(instance, field_names, default=None):
