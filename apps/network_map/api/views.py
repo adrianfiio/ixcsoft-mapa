@@ -13,6 +13,7 @@ from apps.network_map.models import (
     FiberCable,
     FiberStrand,
     NetworkElement,
+    NetworkProject,
 )
 from apps.network_map.serializers import NetworkElementSerializer
 from apps.network_map.services import (
@@ -319,6 +320,9 @@ def network_elements_geojson(request):
     queryset = NetworkElement.objects.filter(
         enabled=True
     )
+    project_id = request.GET.get("project_id")
+    if project_id:
+        queryset = queryset.filter(project_id=project_id)
 
     for element in queryset:
 
@@ -342,6 +346,7 @@ def network_elements_geojson(request):
                     "codigo": element.code,
                     "tipo": element.element_type,
                     "status": element.status,
+                    "project_id": element.project_id,
                 },
             }
         )
@@ -375,6 +380,9 @@ def fiber_cables_geojson(request):
     ).filter(
         status__isnull=False
     )
+    project_id = request.GET.get("project_id")
+    if project_id:
+        queryset = queryset.filter(project_id=project_id)
 
     for cable in queryset:
 
@@ -397,6 +405,7 @@ def fiber_cables_geojson(request):
                     "fibras": cable.fiber_count,
                     "fibras_usadas": cable.used_fibers,
                     "status": cable.status,
+                    "project_id": cable.project_id,
                     "origem": (
                         cable.origin.name
                         if cable.origin
@@ -428,12 +437,16 @@ from rest_framework.decorators import (
     api_view,
     permission_classes,
 )
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework import status
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def create_network_element(request):
     """
     Cria equipamento da rede.
@@ -470,7 +483,7 @@ def create_network_element(request):
 
 
 @api_view(["GET", "PATCH", "PUT", "DELETE"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def network_element_detail(request, element_id):
     """
     Consulta, atualiza ou exclui um elemento do mapa.
@@ -490,6 +503,7 @@ def network_element_detail(request, element_id):
                     "id": element.id,
                     "name": element.name,
                     "code": element.code,
+                    "project_id": element.project_id,
                     "element_type": element.element_type,
                     "status": element.status,
                     "enabled": element.enabled,
@@ -578,6 +592,7 @@ def network_element_detail(request, element_id):
                 "id": element.id,
                 "name": element.name,
                 "code": element.code,
+                "project_id": element.project_id,
                 "element_type": element.element_type,
                 "status": element.status,
                 "enabled": element.enabled,
@@ -600,7 +615,7 @@ def network_element_detail(request, element_id):
 
 
 @api_view(["PATCH"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def update_network_element_position(request, element_id):
     """
     Atualiza somente a posição geográfica do elemento.
@@ -729,7 +744,7 @@ def cable_models(request):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def create_fiber_cable(request):
     """
     Cria um cabo de fibra a partir de coordenadas desenhadas no mapa.
@@ -744,6 +759,19 @@ def create_fiber_cable(request):
     cable_type = str(data.get("cable_type", "")).strip()
     status_value = str(data.get("status", "no_data")).strip()
     coordinates = data.get("coordinates")
+    try:
+        project = NetworkProject.objects.get(
+            pk=int(data.get("project_id")),
+            enabled=True,
+        )
+    except (TypeError, ValueError, NetworkProject.DoesNotExist):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Selecione um projeto válido antes de criar o cabo.",
+            },
+            status=400,
+        )
 
     if not name:
         return JsonResponse(
@@ -769,21 +797,26 @@ def create_fiber_cable(request):
             status=400,
         )
 
+    cable_model = None
+    cable_model_id = data.get("cable_model_id")
+    if cable_model_id not in (None, ""):
+        try:
+            cable_model = CableModel.objects.get(pk=int(cable_model_id))
+        except (TypeError, ValueError, CableModel.DoesNotExist):
+            return JsonResponse(
+                {"success": False, "error": "Modelo de cabo inválido."},
+                status=400,
+            )
+
     try:
-        cable_model_id = int(data.get("cable_model_id"))
+        fiber_count = int(data.get("fiber_count", 12))
     except (TypeError, ValueError):
+        fiber_count = 12
+    if not 1 <= fiber_count <= 4096:
         return JsonResponse(
-            {
-                "success": False,
-                "error": "O modelo do cabo é obrigatório.",
-            },
+            {"success": False, "error": "Quantidade de fibras inválida."},
             status=400,
         )
-
-    cable_model = get_object_or_404(
-        CableModel,
-        pk=cable_model_id,
-    )
 
     if not isinstance(coordinates, list) or len(coordinates) < 2:
         return JsonResponse(
@@ -841,7 +874,8 @@ def create_fiber_cable(request):
     if origin_id not in (None, ""):
         try:
             origin = NetworkElement.objects.get(
-                pk=int(origin_id)
+                pk=int(origin_id),
+                project=project,
             )
         except (TypeError, ValueError, NetworkElement.DoesNotExist):
             return JsonResponse(
@@ -855,7 +889,8 @@ def create_fiber_cable(request):
     if destination_id not in (None, ""):
         try:
             destination = NetworkElement.objects.get(
-                pk=int(destination_id)
+                pk=int(destination_id),
+                project=project,
             )
         except (TypeError, ValueError, NetworkElement.DoesNotExist):
             return JsonResponse(
@@ -866,7 +901,9 @@ def create_fiber_cable(request):
                 status=400,
             )
 
-    company = cable_model.company
+    company = project.company or (
+        cable_model.company if cable_model else None
+    )
 
     if company is None and origin is not None:
         company = origin.company
@@ -885,6 +922,7 @@ def create_fiber_cable(request):
     )
 
     cable = FiberCable.objects.create(
+        project=project,
         company=company,
         name=name,
         code=code,
@@ -892,7 +930,9 @@ def create_fiber_cable(request):
         cable_type=cable_type,
         cable_model=cable_model,
         geometry=geometry,
-        fiber_count=cable_model.fiber_count,
+        fiber_count=(
+            cable_model.fiber_count if cable_model else fiber_count
+        ),
         used_fibers=0,
         origin=origin,
         destination=destination,
@@ -910,7 +950,7 @@ def create_fiber_cable(request):
     existing_tube_count = cable.tubes.count()
     existing_fiber_count = cable.fibers.count()
 
-    if generate_structure:
+    if generate_structure and cable_model:
         if existing_tube_count or existing_fiber_count:
             structure = {
                 "tube_count": existing_tube_count,
@@ -955,7 +995,7 @@ def create_fiber_cable(request):
 
 
 @api_view(["DELETE"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def delete_fiber_cable(request, cable_id):
     """
     Exclui um cabo óptico.
@@ -1051,7 +1091,7 @@ def delete_fiber_cable(request, cable_id):
 
 
 @api_view(["PUT", "PATCH"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def update_cable_geometry(request, cable_id):
     """
     Atualiza a geometria de um cabo óptico.
@@ -1302,7 +1342,7 @@ def cable_fibers(request, cable_id):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def generate_fibers(request, cable_id):
     """
     Gera automaticamente tubos e fibras do cabo.

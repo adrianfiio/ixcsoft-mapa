@@ -14,11 +14,20 @@ from .models import (
     FiberTube,
     NetworkDependency,
     NetworkElement,
+    NetworkProject,
     NetworkRoute,
     POP,
     Rack,
     RackEquipment,
 )
+
+
+@admin.register(NetworkProject)
+class NetworkProjectAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "status", "company", "enabled", "updated_at")
+    list_filter = ("status", "enabled", "company")
+    search_fields = ("name", "code", "description")
+    readonly_fields = ("created_at", "updated_at")
 
 
 # ==========================

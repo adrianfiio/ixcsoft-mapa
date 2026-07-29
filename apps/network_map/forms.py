@@ -40,6 +40,7 @@ class NetworkElementForm(forms.ModelForm):
     class Meta:
         model = NetworkElement
         fields = [
+            "project",
             "name",
             "code",
             "element_type",
@@ -51,6 +52,7 @@ class NetworkElementForm(forms.ModelForm):
         ]
 
         labels = {
+            "project": "Projeto",
             "name": "Nome",
             "code": "Código",
             "element_type": "Tipo",
@@ -60,6 +62,9 @@ class NetworkElementForm(forms.ModelForm):
         }
 
         widgets = {
+            "project": forms.Select(
+                attrs={"class": "form-control"}
+            ),
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control",

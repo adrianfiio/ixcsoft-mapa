@@ -14,12 +14,26 @@ from apps.network_map.api.views import (
     update_network_element_position,
     update_cable_geometry,
 )
+from apps.network_map.project_api import (
+    import_project_file,
+    project_detail,
+    project_routes_geojson,
+    projects,
+)
 
 
 app_name = "network_map_api"
 
 
 urlpatterns = [
+    path("projects/", projects, name="projects"),
+    path("routes/", project_routes_geojson, name="project-routes"),
+    path("projects/<int:project_id>/", project_detail, name="project-detail"),
+    path(
+        "projects/<int:project_id>/import/",
+        import_project_file,
+        name="project-import",
+    ),
     path(
         "access-points/",
         access_points_geojson,
