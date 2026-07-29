@@ -5,6 +5,9 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import redirect, render
 from redis import Redis
 
 from apps.access.models import AccessPoint
@@ -17,6 +20,11 @@ from apps.core.models import MapBaseConfiguration
 from apps.core.access import accessible_company_ids, has_any_edit_access
 from apps.core.models import CompanyMembership
 from apps.network_map.models import FiberCable, NetworkProject
+from apps.network_map.models import POP
+from apps.olt_integration.models import OLT
+from apps.optical.models import DIO
+from apps.core.access import editable_company_ids
+from apps.core.forms import DIOPlatformForm, OLTPlatformForm, POPPlatformForm
 from apps.olt_integration.models import OLT, ONU
 
 
@@ -115,6 +123,13 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
             project_queryset = project_queryset.filter(company_id__in=company_ids)
             element_queryset = element_queryset.filter(company_id__in=company_ids)
             cable_queryset = cable_queryset.filter(company_id__in=company_ids)
+        pop_queryset = POP.objects.select_related("company").order_by("name")
+        olt_queryset = OLT.objects.select_related("cpd", "cpd__company").order_by("name")
+        dio_queryset = DIO.objects.select_related("pop", "company").order_by("name")
+        if company_ids is not None:
+            pop_queryset = pop_queryset.filter(company_id__in=company_ids)
+            olt_queryset = olt_queryset.filter(cpd__company_id__in=company_ids)
+            dio_queryset = dio_queryset.filter(company_id__in=company_ids)
         context.update(
             {
                 "memberships": CompanyMembership.objects.filter(
@@ -123,10 +138,55 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
                 "projects": project_queryset[:100],
                 "elements": element_queryset[:100],
                 "cables": cable_queryset[:100],
+                "cpds": pop_queryset[:100],
+                "olts": olt_queryset[:100],
+                "dios": dio_queryset[:100],
                 "is_platform_admin": self.request.user.is_superuser,
+                "can_manage_assets": has_any_edit_access(self.request.user),
             }
         )
         return context
+
+
+@login_required
+def create_company_asset(request, asset_type):
+    forms = {
+        "cpd": (POPPlatformForm, "CPD / POP"),
+        "olt": (OLTPlatformForm, "OLT"),
+        "dio": (DIOPlatformForm, "DIO"),
+    }
+    if asset_type not in forms or not has_any_edit_access(request.user):
+        return redirect("account-panel")
+
+    company_ids = editable_company_ids(request.user)
+    form_class, label = forms[asset_type]
+    form = form_class(
+        request.POST or None,
+        company_ids=company_ids,
+    )
+    if request.method == "POST" and form.is_valid():
+        instance = form.save(commit=False)
+        if asset_type == "olt":
+            if not instance.cpd or (
+                company_ids is not None and instance.cpd.company_id not in company_ids
+            ):
+                form.add_error("cpd", "Selecione um CPD permitido para sua empresa.")
+            else:
+                instance.save()
+        elif asset_type == "dio":
+            instance.company = instance.pop.company
+            instance.save()
+        else:
+            instance.save()
+        if not form.errors:
+            messages.success(request, f"{label} cadastrado com sucesso.")
+            return redirect("account-panel")
+
+    return render(
+        request,
+        "company_asset_form.html",
+        {"form": form, "asset_label": label, "asset_type": asset_type},
+    )
 
 
 def liveness_check(request):

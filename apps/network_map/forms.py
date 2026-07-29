@@ -102,8 +102,13 @@ class NetworkElementForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, company_ids=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if company_ids is not None:
+            self.fields["project"].queryset = self.fields["project"].queryset.filter(
+                company_id__in=company_ids
+            )
+            self.fields["project"].required = True
 
         if self.instance and self.instance.pk and self.instance.point:
             self.fields["latitude"].initial = self.instance.point.y

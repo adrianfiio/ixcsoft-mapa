@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Novo {{ asset_label }} | AFService Map{% endblock %}
+{% block topbar_title %}Infraestrutura da empresa{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">CADASTRO DA EMPRESA</p>
+        <h1>Novo {{ asset_label }}</h1>
+        <p>O item ficará disponível somente na empresa vinculada.</p>
+    </div>
+    <a class="secondary-action" href="{% url 'account-panel' %}">← Voltar ao painel</a>
+</section>
+<form class="platform-form" method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="platform-form-grid">
+    {% for field in form %}
+        <label class="{% if field.field.widget.input_type == 'checkbox' %}check-row{% endif %}">
+            <strong>{{ field.label }}</strong>
+            {{ field }}
+            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+        </label>
+    {% endfor %}
+    </div>
+    <div class="platform-form-actions">
+        <a href="{% url 'account-panel' %}">Cancelar</a>
+        <button type="submit">Salvar {{ asset_label }}</button>
+    </div>
+</form>
+{% endblock %}
