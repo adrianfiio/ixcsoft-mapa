@@ -37,7 +37,7 @@ def _is_splice_box(description: str, record: dict[str, Any]) -> bool:
     )
     return bool(
         re.search(
-            r"\b(?:CEO|C\s*E\s*O|CF|CFO)\b|CAIXA\s+(?:DE\s+)?EMENDA|\bEMENDA\b",
+            r"\b(?:CEO|C\s*E\s*O|CDO|C\s*D\s*O|CF|CFO)\b|CAIXA\s+(?:DE\s+)?EMENDA|\bEMENDA\b",
             source,
         )
     )
@@ -81,6 +81,7 @@ class IXCMapRepository:
         for key, value in (
             ("POSTE", NetworkElement.ElementType.POLE),
             ("CEO", NetworkElement.ElementType.SPLICE_BOX),
+            ("CDO", NetworkElement.ElementType.SPLICE_BOX),
             ("CAIXA DE EMENDA", NetworkElement.ElementType.SPLICE_BOX),
             ("EMENDA", NetworkElement.ElementType.SPLICE_BOX),
             ("OLT", NetworkElement.ElementType.OLT),
@@ -148,17 +149,29 @@ class IXCMapRepository:
         description = _description(record)
         if _is_splice_box(description, record):
             imported_cto = CTO.objects.filter(company=company, ixc_box_id=external_id).first()
-            if imported_cto and imported_cto.metadata.get("ixc"):
-                imported_cto.delete()
-            return NetworkElement.objects.update_or_create(
+            if imported_cto:
+                imported_cto.project = project
+                imported_cto.name = description or f"Caixa de emenda IXC {external_id}"
+                imported_cto.description = "Caixa de emenda importada automaticamente do IXCSoft."
+                imported_cto.element_type = NetworkElement.ElementType.SPLICE_BOX
+                imported_cto.point = _point(record)
+                imported_cto.status = OperationalStatus.NORMAL if active else OperationalStatus.OFFLINE
+                imported_cto.enabled = active
+                imported_cto.capacity = capacity
+                imported_cto.metadata = {"ixc": record, "ixc_box_id": external_id}
+                imported_cto.save()
+                return imported_cto, False
+            return CTO.objects.update_or_create(
                 company=company,
-                code=f"IXC-BOX-{external_id}",
+                ixc_box_id=external_id,
                 defaults={
                     "project": project,
                     "name": description or f"Caixa de emenda IXC {external_id}",
+                    "code": f"IXC-CTO-{external_id}",
                     "description": "Caixa de emenda importada automaticamente do IXCSoft.",
                     "element_type": NetworkElement.ElementType.SPLICE_BOX,
                     "point": _point(record),
+                    "capacity": capacity,
                     "status": OperationalStatus.NORMAL if active else OperationalStatus.OFFLINE,
                     "enabled": active,
                     "metadata": {"ixc": record, "ixc_box_id": external_id},

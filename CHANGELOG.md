@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.23.0] - 2026-07-29
+
+### Corrigido
+- CDOs importados do IXCSoft agora são classificados como CEO/caixa de emenda sem apagar seus vínculos.
+- O mapa operacional inicia realmente recolhido no modo de visualização.
+- O popup do assinante cruza PPPoE e vínculo óptico para exibir CTO, porta, ONU e serial.
+
+### Adicionado
+- Elementos de Rack e Torre no editor do mapa.
+- Cadastro da estrutura interna do Rack (OLT/DIO) e da Torre (switch/AP/PTP).
+
 ## [0.22.0] - 2026-07-29
 
 ### Alterado

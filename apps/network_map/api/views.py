@@ -14,6 +14,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 from apps.access.models import AccessPoint
+from apps.ixc_integration.fiber_models import IXCFiberAssignment
 from apps.core.crypto import SecretCipher
 from apps.core.models import MapBaseConfiguration
 from apps.core.access import can_edit_company, can_view_company, scope_company_queryset
@@ -314,7 +315,7 @@ def access_points_geojson(request):
     # Somente acessos ativos vindos do IXC.
     # O filtro também impede que registros inativos antigos apareçam
     # antes da próxima sincronização.
-    queryset = (
+    queryset = list(
         scope_company_queryset(AccessPoint.objects, request.user).filter(
             raw_data__ativo__in=[
                 "S",
@@ -328,10 +329,20 @@ def access_points_geojson(request):
                 "true",
             ]
         )
-        .iterator(chunk_size=1000)
     )
+    assignments = {}
+    assignment_queryset = IXCFiberAssignment.objects.filter(
+        company_id__in={item.company_id for item in queryset},
+        login__username__in={item.username for item in queryset if item.username},
+    ).select_related("login", "cto", "onu")
+    for assignment in assignment_queryset:
+        assignments.setdefault(
+            (assignment.company_id, assignment.login.username),
+            assignment,
+        )
 
     for access_point in queryset:
+        assignment = assignments.get((access_point.company_id, access_point.username))
         latitude = get_first_value(
             access_point,
             [
@@ -419,6 +430,8 @@ def access_points_geojson(request):
             ],
             default="",
         )
+        if assignment and assignment.cto:
+            cto = assignment.cto.name
 
         onu = get_first_value(
             access_point,
@@ -431,6 +444,11 @@ def access_points_geojson(request):
             ],
             default="",
         )
+        if assignment:
+            onu = (
+                assignment.onu.serial_number if assignment.onu
+                else assignment.mac_address or assignment.onu_number or onu
+            )
 
         ftth_port = get_first_value(
             access_point,
@@ -442,6 +460,8 @@ def access_points_geojson(request):
             ],
             default="",
         )
+        if assignment and assignment.cto_port:
+            ftth_port = assignment.cto_port
 
         concentrator = get_first_value(
             access_point,
@@ -469,6 +489,18 @@ def access_points_geojson(request):
             "status": normalize_status(raw_status),
             "cto": normalize_value(cto),
             "onu": normalize_value(onu),
+            "onu_serial": normalize_value(
+                assignment.onu.serial_number
+                if assignment and assignment.onu
+                else (
+                    assignment.raw_data.get("serial")
+                    or assignment.raw_data.get("serial_onu")
+                    or assignment.raw_data.get("onu_serial")
+                    or assignment.raw_data.get("sn")
+                    or ""
+                ) if assignment else ""
+            ),
+            "onu_number": normalize_value(assignment.onu_number if assignment else ""),
             "porta_ftth": normalize_value(ftth_port),
             "concentrador": normalize_value(concentrator),
             "interface": normalize_value(interface),
@@ -686,6 +718,7 @@ def element_detail_payload(element):
         "element_type": element.element_type,
         "status": element.status,
         "enabled": element.enabled,
+        "internal_equipment": element.metadata.get("internal_equipment", []),
         "latitude": element.point.y if element.point else None,
         "longitude": element.point.x if element.point else None,
         "cto": None,

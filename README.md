@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.22.0 — editor seguro, PPPoE leve e ONUs vinculadas**
+**v0.23.0 — CDO como CEO, mapa em visualização e infraestrutura ampliada**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
