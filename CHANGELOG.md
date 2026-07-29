@@ -11,6 +11,12 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.4] - 2026-07-29
+
+### Adicionado
+
+- Navegação de retorno do mapa operacional para o dashboard
+
 ## [0.8.3] - 2026-07-29
 
 ### Corrigido
