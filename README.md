@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.5 — Identidade AFService Map**
+**v0.8.6 — Login e identidade de rede**
 
-Esta versão aplica o nome e o logotipo oficiais da AFService e corrige os
-arquivos estáticos do Django Admin atrás do Nginx.
+Esta versão simplifica os cabeçalhos, moderniza o login administrativo e amplia
+a identidade do produto para redes ópticas e wireless.
 
 ## Funcionalidades implementadas
 

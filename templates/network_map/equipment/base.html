@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -65,21 +66,13 @@
 
         .brand {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 20px;
-            font-weight: 800;
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 2px;
         }
 
-        .brand-symbol {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 39px;
-            height: 39px;
-            background: linear-gradient(135deg, #dc2626, #7f1d1d);
-            border-radius: 10px;
-        }
+        .brand img { width: 145px; height: 45px; object-fit: contain; object-position: left center; }
+        .brand small { color: var(--muted); font-size: 10px; font-weight: 500; }
 
         .topbar-links {
             display: flex;
@@ -347,8 +340,8 @@
 <body>
     <header class="topbar">
         <a href="{% url 'dashboard' %}" class="brand">
-            <span class="brand-symbol">AF</span>
-            <span>AFService Map</span>
+            <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
+            <small>Mapa e operação de rede</small>
         </a>
 
         <nav class="topbar-links">

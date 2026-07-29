@@ -29,16 +29,17 @@ a { color: inherit; text-decoration: none; }
     display: flex; flex-direction: column; width: 250px; padding: 24px 16px;
     background: rgba(8, 22, 37, .98); border-right: 1px solid var(--border);
 }
-.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 28px; }
-.brand-logo { width: 52px; height: 34px; object-fit: contain; object-position: left center; }
+.brand { display: flex; align-items: flex-start; flex-direction: column; gap: 4px; padding: 0 8px 28px; }
+.brand-logo { width: 150px; height: 50px; object-fit: contain; object-position: left center; }
 .brand-mark {
     display: grid; place-items: center; width: 42px; height: 42px;
     color: #06131c; background: linear-gradient(135deg, #52e0ce, #22a99b);
     border-radius: 13px; font-size: 14px; font-weight: 900;
 }
-.brand span:last-child, .sidebar-footer span:last-child { display: flex; flex-direction: column; }
+.sidebar-footer span:last-child { display: flex; flex-direction: column; }
 .brand strong { font-size: 15px; }
-.brand small, .sidebar-footer small { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.brand small { color: var(--muted); font-size: 10px; letter-spacing: .03em; }
+.sidebar-footer small { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .main-nav { display: flex; flex: 1; flex-direction: column; gap: 5px; }
 .main-nav a {
     display: flex; align-items: center; gap: 12px; padding: 12px 13px;
