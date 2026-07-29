@@ -123,7 +123,7 @@
         if (options.method && options.method !== "GET") headers["X-CSRFToken"] = csrfToken();
         const response = await fetch(url, { credentials: "same-origin", ...options, headers });
         const data = await response.json().catch(() => ({ error: "Resposta inválida do servidor." }));
-        if (!response.ok) throw new Error(data.error || Object.values(data.errors || {}).flat().join(" ") || `Erro HTTP ${response.status}`);
+        if (!response.ok) throw new Error(data.detail || data.error || Object.values(data.errors || {}).flat().join(" ") || `Erro HTTP ${response.status}`);
         return data;
     }
     function notify(text, isError = false) {
@@ -435,8 +435,20 @@
     }
     function updateContainerEquipmentFields() {
         const type = containerEquipmentForm.elements.equipment_type.value;
+        const mode = containerEquipmentForm.elements.provisioning_mode.value;
         document.getElementById("container-olt-fields").hidden = type !== "olt";
         document.getElementById("container-dio-fields").hidden = type !== "dio";
+        document.getElementById("container-management-fields").hidden = type === "dio" || (type === "olt" && mode === "manual");
+        document.getElementById("container-identification-fields").hidden = type === "dio" || (type === "olt" && mode === "manual");
+        document.getElementById("container-serial-field").hidden = type === "dio" || (type === "olt" && mode === "manual");
+        document.getElementById("container-provisioning-field").hidden = type === "dio";
+        document.getElementById("container-snmp-fields").hidden = mode !== "snmp" || type === "dio";
+        const name = containerEquipmentForm.elements.name;
+        name.placeholder = type === "olt" ? "Ex.: OLT principal"
+            : type === "dio" ? "Ex.: DIO 36 portas"
+            : type === "switch" ? "Ex.: Switch principal da torre"
+            : type === "access_point" ? "Ex.: AP setor norte"
+            : "Ex.: Enlace PTP prefeitura";
     }
     async function manageContainer(id) {
         const data = await api(`/api/map/elements/${id}/equipment/`);
@@ -501,7 +513,13 @@
         document.querySelectorAll("[data-add-equipment-card]").forEach((button) => {
             button.onclick = () => {
                 containerCardForm.reset();
-                containerCardForm.elements.equipment_id.value = button.dataset.addEquipmentCard;
+                const equipmentId = button.dataset.addEquipmentCard;
+                const equipment = data.equipment.find((item) => String(item.id) === String(equipmentId));
+                const usedSlots = new Set((equipment?.cards || []).map((card) => Number(card.slot)));
+                let nextSlot = 1;
+                while (usedSlots.has(nextSlot)) nextSlot += 1;
+                containerCardForm.elements.equipment_id.value = equipmentId;
+                containerCardForm.elements.slot.value = nextSlot;
                 containerCardForm.hidden = false;
                 containerPortForm.hidden = true;
                 containerCardForm.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1396,6 +1414,7 @@
         } catch (error) { notify(error.message, true); }
     };
     containerEquipmentForm.elements.equipment_type.onchange = updateContainerEquipmentFields;
+    containerEquipmentForm.elements.provisioning_mode.onchange = updateContainerEquipmentFields;
     containerEquipmentForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));

@@ -141,7 +141,11 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
             membership = CompanyMembership.objects.filter(
                 user=request.user, active=True
             ).select_related("company").first()
-            if membership and not membership.company.onboarding_completed:
+            if (
+                membership
+                and membership.role == CompanyMembership.Role.EDIT
+                and not membership.company.onboarding_completed
+            ):
                 return redirect("company-onboarding")
         if (
             not request.user.is_superuser
@@ -204,9 +208,14 @@ def company_onboarding(request):
     membership = CompanyMembership.objects.filter(
         user=request.user,
         active=True,
-        role=CompanyMembership.Role.EDIT,
     ).select_related("company").first()
     if request.user.is_superuser or membership is None:
+        return redirect("account-panel")
+    if membership.role != CompanyMembership.Role.EDIT:
+        messages.info(
+            request,
+            "Seu acesso é somente para visualização. Solicite permissão de edição para configurar a empresa.",
+        )
         return redirect("account-panel")
     company = membership.company
     form = CompanyOnboardingForm(request.POST or None, instance=company)
@@ -280,9 +289,22 @@ def erp_onboarding(request):
     if not has_any_edit_access(request.user):
         return redirect("account-panel")
     company_ids = editable_company_ids(request.user)
-    existing = IXCConfiguration.objects.filter(
-        company_id__in=company_ids or []
-    ).first() if company_ids is not None else None
+    if not request.user.is_superuser:
+        has_erp_access = CompanyMembership.objects.filter(
+            user=request.user,
+            active=True,
+            role=CompanyMembership.Role.EDIT,
+            data_source=CompanyMembership.DataSource.ERP,
+            company__integration_mode=Company.IntegrationMode.ERP,
+        ).exists()
+        if not has_erp_access:
+            messages.info(request, "Esta empresa utiliza o cadastro manual, sem integração ERP.")
+            return redirect("account-panel")
+    existing = (
+        IXCConfiguration.objects.filter(company_id__in=company_ids).first()
+        if company_ids is not None
+        else IXCConfiguration.objects.first()
+    )
     form = ERPOnboardingForm(
         request.POST or None,
         instance=existing,

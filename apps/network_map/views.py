@@ -10,6 +10,7 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 
 from apps.core.access import can_edit_company, editable_company_ids, scope_company_queryset
 
@@ -26,6 +27,11 @@ class CompanyEquipmentMixin(LoginRequiredMixin):
 
 
 class CompanyEquipmentFormMixin(CompanyEquipmentMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if editable_company_ids(request.user) == []:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["company_ids"] = editable_company_ids(self.request.user)
@@ -37,6 +43,25 @@ class EquipmentListView(CompanyEquipmentMixin, ListView):
     template_name = "network_map/equipment/list.html"
     context_object_name = "equipments"
     paginate_by = 20
+
+    def post(self, request, *args, **kwargs):
+        selected_ids = request.POST.getlist("selected")
+        if request.POST.get("bulk_action") != "delete" or not selected_ids:
+            messages.warning(request, "Selecione ao menos um equipamento.")
+            return redirect(request.get_full_path())
+        queryset = scope_company_queryset(
+            NetworkElement.objects.filter(pk__in=selected_ids),
+            request.user,
+        )
+        allowed_ids = [
+            item.pk
+            for item in queryset.only("pk", "company_id")
+            if can_edit_company(request.user, item.company_id)
+        ]
+        selected_count = len(allowed_ids)
+        NetworkElement.objects.filter(pk__in=allowed_ids).delete()
+        messages.success(request, f"{selected_count} equipamento(s) excluído(s).")
+        return redirect(request.get_full_path())
 
     def get_queryset(self):
         queryset = scope_company_queryset(
@@ -89,6 +114,7 @@ class EquipmentListView(CompanyEquipmentMixin, ListView):
             "status": self.request.GET.get("status", ""),
             "enabled": self.request.GET.get("enabled", ""),
         }
+        context["can_edit_equipment"] = editable_company_ids(self.request.user) != []
 
         return context
 
@@ -141,6 +167,12 @@ class EquipmentDeleteView(CompanyEquipmentMixin, DeleteView):
     template_name = "network_map/equipment/delete.html"
     context_object_name = "equipment"
     success_url = reverse_lazy("equipment-list")
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not can_edit_company(request.user, self.object.company_id):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         if not can_edit_company(self.request.user, self.object.company_id):

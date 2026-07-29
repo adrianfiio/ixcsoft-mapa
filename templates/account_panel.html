@@ -52,14 +52,14 @@
             {% endfor %}
         </div>
     </details>
-    <details id="integracao" data-account-section>
+    {% if show_erp_navigation %}<details id="integracao" data-account-section>
         <summary><strong>Integração ERP</strong><small>IXCSoft e opções de sincronização</small></summary>
         <div class="account-items">
             <a data-searchable href="{% url 'erp-onboarding' %}">
                 <span><strong>Configurar IXCSoft</strong><small>PPPoE, contratos ativos, projetos, elementos e CTOs</small></span><b>Configurar →</b>
             </a>
         </div>
-    </details>
+    </details>{% endif %}
     <details id="alertas" data-account-section>
         <summary><strong>Alertas</strong><small>Monitoramento da empresa</small></summary>
         <div class="account-items"><p>A central operacional de alertas será exibida aqui sem acesso ao painel técnico.</p></div>

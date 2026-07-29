@@ -87,7 +87,7 @@ class CompanyMembership(TimeStampedModel):
     role = models.CharField(
         max_length=10,
         choices=Role.choices,
-        default=Role.VIEW,
+        default=Role.EDIT,
         verbose_name="Nível de acesso",
     )
     active = models.BooleanField(default=True, verbose_name="Acesso ativo")
