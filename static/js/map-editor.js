@@ -15,6 +15,7 @@
     const state = {
         projectId: null, projects: [], elements: [], tool: null,
         cableCoordinates: [], drawingLine: null,
+        cableOriginId: null, cableDestinationId: null, cableModels: new Map(),
         editingElementId: null, editingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lightAnimationGeneration: 0,
@@ -244,8 +245,20 @@
                     ...link.ports.map((port) => port.output_fiber_id),
                 ]),
             ].filter(Boolean));
-            const cableColumns = optical.cables.map((cable, index) => {
-                const position = layout[`cable-${cable.id}`] || { x: index % 2 ? 850 : 20, y: 30 + Math.floor(index / 2) * 330 };
+            const incomingCables = optical.cables.filter((cable) => String(cable.destination_id) === String(element.id));
+            const outgoingCables = optical.cables.filter((cable) => String(cable.origin_id) === String(element.id));
+            const otherCables = optical.cables.filter((cable) => !incomingCables.includes(cable) && !outgoingCables.includes(cable));
+            const orderedCables = [...incomingCables, ...outgoingCables, ...otherCables];
+            const cableColumns = orderedCables.map((cable) => {
+                const incomingIndex = incomingCables.indexOf(cable);
+                const outgoingIndex = outgoingCables.indexOf(cable);
+                const otherIndex = otherCables.indexOf(cable);
+                const defaultPosition = incomingIndex >= 0
+                    ? { x: 20, y: 30 + incomingIndex * 330 }
+                    : outgoingIndex >= 0
+                        ? { x: 900, y: 30 + outgoingIndex * 330 }
+                        : { x: 20 + (otherIndex % 2) * 880, y: 30 + Math.floor(otherIndex / 2) * 330 };
+                const position = layout[`cable-${cable.id}`] || defaultPosition;
                 return `<section class="fiber-cable-node graph-node" data-node-key="cable-${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span class="drag-grip">⋮⋮</span></header>
                 <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "disabled" : 'draggable="true"'} data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`;
             }).join("");
@@ -646,12 +659,32 @@
         state.lightSourceId = lightSelect.value || null;
         populateConnectionSelects();
         const bounds = [];
+        const showLabels = document.getElementById("layer-labels").checked;
         elements.features.forEach((feature) => {
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
             const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: canEdit });
             const actions = canEdit ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
+            if (showLabels) marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
+            marker.on("click", (event) => {
+                if (state.tool !== "cable") return;
+                if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+                map.closePopup();
+                const exactPoint = L.latLng(latitude, longitude);
+                if (!state.cableOriginId) {
+                    state.cableOriginId = p.id;
+                    state.cableCoordinates = [[longitude, latitude]];
+                    state.drawingLine.setLatLngs([exactPoint]);
+                    notify(`Origem: ${p.nome}. Desenhe o trajeto e clique no equipamento de destino.`);
+                    return;
+                }
+                if (String(state.cableOriginId) === String(p.id)) return notify("Escolha outro equipamento como destino.", true);
+                state.cableDestinationId = p.id;
+                state.cableCoordinates.push([longitude, latitude]);
+                state.drawingLine.addLatLng(exactPoint);
+                openNewCableDialog();
+            });
             marker.on("popupopen", () => {
                 popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
                 popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
@@ -670,17 +703,22 @@
         });
         const illuminatedCables = new Set();
         if (state.lightSourceId && document.getElementById("layer-light-flow").checked) {
-            const queue = [Number(state.lightSourceId)];
-            const visited = new Set(queue);
+            const cableById = new Map(cables.features.map((feature) => [feature.properties.id, feature]));
+            const queue = cables.features
+                .filter((feature) => feature.properties.origin_id === Number(state.lightSourceId))
+                .map((feature) => feature.properties.id);
             while (queue.length) {
-                const source = queue.shift();
-                cables.features.forEach((feature) => {
-                    const p = feature.properties;
-                    if (p.origin_id !== source || illuminatedCables.has(p.id)) return;
-                    illuminatedCables.add(p.id);
-                    if (p.destination_id && !visited.has(p.destination_id)) {
-                        visited.add(p.destination_id); queue.push(p.destination_id);
-                    }
+                const cableId = queue.shift();
+                if (illuminatedCables.has(cableId)) continue;
+                illuminatedCables.add(cableId);
+                const cable = cableById.get(cableId);
+                (cable?.properties.optical_next_cable_ids || []).forEach((nextId) => {
+                    const next = cableById.get(nextId);
+                    if (
+                        next
+                        && next.properties.origin_id === cable.properties.destination_id
+                        && !illuminatedCables.has(nextId)
+                    ) queue.push(nextId);
                 });
             }
         }
@@ -694,6 +732,7 @@
             } });
             const actions = canEdit ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
+            if (showLabels) line.bindTooltip(escapeHtml(p.nome), { permanent: true, sticky: true, className: "cable-name-label" });
             line.on("popupopen", () => {
                 popupAction(`[data-edit-cable="${p.id}"]`, () => editCable(p.id).catch((error) => notify(error.message, true)));
                 popupAction(`[data-delete-cable="${p.id}"]`, () => deleteCable(p.id).catch((error) => notify(error.message, true)));
@@ -765,14 +804,18 @@
         map.getContainer().style.cursor = "crosshair";
         if (tool === "cable") {
             state.cableCoordinates = [];
+            state.cableOriginId = null;
+            state.cableDestinationId = null;
             state.drawingLine = L.polyline([], { color: "#2dd4bf", dashArray: "8 6", weight: 4 }).addTo(map);
             drawingBar.hidden = false;
-            notify("Clique no mapa para adicionar os pontos do cabo.");
+            notify("Clique no equipamento de origem, desenhe o trajeto e clique no equipamento de destino.");
         } else notify("Clique no mapa para posicionar o elemento.");
     }
     function clearTool() {
         state.tool = null;
         state.cableCoordinates = [];
+        state.cableOriginId = null;
+        state.cableDestinationId = null;
         if (state.drawingLine) map.removeLayer(state.drawingLine);
         state.geometryHandles.forEach((handle) => map.removeLayer(handle));
         state.geometryHandles = [];
@@ -796,6 +839,7 @@
         }
         if (state.tool === "geometry") return;
         if (state.tool === "cable") {
+            if (!state.cableOriginId) return notify("Primeiro clique no equipamento de origem.", true);
             state.cableCoordinates.push([event.latlng.lng, event.latlng.lat]);
             state.drawingLine.addLatLng(event.latlng);
             return;
@@ -850,6 +894,31 @@
     elementForm.elements.splitter_input_cable_id.onchange = (event) => {
         loadSplitterFibers(event.target.value).catch((error) => notify(error.message, true));
     };
+    function updateCableDefaults() {
+        const model = state.cableModels.get(String(cableForm.elements.cable_model_id.value));
+        if (model) cableForm.elements.fiber_count.value = model.fiber_count;
+        cableForm.elements.fiber_count.readOnly = Boolean(model);
+        if (!cableForm.elements.name.value && state.cableOriginId && state.cableDestinationId) {
+            const origin = state.elements.find((feature) => String(feature.properties.id) === String(state.cableOriginId));
+            const destination = state.elements.find((feature) => String(feature.properties.id) === String(state.cableDestinationId));
+            const fiberCount = model?.fiber_count || cableForm.elements.fiber_count.value;
+            cableForm.elements.name.value = `CABO ${origin?.properties.nome || "ORIGEM"} → ${destination?.properties.nome || "DESTINO"} · ${fiberCount}F`;
+        }
+    }
+    function openNewCableDialog() {
+        if (state.cableCoordinates.length < 2) return notify("O cabo precisa de pelo menos dois pontos.", true);
+        state.editingCableId = null;
+        cableForm.reset();
+        populateConnectionSelects();
+        cableForm.elements.origin_id.value = String(state.cableOriginId || "");
+        cableForm.elements.destination_id.value = String(state.cableDestinationId || "");
+        cableForm.elements.cable_model_id.disabled = false;
+        cableForm.elements.fiber_count.readOnly = false;
+        document.getElementById("edit-geometry-button").hidden = true;
+        document.getElementById("cable-dialog-title").textContent = "Novo cabo";
+        updateCableDefaults();
+        cableDialog.showModal();
+    }
     document.getElementById("finish-drawing").onclick = () => {
         if (state.tool === "geometry") {
             const cableId = state.geometryCableId;
@@ -863,11 +932,8 @@
                 .catch((error) => notify(error.message, true));
             return;
         }
-        if (state.cableCoordinates.length < 2) return notify("O cabo precisa de pelo menos dois pontos.", true);
-        state.editingCableId = null; cableForm.reset(); populateConnectionSelects(); cableForm.elements.cable_model_id.disabled = false;
-        document.getElementById("edit-geometry-button").hidden = true;
-        document.getElementById("cable-dialog-title").textContent = "Novo cabo";
-        cableDialog.showModal();
+        if (!state.cableDestinationId) return notify("Finalize clicando no equipamento de destino.", true);
+        openNewCableDialog();
     };
     document.getElementById("edit-geometry-button").onclick = () => startGeometryEdit().catch((error) => notify(error.message, true));
     document.getElementById("cancel-drawing").onclick = () => { clearTool(); notify("Desenho cancelado."); };
@@ -904,9 +970,22 @@
         loadStructure().catch((error) => notify(error.message, true));
     };
     document.getElementById("layer-light-flow").onchange = () => loadStructure().catch((error) => notify(error.message, true));
+    document.getElementById("layer-labels").onchange = () => loadStructure().catch((error) => notify(error.message, true));
+    cableForm.elements.cable_model_id.onchange = () => {
+        if (!state.editingCableId) cableForm.elements.name.value = "";
+        updateCableDefaults();
+    };
     Promise.all([
         loadProjects(), loadClients(),
-        api("/api/map/cable-models/").then((data) => data.models.forEach((model) => cableForm.elements.cable_model_id.add(new Option(`${model.name} · ${model.fiber_count} fibras`, model.id)))),
+        api("/api/map/cable-models/").then((data) => {
+            const availableCounts = new Set();
+            data.models.forEach((model) => {
+                if (availableCounts.has(model.fiber_count)) return;
+                availableCounts.add(model.fiber_count);
+                state.cableModels.set(String(model.id), model);
+                cableForm.elements.cable_model_id.add(new Option(`${model.fiber_count} fibras`, model.id));
+            });
+        }),
     ]).then(() => { updateTools(); notify(canEdit ? "Selecione ou crie um projeto." : "Visualização ativa. Entre como administrador para editar."); })
       .catch((error) => notify(error.message, true));
 })();

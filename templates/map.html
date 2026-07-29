@@ -55,6 +55,10 @@
                         <input id="layer-light-flow" type="checkbox" checked>
                         <span class="layer-symbol light-flow"></span> Fluxo óptico da OLT
                     </label>
+                    <label class="layer-option">
+                        <input id="layer-labels" type="checkbox" checked>
+                        <span class="layer-symbol labels"></span> Nomes dos cabos e equipamentos
+                    </label>
                     <select id="light-source-select" class="editor-control"><option value="">Selecione a OLT de origem</option></select>
                 </section>
 
@@ -181,13 +185,13 @@
                     <option value="drop">Drop</option>
                 </select>
             </label>
+            <label>Modelo / quantidade de fibras<select name="cable_model_id"><option value="">Escolha a quantidade/modelo</option></select></label>
             <label>Quantidade de fibras<input name="fiber_count" type="number" min="1" max="4096" value="12"></label>
             <div class="dialog-grid">
                 <label>Origem<select name="origin_id"><option value="">Sem conexão</option></select></label>
                 <label>Destino<select name="destination_id"><option value="">Sem conexão</option></select></label>
             </div>
             <label>Descrição<textarea name="description" rows="2" placeholder="Rota, reserva técnica e observações"></textarea></label>
-            <label>Modelo do cabo (opcional)<select name="cable_model_id"><option value="">Sem modelo</option></select></label>
             <footer class="cable-footer"><button id="edit-geometry-button" class="secondary-button" type="button" hidden>Mover traçado no mapa</button><button class="primary-button" type="submit">Salvar cabo</button></footer>
         </form>
     </dialog>
