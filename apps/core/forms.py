@@ -131,6 +131,21 @@ class ERPOnboardingForm(forms.ModelForm):
             "sync_projects", "sync_ctos", "sync_map_elements",
             "sync_interval_minutes", "enabled",
         )
+        labels = {
+            "company": "Empresa",
+            "provider": "ERP",
+            "name": "Nome da integração",
+            "base_url": "Endereço da API",
+            "verify_ssl": "Verificar certificado SSL",
+            "sync_active_contracts_only": "Somente contratos ativos",
+            "sync_customers": "Importar clientes",
+            "sync_pppoe": "Importar logins PPPoE",
+            "sync_projects": "Importar projetos",
+            "sync_ctos": "Importar CTOs e caixas",
+            "sync_map_elements": "Importar elementos do mapa",
+            "sync_interval_minutes": "Intervalo automático em minutos",
+            "enabled": "Integração ativa",
+        }
 
     def __init__(self, *args, company_ids=None, **kwargs):
         super().__init__(*args, **kwargs)

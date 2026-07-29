@@ -203,3 +203,4 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .onboarding-form{margin:0}
 .onboarding-choice-note{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;padding:18px;border:1px solid #21415f;border-radius:12px;background:#0d2135;color:#9fc4e6}
 .alert-list{border:1px solid #21415f;border-radius:14px;background:#0d2135}
+.sync-report{margin-top:24px;padding:22px;border:1px solid #21415f;border-radius:14px;background:#0a192a}
