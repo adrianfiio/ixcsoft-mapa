@@ -1,0 +1,267 @@
+{% extends "network_map/equipment/base.html" %}
+
+{% block title %}Equipamentos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filters {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #334155;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    th {
+        color: #94a3b8;
+        font-size: 12px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+    }
+
+    tbody tr:hover {
+        background: rgba(15, 23, 42, 0.45);
+    }
+
+    .equipment-name {
+        font-weight: 700;
+    }
+
+    .equipment-code {
+        color: #94a3b8;
+        font-family: monospace;
+    }
+
+    .actions {
+        display: flex;
+        gap: 7px;
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        padding: 45px 20px;
+        color: #94a3b8;
+        text-align: center;
+    }
+
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 1000px) {
+        .filters {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .filters {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Equipamentos da rede</h1>
+
+        <p class="page-description">
+            Gerencie OLTs, CTOs, DIOs e demais elementos da infraestrutura.
+        </p>
+    </div>
+
+    <a class="button" href="{% url 'equipment-create' %}">
+        + Novo equipamento
+    </a>
+</div>
+
+<div class="card">
+    <form method="get" class="filters">
+        <input
+            class="form-control"
+            type="search"
+            name="q"
+            value="{{ filters.q }}"
+            placeholder="Buscar por nome, código ou descrição"
+        >
+
+        <select class="form-control" name="type">
+            <option value="">Todos os tipos</option>
+
+            {% for value, label in element_types %}
+                <option
+                    value="{{ value }}"
+                    {% if filters.type == value %}selected{% endif %}
+                >
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <select class="form-control" name="status">
+            <option value="">Todos os status</option>
+
+            {% for value, label in status_choices %}
+                <option
+                    value="{{ value }}"
+                    {% if filters.status == value %}selected{% endif %}
+                >
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <select class="form-control" name="enabled">
+            <option value="">Ativos e inativos</option>
+            <option value="1" {% if filters.enabled == "1" %}selected{% endif %}>
+                Somente ativos
+            </option>
+            <option value="0" {% if filters.enabled == "0" %}selected{% endif %}>
+                Somente inativos
+            </option>
+        </select>
+
+        <button class="button" type="submit">
+            Filtrar
+        </button>
+    </form>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Código</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Localização</th>
+                    <th>Ativo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in equipments %}
+                    <tr>
+                        <td class="equipment-name">
+                            {{ item.name }}
+                        </td>
+
+                        <td class="equipment-code">
+                            {{ item.code|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ item.get_element_type_display }}
+                        </td>
+
+                        <td>
+                            <span class="badge badge-{{ item.status }}">
+                                {{ item.get_status_display }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if item.point %}
+                                {{ item.point.y|floatformat:6 }},
+                                {{ item.point.x|floatformat:6 }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.enabled %}
+                                Sim
+                            {% else %}
+                                Não
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="actions">
+                                <a
+                                    class="button button-small button-secondary"
+                                    href="{% url 'equipment-detail' item.pk %}"
+                                >
+                                    Ver
+                                </a>
+
+                                <a
+                                    class="button button-small button-secondary"
+                                    href="{% url 'equipment-update' item.pk %}"
+                                >
+                                    Editar
+                                </a>
+
+                                <a
+                                    class="button button-small button-danger"
+                                    href="{% url 'equipment-delete' item.pk %}"
+                                >
+                                    Excluir
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                Nenhum equipamento encontrado.
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <nav class="pagination">
+            {% if page_obj.has_previous %}
+                <a
+                    class="button button-small button-secondary"
+                    href="?q={{ filters.q|urlencode }}&type={{ filters.type|urlencode }}&status={{ filters.status|urlencode }}&enabled={{ filters.enabled|urlencode }}&page={{ page_obj.previous_page_number }}"
+                >
+                    Anterior
+                </a>
+            {% endif %}
+
+            <span>
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a
+                    class="button button-small button-secondary"
+                    href="?q={{ filters.q|urlencode }}&type={{ filters.type|urlencode }}&status={{ filters.status|urlencode }}&enabled={{ filters.enabled|urlencode }}&page={{ page_obj.next_page_number }}"
+                >
+                    Próxima
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

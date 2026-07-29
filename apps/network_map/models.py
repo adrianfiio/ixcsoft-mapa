@@ -20,6 +20,7 @@ class NetworkRoute(CompanyScopedModel, NamedModel):
     )
     enabled = models.BooleanField(default=True)
 
+
     class Meta:
         ordering = ["name"]
         indexes = [models.Index(fields=["status", "enabled"])]
@@ -122,6 +123,7 @@ class FiberCable(CompanyScopedModel, NamedModel):
         choices=OperationalStatus.choices,
         default=OperationalStatus.NO_DATA,
     )
+
 
     class Meta:
         ordering = ["name"]
@@ -589,3 +591,122 @@ class FiberStrand(TimeStampedModel):
 
     def __str__(self):
         return f"{self.cable} - Fibra {self.number}"
+
+
+class SpliceTray(TimeStampedModel):
+    splice_box = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="splice_trays",
+        verbose_name="Caixa",
+    )
+
+    number = models.PositiveSmallIntegerField(
+        verbose_name="Bandeja"
+    )
+
+    name = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    capacity = models.PositiveSmallIntegerField(
+        default=12,
+        verbose_name="Capacidade",
+    )
+
+    class Meta:
+        ordering = ["splice_box", "number"]
+        unique_together = ("splice_box", "number")
+        verbose_name = "Bandeja de emenda"
+        verbose_name_plural = "Bandejas de emenda"
+
+    def __str__(self):
+        return f"{self.splice_box} - Bandeja {self.number}"
+
+
+class FiberSplice(TimeStampedModel):
+    tray = models.ForeignKey(
+        "SpliceTray",
+        on_delete=models.CASCADE,
+        related_name="splices",
+        verbose_name="Bandeja",
+    )
+
+    splice_box = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="fiber_splices",
+        limit_choices_to={"element_type": NetworkElement.ElementType.DIO},
+        verbose_name="Caixa de emenda",
+    )
+
+    input_fiber = models.OneToOneField(
+        "FiberStrand",
+        on_delete=models.PROTECT,
+        related_name="splice_output",
+        verbose_name="Fibra de entrada",
+    )
+
+    output_fiber = models.OneToOneField(
+        "FiberStrand",
+        on_delete=models.PROTECT,
+        related_name="splice_input",
+        verbose_name="Fibra de saída",
+    )
+
+    position = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name="Posição da fusão",
+    )
+
+    loss_db = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=0.05,
+        verbose_name="Perda (dB)",
+    )
+
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["splice_box", "id"]
+        verbose_name = "Emenda óptica"
+        verbose_name_plural = "Emendas ópticas"
+
+    def save(self, *args, **kwargs):
+        if self.input_fiber_id:
+            exists = FiberSplice.objects.filter(
+                input_fiber=self.input_fiber
+            ).exclude(pk=self.pk).exists()
+
+            if exists:
+                raise ValueError(
+                    "A fibra de entrada já possui uma fusão."
+                )
+
+        if self.output_fiber_id:
+            exists = FiberSplice.objects.filter(
+                output_fiber=self.output_fiber
+            ).exclude(pk=self.pk).exists()
+
+            if exists:
+                raise ValueError(
+                    "A fibra de saída já possui uma fusão."
+                )
+
+        if self.position is None or self.position == 1:
+            last = FiberSplice.objects.filter(
+                tray=self.tray
+            ).order_by("-position").first()
+
+            if last:
+                self.position = last.position + 1
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.input_fiber} → {self.output_fiber}"
+
+
+
