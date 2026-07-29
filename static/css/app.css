@@ -29,7 +29,7 @@ a { color: inherit; text-decoration: none; }
     display: flex; flex-direction: column; width: 250px; padding: 24px 16px;
     background: rgba(8, 22, 37, .98); border-right: 1px solid var(--border);
 }
-.brand { display: flex; align-items: flex-start; flex-direction: column; gap: 4px; padding: 0 8px 28px; }
+.brand { display: flex; align-items: center; flex-direction: column; gap: 4px; width: 150px; padding: 0 0 28px; }
 .brand-logo { width: 150px; height: 50px; object-fit: contain; object-position: left center; }
 .brand-mark {
     display: grid; place-items: center; width: 42px; height: 42px;
@@ -38,7 +38,7 @@ a { color: inherit; text-decoration: none; }
 }
 .sidebar-footer span:last-child { display: flex; flex-direction: column; }
 .brand strong { font-size: 15px; }
-.brand small { color: var(--muted); font-size: 10px; letter-spacing: .03em; }
+.brand small { width: 132px; color: var(--muted); font-size: 10px; letter-spacing: .03em; text-align: center; }
 .sidebar-footer small { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .main-nav { display: flex; flex: 1; flex-direction: column; gap: 5px; }
 .main-nav a {
