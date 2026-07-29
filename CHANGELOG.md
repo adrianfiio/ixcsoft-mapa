@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.24.0] - 2026-07-29
+
+### Adicionado
+- Inventário real de equipamentos internos de Rack e Torre, substituindo a antiga descrição em texto livre.
+- Geração automática das PONs por placa de OLT e das portas de DIO nas capacidades de 12 a 244 portas.
+- Ligações internas entre PON da OLT e porta do DIO, com associação opcional ao cabo óptico conectado ao rack.
+
+### Corrigido
+- CDOs repetidas entre as fontes de elementos e caixas do IXCSoft agora reaproveitam o mesmo registro e atualizam tipo e coordenadas.
+- O modo de visualização limita o menu lateral a projetos e camadas, mantendo todas as ações protegidas pelo modo de edição.
+- Os controles de visualizar, editar e pesquisar ficam no topo; a pesquisa só aparece ao clicar na lupa.
+
 ## [0.23.0] - 2026-07-29
 
 ### Corrigido

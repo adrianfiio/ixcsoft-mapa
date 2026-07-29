@@ -14,6 +14,9 @@
     const poleForm = document.getElementById("pole-form");
     const poleActionDialog = document.getElementById("pole-action-dialog");
     const poleActionForm = document.getElementById("pole-action-form");
+    const containerDialog = document.getElementById("container-dialog");
+    const containerEquipmentForm = document.getElementById("container-equipment-form");
+    const containerLinkForm = document.getElementById("container-link-form");
     const quickInputDialog = document.getElementById("quick-input-dialog");
     const quickInputForm = document.getElementById("quick-input-form");
     const elementForm = document.getElementById("element-form");
@@ -27,6 +30,7 @@
         drawingExistingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lightAnimationGeneration: 0, mapMode: "view",
+        containerId: null,
     };
 
     const googleConfigElement = document.getElementById("google-maps-config");
@@ -411,7 +415,6 @@
         document.getElementById("ceo-fields").hidden = !isCeo;
         document.getElementById("container-fields").hidden = !isContainer;
         document.getElementById("container-fields-title").textContent = element.element_type === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
-        elementForm.elements.internal_equipment_text.value = (element.internal_equipment || []).join("\n");
         if (isCto && element.cto) {
             const splitter = element.cto.splitters[0];
             elementForm.elements.cto_capacity.value = element.cto.capacity || 8;
@@ -427,6 +430,67 @@
         }
         document.getElementById("element-dialog-title").textContent = `Editar ${element.name}`;
         elementDialog.showModal();
+    }
+    function updateContainerEquipmentFields() {
+        const type = containerEquipmentForm.elements.equipment_type.value;
+        document.getElementById("container-olt-fields").hidden = type !== "olt";
+        document.getElementById("container-dio-fields").hidden = type !== "dio";
+    }
+    async function manageContainer(id) {
+        const data = await api(`/api/map/elements/${id}/equipment/`);
+        state.containerId = id;
+        document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
+        document.getElementById("container-dialog-subtitle").textContent = data.container.type === "rack"
+            ? "OLT e DIO instalados neste rack"
+            : "Switches, APs e rádios PTP instalados nesta torre";
+        const types = data.container.type === "rack"
+            ? [["olt", "OLT"], ["dio", "DIO"]]
+            : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"]];
+        containerEquipmentForm.reset();
+        containerEquipmentForm.elements.equipment_type.innerHTML = types
+            .map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+        updateContainerEquipmentFields();
+        document.getElementById("container-equipment-list").innerHTML = data.equipment.length
+            ? data.equipment.map((item) => {
+                const detail = item.type === "olt"
+                    ? `${item.card_count} placa(s) · ${item.pon_count} PONs`
+                    : item.type === "dio" ? `${item.dio_port_capacity} portas` : (item.management_ip || "Sem IP");
+                return `<article><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></article>`;
+            }).join("")
+            : "<p>Nenhum equipamento instalado.</p>";
+        const ponPorts = data.equipment.flatMap((item) => item.ports
+            .filter((port) => port.type === "pon" && !port.used)
+            .map((port) => ({ ...port, equipment: item.name })));
+        const dioPorts = data.equipment.flatMap((item) => item.ports
+            .filter((port) => port.type === "dio" && !port.used)
+            .map((port) => ({ ...port, equipment: item.name })));
+        const opticalLinks = document.getElementById("container-optical-links");
+        opticalLinks.hidden = data.container.type !== "rack";
+        containerLinkForm.elements.source_port_id.innerHTML = ponPorts
+            .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
+        containerLinkForm.elements.destination_port_id.innerHTML = dioPorts
+            .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
+        containerLinkForm.elements.cable_id.innerHTML = '<option value="">Ainda sem cabo vinculado</option>'
+            + data.cables.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`).join("");
+        containerLinkForm.querySelector("button[type='submit']").disabled = !ponPorts.length || !dioPorts.length;
+        document.getElementById("container-link-list").innerHTML = data.links.length
+            ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${link.cable ? `Cabo: ${escapeHtml(link.cable)}` : "Cabo ainda não associado"}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
+            : "<p>Nenhuma ligação interna registrada.</p>";
+        containerDialog.showModal();
+        document.querySelectorAll("[data-delete-container-equipment]").forEach((button) => {
+            button.onclick = async () => {
+                if (!confirm("Excluir este equipamento da estrutura?")) return;
+                await api(`/api/map/elements/${id}/equipment/${button.dataset.deleteContainerEquipment}/`, { method: "DELETE" });
+                await manageContainer(id);
+            };
+        });
+        document.querySelectorAll("[data-delete-container-link]").forEach((button) => {
+            button.onclick = async () => {
+                if (!confirm("Remover esta ligação entre a OLT e o DIO?")) return;
+                await api(`/api/map/elements/${id}/equipment-links/${button.dataset.deleteContainerLink}/`, { method: "DELETE" });
+                await manageContainer(id);
+            };
+        });
     }
     async function showUnifilar(id) {
         const data = await api(`/api/map/elements/${id}/`);
@@ -986,7 +1050,7 @@
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
             const editing = canEdit && state.mapMode === "edit";
-            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
+            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
                 const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: editing });
                 marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
@@ -1013,6 +1077,7 @@
                     popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-manage-pole="${p.id}"]`, () => managePole(p.id).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-manage-container="${p.id}"]`, () => manageContainer(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-delete-element="${p.id}"]`, () => deleteElement(p.id).catch((error) => notify(error.message, true)));
                 });
                 if (editing) marker.on("dragend", async () => {
@@ -1127,6 +1192,7 @@
         if (fit && bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
     }
     function setTool(tool) {
+        if (state.mapMode !== "edit") return notify("Clique no lápis para liberar as ferramentas de edição.", true);
         if (!state.projectId) return notify("Selecione um projeto primeiro.", true);
         clearTool();
         state.tool = tool;
@@ -1280,9 +1346,6 @@
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
-        payload.internal_equipment = String(payload.internal_equipment_text || "")
-            .split("\n").map((item) => item.trim()).filter(Boolean);
-        delete payload.internal_equipment_text;
         if (!payload.splitter_input_cable_id) delete payload.splitter_input_cable_id;
         if (!payload.splitter_input_fiber_id) delete payload.splitter_input_fiber_id;
         payload.project = state.projectId; payload.enabled = true;
@@ -1291,6 +1354,32 @@
             await api(editing ? `/api/map/elements/${state.editingElementId}/` : "/api/map/elements/create/", { method: editing ? "PATCH" : "POST", body: JSON.stringify(payload) });
             elementDialog.close(); state.editingElementId = null; clearTool(); await loadStructure();
             notify(editing ? "Elemento atualizado." : "Elemento adicionado ao projeto.");
+        } catch (error) { notify(error.message, true); }
+    };
+    containerEquipmentForm.elements.equipment_type.onchange = updateContainerEquipmentFields;
+    containerEquipmentForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.target));
+        try {
+            await api(`/api/map/elements/${state.containerId}/equipment/`, {
+                method: "POST",
+                body: JSON.stringify(payload),
+            });
+            await manageContainer(state.containerId);
+            notify("Equipamento adicionado à estrutura.");
+        } catch (error) { notify(error.message, true); }
+    };
+    containerLinkForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.target));
+        if (!payload.cable_id) delete payload.cable_id;
+        try {
+            await api(`/api/map/elements/${state.containerId}/equipment-links/`, {
+                method: "POST",
+                body: JSON.stringify(payload),
+            });
+            await manageContainer(state.containerId);
+            notify("PON ligada à porta do DIO.");
         } catch (error) { notify(error.message, true); }
     };
     elementForm.elements.splitter_input_cable_id.onchange = (event) => {

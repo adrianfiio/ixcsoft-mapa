@@ -135,6 +135,108 @@ class CTO(NetworkElement):
         verbose_name_plural = "CTOs"
 
 
+class ContainerEquipment(CompanyScopedModel, NamedModel):
+    class EquipmentType(models.TextChoices):
+        OLT = "olt", "OLT"
+        DIO = "dio", "DIO"
+        SWITCH = "switch", "Switch"
+        ACCESS_POINT = "access_point", "Access point"
+        PTP = "ptp", "Rádio PTP"
+        OTHER = "other", "Outro"
+
+    class ProvisioningMode(models.TextChoices):
+        MANUAL = "manual", "Cadastro manual"
+        SNMP = "snmp", "Descoberta e coleta SNMP"
+
+    container = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="internal_equipments",
+        limit_choices_to={"element_type__in": ["rack", "tower"]},
+    )
+    equipment_type = models.CharField(max_length=30, choices=EquipmentType.choices)
+    management_ip = models.GenericIPAddressField(null=True, blank=True)
+    provisioning_mode = models.CharField(
+        max_length=10,
+        choices=ProvisioningMode.choices,
+        default=ProvisioningMode.MANUAL,
+    )
+    vendor = models.CharField(max_length=80, blank=True)
+    model = models.CharField(max_length=120, blank=True)
+    serial_number = models.CharField(max_length=120, blank=True)
+    card_count = models.PositiveSmallIntegerField(default=0)
+    pons_per_card = models.PositiveSmallIntegerField(default=0)
+    dio_port_capacity = models.PositiveSmallIntegerField(default=0)
+    enabled = models.BooleanField(default=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["container", "equipment_type", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["container", "name"],
+                name="unique_equipment_name_per_map_container",
+            )
+        ]
+
+
+class ContainerEquipmentPort(TimeStampedModel):
+    class PortType(models.TextChoices):
+        PON = "pon", "PON"
+        DIO = "dio", "Porta de DIO"
+        NETWORK = "network", "Porta de rede"
+
+    equipment = models.ForeignKey(
+        ContainerEquipment,
+        on_delete=models.CASCADE,
+        related_name="ports",
+    )
+    port_type = models.CharField(max_length=20, choices=PortType.choices)
+    number = models.PositiveSmallIntegerField()
+    card_number = models.PositiveSmallIntegerField(default=0)
+    port_number = models.PositiveSmallIntegerField(default=0)
+    label = models.CharField(max_length=100)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["equipment", "number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["equipment", "number"],
+                name="unique_port_number_per_container_equipment",
+            )
+        ]
+
+
+class ContainerPortLink(TimeStampedModel):
+    container = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="internal_port_links",
+    )
+    source_port = models.OneToOneField(
+        ContainerEquipmentPort,
+        on_delete=models.CASCADE,
+        related_name="outgoing_link",
+    )
+    destination_port = models.OneToOneField(
+        ContainerEquipmentPort,
+        on_delete=models.CASCADE,
+        related_name="incoming_link",
+    )
+    cable = models.ForeignKey(
+        "FiberCable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="container_port_links",
+    )
+    notes = models.CharField(max_length=180, blank=True)
+
+    class Meta:
+        ordering = ["container", "source_port__equipment", "source_port__number"]
+
+
 class CTOSplitter(TimeStampedModel):
     class Ratio(models.TextChoices):
         ONE_TO_2 = "1:2", "1:2"

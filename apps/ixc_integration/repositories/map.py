@@ -75,6 +75,17 @@ class IXCMapRepository:
             ),
         ).first()
         if matching_box:
+            if _is_splice_box(description, record):
+                matching_box.element_type = NetworkElement.ElementType.SPLICE_BOX
+            imported_point = _point(record)
+            if imported_point:
+                matching_box.point = imported_point
+            matching_box.metadata = {
+                **(matching_box.metadata or {}),
+                "ixc_element": record,
+                "ixc_element_id": external_id,
+            }
+            matching_box.save(update_fields=["element_type", "point", "metadata", "updated_at"])
             return matching_box, False
         normalized = _normalized(description)
         element_type = NetworkElement.ElementType.OTHER
