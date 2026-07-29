@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.7 — Ajustes da identidade visual**
+**v0.8.8 — Satélite e favicon**
 
-Esta versão alinha o subtítulo à área visual da logo e remove elementos
-duplicados do login administrativo.
+Esta versão remove os textos sob a logo, prepara o favicon oficial e adiciona
+uma camada de satélite sem dependência de API paga.
 
 ## Funcionalidades implementadas
 

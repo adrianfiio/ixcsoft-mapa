@@ -11,6 +11,18 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.8.8] - 2026-07-29
+
+### Adicionado
+
+- Camada de satélite sem API paga no mapa operacional
+- Seletor entre mapa convencional e imagem de satélite
+- Referência ao favicon `afservice-map-favicon.png`
+
+### Alterado
+
+- Removidos todos os textos exibidos abaixo da logo
+
 ## [0.8.7] - 2026-07-29
 
 ### Corrigido

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#07111f">
     <title>{% block title %}AFService Map{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/afservice-map-favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}?v={{ app_version|default:'current' }}">
     {% block extra_head %}{% endblock %}
 </head>
@@ -14,7 +15,6 @@
         <aside class="app-sidebar" id="app-sidebar">
             <a class="brand" href="{% url 'dashboard' %}">
                 <img class="brand-logo" src="{% static 'img/afservice-logo.png' %}" alt="AFService">
-                <small>Mapa e operação de rede</small>
             </a>
 
             <nav class="main-nav" aria-label="Navegação principal">

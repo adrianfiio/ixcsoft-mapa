@@ -9,6 +9,11 @@
     >
 
     <title>Mapa operacional | AFService Map</title>
+    <link
+        rel="icon"
+        type="image/png"
+        href="{% static 'img/afservice-map-favicon.png' %}"
+    >
 
     <link
         rel="stylesheet"
@@ -288,10 +293,6 @@
                 alt="AFService Map"
             >
 
-            <p class="subtitle">
-                Mapa e operação de rede
-            </p>
-
             <a class="back-link" href="{% url 'dashboard' %}">
                 ← Voltar para visão geral
             </a>
@@ -390,11 +391,33 @@
             preferCanvas: true,
         }).setView([-24.45, -50.62], 10);
 
-        L.tileLayer(
+        const streetLayer = L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             {
                 maxZoom: 19,
                 attribution: "&copy; OpenStreetMap",
+            }
+        );
+
+        const satelliteLayer = L.tileLayer(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            {
+                maxZoom: 19,
+                attribution: "Tiles &copy; Esri",
+            }
+        );
+
+        streetLayer.addTo(map);
+
+        L.control.layers(
+            {
+                "Mapa": streetLayer,
+                "Satélite": satelliteLayer,
+            },
+            {},
+            {
+                position: "topright",
+                collapsed: false,
             }
         ).addTo(map);
 
