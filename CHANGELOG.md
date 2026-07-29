@@ -11,6 +11,21 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.14.3] - 2026-07-29
+
+### Adicionado
+
+- Pesquisa central no mapa com modos separados para endereço e estrutura do projeto.
+- Busca por CTO, CEO, OLT, DIO, poste, cabo, nome e código dentro do projeto selecionado.
+- Lista de resultados com enquadramento automático do equipamento ou do traçado completo do cabo.
+- Botão para centralizar o mapa pela localização GPS do dispositivo.
+- Camada híbrida Esri com imagem de satélite, nomes de lugares e referências viárias.
+- Alternância entre satélite híbrido, satélite limpo e mapa de ruas.
+
+### Melhorado
+
+- Zoom visual máximo ampliado para o nível 23 com sobrezoom das fontes disponíveis.
+
 ## [0.14.2] - 2026-07-29
 
 ### Melhorado
