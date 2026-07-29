@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
+from ipaddress import ip_address
 from typing import Any
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -42,6 +43,16 @@ def _datetime(value: Any):
     return parse_datetime(value)
 
 
+def _ip(value: Any):
+    value = _text(value)
+    if not value:
+        return None
+    try:
+        return str(ip_address(value))
+    except ValueError:
+        return None
+
+
 class FiberAssignmentRepository:
     @staticmethod
     def upsert(record: dict[str, Any], company) -> tuple[IXCFiberAssignment, bool]:
@@ -55,9 +66,15 @@ class FiberAssignmentRepository:
         onu_number = _text(record.get("onu_numero"))
 
         login = IXCLogin.objects.filter(company=company, ixc_login_id=login_id).first() if login_id else None
+        if login is None:
+            IXCFiberAssignment.objects.filter(company=company, ixc_id=external_id).delete()
+            return None, False
+        if login.contract_id and not login.contract.active:
+            IXCFiberAssignment.objects.filter(company=company, ixc_id=external_id).delete()
+            return None, False
         cto = CTO.objects.filter(company=company, ixc_box_id=cto_id).first() if cto_id else None
 
-        onu_query = ONU.objects.all()
+        onu_query = ONU.objects.filter(pon_port__olt__cpd__company=company)
         onu = None
         if mac:
             onu = onu_query.filter(mac_address__iexact=mac).first()
@@ -97,7 +114,7 @@ class FiberAssignmentRepository:
             "distance_meters": _integer(record.get("distancia_onu")),
             "last_signal_at": _datetime(record.get("data_sinal")),
             "last_down_cause": _text(record.get("causa_ultima_queda")),
-            "management_ip": _text(record.get("ip_gerencia")) or None,
+            "management_ip": _ip(record.get("ip_gerencia")),
             "latitude": _decimal(record.get("latitude")),
             "longitude": _decimal(record.get("longitude")),
             "city": _text(record.get("cidade_cliente") or record.get("cidade")),

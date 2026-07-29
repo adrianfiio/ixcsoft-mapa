@@ -27,6 +27,7 @@ from apps.optical.models import DIO
 from apps.core.access import editable_company_ids
 from apps.core.forms import CompanyOnboardingForm, DIOPlatformForm, ERPOnboardingForm, OLTPlatformForm, POPPlatformForm
 from apps.ixc_integration.models import IXCConfiguration
+from apps.ixc_integration.fiber_models import IXCFiberAssignment
 from apps.ixc_integration.clients.ixc_client import IXCClient
 from apps.ixc_integration.clients.exceptions import IXCClientError
 from apps.ixc_integration.tasks import synchronize_ixc_configuration
@@ -52,6 +53,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             ),
         )
         onu_queryset = ONU.objects.all()
+        assigned_onu_queryset = IXCFiberAssignment.objects.filter(login__isnull=False)
         olt_queryset = OLT.objects.all()
         element_queryset = NetworkElement.objects.all()
         cto_queryset = CTO.objects.all()
@@ -62,6 +64,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             onu_queryset = onu_queryset.filter(
                 pon_port__olt__cpd__company_id__in=company_ids
             )
+            assigned_onu_queryset = assigned_onu_queryset.filter(company_id__in=company_ids)
             olt_queryset = olt_queryset.filter(cpd__company_id__in=company_ids)
             element_queryset = element_queryset.filter(company_id__in=company_ids)
             cto_queryset = cto_queryset.filter(company_id__in=company_ids)
@@ -72,17 +75,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 | Q(olt__cpd__company_id__in=company_ids)
                 | Q(route__company_id__in=company_ids)
             ).distinct()
-        onu_summary = onu_queryset.aggregate(
+        onu_summary = assigned_onu_queryset.aggregate(
             total=Count("id"),
-            online=Count(
-                "id",
-                filter=Q(operational_status=OperationalStatus.NORMAL),
-            ),
-            offline=Count(
-                "id",
-                filter=Q(operational_status=OperationalStatus.OFFLINE),
-            ),
-            los=Count("id", filter=Q(los=True)),
+            online=Count("id", filter=Q(login__online=True)),
+            offline=Count("id", filter=Q(login__online=False)),
+            los=Count("id", filter=Q(last_down_cause__icontains="LOS")),
         )
         active_alert_states = [
             AlertEvent.State.OPEN,
@@ -167,10 +164,14 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
         project_queryset = NetworkProject.objects.select_related("company").order_by("name")
         element_queryset = NetworkElement.objects.select_related("project", "company").order_by("name")
         cable_queryset = FiberCable.objects.select_related("project", "company").order_by("name")
+        assigned_onu_queryset = IXCFiberAssignment.objects.select_related(
+            "company", "login", "login__customer", "cto"
+        ).filter(login__isnull=False).order_by("login__customer__name", "onu_number")
         if company_ids is not None:
             project_queryset = project_queryset.filter(company_id__in=company_ids)
             element_queryset = element_queryset.filter(company_id__in=company_ids)
             cable_queryset = cable_queryset.filter(company_id__in=company_ids)
+            assigned_onu_queryset = assigned_onu_queryset.filter(company_id__in=company_ids)
         pop_queryset = POP.objects.select_related("company").order_by("name")
         olt_queryset = OLT.objects.select_related("cpd", "cpd__company").order_by("name")
         dio_queryset = DIO.objects.select_related("pop", "company").order_by("name")
@@ -189,6 +190,8 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
                 "cpds": pop_queryset[:100],
                 "olts": olt_queryset[:100],
                 "dios": dio_queryset[:100],
+                "assigned_onus": assigned_onu_queryset[:100],
+                "assigned_onu_count": assigned_onu_queryset.count(),
                 "is_platform_admin": self.request.user.is_superuser,
                 "can_manage_assets": has_any_edit_access(self.request.user),
             }

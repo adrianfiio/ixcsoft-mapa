@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.21.0")
+APP_VERSION = os.getenv("APP_VERSION", "0.22.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -139,6 +139,10 @@ if not CORS_ALLOWED_ORIGINS and WEB_URL:
 CELERY_BEAT_SCHEDULE = {
     "synchronize-all-ixc-configurations": {
         "task": "apps.ixc_integration.tasks.synchronize_all_ixc_configurations",
+        "schedule": 60.0,
+    },
+    "synchronize-ixc-pppoe-statuses": {
+        "task": "apps.ixc_integration.tasks.synchronize_ixc_pppoe_statuses",
         "schedule": 300.0,
     },
 }
