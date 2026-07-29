@@ -16,6 +16,13 @@
     <div class="map-shell">
         <aside class="map-sidebar" id="map-sidebar">
             <button class="collapse-button" id="collapse-sidebar" type="button" title="Recolher menu">‹</button>
+            <nav class="collapsed-tools" aria-label="Atalhos do editor">
+                <button type="button" data-quick-tool="cable" title="Desenhar cabo">⌁</button>
+                <button type="button" data-quick-tool="cto" title="Adicionar CTO">C</button>
+                <button type="button" data-quick-tool="splice_box" title="Adicionar CEO">E</button>
+                <button type="button" data-quick-tool="olt" title="Adicionar OLT">O</button>
+                <button type="button" data-quick-action="labels" title="Mostrar ou ocultar nomes">N</button>
+            </nav>
             <div class="sidebar-content">
                 <a class="map-brand" href="{% url 'dashboard' %}">
                     <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
