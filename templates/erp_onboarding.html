@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Conectar ERP | AFService Map{% endblock %}
+{% block topbar_title %}Primeiro acesso{% endblock %}
+
+{% block content %}
+<section class="onboarding-shell">
+    <header class="onboarding-head">
+        <span>1</span>
+        <div>
+            <p class="eyebrow">CONFIGURAÇÃO INICIAL</p>
+            <h1>Conecte o ERP da empresa</h1>
+            <p>Validaremos o acesso antes de salvar. Depois você escolhe exatamente quais dados entram na plataforma.</p>
+        </div>
+    </header>
+    <form class="platform-form onboarding-form" method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="platform-form-grid">
+        {% for field in form %}
+            <label class="{% if field.field.widget.input_type == 'checkbox' %}integration-option{% endif %}">
+                {% if field.field.widget.input_type == 'checkbox' %}
+                    {{ field }} <span><strong>{{ field.label }}</strong>{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</span>
+                {% else %}
+                    <strong>{{ field.label }}</strong>{{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                {% endif %}
+                {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+        {% endfor %}
+        </div>
+        <aside class="ixc-import-note">
+            <strong>Importação de mapa IXCSoft preparada</strong>
+            <span>Projetos: <code>df_projeto</code></span>
+            <span>Elementos: <code>df_elemento</code></span>
+            <span>CTOs/caixas: <code>rad_caixa_ftth</code></span>
+            <small>A importação respeitará as opções marcadas e não substituirá desenhos manuais sem confirmação.</small>
+        </aside>
+        <div class="platform-form-actions">
+            <button type="submit">Testar conexão e continuar →</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

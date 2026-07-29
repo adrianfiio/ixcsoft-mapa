@@ -6,7 +6,8 @@ from apps.core.models import TimeStampedModel
 class IXCFiberAssignment(TimeStampedModel):
     """Espelho do endpoint radpop_radio_cliente_fibra do IXCSoft."""
 
-    ixc_id = models.CharField(max_length=80, unique=True, db_index=True)
+    company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="ixc_fiber_assignments", null=True, blank=True)
+    ixc_id = models.CharField(max_length=80, db_index=True)
     login = models.ForeignKey(
         "ixc_integration.IXCLogin",
         on_delete=models.SET_NULL,
@@ -79,6 +80,9 @@ class IXCFiberAssignment(TimeStampedModel):
             models.Index(fields=["ixc_cto_id", "ixc_login_id"]),
             models.Index(fields=["mac_address", "onu_number"]),
             models.Index(fields=["ixc_project_id"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=("company", "ixc_id"), name="unique_ixc_fiber_per_company")
         ]
 
     def __str__(self):

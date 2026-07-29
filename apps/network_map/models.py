@@ -12,6 +12,7 @@ class NetworkProject(CompanyScopedModel, NamedModel):
         ARCHIVED = "archived", "Arquivado"
 
     code = models.CharField(max_length=100, unique=True, db_index=True)
+    ixc_project_id = models.CharField(max_length=80, blank=True, db_index=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -33,6 +34,13 @@ class NetworkProject(CompanyScopedModel, NamedModel):
         verbose_name = "Projeto de rede"
         verbose_name_plural = "Projetos de rede"
         indexes = [models.Index(fields=["status", "enabled"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("company", "ixc_project_id"),
+                condition=~models.Q(ixc_project_id=""),
+                name="unique_ixc_project_per_company",
+            )
+        ]
 
 
 class NetworkRoute(CompanyScopedModel, NamedModel):
@@ -101,7 +109,7 @@ class NetworkElement(CompanyScopedModel, NamedModel):
 
 
 class CTO(NetworkElement):
-    ixc_box_id = models.CharField(max_length=80, unique=True, null=True, blank=True)
+    ixc_box_id = models.CharField(max_length=80, null=True, blank=True, db_index=True)
     route = models.ForeignKey(
         NetworkRoute,
         on_delete=models.SET_NULL,

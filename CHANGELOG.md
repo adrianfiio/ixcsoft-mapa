@@ -11,6 +11,25 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.18.0] - 2026-07-29
+
+### Adicionado
+
+- Assistente obrigatório de integração ERP no primeiro acesso de empresas com permissão EDIT.
+- Seleção das rotinas IXCSoft: clientes, contratos ativos, PPPoE, projetos e CTOs.
+- Cadastro de CPD/POP por latitude e longitude, GPS do navegador ou busca visual no mapa.
+- Relação de múltiplos contratos por cliente e vínculo do login PPPoE ao contrato correspondente.
+
+### Alterado
+
+- Dados sincronizados do IXCSoft agora são isolados por empresa.
+- Atalhos operacionais deixaram de encaminhar usuários de empresas ao Django Admin.
+- Ações sensíveis da API exigem permissão EDIT; usuários VIEW permanecem somente leitura.
+
+### Segurança
+
+- Token do ERP continua criptografado e não é devolvido pela API.
+
 ## [0.17.0] - 2026-07-29
 
 ### Adicionado

@@ -36,13 +36,25 @@
 {% endif %}
 
 <div class="account-accordion">
-    <details data-account-section>
+    <details id="infraestrutura" data-account-section>
         <summary><strong>CPD, OLT e DIO</strong><small>{{ cpds|length }} CPDs · {{ olts|length }} OLTs · {{ dios|length }} DIOs</small></summary>
         <div class="account-items">
             {% for cpd in cpds %}<div data-searchable><span><strong>CPD · {{ cpd.name }}</strong><small>{{ cpd.company }} · {{ cpd.code }}</small></span></div>{% endfor %}
             {% for olt in olts %}<div data-searchable><span><strong>OLT · {{ olt.name }}</strong><small>{{ olt.cpd.company }} · {{ olt.management_ip }}</small></span></div>{% endfor %}
             {% for dio in dios %}<div data-searchable><span><strong>DIO · {{ dio.name }}</strong><small>{{ dio.company }} · {{ dio.port_capacity }} portas</small></span></div>{% endfor %}
         </div>
+    </details>
+    <details id="integracao" data-account-section>
+        <summary><strong>Integração ERP</strong><small>IXCSoft e opções de sincronização</small></summary>
+        <div class="account-items">
+            <a data-searchable href="{% url 'erp-onboarding' %}">
+                <span><strong>Configurar IXCSoft</strong><small>PPPoE, contratos ativos, projetos, elementos e CTOs</small></span><b>Configurar →</b>
+            </a>
+        </div>
+    </details>
+    <details id="alertas" data-account-section>
+        <summary><strong>Alertas</strong><small>Monitoramento da empresa</small></summary>
+        <div class="account-items"><p>A central operacional de alertas será exibida aqui sem acesso ao painel técnico.</p></div>
     </details>
     <details open data-account-section>
         <summary><strong>Projetos</strong><small>{{ projects|length }} disponíveis</small></summary>

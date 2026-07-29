@@ -30,13 +30,13 @@
                    href="{% url 'equipment-list' %}">
                     <span class="nav-icon">◇</span> Equipamentos
                 </a>
-                <a href="/admin/olt_integration/olt/">
+                <a href="{% url 'account-panel' %}#infraestrutura">
                     <span class="nav-icon">⌁</span> OLTs e ONUs
                 </a>
-                <a href="/admin/ixc_integration/ixccustomer/">
-                    <span class="nav-icon">◎</span> Clientes IXC
+                <a href="{% url 'account-panel' %}#integracao">
+                    <span class="nav-icon">◎</span> Integração ERP
                 </a>
-                <a href="/admin/alerts/alertevent/">
+                <a href="{% url 'account-panel' %}#alertas">
                     <span class="nav-icon">!</span> Alertas
                 </a>
             </nav>

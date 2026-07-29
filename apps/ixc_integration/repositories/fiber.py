@@ -44,7 +44,7 @@ def _datetime(value: Any):
 
 class FiberAssignmentRepository:
     @staticmethod
-    def upsert(record: dict[str, Any]) -> tuple[IXCFiberAssignment, bool]:
+    def upsert(record: dict[str, Any], company) -> tuple[IXCFiberAssignment, bool]:
         external_id = _text(record.get("id"))
         if not external_id:
             raise ValueError("Registro de fibra sem id.")
@@ -54,8 +54,8 @@ class FiberAssignmentRepository:
         mac = _text(record.get("mac"))
         onu_number = _text(record.get("onu_numero"))
 
-        login = IXCLogin.objects.filter(ixc_login_id=login_id).first() if login_id else None
-        cto = CTO.objects.filter(ixc_box_id=cto_id).first() if cto_id else None
+        login = IXCLogin.objects.filter(company=company, ixc_login_id=login_id).first() if login_id else None
+        cto = CTO.objects.filter(company=company, ixc_box_id=cto_id).first() if cto_id else None
 
         onu_query = ONU.objects.all()
         onu = None
@@ -112,6 +112,7 @@ class FiberAssignmentRepository:
         }
 
         return IXCFiberAssignment.objects.update_or_create(
+            company=company,
             ixc_id=external_id,
             defaults=defaults,
         )

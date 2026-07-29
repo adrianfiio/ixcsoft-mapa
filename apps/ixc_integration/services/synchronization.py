@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.ixc_integration.models import IXCConfiguration, IXCSyncExecution
 from apps.ixc_integration.repositories.customers import CustomerRepository
 from apps.ixc_integration.repositories.fiber import FiberAssignmentRepository
+from apps.ixc_integration.repositories.map import IXCMapRepository
 from .configuration import build_client
 
 
@@ -49,15 +50,43 @@ class IXCSynchronizationService:
         return stats
 
     def sync_customers(self) -> SyncStats:
-        return self._sync_table("cliente", CustomerRepository.upsert_customer)
+        return self._sync_table(
+            "cliente",
+            lambda record: CustomerRepository.upsert_customer(record, self.configuration.company),
+        )
 
     def sync_logins(self) -> SyncStats:
-        return self._sync_table("radusuarios", CustomerRepository.upsert_login)
+        return self._sync_table(
+            "radusuarios",
+            lambda record: CustomerRepository.upsert_login(record, self.configuration.company),
+        )
+
+    def sync_contracts(self) -> SyncStats:
+        return self._sync_table(
+            "cliente_contrato",
+            lambda record: CustomerRepository.upsert_contract(
+                record,
+                self.configuration.company,
+                self.configuration.sync_active_contracts_only,
+            ),
+        )
 
     def sync_fiber_assignments(self) -> SyncStats:
         return self._sync_table(
             "radpop_radio_cliente_fibra",
-            FiberAssignmentRepository.upsert,
+            lambda record: FiberAssignmentRepository.upsert(record, self.configuration.company),
+        )
+
+    def sync_projects(self) -> SyncStats:
+        return self._sync_table(
+            "df_projeto",
+            lambda record: IXCMapRepository.upsert_project(record, self.configuration.company),
+        )
+
+    def sync_ctos(self) -> SyncStats:
+        return self._sync_table(
+            "rad_caixa_ftth",
+            lambda record: IXCMapRepository.upsert_cto(record, self.configuration.company),
         )
 
     def run_full_sync(self) -> IXCSyncExecution:
@@ -65,9 +94,16 @@ class IXCSynchronizationService:
         total = SyncStats()
         try:
             # A ordem é importante: fibra depende de clientes/logins existentes.
-            total.add(self.sync_customers())
-            total.add(self.sync_logins())
-            total.add(self.sync_fiber_assignments())
+            if self.configuration.sync_customers:
+                total.add(self.sync_customers())
+            if self.configuration.sync_pppoe:
+                total.add(self.sync_contracts())
+                total.add(self.sync_logins())
+                total.add(self.sync_fiber_assignments())
+            if self.configuration.sync_projects or self.configuration.sync_ctos:
+                total.add(self.sync_projects())
+            if self.configuration.sync_ctos:
+                total.add(self.sync_ctos())
 
             execution.records_received = total.received
             execution.records_created = total.created

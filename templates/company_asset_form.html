@@ -2,6 +2,9 @@
 
 {% block title %}Novo {{ asset_label }} | AFService Map{% endblock %}
 {% block topbar_title %}Infraestrutura da empresa{% endblock %}
+{% block extra_head %}
+{% if asset_type == "cpd" %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="page-heading">
@@ -30,4 +33,68 @@
         <button type="submit">Salvar {{ asset_label }}</button>
     </div>
 </form>
+{% if asset_type == "cpd" %}
+<div class="location-actions">
+    <button type="button" id="use-gps">⌖ Usar meu GPS</button>
+    <button type="button" id="open-location-map">▣ Procurar endereço no mapa</button>
+</div>
+<dialog class="location-dialog" id="location-dialog">
+    <header><div><strong>Localização do CPD / POP</strong><small>Pesquise ou clique no mapa para marcar.</small></div><button type="button" id="close-location-map">×</button></header>
+    <div class="location-search"><input id="location-query" placeholder="Rua, número, cidade…"><button type="button" id="search-location">Buscar</button></div>
+    <div id="location-picker-map"></div>
+    <footer><output id="location-result">Nenhum ponto selecionado.</output><button type="button" id="confirm-location">Usar esta localização</button></footer>
+</dialog>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if asset_type == "cpd" %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const latInput = document.getElementById("id_latitude");
+const lngInput = document.getElementById("id_longitude");
+const addressInput = document.getElementById("id_address");
+const cityInput = document.getElementById("id_city");
+const locationDialog = document.getElementById("location-dialog");
+let pickerMap, pickerMarker, selectedLocation;
+function setSelected(lat, lng, label) {
+    selectedLocation = {lat, lng};
+    if (!pickerMarker) pickerMarker = L.marker([lat, lng], {draggable:true}).addTo(pickerMap);
+    else pickerMarker.setLatLng([lat, lng]);
+    pickerMap.setView([lat, lng], 18);
+    document.getElementById("location-result").textContent = label || `${lat.toFixed(7)}, ${lng.toFixed(7)}`;
+}
+function ensureMap() {
+    if (pickerMap) return;
+    pickerMap = L.map("location-picker-map").setView([-24.0, -50.0], 12);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:"© OpenStreetMap"}).addTo(pickerMap);
+    pickerMap.on("click", (event) => setSelected(event.latlng.lat, event.latlng.lng));
+}
+document.getElementById("open-location-map").onclick = () => {
+    locationDialog.showModal(); ensureMap(); setTimeout(() => pickerMap.invalidateSize(), 80);
+    if (latInput.value && lngInput.value) setSelected(Number(latInput.value), Number(lngInput.value));
+};
+document.getElementById("close-location-map").onclick = () => locationDialog.close();
+document.getElementById("search-location").onclick = async () => {
+    const query = document.getElementById("location-query").value.trim();
+    if (!query) return;
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(query)}`, {headers:{"Accept-Language":"pt-BR"}});
+    const [place] = await response.json();
+    if (!place) return document.getElementById("location-result").textContent = "Endereço não encontrado.";
+    setSelected(Number(place.lat), Number(place.lon), place.display_name);
+    addressInput.value = place.display_name;
+    cityInput.value = place.address?.city || place.address?.town || place.address?.village || cityInput.value;
+};
+document.getElementById("use-gps").onclick = () => navigator.geolocation.getCurrentPosition((position) => {
+    latInput.value = position.coords.latitude.toFixed(7);
+    lngInput.value = position.coords.longitude.toFixed(7);
+}, () => alert("Não foi possível obter a localização. Confira a permissão de GPS do navegador."));
+document.getElementById("confirm-location").onclick = () => {
+    if (!selectedLocation) return;
+    latInput.value = selectedLocation.lat.toFixed(7);
+    lngInput.value = selectedLocation.lng.toFixed(7);
+    locationDialog.close();
+};
+</script>
+{% endif %}
 {% endblock %}
