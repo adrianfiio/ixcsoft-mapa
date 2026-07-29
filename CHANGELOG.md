@@ -11,6 +11,13 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.18.1] - 2026-07-29
+
+### Corrigido
+
+- A opção de importar elementos do mapa agora sincroniza efetivamente o endpoint
+  `df_elemento` do IXCSoft e relaciona os registros ao projeto da empresa.
+
 ## [0.18.0] - 2026-07-29
 
 ### Adicionado

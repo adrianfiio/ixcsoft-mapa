@@ -89,6 +89,12 @@ class IXCSynchronizationService:
             lambda record: IXCMapRepository.upsert_cto(record, self.configuration.company),
         )
 
+    def sync_map_elements(self) -> SyncStats:
+        return self._sync_table(
+            "df_elemento",
+            lambda record: IXCMapRepository.upsert_element(record, self.configuration.company),
+        )
+
     def run_full_sync(self) -> IXCSyncExecution:
         execution = self._execution()
         total = SyncStats()
@@ -104,6 +110,8 @@ class IXCSynchronizationService:
                 total.add(self.sync_projects())
             if self.configuration.sync_ctos:
                 total.add(self.sync_ctos())
+            if self.configuration.sync_map_elements:
+                total.add(self.sync_map_elements())
 
             execution.records_received = total.received
             execution.records_created = total.created

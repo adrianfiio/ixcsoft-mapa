@@ -21,6 +21,49 @@ def _point(record: dict[str, Any]):
 
 class IXCMapRepository:
     @staticmethod
+    def upsert_element(record: dict[str, Any], company):
+        external_id = str(record.get("id") or "").strip()
+        if not external_id:
+            raise ValueError("Elemento IXC sem id.")
+        project_id = str(record.get("id_projeto") or "").strip()
+        project = NetworkProject.objects.filter(
+            company=company,
+            ixc_project_id=project_id,
+        ).first()
+        description = str(
+            record.get("descricao") or record.get("tipo") or record.get("nome") or ""
+        )
+        normalized = description.upper()
+        element_type = NetworkElement.ElementType.OTHER
+        for key, value in (
+            ("POSTE", NetworkElement.ElementType.POLE),
+            ("CEO", NetworkElement.ElementType.SPLICE_BOX),
+            ("EMENDA", NetworkElement.ElementType.SPLICE_BOX),
+            ("OLT", NetworkElement.ElementType.OLT),
+            ("DIO", NetworkElement.ElementType.DIO),
+            ("ARMARIO", NetworkElement.ElementType.CABINET),
+            ("ARMÁRIO", NetworkElement.ElementType.CABINET),
+        ):
+            if key in normalized:
+                element_type = value
+                break
+        active = str(record.get("status") or "A").upper() not in {"I", "INATIVO", "N", "0"}
+        return NetworkElement.objects.update_or_create(
+            company=company,
+            code=f"IXC-ELEM-{external_id}",
+            defaults={
+                "project": project,
+                "name": description or f"Elemento IXC {external_id}",
+                "description": "Importado automaticamente do projeto IXCSoft.",
+                "element_type": element_type,
+                "point": _point(record),
+                "status": OperationalStatus.NORMAL if active else OperationalStatus.OFFLINE,
+                "enabled": active,
+                "metadata": {"ixc": record, "ixc_element_id": external_id},
+            },
+        )
+
+    @staticmethod
     def upsert_project(record: dict[str, Any], company):
         external_id = str(record.get("id") or "").strip()
         if not external_id:
