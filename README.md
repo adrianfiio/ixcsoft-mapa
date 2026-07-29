@@ -1,46 +1,123 @@
 # IXCSoft Mapa
 
-Plataforma de monitoramento, correlação e visualização geográfica de redes FTTH
-integrada ao IXCSoft e a equipamentos GPON.
+Plataforma para monitoramento, correlação e visualização geográfica de redes
+FTTH, integrada ao IXCSoft e preparada para equipamentos GPON.
 
-O objetivo do projeto é reunir informações cadastrais, topologia óptica, estado
-das ONUs, potência de sinal, falhas e alertas em uma única aplicação.
+O projeto reúne informações cadastrais, acessos PPPoE, provisionamentos FTTH,
+infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicação.
 
-## Funcionalidades planejadas
+## Versão atual
 
-- Integração com a API do IXCSoft
-- Sincronização de clientes e logins PPPoE
-- Sincronização de projetos, CTOs e provisionamentos FTTH
-- Integração SNMP com OLTs FiberHome
-- Descoberta de portas PON e ONUs
-- Monitoramento de RX, TX, LOS, temperatura e distância
-- Correlação entre cliente, login, ONU, CTO e rota óptica
-- Mapa interativo com Leaflet e PostGIS
-- Importação de arquivos KML e KMZ
-- Alertas por Telegram e Zabbix
+**v0.7.0 — Infraestrutura óptica e base GIS**
+
+Esta versão consolida a integração inicial com o IXCSoft, a modelagem da rede
+óptica, o editor de equipamentos e a primeira interface geográfica com Leaflet.
+
+## Funcionalidades implementadas
+
+### Integração IXCSoft
+
+- Configurações independentes por empresa
+- Armazenamento criptografado do token da API
+- Teste de conexão
+- Sincronização manual e periódica com Celery
+- Clientes da tabela `cliente`
+- Logins PPPoE da tabela `radusuarios`
+- Provisionamentos da tabela `radpop_radio_cliente_fibra`
+- Associação inicial entre cliente, login, CTO e ONU
+- Registro das execuções e do resultado das sincronizações
+
+### Infraestrutura GPON
+
+- Cadastro de OLTs
+- Portas PON
+- ONUs
+- Estado operacional e LOS
+- RX, TX, temperatura, tensão e distância
+- Histórico de sinais ópticos
+- Estrutura inicial para coletores SNMP
+
+### Infraestrutura óptica e GIS
+
+- Empresas
+- POPs e racks
+- Equipamentos de rack
+- Rotas ópticas
+- Elementos de rede
+- OLTs, DIOs, caixas de emenda, CTOs, postes e armários
+- Modelos de cabo
+- Cabos, tubos e fibras
+- Padrões e sequências de cores
+- Bandejas e fusões
+- Dependências entre elementos
+- Geometrias PostGIS
+- Base do mapa com Leaflet e OpenStreetMap
+- Agrupamento de marcadores
+- Busca e filtros por estado
+- API GeoJSON para os acessos
+
+### Plataforma
+
+- Django e Django REST Framework
+- Administração Django
+- API REST
+- OpenAPI e Swagger
+- PostgreSQL/PostGIS
+- Redis
+- Celery Worker e Celery Beat
+- Docker e Gunicorn
+- Health checks de liveness e readiness
+- Configuração para proxy HTTPS e EasyPanel
+
+## Estado atual da interface
+
+O mapa operacional está disponível na página inicial e já consome a API
+GeoJSON. A interface administrativa anterior foi substituída durante a
+implementação do mapa.
+
+O próximo ciclo do frontend será:
+
+1. criar um layout base reutilizável;
+2. reconstruir o dashboard de visão geral;
+3. manter o mapa em uma página própria;
+4. integrar a navegação de equipamentos, OLTs, CTOs, clientes e alertas;
+5. alimentar os cards do dashboard com dados reais.
+
+## Funcionalidades pendentes
+
+- Coleta SNMP real em OLTs FiberHome
+- Perfis de OIDs por modelo e firmware
+- Descoberta automática de portas PON e ONUs
+- Correlação operacional completa entre IXCSoft e OLT
+- Motor de alertas
+- Notificações por Telegram
+- Integração com Zabbix
 - Dashboards no Grafana
-- Histórico de eventos e sinais ópticos
-- API REST documentada com OpenAPI/Swagger
+- Importação de KML e KMZ
+- Reconstrução do dashboard administrativo
+- Ampliação dos testes automatizados
 
 ## Arquitetura
 
 ```text
-IXCSoft API ───────┐
-                   ├──> Django API ──> PostgreSQL/PostGIS
-FiberHome via SNMP ┘         │
-                             ├──> Redis/Celery
-                             ├──> Zabbix
-                             ├──> Telegram
-                             └──> Frontend Leaflet
+IXCSoft API ───────────────┐
+                           ├──> Django API ──> PostgreSQL/PostGIS
+OLTs via SNMP (planejado) ─┘         │
+                                     ├──> Redis/Celery
+                                     ├──> API REST/GeoJSON
+                                     ├──> Administração Django
+                                     └──> Frontend Leaflet
 ```
 
-A aplicação é dividida por domínios:
+### Domínios
 
 ```text
 apps/
 ├── core/
+├── access/
 ├── ixc_integration/
 ├── olt_integration/
+├── optical/
 ├── network_map/
 └── alerts/
 ```
@@ -50,7 +127,7 @@ repositórios e tarefas assíncronas.
 
 ## Tecnologias
 
-- Python
+- Python 3.12
 - Django
 - Django REST Framework
 - PostgreSQL
@@ -58,22 +135,12 @@ repositórios e tarefas assíncronas.
 - Redis
 - Celery
 - Docker
+- Gunicorn
 - Leaflet
-- Zabbix
-- Grafana
+- OpenStreetMap
+- drf-spectacular
 
-## Estado do projeto
-
-O projeto está em desenvolvimento ativo. A integração inicial com o IXCSoft já
-possui estrutura para sincronizar:
-
-- clientes;
-- logins PPPoE;
-- provisionamentos do endpoint `radpop_radio_cliente_fibra`.
-
-A coleta SNMP das OLTs e o frontend geográfico ainda serão implementados.
-
-## Instalação local
+## Instalação
 
 Copie o arquivo de exemplo:
 
@@ -81,50 +148,76 @@ Copie o arquivo de exemplo:
 cp .env.example .env
 ```
 
+Preencha as variáveis obrigatórias:
+
+- `DJANGO_SECRET_KEY`
+- `POSTGRES_HOST`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `REDIS_URL`
+- `FIELD_ENCRYPTION_KEY`
+
 Suba os serviços:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-Execute as migrations:
+Execute as migrations, se não estiverem habilitadas automaticamente:
 
 ```bash
 docker compose exec web python manage.py migrate
 ```
 
-Crie o usuário administrativo:
+Crie um usuário administrativo:
 
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
 
-## Endpoints
+## EasyPanel
 
+No EasyPanel, configure o domínio para o serviço `web` na porta interna `8000`.
+PostgreSQL/PostGIS e Redis devem ser fornecidos como serviços externos e
+informados pelas variáveis de ambiente.
+
+Quando o acesso público utilizar HTTPS, configure:
+
+```env
+WEB_URL=https://mapa.exemplo.com.br
+DJANGO_SECURE_SSL_REDIRECT=false
+```
+
+O proxy reverso deve encaminhar `X-Forwarded-Proto: https`.
+
+## Endpoints principais
+
+- Interface atual/mapa: `/`
 - Administração: `/admin/`
-- Documentação Swagger: `/api/docs/`
+- Equipamentos: `/rede/equipamentos/`
+- Swagger: `/api/docs/`
+- Schema OpenAPI: `/api/schema/`
 - Health check: `/api/health/`
+- Liveness: `/api/health/live/`
+- Readiness: `/api/health/ready/`
 - API principal: `/api/v1/`
 - Integração IXCSoft: `/api/ixc/`
+- API do mapa: `/api/map/`
 
 ## Segurança
 
-Nunca publique tokens, senhas, communities SNMP ou chaves de criptografia no
-GitHub.
-
+Nunca publique tokens, senhas, communities SNMP ou chaves de criptografia.
 Utilize variáveis de ambiente e secrets protegidos no ambiente de implantação.
+
+O `.env.example` contém apenas valores ilustrativos.
 
 ## Documentação
 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Configuração do IXCSoft](docs/IXC_SETUP.md)
-- [Endpoints utilizados no IXCSoft](docs/IXC_ENDPOINTS.md)
+- [Endpoints do IXCSoft](docs/IXC_ENDPOINTS.md)
 - [Histórico de versões](CHANGELOG.md)
-
-## Releases
-
-As alterações de cada versão ficam registradas na página **Releases** do GitHub
-e no arquivo `CHANGELOG.md`.
 
 ## Licença
 

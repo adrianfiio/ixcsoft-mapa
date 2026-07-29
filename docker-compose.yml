@@ -1,10 +1,10 @@
-# Produção local no Debian 13
+# Produção no Debian 13 / EasyPanel
 # PostgreSQL/PostGIS e Redis são serviços externos a este arquivo.
 
 x-common-environment: &common-environment
-  APP_NAME: ${APP_NAME:-AFService Map}
+  APP_NAME: ${APP_NAME:-IXCSoft Mapa}
   APP_ENV: ${APP_ENV:-production}
-  APP_VERSION: ${APP_VERSION:-0.6.3}
+  APP_VERSION: ${APP_VERSION:-0.7.0}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
   TZ: ${TZ:-America/Sao_Paulo}

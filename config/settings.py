@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.6.2")
+APP_VERSION = os.getenv("APP_VERSION", "0.7.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -118,7 +118,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "AFService Map API",
+    "TITLE": "IXCSoft Mapa API",
     "DESCRIPTION": "API do sistema de monitoramento de rede óptica.",
     "VERSION": APP_VERSION,
 }
@@ -142,7 +142,6 @@ CELERY_BEAT_SCHEDULE = {
 
 FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
 
-# Diretório de arquivos estáticos do projeto
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]

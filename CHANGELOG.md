@@ -1,84 +1,107 @@
 # Changelog
 
-Todas as mudanças relevantes do projeto serão documentadas neste arquivo.
-
-O formato segue as ideias de Keep a Changelog e o projeto utiliza versionamento
-semântico durante o desenvolvimento.
+Todas as mudanças relevantes do projeto são registradas neste arquivo.
 
 ## [Não lançado]
 
 ### Planejado
 
-- Coleta SNMP real em OLTs FiberHome
-- Perfis de OIDs por modelo e firmware
-- Descoberta de portas PON e ONUs
-- Migrations iniciais validadas em Docker
-- Mapa Leaflet
+- Reconstruir o dashboard administrativo
+- Separar o dashboard e o mapa em páginas próprias
+- Criar um layout base compartilhado
+- Alimentar os indicadores do dashboard com dados reais
+- Implementar coleta SNMP real em OLTs FiberHome
+- Criar perfis de OIDs por modelo e firmware
+- Implementar descoberta de portas PON e ONUs
 
-## [0.6.1] - 2026-07-28
+## [0.7.0] - 2026-07-29
 
 ### Adicionado
 
-- Variável `WEB_URL` compatível com `https://$(PRIMARY_DOMAIN)` do EasyPanel
-- Derivação automática de host permitido, CSRF e CORS a partir da URL pública
-- `.env.example` completo para deploy no EasyPanel
-- Opção `DJANGO_SECURE_SSL_REDIRECT`
+- Estrutura multiempresa
+- Dashboard inicial de visão geral
+- Modelos de POP, rack e equipamentos
+- Modelos de infraestrutura óptica
+- Modelos de cabo, tubos, fibras e padrões de cores
+- Bandejas e fusões ópticas
+- Editor GIS e cadastro de elementos da rede
+- Base do mapa Leaflet com OpenStreetMap
+- Agrupamento de marcadores no mapa
+- Busca de clientes, logins, CTOs e ONUs
+- Filtros de acessos online, offline e desconhecidos
+- Resumo dos acessos exibidos
+- API GeoJSON para os pontos de acesso
+- Rotas web para cadastro de equipamentos
+- Arquivo `.env.example` revisado
 
 ### Alterado
 
-- Versão padrão da aplicação atualizada para `0.6.1`
+- Página inicial passou a exibir o mapa operacional
+- Identidade padrão atualizada para IXCSoft Mapa
+- Versão padrão da aplicação atualizada para `0.7.0`
+- Documentação atualizada para refletir o estado real do projeto
+- Documentação do IXCSoft ampliada para incluir provisionamentos FTTH
+
+### Observações
+
+- A página do mapa substituiu temporariamente o dashboard inicial.
+- A reconstrução do dashboard, usando um layout base e uma rota separada para o
+  mapa, será feita no próximo ciclo do frontend.
+- A estrutura dos coletores SNMP existe, mas a coleta real ainda não está
+  concluída.
 
 ## [0.6.2] - 2026-07-28
 
 ### Corrigido
 
-- Compose de produção adaptado ao EasyPanel sem publicação de portas
-- PostgreSQL, Redis e Nginx removidos do Compose de produção
-- Domínio do EasyPanel direcionado ao serviço `web` na porta interna 8000
-- Stack completo de desenvolvimento movido para `docker-compose.local.yml`
+- Compose de produção adaptado para PostgreSQL e Redis externos
+- Serviços web, worker e beat separados
+- Domínio direcionado ao serviço web na porta interna 8000
+
+## [0.6.1] - 2026-07-28
+
+### Adicionado
+
+- Variável `WEB_URL`
+- Derivação de host permitido, CSRF e CORS a partir da URL pública
+- Opção `DJANGO_SECURE_SSL_REDIRECT`
 
 ## [0.6.0] - 2026-07-28
 
 ### Adicionado
 
-- Deploy de produção com Docker e Gunicorn
-- Modos separados para web, worker e beat
-- Healthchecks de liveness e readiness
-- Configuração opcional do Nginx
-- Documentação do EasyPanel
-- Variáveis de segurança para proxy HTTPS, CSRF e domínio
+- Deploy com Docker e Gunicorn
+- Modos web, worker e beat
+- Health checks de liveness e readiness
+- Configuração para proxy HTTPS e EasyPanel
 
 ### Corrigido
 
 - Worker e Beat deixaram de executar migrations concorrentes
 - Versão da API centralizada em `APP_VERSION`
-- Valor padrão inseguro de `ALLOWED_HOSTS` removido
 
 ## [0.5.1] - 2026-07-28
 
-### Corrigido
+### Alterado
 
-- README transformado em documentação permanente do sistema
-- Histórico de atualizações movido para o CHANGELOG
-- Adicionada documentação específica para releases
-- Criado template para publicação de releases no GitHub
+- README transformado em documentação permanente
+- Histórico de atualizações movido para o Changelog
 
 ## [0.5.0] - 2026-07-28
 
 ### Adicionado
 
-- Sincronização do endpoint `radpop_radio_cliente_fibra`
+- Sincronização de `radpop_radio_cliente_fibra`
 - Modelo de provisionamento FTTH
 - Campos de projeto, CTO, PON, ONU, VLAN e sinal óptico
 - Associação inicial entre login, CTO e ONU
 - Endpoint `/api/ixc/fiber-assignments/`
-- Operações GET, POST, PUT e DELETE no cliente IXCSoft
-- Testes de normalização da URL e listagem via GET
+- Operações HTTP no cliente IXCSoft
 
 ### Alterado
 
-- Cliente IXCSoft compatível com URL raiz e `/webservice/v1`
-- Listagem ajustada ao padrão GET do WebserviceClient do IXCSoft
+- Cliente compatível com URL raiz e `/webservice/v1`
+- Listagem ajustada ao padrão do WebserviceClient do IXCSoft
 
 ## [0.4.0] - 2026-07-28
 
@@ -87,21 +110,16 @@ semântico durante o desenvolvimento.
 - Criptografia de tokens com Fernet
 - Testes do cliente HTTP
 - Testes de criptografia
-- Estrutura inicial de migrations
-
-### Corrigido
-
-- Registro dos modelos de clientes e logins IXCSoft
+- Migrations iniciais
 
 ## [0.3.0] - 2026-07-28
 
 ### Adicionado
 
 - Arquitetura em camadas
-- Cliente HTTP inicial do IXCSoft
-- Serviços e repositórios
-- Tarefas Celery
-- Base para coletores FiberHome
+- Cliente HTTP do IXCSoft
+- Serviços, repositórios e tarefas Celery
+- Base dos coletores FiberHome
 - GitHub Actions
 
 ## [0.2.0] - 2026-07-28
@@ -109,7 +127,7 @@ semântico durante o desenvolvimento.
 ### Adicionado
 
 - Modelos de OLT, PON, ONU e histórico óptico
-- Modelos de CTO, rotas, cabos e elementos de rede
+- Modelos de CTO, rotas, cabos e elementos
 - Clientes e logins IXCSoft
 - Regras, eventos e notificações de alerta
 - API REST inicial
@@ -121,7 +139,6 @@ semântico durante o desenvolvimento.
 - Estrutura inicial Django
 - Docker Compose
 - PostgreSQL/PostGIS
-- Redis
-- Celery
+- Redis e Celery
 - Swagger
 - Health check
