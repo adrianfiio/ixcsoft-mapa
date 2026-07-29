@@ -11,6 +11,19 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.19.1] - 2026-07-29
+
+### Corrigido
+
+- Dashboard de empresas não exibe mais ONUs, OLTs, clientes, alertas ou sincronizações de terceiros.
+- Reset de teste remove integralmente os dados vinculados à Nic Fibra/Eduardo.
+- Logo centralizada no painel esquerdo da tela de login.
+
+### Adicionado
+
+- Botão **Sincronizar agora** e relatório das dez últimas execuções da integração ERP.
+- Rótulos em português no formulário do IXCSoft.
+
 ## [0.19.0] - 2026-07-29
 
 ### Adicionado

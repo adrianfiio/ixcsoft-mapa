@@ -163,7 +163,7 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 .af-platform-login { display: grid; min-height: 100vh; place-items: center; margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: radial-gradient(circle at 15% 15%, #0e4450, transparent 38%), linear-gradient(135deg, #06101d, #091a2b); }
 .af-login-card { display: grid; grid-template-columns: 1.05fr 1fr; width: min(880px, calc(100% - 40px)); min-height: 510px; overflow: hidden; background: #0d1b2d; border: 1px solid #29435e; border-radius: 22px; box-shadow: 0 35px 100px rgba(0,0,0,.48); }
 .af-login-card header { display: flex; flex-direction: column; justify-content: space-between; padding: 48px; background: linear-gradient(155deg, #113b4b, #0b2538 65%, #071727); border-right: 1px solid #29435e; }
-.af-login-card header img { width: 245px; max-height: 105px; object-fit: contain; object-position: left center; }
+.af-login-card header img { width: 245px; max-height: 105px; margin-inline:auto; object-fit: contain; object-position: center; }
 .af-login-card header span { color: #5eead4; font-size: 10px; font-weight: 850; letter-spacing: .14em; }
 .af-login-card header h2 { max-width: 330px; margin: 10px 0; color: #f8fafc; font-size: 32px; line-height: 1.08; }
 .af-login-card header p { max-width: 330px; margin: 0; color: #aac0d4; line-height: 1.55; }

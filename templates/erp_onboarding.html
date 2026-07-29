@@ -37,8 +37,19 @@
             <small>A importação respeitará as opções marcadas e não substituirá desenhos manuais sem confirmação.</small>
         </aside>
         <div class="platform-form-actions">
-            <button type="submit">Testar conexão e continuar →</button>
+            <button type="submit" name="action" value="save">Testar conexão e salvar →</button>
+            {% if configuration %}<button class="secondary-action" type="submit" name="action" value="synchronize">↻ Sincronizar agora</button>{% endif %}
         </div>
     </form>
+    {% if configuration %}
+    <section class="sync-report">
+        <div class="panel-header"><h2>Relatório de sincronização</h2><small>Últimas 10 execuções</small></div>
+        <div class="account-items">
+        {% for execution in executions %}
+            <div><span><strong>{{ execution.get_status_display }}</strong><small>{{ execution.started_at }} · recebidos {{ execution.records_received }} · criados {{ execution.records_created }} · atualizados {{ execution.records_updated }} · falhas {{ execution.records_failed }}</small>{% if execution.error_message %}<small class="form-error">{{ execution.error_message }}</small>{% endif %}</span></div>
+        {% empty %}<p>Nenhuma sincronização executada ainda.</p>{% endfor %}
+        </div>
+    </section>
+    {% endif %}
 </section>
 {% endblock %}

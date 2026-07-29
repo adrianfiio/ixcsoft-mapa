@@ -28,6 +28,7 @@ from apps.core.forms import CompanyOnboardingForm, DIOPlatformForm, ERPOnboardin
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.clients.ixc_client import IXCClient
 from apps.ixc_integration.clients.exceptions import IXCClientError
+from apps.ixc_integration.tasks import synchronize_ixc_configuration
 from apps.olt_integration.models import OLT, ONU
 
 
@@ -49,7 +50,28 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 filter=Q(latitude__isnull=False, longitude__isnull=False),
             ),
         )
-        onu_summary = ONU.objects.aggregate(
+        onu_queryset = ONU.objects.all()
+        olt_queryset = OLT.objects.all()
+        element_queryset = NetworkElement.objects.all()
+        cto_queryset = CTO.objects.all()
+        alert_queryset = AlertEvent.objects.all()
+        customer_queryset = IXCCustomer.objects.all()
+        sync_queryset = IXCSyncExecution.objects.select_related("configuration")
+        if company_ids is not None:
+            onu_queryset = onu_queryset.filter(
+                pon_port__olt__cpd__company_id__in=company_ids
+            )
+            olt_queryset = olt_queryset.filter(cpd__company_id__in=company_ids)
+            element_queryset = element_queryset.filter(company_id__in=company_ids)
+            cto_queryset = cto_queryset.filter(company_id__in=company_ids)
+            customer_queryset = customer_queryset.filter(company_id__in=company_ids)
+            sync_queryset = sync_queryset.filter(configuration__company_id__in=company_ids)
+            alert_queryset = alert_queryset.filter(
+                Q(cto__company_id__in=company_ids)
+                | Q(olt__cpd__company_id__in=company_ids)
+                | Q(route__company_id__in=company_ids)
+            ).distinct()
+        onu_summary = onu_queryset.aggregate(
             total=Count("id"),
             online=Count(
                 "id",
@@ -72,17 +94,17 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 "app_version": settings.APP_VERSION,
                 "access": access_summary,
                 "onus": onu_summary,
-                "customer_count": IXCCustomer.objects.count() if company_ids is None else 0,
-                "olt_count": OLT.objects.count(),
-                "element_count": NetworkElement.objects.count(),
-                "cto_count": CTO.objects.count(),
-                "active_alert_count": AlertEvent.objects.filter(
+                "customer_count": customer_queryset.count(),
+                "olt_count": olt_queryset.count(),
+                "element_count": element_queryset.count(),
+                "cto_count": cto_queryset.count(),
+                "active_alert_count": alert_queryset.filter(
                     state__in=active_alert_states
                 ).count(),
-                "recent_alerts": AlertEvent.objects.filter(
+                "recent_alerts": alert_queryset.filter(
                     state__in=active_alert_states
                 ).select_related("rule")[:5],
-                "latest_sync": IXCSyncExecution.objects.order_by(
+                "latest_sync": sync_queryset.order_by(
                     "-started_at", "-created_at"
                 ).first(),
             }
@@ -262,7 +284,14 @@ def erp_onboarding(request):
         instance=existing,
         company_ids=company_ids,
     )
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and request.POST.get("action") == "synchronize":
+        if not existing:
+            form.add_error(None, "Salve e teste a integração antes de sincronizar.")
+        else:
+            task = synchronize_ixc_configuration.delay(existing.pk)
+            messages.success(request, f"Sincronização iniciada. Tarefa {task.id}.")
+            return redirect("erp-onboarding")
+    elif request.method == "POST" and form.is_valid():
         token = form.cleaned_data.get("api_token", "").strip()
         client = None
         if token:
@@ -282,7 +311,16 @@ def erp_onboarding(request):
                 f"IXCSoft conectado. {result['total_clientes']} clientes disponíveis.",
             )
             return redirect("account-panel")
-    return render(request, "erp_onboarding.html", {"form": form})
+    executions = (
+        existing.executions.order_by("-started_at")[:10]
+        if existing
+        else []
+    )
+    return render(
+        request,
+        "erp_onboarding.html",
+        {"form": form, "configuration": existing, "executions": executions},
+    )
 
 
 def liveness_check(request):
