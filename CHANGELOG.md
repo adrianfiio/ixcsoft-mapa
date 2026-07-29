@@ -81,6 +81,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.12.0] - 2026-07-29
+
+### Adicionado
+
+- Desenho de cabos iniciando e terminando diretamente em OLT, CEO ou CTO.
+- Controle para mostrar ou ocultar nomes dos cabos e equipamentos.
+- Seleção simplificada de cabo pela quantidade de fibras.
+
+### Alterado
+
+- O fluxo luminoso só atravessa uma CEO quando existe fusão real no unifilar.
+- Cabos de entrada são posicionados à esquerda e cabos de saída à direita no unifilar.
+- O modelo selecionado define automaticamente a quantidade de fibras e sugere um nome padronizado.
+
 ## [0.11.2] - 2026-07-29
 
 ### Corrigido

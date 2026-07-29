@@ -391,6 +391,22 @@ def fiber_cables_geojson(request):
     if project_id:
         queryset = queryset.filter(project_id=project_id)
 
+    optical_adjacency = {}
+    splice_queryset = FiberSplice.objects.filter(
+        splice_box__project_id=project_id
+    ).values_list("input_fiber__cable_id", "output_fiber__cable_id")
+    for first_cable_id, second_cable_id in splice_queryset:
+        optical_adjacency.setdefault(first_cable_id, set()).add(second_cable_id)
+        optical_adjacency.setdefault(second_cable_id, set()).add(first_cable_id)
+    splitter_queryset = SpliceTraySplitter.objects.filter(
+        tray__splice_box__project_id=project_id,
+        input_fiber_id__isnull=False,
+        ports__output_fiber_id__isnull=False,
+    ).values_list("input_fiber__cable_id", "ports__output_fiber__cable_id")
+    for first_cable_id, second_cable_id in splitter_queryset:
+        optical_adjacency.setdefault(first_cable_id, set()).add(second_cable_id)
+        optical_adjacency.setdefault(second_cable_id, set()).add(first_cable_id)
+
     for cable in queryset:
 
         if not cable.geometry:
@@ -420,6 +436,9 @@ def fiber_cables_geojson(request):
                     ),
                     "origin_id": cable.origin_id,
                     "destination_id": cable.destination_id,
+                    "optical_next_cable_ids": sorted(
+                        optical_adjacency.get(cable.id, set())
+                    ),
                     "destino": (
                         cable.destination.name
                         if cable.destination
@@ -1316,6 +1335,8 @@ def splice_box_fibers(request, element_id, splice_id=None):
                 {
                     "id": cable.id,
                     "name": cable.name,
+                    "origin_id": cable.origin_id,
+                    "destination_id": cable.destination_id,
                     "fibers": [
                         {
                             "id": fiber.id,
