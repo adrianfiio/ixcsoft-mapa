@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.8.4")
+APP_VERSION = os.getenv("APP_VERSION", "0.8.5")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -104,7 +104,7 @@ TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "/static/"
+STATIC_URL = "/assets/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -118,7 +118,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "IXCSoft Mapa API",
+    "TITLE": "AFService Map API",
     "DESCRIPTION": "API do sistema de monitoramento de rede óptica.",
     "VERSION": APP_VERSION,
 }

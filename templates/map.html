@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>IXCSoft Mapa</title>
+    <title>Mapa operacional | AFService Map</title>
 
     <link
         rel="stylesheet"
@@ -58,6 +58,15 @@
         .sidebar h1 {
             margin: 0 0 6px;
             font-size: 24px;
+        }
+
+        .map-logo {
+            display: block;
+            width: 190px;
+            height: 64px;
+            margin-bottom: 6px;
+            object-fit: contain;
+            object-position: left center;
         }
 
         .subtitle {
@@ -271,10 +280,14 @@
 <body>
     <div class="layout">
         <aside class="sidebar">
-            <h1>IXCSoft Mapa</h1>
+            <img
+                class="map-logo"
+                src="{% static 'img/afservice-logo.png' %}"
+                alt="AFService Map"
+            >
 
             <p class="subtitle">
-                Monitoramento geográfico da rede FTTH
+                AFService Map · Rede FTTH
             </p>
 
             <a class="back-link" href="{% url 'dashboard' %}">

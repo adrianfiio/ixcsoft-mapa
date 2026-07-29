@@ -1,4 +1,4 @@
-# IXCSoft Mapa
+# AFService Map
 
 Plataforma para monitoramento, correlação e visualização geográfica de redes
 FTTH, integrada ao IXCSoft e preparada para equipamentos GPON.
@@ -8,10 +8,10 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.8.4 — Navegação do mapa**
+**v0.8.5 — Identidade AFService Map**
 
-Esta versão adiciona o retorno do mapa para o dashboard e consolida a base para
-o próximo ciclo do editor visual da rede.
+Esta versão aplica o nome e o logotipo oficiais da AFService e corrige os
+arquivos estáticos do Django Admin atrás do Nginx.
 
 ## Funcionalidades implementadas
 

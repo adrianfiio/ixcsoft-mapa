@@ -5,18 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#07111f">
-    <title>{% block title %}IXCSoft Mapa{% endblock %}</title>
-    <link rel="stylesheet" href="{% url 'app-stylesheet' %}?v={{ app_version|default:'current' }}">
+    <title>{% block title %}AFService Map{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v={{ app_version|default:'current' }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <div class="app-shell">
         <aside class="app-sidebar" id="app-sidebar">
             <a class="brand" href="{% url 'dashboard' %}">
-                <span class="brand-mark">IX</span>
+                <img class="brand-logo" src="{% static 'img/afservice-logo.png' %}" alt="AFService">
                 <span>
-                    <strong>IXCSoft Mapa</strong>
-                    <small>Operação FTTH</small>
+                    <strong>AFService Map</strong>
+                    <small>Mapa e operação FTTH</small>
                 </span>
             </a>
 

@@ -2,9 +2,9 @@
 # PostgreSQL/PostGIS e Redis são serviços externos a este arquivo.
 
 x-common-environment: &common-environment
-  APP_NAME: ${APP_NAME:-IXCSoft Mapa}
+  APP_NAME: ${APP_NAME:-AFService Map}
   APP_ENV: ${APP_ENV:-production}
-  APP_VERSION: ${APP_VERSION:-0.8.4}
+  APP_VERSION: ${APP_VERSION:-0.8.5}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
   TZ: ${TZ:-America/Sao_Paulo}
