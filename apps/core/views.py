@@ -13,6 +13,7 @@ from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
 from apps.core.models import MapBaseConfiguration
+from apps.core.access import has_any_edit_access
 from apps.olt_integration.models import OLT, ONU
 
 
@@ -71,6 +72,7 @@ class DashboardView(TemplateView):
             }
         )
         if self.template_name == "map.html":
+            context["can_edit_map"] = has_any_edit_access(self.request.user)
             map_config = MapBaseConfiguration.objects.first()
             google_api_key = ""
             if (

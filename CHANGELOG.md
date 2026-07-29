@@ -11,6 +11,27 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.15.0] - 2026-07-29
+
+### Adicionado
+
+- Níveis de acesso multiempresa VIEW, EDIT e ADMIN.
+- Vínculo explícito entre usuários e empresas, com ativação e desativação de acesso.
+- Central administrativa organizada por empresas, projetos, rede óptica e integrações.
+- Atalhos compactos separados para poste e visibilidade dos nomes no mapa.
+
+### Segurança
+
+- Django Admin restrito ao superadministrador da plataforma.
+- Projetos filtrados pelas empresas liberadas ao usuário.
+- Usuários VIEW não podem alterar ou excluir projetos.
+- Criação e importação de projetos validam a empresa e o nível EDIT/ADMIN.
+
+### Corrigido
+
+- Camada de satélite deixa de solicitar o nível rural sem cobertura da Esri e amplia
+  a última imagem disponível, evitando os blocos “Map data not yet available”.
+
 ## [0.14.3] - 2026-07-29
 
 ### Adicionado

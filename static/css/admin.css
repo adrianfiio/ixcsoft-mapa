@@ -124,9 +124,36 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 .af-location-row .af-address-search { flex: 1; min-width: 260px; }
 .af-location-feedback { margin-top: 8px; color: #99f6e4; font-size: 12px; }
 .af-location-feedback.error { color: #fda4af; }
+.dashboard #content { width: min(1180px, calc(100% - 380px)); }
+.dashboard #content-main { float: none; width: 100%; }
+.af-control-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.af-control-head h1 { margin: 3px 0 6px !important; font-size: 30px !important; }
+.af-control-head p { margin: 0; color: #9fb0c3; }
+.af-eyebrow { color: #5eead4 !important; font-size: 11px; font-weight: 850; letter-spacing: .14em; }
+.af-control-actions { display: flex; gap: 9px; }
+.af-control-grid { display: grid; grid-template-columns: repeat(2, minmax(300px, 1fr)); gap: 16px; }
+.af-control-card { position: relative; padding: 20px; background: linear-gradient(145deg, #0d1b2d, #10243a); border: 1px solid #29435e; border-radius: 14px; }
+.af-control-card h2 { margin: 0 0 7px; color: #f8fafc; font-size: 17px; }
+.af-control-card > p { min-height: 38px; margin: 0 0 16px; color: #9fb0c3; }
+.af-card-icon { position: absolute; top: 17px; right: 19px; color: #2dd4bf; font-size: 25px; }
+.af-control-card nav { display: grid; gap: 6px; }
+.af-control-card nav a { display: flex; justify-content: space-between; padding: 10px 12px; color: #dce9f5; background: #091627; border: 1px solid #21364f; border-radius: 8px; text-decoration: none; }
+.af-control-card nav a:hover { color: #06211e; background: #2dd4bf; }
+.af-advanced { margin-top: 18px; padding: 15px 18px; background: #0a1727; border: 1px solid #29435e; border-radius: 12px; }
+.af-advanced summary { cursor: pointer; color: #cbd5e1; font-weight: 750; }
+.af-advanced > p { color: #9fb0c3; }
+.af-app-list .module { margin-bottom: 12px; }
+.af-recent { position: absolute; top: 28px; right: 28px; width: 300px; padding: 18px; background: #0d1b2d; border: 1px solid #29435e; border-radius: 12px; }
+.af-recent h2 { margin: 0 0 12px; color: #f8fafc; }
+.af-recent a { display: block; padding: 9px 0; color: #dce9f5; border-bottom: 1px solid #21364f; text-decoration: none; }
+.af-recent small { display: block; margin-top: 3px; color: #8194aa; }
+.deletelink, .deletelink-box a { background: #b42342 !important; border-radius: 7px !important; }
 
 @media (max-width: 1100px) {
     .af-admin-shortcuts { display: none; }
     #content { padding: 20px 18px; }
     .af-location-row { align-items: stretch; flex-direction: column; }
+    .dashboard #content { width: auto; }
+    .af-recent { position: static; width: auto; margin: 0 18px 20px; }
+    .af-control-grid { grid-template-columns: 1fr; }
 }

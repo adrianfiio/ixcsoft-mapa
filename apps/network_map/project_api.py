@@ -12,6 +12,12 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.permissions import AllowAny
 
 from apps.core.models import Company
+from apps.core.access import (
+    can_edit_company,
+    can_view_company,
+    editable_company_ids,
+    scope_company_queryset,
+)
 from apps.network_map.models import (
     CTO,
     NetworkElement,
@@ -20,7 +26,7 @@ from apps.network_map.models import (
 )
 
 
-def project_payload(project):
+def project_payload(project, user=None):
     return {
         "id": project.id,
         "name": project.name,
@@ -34,6 +40,7 @@ def project_payload(project):
         "element_count": project.elements.count(),
         "cable_count": project.cables.count(),
         "route_count": project.routes.count(),
+        "can_edit": can_edit_company(user, project.company_id),
     }
 
 
@@ -41,11 +48,14 @@ def project_payload(project):
 @permission_classes([IsAuthenticatedOrReadOnly])
 def projects(request):
     if request.method == "GET":
-        queryset = NetworkProject.objects.filter(enabled=True).order_by("name")
+        queryset = scope_company_queryset(
+            NetworkProject.objects.filter(enabled=True),
+            request.user,
+        ).order_by("name")
         return JsonResponse(
             {
                 "success": True,
-                "projects": [project_payload(item) for item in queryset],
+                "projects": [project_payload(item, request.user) for item in queryset],
             }
         )
 
@@ -77,6 +87,22 @@ def projects(request):
     company_id = request.data.get("company_id")
     if company_id:
         company = get_object_or_404(Company, pk=company_id)
+        if not can_edit_company(request.user, company.id):
+            return JsonResponse(
+                {"success": False, "error": "Você não pode editar esta empresa."},
+                status=403,
+            )
+    elif not request.user.is_superuser:
+        allowed = editable_company_ids(request.user)
+        if len(allowed) != 1:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Selecione a empresa responsável pelo projeto.",
+                },
+                status=400,
+            )
+        company = get_object_or_404(Company, pk=allowed[0])
 
     project = NetworkProject.objects.create(
         company=company,
@@ -88,7 +114,7 @@ def projects(request):
         created_by=request.user,
     )
     return JsonResponse(
-        {"success": True, "project": project_payload(project)},
+        {"success": True, "project": project_payload(project, request.user)},
         status=201,
     )
 
@@ -97,9 +123,20 @@ def projects(request):
 @permission_classes([IsAuthenticatedOrReadOnly])
 def project_detail(request, project_id):
     project = get_object_or_404(NetworkProject, pk=project_id)
+    if not can_view_company(request.user, project.company_id):
+        return JsonResponse(
+            {"success": False, "error": "Projeto não disponível para este usuário."},
+            status=403,
+        )
 
     if request.method == "GET":
-        return JsonResponse({"success": True, "project": project_payload(project)})
+        return JsonResponse({"success": True, "project": project_payload(project, request.user)})
+
+    if not can_edit_company(request.user, project.company_id):
+        return JsonResponse(
+            {"success": False, "error": "Seu acesso é somente VIEW."},
+            status=403,
+        )
 
     if request.method == "DELETE":
         if project.elements.exists() or project.cables.exists() or project.routes.exists():
@@ -125,7 +162,7 @@ def project_detail(request, project_id):
             )
         project.status = status_value
     project.save()
-    return JsonResponse({"success": True, "project": project_payload(project)})
+    return JsonResponse({"success": True, "project": project_payload(project, request.user)})
 
 
 def read_kml(upload):
@@ -178,6 +215,11 @@ def imported_element_type(name):
 @permission_classes([IsAuthenticated])
 def import_project_file(request, project_id):
     project = get_object_or_404(NetworkProject, pk=project_id, enabled=True)
+    if not can_edit_company(request.user, project.company_id):
+        return JsonResponse(
+            {"success": False, "error": "Seu acesso é somente VIEW."},
+            status=403,
+        )
     upload = request.FILES.get("file")
     if upload is None:
         return JsonResponse(
@@ -254,6 +296,7 @@ def project_routes_geojson(request):
     queryset = NetworkRoute.objects.filter(geometry__isnull=False)
     if project_id:
         queryset = queryset.filter(project_id=project_id)
+    queryset = scope_company_queryset(queryset, request.user)
 
     features = []
     for route in queryset:

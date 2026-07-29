@@ -1,0 +1,85 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="af-control-head">
+    <div>
+        <p class="af-eyebrow">ADMIN · PROPRIETÁRIO DA PLATAFORMA</p>
+        <h1>Central de controle</h1>
+        <p>Empresas, acessos, projetos e integrações em uma visão organizada.</p>
+    </div>
+    <div class="af-control-actions">
+        <a class="button default" href="{% url 'admin:core_company_add' %}">+ Nova empresa</a>
+        <a class="button" href="{% url 'admin:auth_user_add' %}">+ Novo usuário</a>
+    </div>
+</div>
+
+<div class="af-control-grid">
+    <section class="af-control-card">
+        <span class="af-card-icon">◎</span>
+        <h2>Empresas e acessos</h2>
+        <p>Cadastre clientes da plataforma e defina VIEW, EDIT ou ADMIN.</p>
+        <nav>
+            <a href="{% url 'admin:core_company_changelist' %}">Empresas <span>→</span></a>
+            <a href="{% url 'admin:core_companymembership_changelist' %}">Níveis de acesso <span>→</span></a>
+            <a href="{% url 'admin:auth_user_changelist' %}">Usuários <span>→</span></a>
+        </nav>
+    </section>
+    <section class="af-control-card">
+        <span class="af-card-icon">⌁</span>
+        <h2>Projetos e mapa</h2>
+        <p>Controle os projetos, elementos, cabos e rotas da rede.</p>
+        <nav>
+            <a href="{% url 'admin:network_map_networkproject_changelist' %}">Projetos <span>→</span></a>
+            <a href="{% url 'admin:network_map_networkelement_changelist' %}">Elementos <span>→</span></a>
+            <a href="{% url 'admin:network_map_fibercable_changelist' %}">Cabos e rotas <span>→</span></a>
+        </nav>
+    </section>
+    <section class="af-control-card">
+        <span class="af-card-icon">▤</span>
+        <h2>CPD e rede óptica</h2>
+        <p>Organize POPs, OLTs, DIOs e a infraestrutura interna.</p>
+        <nav>
+            <a href="{% url 'admin:network_map_pop_changelist' %}">CPDs / POPs <span>→</span></a>
+            <a href="{% url 'admin:olt_integration_olt_changelist' %}">OLTs <span>→</span></a>
+            <a href="{% url 'admin:optical_dio_changelist' %}">DIOs <span>→</span></a>
+        </nav>
+    </section>
+    <section class="af-control-card">
+        <span class="af-card-icon">↻</span>
+        <h2>Integrações</h2>
+        <p>Gerencie ERPs, coleta de dados, alertas e monitoramento.</p>
+        <nav>
+            <a href="{% url 'admin:ixc_integration_ixcconfiguration_changelist' %}">Integrações ERP <span>→</span></a>
+            <a href="{% url 'admin:alerts_alertevent_changelist' %}">Alertas <span>→</span></a>
+            <a href="{% url 'admin:core_mapbaseconfiguration_changelist' %}">Mapa-base <span>→</span></a>
+        </nav>
+    </section>
+</div>
+
+<details class="af-advanced">
+    <summary>Dados técnicos avançados</summary>
+    <p>Use esta área somente para manutenção direta dos registros.</p>
+    <div class="af-app-list">
+        {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+    </div>
+</details>
+{% endblock %}
+
+{% block sidebar %}
+<aside class="af-recent">
+    <h2>Atividade recente</h2>
+    {% load log %}
+    {% get_admin_log 8 as admin_log for_user user %}
+    {% if admin_log %}
+        {% for entry in admin_log %}
+        <a href="{{ entry.get_admin_url|default:'#' }}">
+            <strong>{{ entry.object_repr }}</strong>
+            <small>{{ entry.action_time|timesince }} atrás</small>
+        </a>
+        {% endfor %}
+    {% else %}
+        <p>Nenhuma alteração recente.</p>
+    {% endif %}
+</aside>
+{% endblock %}

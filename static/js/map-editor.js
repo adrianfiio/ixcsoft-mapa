@@ -1,7 +1,8 @@
 (function () {
     "use strict";
 
-    const canEdit = document.body.dataset.canEdit === "true";
+    const hasEditAccess = document.body.dataset.canEdit === "true";
+    let canEdit = hasEditAccess;
     const sidebar = document.getElementById("map-sidebar");
     const projectSelect = document.getElementById("project-select");
     const message = document.getElementById("editor-message");
@@ -36,13 +37,13 @@
         maxNativeZoom: 19, maxZoom: 23, attribution: "&copy; OpenStreetMap",
     });
     const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-        maxNativeZoom: 19, maxZoom: 23, attribution: "Tiles &copy; Esri",
+        maxNativeZoom: 18, maxZoom: 23, attribution: "Tiles &copy; Esri",
     });
     const hybridImageryLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-        maxNativeZoom: 19, maxZoom: 23, attribution: "Tiles &copy; Esri",
+        maxNativeZoom: 18, maxZoom: 23, attribution: "Tiles &copy; Esri",
     });
     const hybridLabelsLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
-        maxNativeZoom: 19, maxZoom: 23, attribution: "Labels &copy; Esri",
+        maxNativeZoom: 18, maxZoom: 23, attribution: "Labels &copy; Esri",
         pane: "overlayPane",
     });
     const satelliteHybridLayer = L.layerGroup([hybridImageryLayer, hybridLabelsLayer]);
@@ -245,6 +246,7 @@
         data.projects.forEach((project) => projectSelect.add(new Option(`${project.name} (${project.code})`, project.id)));
         if (selectId) projectSelect.value = String(selectId);
         state.projectId = projectSelect.value || null;
+        canEdit = selectedProject() ? Boolean(selectedProject().can_edit) : hasEditAccess;
         updateTools();
     }
     function clientIcon(status) {
@@ -1214,6 +1216,7 @@
     };
     projectSelect.onchange = async () => {
         state.projectId = projectSelect.value || null;
+        canEdit = selectedProject() ? Boolean(selectedProject().can_edit) : hasEditAccess;
         clearTool(); updateTools();
         try { await loadStructure(true); notify(state.projectId ? "Projeto carregado. Escolha uma ferramenta para editar." : "Selecione um projeto."); }
         catch (error) { notify(error.message, true); }
