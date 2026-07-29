@@ -273,7 +273,7 @@
                 ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || ""}" data-splitter-id="${splitter.id}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id ? "linked" : ""}" data-linked="${port.output_fiber_id || ""}" data-port-id="${port.id}">P${port.number}</button>`).join("")}</div><div class="splitter-actions"><button type="button" data-edit-tray-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-tray-splitter="${splitter.id}">×</button></div></div>`).join("")}
                 <button type="button" class="add-splitter-button" data-add-tray-splitter="${tray.id}">+ Splitter</button></div>`;
             }).join("");
-            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique numa bandeja para selecioná-la e em duas portas para ligar. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label></div>
+            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique numa bandeja para selecioná-la e em duas portas para ligar. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
                 <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${trayNodes}</div></div>
                 <div class="splice-list"><strong>Fusões registradas</strong>${optical.splices.map((splice) => `<div><span><b>${escapeHtml(splice.input.cable)}</b> · F${splice.input.number} ${escapeHtml(splice.input.color_name)} → <b>${escapeHtml(splice.output.cable)}</b> · F${splice.output.number} ${escapeHtml(splice.output.color_name)}</span><button class="danger" data-delete-splice="${splice.id}">Excluir</button></div>`).join("") || "<p>Nenhuma fusão.</p>"}</div>`;
             let draggedFiber = null;
@@ -370,7 +370,8 @@
                 svg.innerHTML = "";
                 svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
                 const lineStyle = document.getElementById("connection-style").value;
-                const drawLink = (source, target, color, action = null) => {
+                let gradientIndex = 0;
+                const drawLink = (source, target, colors, action = null) => {
                     if (!source || !target) return;
                     const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
                     const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
@@ -378,27 +379,35 @@
                     let path = `M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`;
                     if (lineStyle === "straight") path = `M${x1},${y1} L${x2},${y2}`;
                     if (lineStyle === "orthogonal") path = `M${x1},${y1} H${(x1+x2)/2} V${y2} H${x2}`;
+                    const palette = (Array.isArray(colors) ? colors : [colors]).filter(Boolean);
+                    let stroke = escapeHtml(palette[0] || "#94a3b8");
+                    if (palette.length > 1 && palette[0] !== palette[1]) {
+                        const gradientId = `fiber-gradient-${element.id}-${gradientIndex++}`;
+                        svg.insertAdjacentHTML("beforeend", `<defs><linearGradient id="${gradientId}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${escapeHtml(palette[0])}"></stop><stop offset="46%" stop-color="${escapeHtml(palette[0])}"></stop><stop offset="54%" stop-color="${escapeHtml(palette[1])}"></stop><stop offset="100%" stop-color="${escapeHtml(palette[1])}"></stop></linearGradient></defs>`);
+                        stroke = `url(#${gradientId})`;
+                    }
                     const actionData = action ? `data-link-type="${action.type}" data-link-id="${action.id}"` : "";
-                    svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${escapeHtml(color || "#94a3b8")}" ${actionData}></path>`);
+                    svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${stroke}" ${actionData}></path>`);
                 };
                 optical.splices.forEach((splice) => drawLink(
                     content.querySelector(`[data-fiber-id="${splice.input_fiber_id}"]`),
                     content.querySelector(`[data-fiber-id="${splice.output_fiber_id}"]`),
-                    escapeHtml(splice.input.color_hex),
+                    [splice.input.color_hex, splice.output.color_hex],
                     { type: "splice", id: splice.id }
                 ));
                 optical.splitter_links.forEach((link) => {
+                    const inputColor = fiberById.get(String(link.input_fiber_id))?.color_hex;
                     if (link.input_fiber_id) drawLink(
                         content.querySelector(`[data-fiber-id="${link.input_fiber_id}"]`),
                         content.querySelector(`[data-splitter-id="${link.splitter_id}"]`),
-                        fiberById.get(String(link.input_fiber_id))?.color_hex,
+                        inputColor,
                         { type: "splitter_input", id: link.splitter_id }
                     );
                     link.ports.forEach((port) => {
                         if (port.output_fiber_id) drawLink(
                             content.querySelector(`[data-port-id="${port.id}"]`),
                             content.querySelector(`[data-fiber-id="${port.output_fiber_id}"]`),
-                            fiberById.get(String(port.output_fiber_id))?.color_hex,
+                            [inputColor, fiberById.get(String(port.output_fiber_id))?.color_hex],
                             { type: "splitter_output", id: port.id }
                         );
                     });
@@ -430,6 +439,33 @@
                     method: "PATCH", body: JSON.stringify({ layout }),
                 });
             };
+            const graphNodes = content.querySelector(".graph-nodes");
+            const zoomOutput = document.getElementById("unifilar-zoom-value");
+            let graphZoom = Math.max(.5, Math.min(1.6, Number(layout.zoom) || 1));
+            const applyGraphZoom = () => {
+                graphNodes.style.transform = `scale(${graphZoom})`;
+                graphNodes.style.transformOrigin = "top left";
+                zoomOutput.value = `${Math.round(graphZoom * 100)}%`;
+                requestAnimationFrame(redrawOpticalLinks);
+            };
+            const saveZoom = () => {
+                layout.zoom = graphZoom;
+                return api(`/api/map/elements/${element.id}/layout/`, {
+                    method: "PATCH", body: JSON.stringify({ layout }),
+                });
+            };
+            document.getElementById("unifilar-zoom-out").onclick = () => {
+                graphZoom = Math.max(.5, graphZoom - .1); applyGraphZoom(); saveZoom();
+            };
+            document.getElementById("unifilar-zoom-in").onclick = () => {
+                graphZoom = Math.min(1.6, graphZoom + .1); applyGraphZoom(); saveZoom();
+            };
+            document.getElementById("unifilar-zoom-reset").onclick = () => {
+                const graph = content.querySelector(".optical-graph");
+                graphZoom = Math.max(.5, Math.min(1, (graph.clientWidth - 40) / graphNodes.scrollWidth));
+                applyGraphZoom(); saveZoom();
+            };
+            applyGraphZoom();
             content.querySelectorAll(".tray-node").forEach((tray) => {
                 if (String(tray.dataset.trayId) === String(selectedTrayId)) tray.classList.add("active");
                 tray.addEventListener("click", (event) => {
@@ -449,8 +485,8 @@
                     const originX = parseFloat(node.style.left), originY = parseFloat(node.style.top);
                     grip.setPointerCapture(event.pointerId);
                     grip.onpointermove = (move) => {
-                        node.style.left = `${Math.max(0, originX + move.clientX - startX)}px`;
-                        node.style.top = `${Math.max(0, originY + move.clientY - startY)}px`;
+                        node.style.left = `${Math.max(0, originX + (move.clientX - startX) / graphZoom)}px`;
+                        node.style.top = `${Math.max(0, originY + (move.clientY - startY) / graphZoom)}px`;
                         redrawOpticalLinks();
                     };
                     grip.onpointerup = async () => {
@@ -806,6 +842,7 @@
         clearTool();
         state.tool = tool;
         document.querySelectorAll(".tool-button").forEach((button) => button.classList.toggle("active", button.dataset.tool === tool));
+        document.querySelectorAll("[data-quick-tool]").forEach((button) => button.classList.toggle("active", button.dataset.quickTool === tool));
         map.getContainer().style.cursor = "crosshair";
         if (tool === "cable") {
             state.cableCoordinates = [];
@@ -831,6 +868,7 @@
         drawingBar.hidden = true;
         map.getContainer().style.cursor = "";
         document.querySelectorAll(".tool-button").forEach((button) => button.classList.remove("active"));
+        document.querySelectorAll("[data-quick-tool]").forEach((button) => button.classList.remove("active"));
     }
     map.on("click", (event) => {
         if (!state.tool) return;
@@ -864,6 +902,14 @@
     });
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };
+    document.querySelectorAll("[data-quick-tool]").forEach((button) => {
+        button.onclick = () => setTool(button.dataset.quickTool);
+    });
+    document.querySelector("[data-quick-action='labels']").onclick = () => {
+        const labels = document.getElementById("layer-labels");
+        labels.checked = !labels.checked;
+        loadStructure().catch((error) => notify(error.message, true));
+    };
     projectSelect.onchange = async () => {
         state.projectId = projectSelect.value || null;
         clearTool(); updateTools();

@@ -81,6 +81,20 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.12.2] - 2026-07-29
+
+### Adicionado
+
+- Zoom persistente no unifilar com ampliar, reduzir e ajustar à tela.
+- Atalhos de cabo, CTO, CEO, OLT e nomes no menu recolhido.
+- Linhas bicolores para representar fusões entre fibras de cores diferentes.
+
+### Alterado
+
+- Janela do unifilar ampliada para praticamente toda a tela.
+- Splitter vertical com entrada à esquerda e saídas empilhadas à direita.
+- Saídas do splitter fazem transição da cor de entrada para a fibra de destino.
+
 ## [0.12.1] - 2026-07-29
 
 ### Adicionado
