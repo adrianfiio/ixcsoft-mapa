@@ -465,15 +465,44 @@ def element_detail_payload(element):
     except CTO.DoesNotExist:
         cto = None
     if cto is not None:
+        connected_cables = FiberCable.objects.filter(
+            Q(origin=cto) | Q(destination=cto)
+        ).order_by("name")
         payload["cto"] = {
             "capacity": cto.capacity,
             "splitter_ratio": cto.splitter_ratio,
+            "connected_cables": [
+                {
+                    "id": cable.id,
+                    "name": cable.name,
+                    "code": cable.code,
+                    "fiber_count": cable.fiber_count,
+                }
+                for cable in connected_cables
+            ],
             "splitters": [
                 {
                     "id": splitter.id,
                     "name": splitter.name,
                     "ratio": splitter.ratio,
                     "output_ports": splitter.output_ports,
+                    "input_cable": (
+                        {
+                            "id": splitter.input_cable_id,
+                            "name": splitter.input_cable.name,
+                            "code": splitter.input_cable.code,
+                        }
+                        if splitter.input_cable_id else None
+                    ),
+                    "input_fiber": (
+                        {
+                            "id": splitter.input_fiber_id,
+                            "number": splitter.input_fiber.number,
+                            "color_name": splitter.input_fiber.color.name,
+                            "color_hex": splitter.input_fiber.color.hex_color,
+                        }
+                        if splitter.input_fiber_id else None
+                    ),
                     "ports": [
                         {
                             "id": port.id,
@@ -486,7 +515,9 @@ def element_detail_payload(element):
                         for port in splitter.ports.all()
                     ],
                 }
-                for splitter in cto.splitters.prefetch_related("ports").all()
+                for splitter in cto.splitters.select_related(
+                    "input_cable", "input_fiber__color"
+                ).prefetch_related("ports").all()
             ],
         }
     return payload

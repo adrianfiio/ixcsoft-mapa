@@ -81,9 +81,11 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .splitter-card { padding: 15px; margin-top: 13px; background: #13263d; border: 1px solid var(--border); border-radius: 10px; }
 .splitter-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
 .splitter-head span { color: var(--muted); font-size: 11px; }
+.unifilar-source { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; margin-bottom: 10px; background: #0b192a; border-left: 4px solid var(--fiber-color, var(--primary)); border-radius: 6px; }
+.unifilar-source span { color: var(--muted); font-size: 10px; }
 .unifilar-flow { display: grid; grid-template-columns: minmax(100px, .65fr) 30px minmax(180px, 2fr); align-items: center; gap: 8px; }
-.unifilar-input { padding: 10px; text-align: center; background: #0b192a; border: 1px solid var(--primary); border-radius: 7px; font-size: 11px; }
-.unifilar-line { height: 2px; background: var(--primary); }
+.unifilar-input { padding: 10px; text-align: center; background: #0b192a; border: 1px solid var(--fiber-color, var(--primary)); border-radius: 7px; font-size: 11px; }
+.unifilar-line { height: 3px; background: var(--fiber-color, var(--primary)); box-shadow: 0 0 7px var(--fiber-color, var(--primary)); }
 .port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 7px; }
 .port { padding: 8px 5px; text-align: center; background: #0b192a; border: 1px solid #42617f; border-radius: 6px; font-size: 10px; }
 .port.occupied { border-color: #32cf78; }.port.reserved { border-color: var(--warning); }.port.defective { border-color: var(--danger); }

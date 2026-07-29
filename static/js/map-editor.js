@@ -105,6 +105,32 @@
             select.value = current;
         });
     }
+    function populateSplitterCables(cto, selectedId = "") {
+        const select = elementForm.elements.splitter_input_cable_id;
+        select.innerHTML = '<option value="">Selecione o cabo conectado</option>';
+        (cto?.connected_cables || []).forEach((cable) => {
+            select.add(new Option(`${cable.name} · ${cable.fiber_count} fibras`, cable.id));
+        });
+        select.value = selectedId ? String(selectedId) : "";
+    }
+    async function loadSplitterFibers(cableId, selectedId = "") {
+        const select = elementForm.elements.splitter_input_fiber_id;
+        select.innerHTML = '<option value="">Selecione a fibra</option>';
+        if (!cableId) {
+            select.innerHTML = '<option value="">Selecione primeiro o cabo</option>';
+            return;
+        }
+        const data = await api(`/api/map/cables/${cableId}/fibers/`);
+        data.tubes.forEach((tube) => tube.fibers.forEach((fiber) => {
+            const option = new Option(`Fibra ${fiber.number} · ${fiber.color.name} · ${fiber.status_label}`, fiber.id);
+            option.dataset.color = fiber.color.hex;
+            select.add(option);
+        }));
+        select.value = selectedId ? String(selectedId) : "";
+        if (!data.tubes.some((tube) => tube.fibers.length)) {
+            select.innerHTML = '<option value="">Cabo sem fibras geradas</option>';
+        }
+    }
     function popupAction(selector, callback) {
         const button = document.querySelector(selector);
         if (button) button.onclick = callback;
@@ -130,6 +156,8 @@
             elementForm.elements.cto_capacity.value = element.cto.capacity || 8;
             elementForm.elements.splitter_ratio.value = splitter?.ratio || element.cto.splitter_ratio || "1:8";
             elementForm.elements.splitter_ports.value = splitter?.output_ports || element.cto.capacity || 8;
+            populateSplitterCables(element.cto, splitter?.input_cable?.id);
+            await loadSplitterFibers(splitter?.input_cable?.id, splitter?.input_fiber?.id);
         }
         document.getElementById("element-dialog-title").textContent = `Editar ${element.name}`;
         elementDialog.showModal();
@@ -144,8 +172,11 @@
         content.innerHTML = splitters.length ? splitters.map((splitter) => `
             <article class="splitter-card">
                 <div class="splitter-head"><strong>${escapeHtml(splitter.name)}</strong><span>${escapeHtml(splitter.ratio)} · ${splitter.output_ports} saídas</span></div>
-                <div class="unifilar-flow">
-                    <div class="unifilar-input">Entrada óptica</div><div class="unifilar-line"></div>
+                <div class="unifilar-source">
+                    ${splitter.input_cable ? `<strong>${escapeHtml(splitter.input_cable.name)}</strong><span>Fibra ${splitter.input_fiber?.number || "não escolhida"} · ${escapeHtml(splitter.input_fiber?.color_name || "sem cor")}</span>` : "<strong>Cabo não conectado</strong><span>Edite a CTO para escolher cabo e fibra</span>"}
+                </div>
+                <div class="unifilar-flow" style="--fiber-color:${escapeHtml(splitter.input_fiber?.color_hex || "#2dd4bf")}">
+                    <div class="unifilar-input">Entrada do splitter</div><div class="unifilar-line"></div>
                     <div class="port-grid">${splitter.ports.map((port) => `<div class="port ${escapeHtml(port.status)}">P${port.number}<br>${escapeHtml(port.status_label)}</div>`).join("")}</div>
                 </div>
             </article>`).join("") : '<p class="help-text">Nenhum splitter configurado.</p>';
@@ -269,6 +300,8 @@
         elementForm.elements.latitude.value = event.latlng.lat;
         elementForm.elements.longitude.value = event.latlng.lng;
         document.getElementById("cto-fields").hidden = state.tool !== "cto";
+        populateSplitterCables(null);
+        loadSplitterFibers("");
         const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO" };
         document.getElementById("element-dialog-title").textContent = titles[state.tool] || "Novo elemento";
         elementDialog.showModal();
@@ -297,6 +330,8 @@
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
+        if (!payload.splitter_input_cable_id) delete payload.splitter_input_cable_id;
+        if (!payload.splitter_input_fiber_id) delete payload.splitter_input_fiber_id;
         payload.project = state.projectId; payload.enabled = true;
         try {
             const editing = Boolean(state.editingElementId);
@@ -304,6 +339,9 @@
             elementDialog.close(); state.editingElementId = null; clearTool(); await loadStructure();
             notify(editing ? "Elemento atualizado." : "Elemento adicionado ao projeto.");
         } catch (error) { notify(error.message, true); }
+    };
+    elementForm.elements.splitter_input_cable_id.onchange = (event) => {
+        loadSplitterFibers(event.target.value).catch((error) => notify(error.message, true));
     };
     document.getElementById("finish-drawing").onclick = () => {
         if (state.cableCoordinates.length < 2) return notify("O cabo precisa de pelo menos dois pontos.", true);

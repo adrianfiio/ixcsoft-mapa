@@ -11,6 +11,15 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Criar perfis de OIDs por modelo e firmware
 - Implementar descoberta de portas PON e ONUs
 
+## [0.9.2] - 2026-07-29
+
+### Adicionado
+
+- Seleção do cabo conectado e da fibra que alimenta o splitter ao editar a CTO
+- Vínculo persistente entre cabo, fibra, CTO e entrada do splitter
+- Exibição do nome do cabo, número e cor real da fibra no unifilar
+- Atualização automática do estado e da contagem de fibras utilizadas
+
 ## [0.9.1] - 2026-07-29
 
 ### Adicionado

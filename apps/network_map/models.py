@@ -144,6 +144,20 @@ class CTOSplitter(TimeStampedModel):
     )
     output_ports = models.PositiveSmallIntegerField(default=8)
     input_label = models.CharField(max_length=80, blank=True)
+    input_cable = models.ForeignKey(
+        "FiberCable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fed_splitters",
+    )
+    input_fiber = models.ForeignKey(
+        "FiberStrand",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fed_splitters",
+    )
     position = models.PositiveSmallIntegerField(default=1)
     enabled = models.BooleanField(default=True)
 
