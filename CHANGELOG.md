@@ -81,6 +81,18 @@ Todas as mudanças relevantes do projeto são registradas neste arquivo.
 - Seleção da OLT de origem e animação do caminho da luz nos cabos
 - Destaque visual da direção origem → destino da rede
 
+## [0.12.5] - 2026-07-29
+
+### Corrigido
+
+- Fibras e saídas ocupadas são bloqueadas antes da requisição, evitando conflitos 409 repetidos.
+- Mensagens do unifilar agora aparecem dentro da própria janela.
+- Popup do cabo é fechado ao editar ou mover o traçado.
+
+### Alterado
+
+- Portas do splitter usam `S1`, `S2` etc. para diferenciar saída de splitter de fibra do cabo.
+
 ## [0.12.4] - 2026-07-29
 
 ### Corrigido
