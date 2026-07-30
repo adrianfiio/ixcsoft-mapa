@@ -107,9 +107,15 @@
         offline: L.layerGroup(),
         unknown: L.layerGroup(),
     };
-    const structureLayer = L.layerGroup().addTo(map);
-    const equipmentClusterLayer = L.markerClusterGroup({ chunkedLoading: true }).addTo(map);
-    const equipmentPlainLayer = L.layerGroup();
+    const cableLayer = L.layerGroup().addTo(map);
+    // Estrutura separada por categoria (CTO / CEO / demais equipamentos) para
+    // permitir camadas independentes no painel de Camadas e na barra inferior.
+    const structureLayers = {
+        cto: { cluster: L.markerClusterGroup({ chunkedLoading: true }), plain: L.layerGroup() },
+        splice_box: { cluster: L.markerClusterGroup({ chunkedLoading: true }), plain: L.layerGroup() },
+        other: { cluster: L.markerClusterGroup({ chunkedLoading: true }), plain: L.layerGroup() },
+    };
+    Object.values(structureLayers).forEach((pair) => pair.cluster.addTo(map));
     clientLayers.online.addTo(map);
     clientLayers.offline.addTo(map);
 
@@ -268,11 +274,24 @@
             (grouped ? clientLayers[status] : clientPlainLayers[status]).addTo(map);
         });
     }
+    const structureCategoryCheckbox = { cto: "layer-cto", splice_box: "layer-ceo", other: null };
     function refreshEquipmentLayer() {
-        map.removeLayer(equipmentClusterLayer);
-        map.removeLayer(equipmentPlainLayer);
-        if (!document.getElementById("layer-structure").checked) return;
-        (document.getElementById("group-equipment").checked ? equipmentClusterLayer : equipmentPlainLayer).addTo(map);
+        const structureOn = document.getElementById("layer-structure").checked;
+        const grouped = document.getElementById("group-equipment").checked;
+        Object.entries(structureLayers).forEach(([category, pair]) => {
+            map.removeLayer(pair.cluster);
+            map.removeLayer(pair.plain);
+            const checkboxId = structureCategoryCheckbox[category];
+            const categoryOn = checkboxId ? document.getElementById(checkboxId).checked : true;
+            if (!structureOn || !categoryOn) return;
+            (grouped ? pair.cluster : pair.plain).addTo(map);
+        });
+    }
+    function refreshCableLayer() {
+        map.removeLayer(cableLayer);
+        const structureOn = document.getElementById("layer-structure").checked;
+        const cablesOn = document.getElementById("layer-cables").checked;
+        if (structureOn && cablesOn) cableLayer.addTo(map);
     }
     async function loadClients() {
         const data = await api("/api/map/access-points/");
@@ -332,11 +351,11 @@
                     iconAnchor: [12, 12],
                 }),
                 zIndexOffset: 900,
-            }).addTo(structureLayer);
+            }).addTo(cableLayer);
             const duration = Math.max(2200, Math.min(8500, total * 7));
             const startedAt = performance.now();
             const frame = (timestamp) => {
-                if (generation !== state.lightAnimationGeneration || !structureLayer.hasLayer(marker)) return;
+                if (generation !== state.lightAnimationGeneration || !cableLayer.hasLayer(marker)) return;
                 const travelled = (((timestamp - startedAt) % duration) / duration) * total;
                 const segment = segments.find((item) => travelled <= item.from + item.length) || segments.at(-1);
                 const ratio = segment.length ? (travelled - segment.from) / segment.length : 0;
@@ -492,7 +511,7 @@
         const opticalLinks = document.getElementById("container-optical-links");
         opticalLinks.hidden = !data.equipment.length;
         document.getElementById("container-link-title").textContent = data.container.type === "rack"
-            ? "Diagrama e ligações OLT → DIO" : "Diagrama e ligações da torre";
+            ? "Fusões — OLT → DIO" : "Diagrama e ligações da torre";
         document.getElementById("container-link-help").textContent = data.container.type === "rack"
             ? "Ligue uma PON à porta do DIO e associe o cabo óptico que sai do rack."
             : "Ligue switch, AP e rádio PTP por RJ45/SFP ou registre o enlace wireless.";
@@ -1077,9 +1096,8 @@
     async function loadStructure(fit = false) {
         state.lightAnimationGeneration += 1;
         const lightGeneration = state.lightAnimationGeneration;
-        structureLayer.clearLayers();
-        equipmentClusterLayer.clearLayers();
-        equipmentPlainLayer.clearLayers();
+        cableLayer.clearLayers();
+        Object.values(structureLayers).forEach((pair) => { pair.cluster.clearLayers(); pair.plain.clearLayers(); });
         if (!state.projectId) {
             state.elements = [];
             state.cables = [];
@@ -1147,8 +1165,9 @@
                 });
                 return marker;
             };
-            createMarker().addTo(equipmentClusterLayer);
-            createMarker().addTo(equipmentPlainLayer);
+            const structureCategory = ["cto", "splice_box"].includes(p.tipo) ? p.tipo : "other";
+            createMarker().addTo(structureLayers[structureCategory].cluster);
+            createMarker().addTo(structureLayers[structureCategory].plain);
             bounds.push([latitude, longitude]);
         });
         refreshEquipmentLayer();
@@ -1206,12 +1225,12 @@
                     insertElementAt(p.id, event.latlng).catch((error) => notify(error.message, true));
                 }
             });
-            line.addTo(structureLayer);
+            line.addTo(cableLayer);
             if (illuminated) {
                 const light = L.geoJSON(feature, { interactive: false, style: {
                     color: "#fff7a3", weight: 7, opacity: 1,
                     dashArray: "1 20", lineCap: "round",
-                } }).addTo(structureLayer);
+                } }).addTo(cableLayer);
                 light.eachLayer((part) => part.getElement()?.classList.add("optical-light-path"));
                 animateLightDirection(feature, lightGeneration);
             }
@@ -1233,7 +1252,7 @@
                     }).then(() => { reserve.latitude = point.lat; reserve.longitude = point.lng; notify("Reserva reposicionada."); })
                       .catch((error) => { notify(error.message, true); loadStructure(); });
                 });
-                marker.addTo(structureLayer);
+                marker.addTo(cableLayer);
             });
             line.getLayers().forEach((part) => part.getLatLngs().flat(Infinity).forEach((point) => bounds.push([point.lat, point.lng])));
         });
@@ -1241,7 +1260,7 @@
             const p = feature.properties;
             const line = L.geoJSON(feature, { style: { color: "#f7b731", weight: 4, opacity: .86 } });
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Rota importada`);
-            line.addTo(structureLayer);
+            line.addTo(cableLayer);
             line.getLayers().forEach((part) => part.getLatLngs().flat(Infinity).forEach((point) => bounds.push([point.lat, point.lng])));
         });
         document.getElementById("element-count").textContent = elements.count;
@@ -1558,15 +1577,30 @@
         } catch (error) { notify(error.message, true); }
         event.target.value = "";
     };
-    document.getElementById("layer-structure").onchange = (event) => {
-        if (event.target.checked) structureLayer.addTo(map); else map.removeLayer(structureLayer);
+    document.getElementById("layer-structure").onchange = () => {
+        refreshCableLayer();
         refreshEquipmentLayer();
     };
+    document.getElementById("layer-cables").onchange = refreshCableLayer;
+    document.getElementById("layer-cto").onchange = refreshEquipmentLayer;
+    document.getElementById("layer-ceo").onchange = refreshEquipmentLayer;
     ["online", "offline"].forEach((status) => {
         document.getElementById(`layer-${status}`).onchange = refreshClientLayers;
     });
     document.getElementById("group-clients").onchange = refreshClientLayers;
     document.getElementById("group-equipment").onchange = refreshEquipmentLayer;
+    // Botões-ícone da barra inferior espelham os checkboxes de camada/agrupamento.
+    document.querySelectorAll("[data-layer-toggle]").forEach((button) => {
+        const checkbox = document.getElementById(button.dataset.layerToggle);
+        if (!checkbox) return;
+        const sync = () => button.classList.toggle("active", checkbox.checked);
+        sync();
+        checkbox.addEventListener("change", sync);
+        button.addEventListener("click", () => {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event("change"));
+        });
+    });
     document.getElementById("light-source-select").onchange = (event) => {
         state.lightSourceId = event.target.value || null;
         loadStructure().catch((error) => notify(error.message, true));

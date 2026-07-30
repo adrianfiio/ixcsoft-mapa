@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.30.0] - 2026-07-30
+
+### Adicionado
+
+- Camadas do mapa por tipo: além do toggle "Geral", agora dá para ligar/desligar CTO, CEO e Cabos de forma independente, tanto no painel "Camadas" quanto em ícones na barra inferior do mapa.
+- Barra inferior do mapa reduzida a ícones (Geral/CTO/CEO/Cabos + Agrupar PPPoE/Agrupar equipamentos), sincronizados com os checkboxes do painel lateral.
+
+### Alterado
+
+- A seção de ligações internas do rack (OLT → DIO) passa a se chamar "Fusões — OLT → DIO", em vez do nome técnico anterior.
+- Botões "Excluir" e "Desligar" do diagrama de estrutura do rack/torre ganharam estilo próprio (antes usavam o botão padrão do navegador, sem nenhum destaque visual).
+
+### Corrigido
+
+- A toolbar de visualizar/editar/pesquisar (topo do mapa) e a barra inferior ficavam centralizadas em relação à tela toda, não à área visível do mapa — com a barra lateral aberta, elas apareciam deslocadas para a direita. Agora ficam centralizadas de verdade na área do mapa, em qualquer largura de barra lateral.
+
 ## [0.29.2] - 2026-07-30
 
 ### Corrigido

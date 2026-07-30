@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.29.2 — Corrige 500 no dashboard do projetista e cadastro de equipamento fora do mapa**
+**v0.30.0 — Editor de mapa: camadas por tipo, toolbar centralizada e diagrama de fusões**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

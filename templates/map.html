@@ -47,7 +47,19 @@
                     <div class="section-heading"><span>Camadas</span></div>
                     <label class="layer-option">
                         <input id="layer-structure" type="checkbox" checked>
-                        <span class="layer-symbol structure"></span> Estrutura do projeto
+                        <span class="layer-symbol structure"></span> Geral (toda a estrutura)
+                    </label>
+                    <label class="layer-option">
+                        <input id="layer-cto" type="checkbox" checked>
+                        <span class="layer-symbol cto"></span> CTO
+                    </label>
+                    <label class="layer-option">
+                        <input id="layer-ceo" type="checkbox" checked>
+                        <span class="layer-symbol ceo"></span> CEO
+                    </label>
+                    <label class="layer-option">
+                        <input id="layer-cables" type="checkbox" checked>
+                        <span class="layer-symbol cables"></span> Cabos
                     </label>
                     <label class="layer-option">
                         <input id="layer-online" type="checkbox" checked>
@@ -96,42 +108,61 @@
             </div>
         </aside>
 
-        <main id="map"></main>
+        <main id="map">
+            <nav class="map-mode-control" aria-label="Modo do mapa">
+                <button type="button" data-map-mode="view" class="active" title="Visualizar" aria-label="Visualizar">
+                    <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+                </button>
+                {% if can_edit_map %}
+                <button type="button" data-map-mode="edit" title="Editar e desenhar" aria-label="Editar e desenhar">
+                    <svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg>
+                </button>
+                {% endif %}
+                <button type="button" id="map-search-toggle" title="Pesquisar" aria-label="Pesquisar">
+                    <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
+                </button>
+            </nav>
 
-        <nav class="map-mode-control" aria-label="Modo do mapa">
-            <button type="button" data-map-mode="view" class="active" title="Visualizar" aria-label="Visualizar">
-                <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
-            </button>
-            {% if can_edit_map %}
-            <button type="button" data-map-mode="edit" title="Editar e desenhar" aria-label="Editar e desenhar">
-                <svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg>
-            </button>
-            {% endif %}
-            <button type="button" id="map-search-toggle" title="Pesquisar" aria-label="Pesquisar">
-                <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
-            </button>
-        </nav>
+            <section class="map-search" id="map-search" aria-label="Pesquisa no mapa" hidden>
+                <select id="map-search-mode" aria-label="Tipo de pesquisa">
+                    <option value="address">Buscar endereço</option>
+                    <option value="project">Procurar no projeto</option>
+                </select>
+                <input id="map-search-query" type="search" autocomplete="off" placeholder="Rua, número, cidade e estado">
+                <button id="map-search-button" type="button">Buscar</button>
+                <button id="map-gps-button" type="button" title="Ir para minha localização">⌖</button>
+                <div id="map-search-results" class="map-search-results" hidden></div>
+            </section>
 
-        <section class="map-search" id="map-search" aria-label="Pesquisa no mapa" hidden>
-            <select id="map-search-mode" aria-label="Tipo de pesquisa">
-                <option value="address">Buscar endereço</option>
-                <option value="project">Procurar no projeto</option>
-            </select>
-            <input id="map-search-query" type="search" autocomplete="off" placeholder="Rua, número, cidade e estado">
-            <button id="map-search-button" type="button">Buscar</button>
-            <button id="map-gps-button" type="button" title="Ir para minha localização">⌖</button>
-            <div id="map-search-results" class="map-search-results" hidden></div>
-        </section>
-
-        <div id="drawing-bar" class="drawing-bar" hidden>
-            <span>Clique no mapa para traçar o cabo.</span>
-            <button id="finish-drawing" type="button">Concluir</button>
-            <button id="cancel-drawing" type="button">Cancelar</button>
-        </div>
-        <div class="map-group-control">
-            <label><input id="group-clients" type="checkbox" checked> Agrupar PPPoE</label>
-            <label><input id="group-equipment" type="checkbox" checked> Agrupar equipamentos</label>
-        </div>
+            <div id="drawing-bar" class="drawing-bar" hidden>
+                <span>Clique no mapa para traçar o cabo.</span>
+                <button id="finish-drawing" type="button">Concluir</button>
+                <button id="cancel-drawing" type="button">Cancelar</button>
+            </div>
+            <div class="map-group-control">
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="layer-structure" title="Geral (toda a estrutura)" aria-label="Geral (toda a estrutura)">
+                    <svg viewBox="0 0 24 24"><path d="m12 3-10 5 10 5 10-5-10-5Z"></path><path d="m2 13 10 5 10-5"></path><path d="m2 18 10 5 10-5"></path></svg>
+                </button>
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="layer-cto" title="CTO" aria-label="CTO">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg>
+                </button>
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="layer-ceo" title="CEO" aria-label="CEO">
+                    <svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg>
+                </button>
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="layer-cables" title="Cabos" aria-label="Cabos">
+                    <svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg>
+                </button>
+                <span class="map-group-divider"></span>
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="group-clients" title="Agrupar PPPoE" aria-label="Agrupar PPPoE">
+                    <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="8" r="3"></circle><path d="M2.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5M12.5 20c0-3 2-5.5 4.5-5.5s5 2.5 5 5.5"></path></svg>
+                </button>
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="group-equipment" title="Agrupar equipamentos" aria-label="Agrupar equipamentos">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
+                </button>
+                <input id="group-clients" type="checkbox" checked hidden>
+                <input id="group-equipment" type="checkbox" checked hidden>
+            </div>
+        </main>
     </div>
 
     <dialog id="project-dialog" class="editor-dialog">
