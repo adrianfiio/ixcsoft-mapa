@@ -15,7 +15,8 @@
 
 <div class="account-search">
     <span>⌕</span>
-    <input id="account-search" type="search" placeholder="Pesquisar projeto, equipamento, cabo ou empresa…">
+    <input id="account-search" type="search" placeholder="Pesquisar CTO, cliente, cabo, projeto…" autocomplete="off">
+    <div id="account-search-results" class="search-suggestions" hidden></div>
 </div>
 
 <section class="access-badges">
@@ -32,6 +33,7 @@
         <a class="quick-link" href="{% url 'company-onboarding' %}"><strong>Dados da empresa</strong><small>Razão social, contato, documento e tipo</small></a>
         <a class="quick-link" href="{% url 'company-team' %}"><strong>Minha equipe</strong><small>Usuários VIEW e EDIT</small></a>
         {% if show_erp_navigation %}<a class="quick-link" href="{% url 'erp-onboarding' %}"><strong>Integração ERP</strong><small>IXCSoft e sincronização</small></a>{% endif %}
+        <a class="quick-link" href="{% url 'company-email-settings' %}"><strong>E-mail (SMTP)</strong><small>Servidor de e-mail da empresa</small></a>
         <a class="quick-link" href="{% url 'company-alerts' %}"><strong>Central de alertas</strong><small>Ocorrências da empresa</small></a>
     </div>
 </section>
@@ -97,12 +99,64 @@
 
 {% block scripts %}
 <script>
-document.getElementById("account-search").addEventListener("input", (event) => {
-    const query = event.target.value.trim().toLocaleLowerCase("pt-BR");
-    document.querySelectorAll("[data-searchable]").forEach((item) => {
-        item.hidden = query && !item.textContent.toLocaleLowerCase("pt-BR").includes(query);
-    });
+const searchInput = document.getElementById("account-search");
+const searchResults = document.getElementById("account-search-results");
+let searchTimer = null;
+let searchRequestId = 0;
+
+function renderSearchResults(data) {
+    searchResults.innerHTML = "";
+    if (!data.results.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty-state";
+        empty.textContent = "Nenhum resultado encontrado.";
+        searchResults.appendChild(empty);
+    } else {
+        data.results.forEach((group) => {
+            const heading = document.createElement("strong");
+            heading.textContent = group.category;
+            searchResults.appendChild(heading);
+            group.items.forEach((item) => {
+                const row = document.createElement(item.url ? "a" : "div");
+                row.className = "search-result-row";
+                if (item.url) row.href = item.url;
+                const label = document.createElement("strong");
+                label.textContent = item.label;
+                const subtitle = document.createElement("small");
+                subtitle.textContent = item.subtitle;
+                row.appendChild(label);
+                row.appendChild(subtitle);
+                searchResults.appendChild(row);
+            });
+        });
+    }
+    searchResults.hidden = false;
+}
+
+searchInput.addEventListener("input", (event) => {
+    const query = event.target.value.trim();
+    clearTimeout(searchTimer);
+    if (query.length < 2) {
+        searchResults.hidden = true;
+        searchResults.innerHTML = "";
+        return;
+    }
+    searchTimer = setTimeout(() => {
+        const requestId = ++searchRequestId;
+        fetch(`{% url 'company-search' %}?q=${encodeURIComponent(query)}`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (requestId === searchRequestId) renderSearchResults(data);
+            });
+    }, 250);
 });
+
+document.addEventListener("click", (event) => {
+    if (event.target !== searchInput && !searchResults.contains(event.target)) {
+        searchResults.hidden = true;
+    }
+});
+
 const requestedSection = new URLSearchParams(window.location.search).get("section");
 if (requestedSection) {
     document.querySelectorAll("[data-account-section]").forEach((section) => {

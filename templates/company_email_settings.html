@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}E-mail (SMTP) | AFService Map{% endblock %}
+{% block topbar_title %}E-mail (SMTP){% endblock %}
+
+{% block content %}
+<section class="onboarding-shell">
+    <div class="onboarding-intro">
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>E-mail (SMTP) da empresa</h1>
+        <p>Configure o servidor de e-mail próprio da sua empresa. Sem essa configuração, a empresa não envia e-mail.</p>
+    </div>
+    <form class="platform-form onboarding-form" method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="platform-form-grid">
+            {% for field in form %}
+            <label class="{% if field.field.widget.input_type == 'checkbox' %}integration-option{% endif %}">
+                {% if field.field.widget.input_type == 'checkbox' %}
+                    {{ field }} <span><strong>{{ field.label }}</strong>{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</span>
+                {% else %}
+                    <strong>{{ field.label }}</strong>{{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                {% endif %}
+                {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            {% endfor %}
+        </div>
+        <div class="platform-form-actions">
+            <button type="submit" name="action" value="save">Salvar →</button>
+            {% if configuration %}<button class="secondary-action" type="submit" name="action" value="test">✉ Enviar e-mail de teste</button>{% endif %}
+        </div>
+    </form>
+    <aside class="ixc-import-note">
+        <strong>Sobre alertas por e-mail</strong>
+        <small>O motor de alertas ainda está em desenvolvimento. Por enquanto esta configuração permite testar o envio de e-mail; quando o motor de alertas existir, ele usará este SMTP para avisar sua empresa.</small>
+    </aside>
+</section>
+{% endblock %}

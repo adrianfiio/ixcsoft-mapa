@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 
 from .crypto import SecretCipher
-from .models import Company, CompanyMembership, MapBaseConfiguration
+from .models import Company, CompanyEmailConfiguration, CompanyMembership, MapBaseConfiguration
 from apps.network_map.models import NetworkProject, POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
@@ -227,3 +227,40 @@ class CompanyTeamMemberForm(forms.Form):
         password = self.cleaned_data["password"]
         validate_password(password)
         return password
+
+
+class CompanyEmailConfigurationForm(forms.ModelForm):
+    password = forms.CharField(
+        label="Senha",
+        required=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Armazenada criptografada.",
+    )
+
+    class Meta:
+        model = CompanyEmailConfiguration
+        fields = ("host", "port", "username", "password", "use_tls", "from_email", "enabled")
+        labels = {
+            "host": "Servidor SMTP",
+            "port": "Porta",
+            "username": "Usuário",
+            "use_tls": "Usar TLS",
+            "from_email": "E-mail remetente",
+            "enabled": "Integração ativa",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["host"].required = True
+        self.fields["from_email"].required = True
+        if self.instance and self.instance.pk:
+            self.fields["password"].widget.attrs["placeholder"] = "Deixe em branco para manter a senha atual"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        password = self.cleaned_data.get("password", "").strip()
+        if password:
+            instance.password_encrypted = SecretCipher().encrypt(password)
+        if commit:
+            instance.save()
+        return instance

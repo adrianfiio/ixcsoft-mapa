@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.28.1 — Painel "Minha administração" reorganizado**
+**v0.29.0 — Busca ampla, e-mail (SMTP) por empresa e menu mais enxuto**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
@@ -160,6 +160,17 @@ Preencha as variáveis obrigatórias:
 - `REDIS_URL`
 - `FIELD_ENCRYPTION_KEY`
 
+Opcionais, para o SMTP padrão da plataforma (uso interno/administrativo — não
+é usado como reserva para as empresas, que configuram o próprio SMTP em
+"Minha administração"):
+
+- `EMAIL_HOST`
+- `EMAIL_PORT` (padrão `587`)
+- `EMAIL_HOST_USER`
+- `EMAIL_HOST_PASSWORD`
+- `EMAIL_USE_TLS` (padrão `true`)
+- `DEFAULT_FROM_EMAIL`
+
 Suba os serviços:
 
 ```bash
@@ -176,6 +187,13 @@ Crie um usuário administrativo:
 
 ```bash
 docker compose exec web python manage.py createsuperuser
+```
+
+Se configurou o SMTP padrão da plataforma, teste com o comando nativo do
+Django:
+
+```bash
+docker compose exec web python manage.py sendtestemail seu-email@exemplo.com
 ```
 
 ## EasyPanel

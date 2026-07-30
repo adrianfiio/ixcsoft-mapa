@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.29.0] - 2026-07-30
+
+### Adicionado
+
+- Busca ampla e escopada por empresa em "Minha administração": digite e receba sugestões em tempo real de projetos, equipamentos e caixas (CTO/CEO/DIO/OLT/poste), cabos, CPD/POP, OLTs, clientes e logins PPPoE — sem precisar de termo exato, cobrindo toda a base (não só os primeiros 100 registros carregados na tela). Superusuário busca em todas as empresas; cada empresa busca só nos seus dados.
+- E-mail (SMTP) por empresa: cada empresa cadastra o próprio servidor de e-mail (host, porta, usuário, senha criptografada, TLS, remetente) em "Minha administração" e pode enviar um e-mail de teste.
+- SMTP padrão da plataforma via variáveis de ambiente (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL`), testável com o comando nativo `manage.py sendtestemail`. É de uso interno/administrativo — não serve de reserva para empresas sem SMTP próprio.
+
+### Alterado
+
+- Menu lateral perde os atalhos "OLTs e ONUs" e "Integração ERP", que agora só existem dentro de "Minha administração" (evita duplicidade de navegação para a mesma informação).
+
+### Observação
+
+- Sem SMTP próprio configurado, a empresa simplesmente não envia e-mail — não há reserva automática pelo SMTP da plataforma.
+- O envio de e-mail de alertas de fato ainda depende do motor de alertas, que continua em desenvolvimento; por enquanto esta integração permite configurar e testar o SMTP.
+
 ## [0.28.1] - 2026-07-30
 
 ### Adicionado

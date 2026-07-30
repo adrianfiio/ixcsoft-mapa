@@ -4,6 +4,7 @@ from django.contrib.gis.db.models.functions import Length, Transform
 from django.db import connection
 from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
+from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from django.views.generic import TemplateView
@@ -15,19 +16,21 @@ from redis import Redis
 
 from apps.access.models import AccessPoint
 from apps.alerts.models import AlertEvent
-from apps.ixc_integration.models import IXCCustomer, IXCSyncExecution
+from apps.ixc_integration.models import IXCCustomer, IXCLogin, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
-from apps.core.models import Company, MapBaseConfiguration
+from apps.core.models import Company, CompanyEmailConfiguration, MapBaseConfiguration
 from apps.core.access import accessible_company_ids, has_any_edit_access, onboarding_redirect_name
 from apps.core.models import CompanyMembership
+from apps.core.services.email import send_company_email
 from apps.network_map.models import FiberCable, NetworkProject
 from apps.network_map.models import POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
 from apps.core.access import editable_company_ids
 from apps.core.forms import (
+    CompanyEmailConfigurationForm,
     CompanyOnboardingForm,
     CompanyProviderModeForm,
     CompanyTeamMemberForm,
@@ -376,6 +379,205 @@ def company_team(request):
         "company_team.html",
         {"form": form, "company": company, "team": team, "own_membership_id": membership.pk},
     )
+
+
+@login_required
+def company_email_settings(request):
+    membership = (
+        CompanyMembership.objects.filter(
+            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+        )
+        .select_related("company")
+        .first()
+    )
+    if request.user.is_superuser or membership is None:
+        messages.info(
+            request,
+            "Somente um usuário com permissão de edição pode configurar o e-mail da empresa.",
+        )
+        return redirect("account-panel")
+    company = membership.company
+    configuration = CompanyEmailConfiguration.objects.filter(company=company).first()
+    form = CompanyEmailConfigurationForm(request.POST or None, instance=configuration)
+    action = request.POST.get("action") if request.method == "POST" else None
+
+    if action == "test":
+        if not configuration or not configuration.enabled:
+            messages.error(request, "Salve a configuração antes de enviar um e-mail de teste.")
+        elif not company.contact_email:
+            messages.error(request, "Cadastre o e-mail de contato da empresa antes de testar.")
+        else:
+            try:
+                send_company_email(
+                    configuration,
+                    subject="Teste de e-mail — AFService Map",
+                    message=f"Este é um e-mail de teste da integração SMTP de {company}.",
+                    to=[company.contact_email],
+                )
+            except Exception as exc:
+                messages.error(request, f"Não foi possível enviar o e-mail de teste: {exc}")
+            else:
+                messages.success(request, f"E-mail de teste enviado para {company.contact_email}.")
+        return redirect("company-email-settings")
+
+    if action == "save" and form.is_valid():
+        instance = form.save(commit=False)
+        instance.company = company
+        instance.save()
+        messages.success(request, "Configuração de e-mail salva com sucesso.")
+        return redirect("company-email-settings")
+
+    return render(
+        request,
+        "company_email_settings.html",
+        {"form": form, "company": company, "configuration": configuration},
+    )
+
+
+@login_required
+def company_search(request):
+    query = request.GET.get("q", "").strip()
+    company_ids = accessible_company_ids(request.user)
+    results = []
+
+    def scoped(queryset, field="company_id"):
+        return queryset if company_ids is None else queryset.filter(**{f"{field}__in": company_ids})
+
+    if len(query) >= 2:
+        projects = scoped(
+            NetworkProject.objects.select_related("company").filter(
+                Q(name__icontains=query) | Q(code__icontains=query)
+            )
+        ).order_by("name")[:8]
+        results.append(
+            {
+                "category": "Projetos",
+                "items": [
+                    {
+                        "label": project.name,
+                        "subtitle": f"{project.company} · {project.code}",
+                        "url": f"{reverse('map')}?project={project.id}",
+                    }
+                    for project in projects
+                ],
+            }
+        )
+
+        elements = scoped(
+            NetworkElement.objects.select_related("project", "company").filter(
+                Q(name__icontains=query) | Q(code__icontains=query) | Q(element_type__icontains=query)
+            )
+        ).order_by("name")[:8]
+        results.append(
+            {
+                "category": "Equipamentos e caixas",
+                "items": [
+                    {
+                        "label": f"{element.name} ({element.get_element_type_display()})",
+                        "subtitle": f"{element.company} · {element.project.name if element.project else 'sem projeto'}",
+                        "url": f"{reverse('map')}?project={element.project_id}" if element.project_id else None,
+                    }
+                    for element in elements
+                ],
+            }
+        )
+
+        cables = scoped(
+            FiberCable.objects.select_related("project", "company").filter(
+                Q(name__icontains=query) | Q(code__icontains=query)
+            )
+        ).order_by("name")[:8]
+        results.append(
+            {
+                "category": "Cabos e rotas",
+                "items": [
+                    {
+                        "label": cable.name,
+                        "subtitle": f"{cable.company} · {cable.fiber_count} fibras",
+                        "url": f"{reverse('map')}?project={cable.project_id}" if cable.project_id else None,
+                    }
+                    for cable in cables
+                ],
+            }
+        )
+
+        pops = scoped(
+            POP.objects.select_related("company").filter(Q(name__icontains=query) | Q(code__icontains=query))
+        ).order_by("name")[:8]
+        results.append(
+            {
+                "category": "CPD / POP",
+                "items": [
+                    {"label": pop.name, "subtitle": f"{pop.company} · {pop.code}", "url": None}
+                    for pop in pops
+                ],
+            }
+        )
+
+        olts = scoped(
+            OLT.objects.select_related("cpd", "cpd__company").filter(
+                Q(name__icontains=query) | Q(hostname__icontains=query) | Q(management_ip__icontains=query)
+            ),
+            field="cpd__company_id",
+        ).order_by("name")[:8]
+        results.append(
+            {
+                "category": "OLTs",
+                "items": [
+                    {
+                        "label": olt.name,
+                        "subtitle": f"{olt.cpd.company if olt.cpd else '—'} · {olt.management_ip or 'sem IP'}",
+                        "url": None,
+                    }
+                    for olt in olts
+                ],
+            }
+        )
+
+        customers = scoped(
+            IXCCustomer.objects.select_related("company").filter(
+                Q(name__icontains=query) | Q(document__icontains=query)
+            )
+        ).order_by("name")[:8]
+        results.append(
+            {
+                "category": "Clientes",
+                "items": [
+                    {
+                        "label": customer.name,
+                        "subtitle": f"{customer.company} · {customer.document or 'sem documento'}",
+                        "url": None,
+                    }
+                    for customer in customers
+                ],
+            }
+        )
+
+        logins = scoped(
+            IXCLogin.objects.select_related("customer", "cto").filter(
+                Q(username__icontains=query) | Q(customer__name__icontains=query)
+            )
+        ).order_by("username")[:8]
+        results.append(
+            {
+                "category": "Logins PPPoE",
+                "items": [
+                    {
+                        "label": login.username,
+                        "subtitle": f"{login.customer.name} · CTO {login.cto.name if login.cto else 'não vinculada'}",
+                        "url": (
+                            f"{reverse('map')}?project={login.cto.project_id}"
+                            if login.cto_id and login.cto.project_id
+                            else None
+                        ),
+                    }
+                    for login in logins
+                ],
+            }
+        )
+
+    results = [group for group in results if group["items"]]
+    return JsonResponse({"query": query, "results": results})
 
 
 @login_required

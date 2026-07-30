@@ -93,6 +93,28 @@ class Company(TimeStampedModel):
         return self.is_provider and not self.integration_mode
 
 
+class CompanyEmailConfiguration(TimeStampedModel):
+    company = models.OneToOneField(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="email_configuration",
+    )
+    host = models.CharField(max_length=255, verbose_name="Servidor SMTP")
+    port = models.PositiveIntegerField(default=587, verbose_name="Porta")
+    username = models.CharField(max_length=255, blank=True, verbose_name="Usuário")
+    password_encrypted = models.TextField(blank=True, editable=False)
+    use_tls = models.BooleanField(default=True, verbose_name="Usar TLS")
+    from_email = models.EmailField(verbose_name="E-mail remetente")
+    enabled = models.BooleanField(default=True, verbose_name="Integração ativa")
+
+    class Meta:
+        verbose_name = "Configuração de e-mail (SMTP)"
+        verbose_name_plural = "Configurações de e-mail (SMTP)"
+
+    def __str__(self):
+        return f"SMTP · {self.company}"
+
+
 class CompanyMembership(TimeStampedModel):
     class Role(models.TextChoices):
         VIEW = "view", "VIEW — somente visualizar"

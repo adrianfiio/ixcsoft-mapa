@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from .forms import MapBaseConfigurationAdminForm
-from .models import Company, CompanyMembership, MapBaseConfiguration
+from .forms import CompanyEmailConfigurationForm, MapBaseConfigurationAdminForm
+from .models import Company, CompanyEmailConfiguration, CompanyMembership, MapBaseConfiguration
 
 admin.site.site_header = "AFService Map"
 admin.site.site_title = "Administração AFService Map"
@@ -48,6 +48,15 @@ class CompanyMembershipAdmin(admin.ModelAdmin):
     @admin.action(description="Desativar acessos selecionados")
     def deactivate_access(self, request, queryset):
         queryset.update(active=False)
+
+
+@admin.register(CompanyEmailConfiguration)
+class CompanyEmailConfigurationAdmin(admin.ModelAdmin):
+    form = CompanyEmailConfigurationForm
+    list_display = ("company", "host", "port", "from_email", "enabled", "updated_at")
+    list_filter = ("enabled", "use_tls")
+    search_fields = ("company__name", "company__trade_name", "host", "from_email")
+    autocomplete_fields = ("company",)
 
 
 @admin.register(MapBaseConfiguration)
