@@ -1290,6 +1290,21 @@
             };
         });
         let selectedFiberId = null;
+        let selectedPortId = null;
+        const tryCreateRackFusion = async () => {
+            if (!selectedFiberId || !selectedPortId) return;
+            try {
+                await api(`/api/map/elements/${element.id}/equipment-links/`, {
+                    method: "POST",
+                    body: JSON.stringify({ destination_port_id: selectedPortId, cable_fiber_id: selectedFiberId }),
+                });
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada.");
+            } catch (error) {
+                notify(error.message, true);
+                selectedFiberId = null; selectedPortId = null;
+                content.querySelectorAll(".fiber-port.selected").forEach((item) => item.classList.remove("selected"));
+            }
+        };
         content.querySelectorAll(".fiber-port:not(.dio-fusion-port)").forEach((chip) => {
             chip.onclick = async () => {
                 if (chip.dataset.used === "true") {
@@ -1298,10 +1313,11 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
                     return;
                 }
-                content.querySelectorAll(".fiber-port.selected").forEach((item) => item.classList.remove("selected"));
+                content.querySelectorAll(".fiber-port:not(.dio-fusion-port).selected").forEach((item) => item.classList.remove("selected"));
                 selectedFiberId = chip.dataset.fiberId;
                 chip.classList.add("selected");
-                notify("Fibra selecionada. Clique na porta do DIO.");
+                if (selectedPortId) { await tryCreateRackFusion(); }
+                else { notify("Fibra selecionada. Clique na porta do DIO (ou comece pela porta do DIO)."); }
             };
         });
         content.querySelectorAll(".dio-fusion-port").forEach((button) => {
@@ -1312,14 +1328,11 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
                     return;
                 }
-                if (!selectedFiberId) return notify("Selecione primeiro uma fibra do cabo.", true);
-                try {
-                    await api(`/api/map/elements/${element.id}/equipment-links/`, {
-                        method: "POST",
-                        body: JSON.stringify({ destination_port_id: button.dataset.portId, cable_fiber_id: selectedFiberId }),
-                    });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada.");
-                } catch (error) { notify(error.message, true); }
+                content.querySelectorAll(".dio-fusion-port.selected").forEach((item) => item.classList.remove("selected"));
+                selectedPortId = button.dataset.portId;
+                button.classList.add("selected");
+                if (selectedFiberId) { await tryCreateRackFusion(); }
+                else { notify("Porta do DIO selecionada. Clique na fibra do cabo."); }
             };
         });
         requestAnimationFrame(redrawRackFusionLinks);

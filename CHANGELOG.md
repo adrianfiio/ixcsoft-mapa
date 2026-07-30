@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.43.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.42.0`.
+
+### Alterado
+
+- Diagrama de Fusões do rack: agora dá para criar a fusão começando por qualquer lado — clique na porta do DIO primeiro e depois na fibra do cabo, ou clique na fibra primeiro e depois na porta, como já era. Antes só funcionava fibra → porta.
+
 ## [0.42.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.41.0`.
