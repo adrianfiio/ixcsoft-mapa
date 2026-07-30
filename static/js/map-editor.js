@@ -437,10 +437,8 @@
             elementForm.elements[name].value = element[name] ?? "";
         });
         const isCto = element.element_type === "cto";
-        const isCeo = element.element_type === "splice_box";
         const isContainer = ["rack", "tower"].includes(element.element_type);
         document.getElementById("cto-fields").hidden = !isCto;
-        document.getElementById("ceo-fields").hidden = !isCeo;
         document.getElementById("container-fields").hidden = !isContainer;
         document.getElementById("container-fields-title").textContent = element.element_type === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
         if (isCto && element.cto) {
@@ -451,11 +449,6 @@
             populateSplitterCables(element.cto, splitter?.input_cable?.id);
             await loadSplitterFibers(splitter?.input_cable?.id, splitter?.input_fiber?.id);
         }
-        if (isCeo && element.splice_box) {
-            elementForm.elements.ceo_tray_count.value = element.splice_box.tray_count || 1;
-            elementForm.elements.ceo_splitters_per_tray.value = element.splice_box.splitters_per_tray || 0;
-            elementForm.elements.ceo_splitter_ratio.value = element.splice_box.splitter_ratio || "1:8";
-        }
         document.getElementById("element-dialog-title").textContent = `Editar ${element.name}`;
         elementDialog.showModal();
     }
@@ -464,7 +457,7 @@
         const mode = containerEquipmentForm.elements.provisioning_mode.value;
         document.getElementById("container-olt-fields").hidden = type !== "olt";
         document.getElementById("container-dio-fields").hidden = type !== "dio";
-        document.getElementById("container-management-fields").hidden = type === "olt" && mode === "manual";
+        document.getElementById("container-management-fields").hidden = type === "dio" || (type === "olt" && mode === "manual");
         document.getElementById("container-model-field").hidden = type === "dio" || type === "olt";
         document.getElementById("container-serial-field").hidden = type === "dio" || type === "olt";
         document.getElementById("container-provisioning-field").hidden = type === "dio";
@@ -591,9 +584,19 @@
             ]);
             const layout = savedLayout.layout || {};
             const expandedCables = new Set((layout.expandedCables || []).map(String));
+            const notes = layout.notes || [];
             const fiberById = new Map(optical.cables.flatMap((cable) => cable.fibers.map((fiber) => [String(fiber.id), fiber])));
-            document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${element.splice_box.tray_count} bandeja(s)`;
-            let selectedTrayId = element.splice_box.trays[0]?.id || null;
+            const trayId = element.splice_box.trays[0]?.id || null;
+            const allSplitters = element.splice_box.trays.flatMap((tray) => tray.splitters);
+            document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${allSplitters.length} splitter(s)`;
+            const splitterRatioOptions = [
+                { value: "1:2", label: "1:2 (balanceado)" }, { value: "1:4", label: "1:4 (balanceado)" },
+                { value: "1:8", label: "1:8 (balanceado)" }, { value: "1:16", label: "1:16 (balanceado)" },
+                { value: "1:32", label: "1:32 (balanceado)" }, { value: "1:64", label: "1:64 (balanceado)" },
+                { value: "10:90", label: "10/90 (desbalanceado)" }, { value: "15:85", label: "15/85 (desbalanceado)" },
+                { value: "20:80", label: "20/80 (desbalanceado)" }, { value: "30:70", label: "30/70 (desbalanceado)" },
+                { value: "40:60", label: "40/60 (desbalanceado)" }, { value: "45:55", label: "45/55 (desbalanceado)" },
+            ];
             const usedFiberIds = new Set([
                 ...optical.splices.flatMap((splice) => [splice.input_fiber_id, splice.output_fiber_id]),
                 ...optical.splitter_links.flatMap((link) => [
@@ -618,17 +621,24 @@
                         ? { x: 900, y: 30 + outgoingIndex * 330 }
                         : { x: 20 + (otherIndex % 2) * 880, y: 30 + Math.floor(otherIndex / 2) * 330 };
                 const position = layout[`cable-${cable.id}`] || defaultPosition;
-                return `<section class="fiber-cable-node graph-node ${expandedCables.has(String(cable.id)) ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span><button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${expandedCables.has(String(cable.id)) ? "−" : "+"}</button><span class="drag-grip">⋮⋮</span></span></header>
+                const hasUsedFiber = cable.fibers.some((fiber) => usedFiberIds.has(fiber.id));
+                const manuallyExpanded = expandedCables.has(String(cable.id));
+                const isExpanded = hasUsedFiber || manuallyExpanded;
+                const toggleButton = hasUsedFiber ? "" : `<button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${manuallyExpanded ? "−" : "+"}</button>`;
+                return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
                 <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "" : 'draggable="true"'} data-used="${usedFiberIds.has(fiber.id)}" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`;
             }).join("");
-            const trayNodes = element.splice_box.trays.map((tray, index) => {
-                const position = layout[`tray-${tray.id}`] || { x: 470, y: 40 + index * 155 };
-                return `<div class="tray-node graph-node" data-node-key="tray-${tray.id}" data-tray-id="${tray.id}" style="left:${position.x}px;top:${position.y}px"><strong>${escapeHtml(tray.name || `Bandeja ${tray.number}`)} <span class="drag-grip">⋮⋮</span></strong><span>${tray.splice_count} fusões</span>
-                ${tray.splitters.map((splitter) => `<div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id || splitter.input_splitter_port_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || splitter.input_splitter_port_id || ""}" data-splitter-id="${splitter.id}" title="${splitter.input_splitter_port_id ? "Alimentado por outro splitter (cascata)" : ""}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id || cascadeUsedPortIds.has(port.id) ? "linked" : ""}" data-linked="${port.output_fiber_id || (cascadeUsedPortIds.has(port.id) ? "cascade" : "")}" data-port-id="${port.id}" title="${cascadeUsedPortIds.has(port.id) ? "Alimenta outro splitter (cascata)" : `Fibra ${port.number} de saída do splitter`}">F${port.number}</button>`).join("")}</div><div class="splitter-actions"><button type="button" data-edit-tray-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-tray-splitter="${splitter.id}">×</button></div></div>`).join("")}
-                <button type="button" class="add-splitter-button" data-add-tray-splitter="${tray.id}">+ Splitter</button></div>`;
+            const splitterNodes = allSplitters.map((splitter, index) => {
+                const position = layout[`splitter-${splitter.id}`] || { x: 470 + (index % 2) * 260, y: 40 + Math.floor(index / 2) * 220 };
+                return `<div class="graph-splitter-node graph-node" data-node-key="splitter-${splitter.id}" style="left:${position.x}px;top:${position.y}px">
+                <div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id || splitter.input_splitter_port_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || splitter.input_splitter_port_id || ""}" data-splitter-id="${splitter.id}" title="${splitter.input_splitter_port_id ? "Alimentado por outro splitter (cascata)" : ""}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id || cascadeUsedPortIds.has(port.id) ? "linked" : ""}" data-linked="${port.output_fiber_id || (cascadeUsedPortIds.has(port.id) ? "cascade" : "")}" data-port-id="${port.id}" title="${cascadeUsedPortIds.has(port.id) ? "Alimenta outro splitter (cascata)" : `Fibra ${port.number} de saída do splitter`}">F${port.number}</button>`).join("")}</div></div>
+                <div class="splitter-actions"><span class="drag-grip">⋮⋮</span><button type="button" data-edit-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-splitter="${splitter.id}">×</button></div></div>`;
             }).join("");
-            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique numa bandeja para selecioná-la e em duas fibras para ligar. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
-                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${trayNodes}</div></div>`;
+            const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
+                <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
+                <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
+            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
+                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
             let draggedFiber = null;
             let selectedFiber = null;
             let selectedSplitterPort = null;
@@ -639,7 +649,7 @@
                 if (inputNode.dataset.cableId === outputNode.dataset.cableId) return notify("Escolha fibras de cabos diferentes.", true);
                 await api(`/api/map/elements/${element.id}/splices/`, {
                     method: "POST",
-                    body: JSON.stringify({ tray_id: selectedTrayId, input_fiber_id: input, output_fiber_id: output }),
+                    body: JSON.stringify({ tray_id: trayId, input_fiber_id: input, output_fiber_id: output }),
                 });
                 unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada na caixa.");
             };
@@ -815,8 +825,13 @@
             };
             const graphNodes = content.querySelector(".graph-nodes");
             const zoomOutput = document.getElementById("unifilar-zoom-value");
-            let graphZoom = Math.max(.5, Math.min(1.6, Number(layout.zoom) || 1));
+            const fitZoom = () => {
+                const graph = content.querySelector(".optical-graph");
+                return Math.max(.5, Math.min(1, (graph.clientWidth - 40) / Math.max(1, graphNodes.scrollWidth)));
+            };
+            let graphZoom = layout.zoom ? Math.max(.5, Math.min(1.6, Number(layout.zoom))) : null;
             const applyGraphZoom = () => {
+                if (graphZoom === null) graphZoom = fitZoom();
                 graphNodes.style.transform = `scale(${graphZoom})`;
                 graphNodes.style.transformOrigin = "top left";
                 zoomOutput.value = `${Math.round(graphZoom * 100)}%`;
@@ -835,9 +850,7 @@
                 graphZoom = Math.min(1.6, graphZoom + .1); applyGraphZoom(); saveZoom();
             };
             document.getElementById("unifilar-zoom-reset").onclick = () => {
-                const graph = content.querySelector(".optical-graph");
-                graphZoom = Math.max(.5, Math.min(1, (graph.clientWidth - 40) / graphNodes.scrollWidth));
-                applyGraphZoom(); saveZoom();
+                graphZoom = fitZoom(); applyGraphZoom(); saveZoom();
             };
             applyGraphZoom();
             content.querySelectorAll("[data-expand-cable]").forEach((button) => {
@@ -855,21 +868,10 @@
                     });
                 };
             });
-            content.querySelectorAll(".tray-node").forEach((tray) => {
-                if (String(tray.dataset.trayId) === String(selectedTrayId)) tray.classList.add("active");
-                tray.addEventListener("click", (event) => {
-                    if (event.target.closest("button")) return;
-                    selectedTrayId = tray.dataset.trayId;
-                    content.querySelectorAll(".tray-node").forEach((item) => item.classList.remove("active"));
-                    tray.classList.add("active");
-                    notify("Bandeja selecionada para a próxima fusão.");
-                });
-            });
             content.querySelectorAll(".graph-node").forEach((node) => {
                 const grip = node.querySelector(".drag-grip");
                 grip.onpointerdown = (event) => {
                     event.preventDefault();
-                    const graph = content.querySelector(".optical-graph");
                     const startX = event.clientX, startY = event.clientY;
                     const originX = parseFloat(node.style.left), originY = parseFloat(node.style.top);
                     grip.setPointerCapture(event.pointerId);
@@ -891,36 +893,83 @@
                     };
                 };
             });
-            content.querySelectorAll("[data-add-tray-splitter]").forEach((button) => {
+            const graphEl = content.querySelector(".optical-graph");
+            const canvasMenu = content.querySelector(".ceo-canvas-menu");
+            let canvasMenuPoint = null;
+            graphEl.addEventListener("contextmenu", (event) => {
+                if (event.target.closest(".graph-node") || event.target.closest(".ceo-canvas-menu")) return;
+                event.preventDefault();
+                const graphRect = graphEl.getBoundingClientRect();
+                canvasMenuPoint = {
+                    x: (event.clientX - graphRect.left) / graphZoom,
+                    y: (event.clientY - graphRect.top) / graphZoom,
+                };
+                canvasMenu.style.left = `${event.clientX - graphRect.left}px`;
+                canvasMenu.style.top = `${event.clientY - graphRect.top}px`;
+                canvasMenu.hidden = false;
+            });
+            content.addEventListener("click", (event) => {
+                if (!event.target.closest(".ceo-canvas-menu")) canvasMenu.hidden = true;
+            });
+            canvasMenu.querySelector('[data-canvas-action="add-splitter"]').onclick = async () => {
+                canvasMenu.hidden = true;
+                if (!canvasMenuPoint || !trayId) return;
+                const ratio = await askValue({ title: "Adicionar splitter", label: "Proporção", value: "1:8", options: splitterRatioOptions });
+                if (!ratio) return;
+                try {
+                    const result = await api(`/api/map/elements/${element.id}/splitters/`, {
+                        method: "POST",
+                        body: JSON.stringify({ tray_id: trayId, ratio }),
+                    });
+                    layout[`splitter-${result.splitter_id}`] = { x: Math.round(canvasMenuPoint.x), y: Math.round(canvasMenuPoint.y) };
+                    await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter adicionado.");
+                } catch (error) { notify(error.message, true); }
+            };
+            canvasMenu.querySelector('[data-canvas-action="add-note"]').onclick = async () => {
+                canvasMenu.hidden = true;
+                if (!canvasMenuPoint) return;
+                const text = await askValue({ title: "Adicionar nota", label: "Texto" });
+                if (!text) return;
+                layout.notes = [...notes, { id: `n${Date.now()}`, x: Math.round(canvasMenuPoint.x), y: Math.round(canvasMenuPoint.y), text }];
+                await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Nota adicionada.");
+            };
+            content.querySelectorAll("[data-delete-note]").forEach((button) => {
                 button.onclick = async () => {
-                    const ratio = await askValue({ title: "Adicionar splitter", label: "Proporção", value: "1:4", options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64"].map((item) => ({ value: item, label: item })) });
-                    if (!ratio) return;
-                    try {
-                        await api(`/api/map/elements/${element.id}/splitters/`, {
-                            method: "POST",
-                            body: JSON.stringify({ tray_id: button.dataset.addTraySplitter, ratio, output_ports: Number(ratio.split(":")[1]) }),
-                        });
-                        unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter adicionado à bandeja.");
-                    } catch (error) { notify(error.message, true); }
+                    if (!confirm("Excluir esta nota?")) return;
+                    layout.notes = notes.filter((note) => String(note.id) !== String(button.dataset.deleteNote));
+                    await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Nota excluída.");
                 };
             });
-            content.querySelectorAll("[data-edit-tray-splitter]").forEach((button) => {
+            content.querySelectorAll("[data-note-id]").forEach((textEl) => {
+                textEl.onclick = async () => {
+                    const note = notes.find((item) => String(item.id) === String(textEl.dataset.noteId));
+                    const text = await askValue({ title: "Editar nota", label: "Texto", value: note?.text || "" });
+                    if (text === null || text === undefined) return;
+                    layout.notes = notes.map((item) => String(item.id) === String(textEl.dataset.noteId) ? { ...item, text } : item);
+                    await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Nota atualizada.");
+                };
+            });
+            content.querySelectorAll("[data-edit-splitter]").forEach((button) => {
                 button.onclick = async () => {
-                    const ratio = await askValue({ title: "Editar splitter", label: "Nova proporção", value: button.dataset.ratio, options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64"].map((item) => ({ value: item, label: item })) });
+                    const ratio = await askValue({ title: "Editar splitter", label: "Nova proporção", value: button.dataset.ratio, options: splitterRatioOptions });
                     if (!ratio) return;
                     try {
-                        await api(`/api/map/elements/${element.id}/splitters/${button.dataset.editTraySplitter}/`, {
+                        await api(`/api/map/elements/${element.id}/splitters/${button.dataset.editSplitter}/`, {
                             method: "PATCH",
-                            body: JSON.stringify({ ratio, output_ports: Number(ratio.split(":")[1]) }),
+                            body: JSON.stringify({ ratio }),
                         });
                         unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter atualizado.");
                     } catch (error) { notify(error.message, true); }
                 };
             });
-            content.querySelectorAll("[data-delete-tray-splitter]").forEach((button) => {
+            content.querySelectorAll("[data-delete-splitter]").forEach((button) => {
                 button.onclick = async () => {
                     if (!confirm("Excluir este splitter e suas ligações?")) return;
-                    await api(`/api/map/elements/${element.id}/splitters/${button.dataset.deleteTraySplitter}/`, { method: "DELETE" });
+                    await api(`/api/map/elements/${element.id}/splitters/${button.dataset.deleteSplitter}/`, { method: "DELETE" });
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter excluído.");
                 };
             });
@@ -957,17 +1006,28 @@
             api(`/api/map/elements/${element.id}/layout/`),
         ]);
         const layout = savedLayout.layout || {};
+        const expandedNodes = new Set((layout.expandedNodes || []).map(String));
         const dios = data.equipment.filter((item) => item.type === "dio");
         const cables = data.cables || [];
         const dioCards = dios.map((dio, index) => {
             const position = layout[`dio-${dio.id}`] || { x: 20, y: 20 + index * 260 };
-            return `<section class="fiber-cable-node graph-node" data-node-key="dio-${dio.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}<span class="drag-grip">⋮⋮</span></header>
+            const nodeKey = `dio-${dio.id}`;
+            const hasUsedPort = dio.ports.some((port) => port.fusion_used);
+            const manuallyExpanded = expandedNodes.has(nodeKey);
+            const isExpanded = hasUsedPort || manuallyExpanded;
+            const toggleButton = hasUsedPort ? "" : `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as portas">${manuallyExpanded ? "−" : "+"}</button>`;
+            return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
             <div class="fiber-port-list">${dio.ports.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""}>${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || '<span>Nenhuma porta cadastrada.</span>'}</div>
         </section>`;
         }).join("");
         const cableCards = cables.map((cable, index) => {
             const position = layout[`cable-${cable.id}`] || { x: 900, y: 20 + index * 260 };
-            return `<section class="fiber-cable-node graph-node" data-node-key="cable-${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span class="drag-grip">⋮⋮</span></header>
+            const nodeKey = `cable-${cable.id}`;
+            const hasUsedFiber = (cable.fibers || []).some((fiber) => fiber.used);
+            const manuallyExpanded = expandedNodes.has(nodeKey);
+            const isExpanded = hasUsedFiber || manuallyExpanded;
+            const toggleButton = hasUsedFiber ? "" : `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as fibras">${manuallyExpanded ? "−" : "+"}</button>`;
+            return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
             <div class="fiber-port-list">${(cable.fibers || []).map((fiber) => `<button type="button" class="fiber-port ${fiber.used ? "used" : ""}" data-used="${fiber.used}" data-fiber-id="${fiber.id}" ${fiber.link_id ? `data-link-id="${fiber.link_id}"` : ""} style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div>
         </section>`;
         }).join("");
@@ -994,8 +1054,13 @@
         };
         const graphNodes = content.querySelector(".graph-nodes");
         const zoomOutput = document.getElementById("unifilar-zoom-value");
-        let graphZoom = Math.max(.5, Math.min(1.6, Number(layout.zoom) || 1));
+        const fitZoom = () => {
+            const graph = content.querySelector(".optical-graph");
+            return Math.max(.5, Math.min(1, (graph.clientWidth - 40) / Math.max(1, graphNodes.scrollWidth)));
+        };
+        let graphZoom = layout.zoom ? Math.max(.5, Math.min(1.6, Number(layout.zoom))) : null;
         const applyGraphZoom = () => {
+            if (graphZoom === null) graphZoom = fitZoom();
             graphNodes.style.transform = `scale(${graphZoom})`;
             graphNodes.style.transformOrigin = "top left";
             zoomOutput.value = `${Math.round(graphZoom * 100)}%`;
@@ -1011,11 +1076,22 @@
             graphZoom = Math.min(1.6, graphZoom + .1); applyGraphZoom(); layout.zoom = graphZoom; saveLayout();
         };
         document.getElementById("unifilar-zoom-reset").onclick = () => {
-            const graph = content.querySelector(".optical-graph");
-            graphZoom = Math.max(.5, Math.min(1, (graph.clientWidth - 40) / graphNodes.scrollWidth));
-            applyGraphZoom(); layout.zoom = graphZoom; saveLayout();
+            graphZoom = fitZoom(); applyGraphZoom(); layout.zoom = graphZoom; saveLayout();
         };
         applyGraphZoom();
+        content.querySelectorAll("[data-expand-node]").forEach((button) => {
+            button.onclick = async () => {
+                const nodeKey = button.dataset.expandNode;
+                const node = content.querySelector(`[data-node-key="${nodeKey}"]`);
+                node.classList.toggle("expanded");
+                if (node.classList.contains("expanded")) expandedNodes.add(nodeKey);
+                else expandedNodes.delete(nodeKey);
+                button.textContent = node.classList.contains("expanded") ? "−" : "+";
+                layout.expandedNodes = [...expandedNodes];
+                redrawRackFusionLinks();
+                await saveLayout();
+            };
+        });
         content.querySelectorAll(".graph-node").forEach((node) => {
             const grip = node.querySelector(".drag-grip");
             grip.onpointerdown = (event) => {
@@ -1472,7 +1548,6 @@
         elementForm.elements.latitude.value = latlng.lat;
         elementForm.elements.longitude.value = latlng.lng;
         document.getElementById("cto-fields").hidden = tool !== "cto";
-        document.getElementById("ceo-fields").hidden = tool !== "splice_box";
         document.getElementById("container-fields").hidden = !["rack", "tower"].includes(tool);
         document.getElementById("container-fields-title").textContent = tool === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
         populateSplitterCables(null);

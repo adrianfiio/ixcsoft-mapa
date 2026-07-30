@@ -228,10 +228,12 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .fiber-port.used { color: #718096; cursor: not-allowed; opacity: .62; }
 .fiber-port i { width: 9px; height: 9px; flex: none; background: var(--fiber-color); border: 1px solid rgba(255,255,255,.7); border-radius: 50%; }
 .graph-trays { position: absolute; z-index: 3; top: 50%; left: 50%; display: grid; gap: 10px; width: 230px; transform: translate(-50%, -50%); }
-.tray-node { padding: 9px; color: #dbeafe; background: #17283f; border: 1px solid #f7b731; border-radius: 6px; text-align: center; }
-.tray-node.active { border-color: #2dd4bf; box-shadow: 0 0 0 2px rgba(45,212,191,.28); }
-.tray-node strong, .tray-node span { display: block; }.tray-node span { margin-top: 3px; color: var(--muted); font-size: 9px; }
-.graph-splitter { display: grid; grid-template-columns: 54px 38px minmax(48px, 1fr); align-items: center; gap: 7px; padding: 9px; margin-top: 7px; background: #0b192a; border: 1px solid #64748b; border-radius: 6px; }
+.graph-splitter-node { min-width: 210px; padding: 9px; background: #17283f; border: 1px solid #f7b731; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.note-node { min-width: 160px; max-width: 260px; padding: 9px; background: #3a2a10; border: 1px solid #f7b731; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.note-node header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.note-node .note-delete { padding: 0 6px; color: #fde68a; background: transparent; border: 1px solid #f7b731; border-radius: 4px; cursor: pointer; }
+.note-node .note-text { color: #fde68a; font-size: 11px; white-space: pre-wrap; cursor: text; }
+.graph-splitter { display: grid; grid-template-columns: 54px 38px minmax(48px, 1fr); align-items: center; gap: 7px; padding: 9px; background: #0b192a; border: 1px solid #64748b; border-radius: 6px; }
 .graph-splitter button { min-height: 25px; color: white; background: #1d3553; border: 1px solid #64748b; border-radius: 4px; font-size: 8px; cursor: crosshair; }
 .graph-splitter > b { position: relative; padding: 0 6px; font-size: 12px; }
 .graph-splitter > b::before, .graph-splitter > b::after { position: absolute; top: 50%; width: 7px; height: 2px; content: ""; background: #2dd4bf; transform: translateY(-50%); }
@@ -241,8 +243,8 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .graph-splitter button.linked { border-color: #22c55e; box-shadow: inset 0 0 0 1px #22c55e; }
 .splitter-output-grid { position: relative; display: grid; grid-template-columns: 1fr; gap: 3px; width: 100%; padding-left: 8px; border-left: 2px solid #2dd4bf; }
 .splitter-output-grid::before { position: absolute; top: 50%; left: -8px; width: 8px; height: 2px; content: ""; background: #2dd4bf; }
-.splitter-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 4px; }
-.add-splitter-button { width: 100%; padding: 5px; margin-top: 6px; color: #bffbf3; background: #0b5674; border: 1px solid #2dd4bf; border-radius: 5px; cursor: pointer; }
+.splitter-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 7px; }
+.splitter-actions .drag-grip { margin-right: auto; }
 .network-marker { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: #087f8c; border: 2px solid white; border-radius: 9px; box-shadow: 0 3px 12px rgba(0,0,0,.42); font-size: 9px; font-weight: 900; }
 .network-marker.pole { color: #fff8dc; background: #765414; border-radius: 8px; }.network-marker.cto { width: 38px; height: 38px; background: #1261a0; }.network-marker.splice_box { width: 38px; height: 42px; background: #8a3cac; border-radius: 15px 15px 10px 10px; }
 .network-marker svg { width: 21px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; }

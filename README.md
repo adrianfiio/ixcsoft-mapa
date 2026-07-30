@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.35.0 — Causa raiz do bug de campos ocultos, cascata de splitters, editor livre no rack**
+**v0.36.0 — Fusões da CEO sem bandejas: splitters livres, notas e proporções desbalanceadas**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

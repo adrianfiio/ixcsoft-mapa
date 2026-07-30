@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.36.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.35.0`.
+
+### Corrigido
+
+- **DIO voltou a não pedir IP nem Cadastro Manual/SNMP** — reversão da v0.35.0, que tinha passado a exibir esses campos. DIO só tem Nome, Fabricante, Quantidade de portas e Tipo de conector.
+- **Linhas que sumiam no diagrama de Fusões da CEO**: uma fibra fundida que ficava dentro de um cabo recolhido (não expandido) tinha sua posição real fora da área visível do card, e a linha era desenhada até esse ponto invisível, parecendo "perdida" no canto do diagrama. Agora todo cabo com pelo menos uma fibra em uso expande automaticamente e não pode mais ser recolhido manualmente, garantindo que a linha sempre aponte para um ponto visível.
+- Mesmo problema corrigido no diagrama de Fusões do rack: DIO/cabo com porta ou fibra em uso expande automaticamente.
+
+### Alterado
+
+- **Bandejas saíram da tela de edição da CEO** ("Editar CDO" não pede mais quantidade de bandejas, splitters por bandeja nem proporção). Esse formulário salvava esses 3 campos a cada edição — mesmo só mudando o nome — e resetava a proporção de **todos** os splitters da CEO para o mesmo valor toda vez. Agora a CEO cria uma bandeja interna (invisível para o usuário) e splitters são adicionados livremente dentro do próprio diagrama de Fusões.
+- **Diagrama de Fusões da CEO**: splitters agora são blocos independentes, arrastáveis e sem a caixa "Bandeja X" ao redor. Botão direito no fundo do diagrama abre um menu para **Adicionar splitter** (com lista de proporções balanceadas 1:2 a 1:64 e desbalanceadas 10/90, 15/85, 20/80, 30/70, 40/60, 45/55) ou **Adicionar nota** (bloco de texto livre, arrastável, editável e removível, para anotações no diagrama).
+- Diagrama de Fusões (CEO e rack) agora abre com zoom ajustado automaticamente à tela na primeira vez, em vez de sempre abrir em 100%.
+
 ## [0.35.0] - 2026-07-30
 
 ### Corrigido

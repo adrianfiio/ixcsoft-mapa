@@ -26,6 +26,7 @@ from apps.network_map.models import (
     ContainerEquipmentPort,
     ContainerPortLink,
     CTO,
+    CTOSplitter,
     FiberCable,
     FiberStrand,
     FiberSplice,
@@ -917,7 +918,7 @@ def container_equipment(request, element_id):
                 name=equipment_name,
                 description=str(request.data.get("description", "")).strip(),
                 equipment_type=equipment_type,
-                management_ip=management_ip,
+                management_ip=management_ip if equipment_type != ContainerEquipment.EquipmentType.DIO else None,
                 connector_type=connector_type if equipment_type == ContainerEquipment.EquipmentType.DIO else "",
                 provisioning_mode=provisioning_mode,
                 vendor=str(request.data.get("vendor", "")).strip(),
@@ -2283,12 +2284,12 @@ def splice_box_splitters(request, element_id, splitter_id=None):
     if request.method == "DELETE":
         splitter.delete()
         return JsonResponse({"success": True})
-    try:
-        ratio = str(request.data.get("ratio", "1:8"))
-        output_ports = int(request.data.get("output_ports", ratio.split(":")[1]))
-        if ratio not in {"1:2", "1:4", "1:8", "1:16", "1:32", "1:64"}:
-            raise ValueError
-    except (TypeError, ValueError, IndexError):
+    ratio = str(request.data.get("ratio", "1:8"))
+    if ratio in CTOSplitter.BALANCED_RATIOS:
+        output_ports = int(ratio.split(":")[1])
+    elif ratio in CTOSplitter.UNBALANCED_RATIOS:
+        output_ports = 2
+    else:
         return JsonResponse({"success": False, "error": "Configuração do splitter inválida."}, status=400)
     if splitter is None:
         tray = get_object_or_404(

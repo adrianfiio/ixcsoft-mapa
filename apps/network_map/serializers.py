@@ -127,9 +127,6 @@ class NetworkElementSerializer(serializers.ModelSerializer):
     splitter_input_fiber_id = serializers.IntegerField(
         write_only=True, required=False, allow_null=True
     )
-    ceo_tray_count = serializers.IntegerField(write_only=True, required=False, min_value=1, max_value=24, default=1)
-    ceo_splitters_per_tray = serializers.IntegerField(write_only=True, required=False, min_value=0, max_value=8, default=0)
-    ceo_splitter_ratio = serializers.ChoiceField(write_only=True, required=False, choices=CTOSplitter.Ratio.choices, default=CTOSplitter.Ratio.ONE_TO_8)
     internal_equipment = serializers.ListField(
         child=serializers.CharField(max_length=180),
         write_only=True,
@@ -167,9 +164,6 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             "splitter_ports",
             "splitter_input_cable_id",
             "splitter_input_fiber_id",
-            "ceo_tray_count",
-            "ceo_splitters_per_tray",
-            "ceo_splitter_ratio",
             "internal_equipment",
         ]
 
@@ -183,9 +177,6 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         splitter_ports = validated_data.pop("splitter_ports", 8)
         validated_data.pop("splitter_input_cable_id", None)
         validated_data.pop("splitter_input_fiber_id", None)
-        ceo_tray_count = validated_data.pop("ceo_tray_count", 1)
-        ceo_splitters = validated_data.pop("ceo_splitters_per_tray", 0)
-        ceo_ratio = validated_data.pop("ceo_splitter_ratio", CTOSplitter.Ratio.ONE_TO_8)
         internal_equipment = validated_data.pop("internal_equipment", [])
 
         latitude = validated_data.pop(
@@ -231,7 +222,9 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             element.metadata = {**element.metadata, "internal_equipment": internal_equipment}
             element.save(update_fields=["metadata", "updated_at"])
         if element.element_type == NetworkElement.ElementType.SPLICE_BOX:
-            sync_splice_box(element, ceo_tray_count, ceo_splitters, ceo_ratio)
+            # Uma única bandeja implícita por CEO — splitters são adicionados
+            # livremente no diagrama de Fusões, sem pré-configuração aqui.
+            sync_splice_box(element, 1, 0, CTOSplitter.Ratio.ONE_TO_8)
         return element
 
 
@@ -241,9 +234,6 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         splitter_ports = validated_data.pop("splitter_ports", None)
         input_cable_id = validated_data.pop("splitter_input_cable_id", None)
         input_fiber_id = validated_data.pop("splitter_input_fiber_id", None)
-        ceo_tray_count = validated_data.pop("ceo_tray_count", None)
-        ceo_splitters = validated_data.pop("ceo_splitters_per_tray", None)
-        ceo_ratio = validated_data.pop("ceo_splitter_ratio", None)
         internal_equipment = validated_data.pop("internal_equipment", None)
 
         latitude = validated_data.pop(
@@ -364,12 +354,13 @@ class NetworkElementSerializer(serializers.ModelSerializer):
                 splitter.save(update_fields=[
                     "input_cable", "input_fiber", "updated_at"
                 ])
-        if instance.element_type == NetworkElement.ElementType.SPLICE_BOX and ceo_tray_count is not None:
-            sync_splice_box(
-                instance,
-                ceo_tray_count,
-                ceo_splitters if ceo_splitters is not None else 0,
-                ceo_ratio or CTOSplitter.Ratio.ONE_TO_8,
-            )
+        if (
+            instance.element_type == NetworkElement.ElementType.SPLICE_BOX
+            and not instance.splice_trays.exists()
+        ):
+            # Elemento antigo sem bandeja (não deveria acontecer para
+            # elementos criados após a v0.36.0, mas garante que o diagrama
+            # de Fusões sempre tenha uma bandeja implícita para os splitters.
+            sync_splice_box(instance, 1, 0, CTOSplitter.Ratio.ONE_TO_8)
 
         return instance

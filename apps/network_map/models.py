@@ -333,12 +333,21 @@ class ContainerPortLink(TimeStampedModel):
 
 class CTOSplitter(TimeStampedModel):
     class Ratio(models.TextChoices):
-        ONE_TO_2 = "1:2", "1:2"
-        ONE_TO_4 = "1:4", "1:4"
-        ONE_TO_8 = "1:8", "1:8"
-        ONE_TO_16 = "1:16", "1:16"
-        ONE_TO_32 = "1:32", "1:32"
-        ONE_TO_64 = "1:64", "1:64"
+        ONE_TO_2 = "1:2", "1:2 (balanceado)"
+        ONE_TO_4 = "1:4", "1:4 (balanceado)"
+        ONE_TO_8 = "1:8", "1:8 (balanceado)"
+        ONE_TO_16 = "1:16", "1:16 (balanceado)"
+        ONE_TO_32 = "1:32", "1:32 (balanceado)"
+        ONE_TO_64 = "1:64", "1:64 (balanceado)"
+        UNBALANCED_10_90 = "10:90", "10/90 (desbalanceado)"
+        UNBALANCED_15_85 = "15:85", "15/85 (desbalanceado)"
+        UNBALANCED_20_80 = "20:80", "20/80 (desbalanceado)"
+        UNBALANCED_30_70 = "30:70", "30/70 (desbalanceado)"
+        UNBALANCED_40_60 = "40:60", "40/60 (desbalanceado)"
+        UNBALANCED_45_55 = "45:55", "45/55 (desbalanceado)"
+
+    BALANCED_RATIOS = {"1:2", "1:4", "1:8", "1:16", "1:32", "1:64"}
+    UNBALANCED_RATIOS = {"10:90", "15:85", "20:80", "30:70", "40:60", "45:55"}
 
     cto = models.ForeignKey(
         CTO,
