@@ -48,6 +48,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 }
 .help-text { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
 .layer-option { display: flex; align-items: center; gap: 9px; min-height: 32px; color: #d2deeb; font-size: 12px; cursor: pointer; }
+.layer-option[hidden] { display: none; }
 .layer-option input { width: 16px; height: 16px; accent-color: var(--primary); }
 .layer-symbol { width: 9px; height: 9px; border-radius: 50%; }
 .layer-symbol.structure { background: #38bdf8; }.layer-symbol.online { background: #32cf78; }.layer-symbol.offline { background: var(--danger); }.layer-symbol.unknown { background: var(--warning); }
@@ -64,6 +65,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .secondary-button { width: 100%; min-height: 38px; margin-top: 8px; }
 .login-notice { margin-top: 9px; color: #fde68a; border-color: #7c5b19; }
 .summary-row { display: flex; justify-content: space-between; padding: 4px 0; color: var(--muted); font-size: 11px; }
+.summary-row[hidden] { display: none; }
 .summary-row strong { color: var(--text); }
 .editor-message { padding: 10px; margin-top: 14px; color: #bdeff8; background: #0b5674; border-radius: 8px; font-size: 11px; line-height: 1.45; }
 .editor-message.error { color: #fecdd3; background: #711b2b; }
@@ -100,6 +102,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
     display: grid; place-items: center; width: 34px; height: 34px;
     color: #6b7c91; background: transparent; border: 0; border-radius: 8px; cursor: pointer;
 }
+.map-icon-toggle[hidden] { display: none; }
 .map-icon-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .map-icon-toggle:hover { background: rgba(45,212,191,.1); color: #dbeafe; }
 .map-icon-toggle.active { color: #04211e; background: var(--primary); }

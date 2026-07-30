@@ -61,11 +61,11 @@
                         <input id="layer-cables" type="checkbox" checked>
                         <span class="layer-symbol cables"></span> Cabos
                     </label>
-                    <label class="layer-option">
+                    <label class="layer-option"{% if hide_client_layers %} hidden{% endif %}>
                         <input id="layer-online" type="checkbox" checked>
                         <span class="layer-symbol online"></span> Clientes online
                     </label>
-                    <label class="layer-option">
+                    <label class="layer-option"{% if hide_client_layers %} hidden{% endif %}>
                         <input id="layer-offline" type="checkbox" checked>
                         <span class="layer-symbol offline"></span> Clientes offline
                     </label>
@@ -99,7 +99,7 @@
 
                 <section class="editor-section compact">
                     <div class="section-heading"><span>Resumo</span></div>
-                    <div class="summary-row"><span>Clientes carregados</span><strong id="client-count">0</strong></div>
+                    <div class="summary-row"{% if hide_client_layers %} hidden{% endif %}><span>Clientes carregados</span><strong id="client-count">0</strong></div>
                     <div class="summary-row"><span>Elementos</span><strong id="element-count">0</strong></div>
                     <div class="summary-row"><span>Cabos e rotas</span><strong id="cable-count">0</strong></div>
                 </section>
@@ -153,7 +153,7 @@
                     <svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg>
                 </button>
                 <span class="map-group-divider"></span>
-                <button type="button" class="map-icon-toggle active" data-layer-toggle="group-clients" title="Agrupar PPPoE" aria-label="Agrupar PPPoE">
+                <button type="button" class="map-icon-toggle active" data-layer-toggle="group-clients" title="Agrupar PPPoE" aria-label="Agrupar PPPoE"{% if hide_client_layers %} hidden{% endif %}>
                     <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="8" r="3"></circle><path d="M2.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5M12.5 20c0-3 2-5.5 4.5-5.5s5 2.5 5 5.5"></path></svg>
                 </button>
                 <button type="button" class="map-icon-toggle active" data-layer-toggle="group-equipment" title="Agrupar equipamentos" aria-label="Agrupar equipamentos">
@@ -280,11 +280,11 @@
                 </aside>
             </div>
             <details id="container-optical-links" class="container-optical-links" hidden>
-                <summary><strong id="container-link-title">Configurar ligações internas</strong><span>abrir diagrama</span></summary>
-                <p id="container-link-help">Selecione duas portas compatíveis e, quando aplicável, o cabo ligado à estrutura.</p>
+                <summary><strong id="container-link-title">Fusões</strong><span>abrir diagrama</span></summary>
+                <p id="container-link-help">Selecione duas portas compatíveis, ou deixe a porta de origem em branco para uma fusão direta de um cabo numa porta do DIO.</p>
                 <form id="container-link-form">
                     <div class="dialog-grid">
-                        <label>Porta de origem<select name="source_port_id" required></select></label>
+                        <label>Porta de origem<select name="source_port_id"><option value="">— fusão direta do cabo —</option></select></label>
                         <label>Porta de destino<select name="destination_port_id" required></select></label>
                     </div>
                     <label>Tipo da ligação<select name="link_type">
@@ -307,9 +307,9 @@
                     <label id="container-management-fields">IP de gerência<input name="management_ip" placeholder="192.0.2.10"></label>
                     <label id="container-provisioning-field">Cadastro<select name="provisioning_mode"><option value="manual">Manual</option><option value="snmp">SNMP</option></select></label>
                 </div>
-                <div id="container-identification-fields" class="dialog-grid">
+                <div class="dialog-grid">
                     <label>Fabricante<input name="vendor" placeholder="FiberHome, Huawei, ZTE..."></label>
-                    <label>Modelo<input name="model"></label>
+                    <label id="container-model-field">Modelo<input name="model"></label>
                 </div>
                 <fieldset id="container-snmp-fields" class="cto-fields" hidden>
                     <legend>Acesso SNMP</legend>
@@ -363,7 +363,7 @@
 
     <dialog id="unifilar-dialog" class="editor-dialog unifilar-dialog">
         <section>
-            <header><div><h2 id="unifilar-title">Unifilar da CTO</h2><p id="unifilar-subtitle"></p></div><button class="dialog-close" type="button">×</button></header>
+            <header><div><h2 id="unifilar-title">Fusões da CTO</h2><p id="unifilar-subtitle"></p></div><button class="dialog-close" type="button">×</button></header>
             <div id="unifilar-content"></div>
             <footer><button class="secondary-button dialog-close" type="button">Fechar</button></footer>
         </section>

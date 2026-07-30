@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.32.0] - 2026-07-30
+
+### Adicionado
+
+- Fusão direta de cabo numa porta do DIO: na seção "Fusões" do rack, agora dá para ligar um cabo que chega no rack diretamente a uma porta do DIO, sem precisar de uma porta de OLT do outro lado. A porta de origem fica opcional — deixe em branco para esse tipo de fusão.
+- O diagrama de portas do rack mostra o nome do cabo vinculado direto no card da porta, em vez de só "· ligada".
+
+### Alterado
+
+- Empresas projetistas (sem ERP, sem clientes) deixam de ver as camadas "Clientes online"/"Clientes offline" e o agrupamento de PPPoE no mapa, já que nunca têm esse tipo de dado.
+- Cadastro de DIO no rack pede só Nome, Fabricante e Quantidade de portas.
+- Cadastro de OLT no rack: modo Manual pede só Nome e Fabricante; modo SNMP soma IP de gerência e Community. Modelo e Número de série saíram do formulário de OLT e DIO (continuam disponíveis para switch/AP/PTP na torre).
+- Diagrama de fusões da CTO/CEO ("Unifilar") passa a se chamar "Fusões", inclusive o botão no popup do mapa.
+
 ## [0.31.0] - 2026-07-30
 
 ### Corrigido

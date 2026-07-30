@@ -177,6 +177,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             }
         )
         if self.template_name == "map.html":
+            company = self._primary_company()
+            context["hide_client_layers"] = bool(company and company.is_designer)
             context["can_edit_map"] = has_any_edit_access(self.request.user)
             map_config = MapBaseConfiguration.objects.first()
             google_api_key = ""

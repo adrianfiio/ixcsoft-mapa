@@ -270,6 +270,9 @@ class ContainerPortLink(TimeStampedModel):
         ContainerEquipmentPort,
         on_delete=models.CASCADE,
         related_name="outgoing_link",
+        null=True,
+        blank=True,
+        help_text="Em branco para uma fusão direta de cabo numa porta do DIO, sem OLT do outro lado.",
     )
     destination_port = models.OneToOneField(
         ContainerEquipmentPort,

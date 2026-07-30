@@ -465,8 +465,8 @@
         document.getElementById("container-olt-fields").hidden = type !== "olt";
         document.getElementById("container-dio-fields").hidden = type !== "dio";
         document.getElementById("container-management-fields").hidden = type === "dio" || (type === "olt" && mode === "manual");
-        document.getElementById("container-identification-fields").hidden = type === "dio" || (type === "olt" && mode === "manual");
-        document.getElementById("container-serial-field").hidden = type === "dio" || (type === "olt" && mode === "manual");
+        document.getElementById("container-model-field").hidden = type === "dio" || type === "olt";
+        document.getElementById("container-serial-field").hidden = type === "dio" || type === "olt";
         document.getElementById("container-provisioning-field").hidden = type === "dio";
         document.getElementById("container-snmp-fields").hidden = mode !== "snmp" || type === "dio";
         const name = containerEquipmentForm.elements.name;
@@ -499,7 +499,7 @@
                     ? `<div class="equipment-card-list">${item.cards.map((card) => `<span><b>Slot ${card.slot} · ${escapeHtml(card.name)}</b><br>${card.pon_count} PONs${card.model ? ` · ${escapeHtml(card.model)}` : ""}</span>`).join("")}</div>`
                     : "";
                 const ports = item.ports?.length
-                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<span class="equipment-port ${port.used ? "used" : ""}">${escapeHtml(port.label)}${port.used ? " · ligada" : ""}</span>`).join("")}</div>`
+                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<span class="equipment-port ${port.used ? "used" : ""}">${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</span>`).join("")}</div>`
                     : '<p class="field-help">Nenhuma porta cadastrada.</p>';
                 const configure = item.type === "olt"
                     ? `<button class="secondary-button" type="button" data-add-equipment-card="${item.id}">+ Placa</button>`
@@ -523,13 +523,13 @@
             ? "Ligue uma PON à porta do DIO e associe o cabo óptico que sai do rack."
             : "Ligue switch, AP e rádio PTP por RJ45/SFP ou registre o enlace wireless.";
         containerLinkForm.elements.link_type.value = data.container.type === "rack" ? "fiber" : "copper";
-        containerLinkForm.elements.source_port_id.innerHTML = sourcePorts
-            .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
+        containerLinkForm.elements.source_port_id.innerHTML = '<option value="">— fusão direta do cabo —</option>'
+            + sourcePorts.map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
         containerLinkForm.elements.destination_port_id.innerHTML = destinationPorts
             .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
         containerLinkForm.elements.cable_id.innerHTML = '<option value="">Ainda sem cabo vinculado</option>'
             + data.cables.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`).join("");
-        containerLinkForm.querySelector("button[type='submit']").disabled = !sourcePorts.length || !destinationPorts.length;
+        containerLinkForm.querySelector("button[type='submit']").disabled = !destinationPorts.length;
         document.getElementById("container-link-list").innerHTML = data.links.length
             ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${escapeHtml(link.link_type_label)}${link.cable ? ` · Cabo: ${escapeHtml(link.cable)}` : ""}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
             : "<p>Nenhuma ligação interna registrada.</p>";
@@ -578,7 +578,7 @@
     async function showUnifilar(id) {
         const data = await api(`/api/map/elements/${id}/`);
         const element = data.element;
-        document.getElementById("unifilar-title").textContent = `Unifilar · ${element.name}`;
+        document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
         const content = document.getElementById("unifilar-content");
         if (element.splice_box) {
@@ -1132,7 +1132,7 @@
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
             const editing = canEdit && state.mapMode === "edit";
-            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Unifilar</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
+            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Fusões</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
                 const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: editing });
                 marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
@@ -1517,6 +1517,7 @@
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
         if (!payload.cable_id) delete payload.cable_id;
+        if (!payload.source_port_id) delete payload.source_port_id;
         try {
             await api(`/api/map/elements/${state.containerId}/equipment-links/`, {
                 method: "POST",

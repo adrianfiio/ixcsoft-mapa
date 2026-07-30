@@ -941,7 +941,10 @@ def container_equipment(request, element_id):
             {
                 "id": link.id,
                 "source_port_id": link.source_port_id,
-                "source": f"{link.source_port.equipment.name} · {link.source_port.label}",
+                "source": (
+                    f"{link.source_port.equipment.name} · {link.source_port.label}"
+                    if link.source_port else "Fusão direta do cabo"
+                ),
                 "destination_port_id": link.destination_port_id,
                 "destination": f"{link.destination_port.equipment.name} · {link.destination_port.label}",
                 "cable_id": link.cable_id,
@@ -968,6 +971,11 @@ def container_equipment_detail(request, element_id, equipment_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
     equipment.delete()
     return HttpResponse(status=204)
+
+
+def _linked_cable_name(port):
+    link = getattr(port, "outgoing_link", None) or getattr(port, "incoming_link", None)
+    return link.cable.name if link and link.cable else None
 
 
 def _container_equipment_payload(item):
@@ -1006,6 +1014,7 @@ def _container_equipment_payload(item):
                 "port_number": port.port_number,
                 "label": port.label,
                 "used": hasattr(port, "outgoing_link") or hasattr(port, "incoming_link"),
+                "linked_cable": _linked_cable_name(port),
             }
             for port in item.ports.all()
         ],
@@ -1144,11 +1153,13 @@ def container_port_links(request, element_id):
     )
     if not can_edit_company(request.user, container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-    source = get_object_or_404(
-        ContainerEquipmentPort.objects.select_related("equipment"),
-        pk=request.data.get("source_port_id"),
-        equipment__container=container,
-    )
+    source = None
+    if request.data.get("source_port_id"):
+        source = get_object_or_404(
+            ContainerEquipmentPort.objects.select_related("equipment"),
+            pk=request.data.get("source_port_id"),
+            equipment__container=container,
+        )
     destination = get_object_or_404(
         ContainerEquipmentPort.objects.select_related("equipment"),
         pk=request.data.get("destination_port_id"),
@@ -1161,15 +1172,27 @@ def container_port_links(request, element_id):
             pk=request.data.get("cable_id"),
             company=container.company,
         )
-    if source.pk == destination.pk or source.equipment_id == destination.equipment_id:
+    if source is None and cable is None:
+        return JsonResponse(
+            {"detail": "Selecione a porta de origem ou o cabo para a fusão."}, status=400
+        )
+    if source is not None and (source.pk == destination.pk or source.equipment_id == destination.equipment_id):
         return JsonResponse({"detail": "Escolha portas de equipamentos diferentes."}, status=400)
-    if ContainerPortLink.objects.filter(
-        Q(source_port=source) | Q(destination_port=source)
-        | Q(source_port=destination) | Q(destination_port=destination)
-    ).exists():
+    in_use_query = Q(destination_port=destination)
+    if source is not None:
+        in_use_query |= Q(source_port=source) | Q(destination_port=source) | Q(source_port=destination)
+    if ContainerPortLink.objects.filter(in_use_query).exists():
         return JsonResponse({"detail": "Uma das portas já está em uso."}, status=409)
     link_type = str(request.data.get("link_type", "fiber"))
-    if container.element_type == NetworkElement.ElementType.RACK:
+    if source is None:
+        # Fusão direta: um cabo externo (que chega no rack/torre) ligado numa
+        # porta do DIO, sem uma porta de OLT do outro lado.
+        if destination.port_type != ContainerEquipmentPort.PortType.DIO:
+            return JsonResponse(
+                {"detail": "A fusão direta de cabo só pode ligar numa porta do DIO."}, status=400
+            )
+        link_type = ContainerPortLink.LinkType.FIBER
+    elif container.element_type == NetworkElement.ElementType.RACK:
         if source.port_type != ContainerEquipmentPort.PortType.PON or destination.port_type != ContainerEquipmentPort.PortType.DIO:
             return JsonResponse({"detail": "No rack, ligue uma PON da OLT a uma porta do DIO."}, status=400)
         link_type = ContainerPortLink.LinkType.FIBER
