@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.gis.db.models.functions import Length, Transform
 from django.db import connection
 from django.db.models import Count, Q, Sum
@@ -29,6 +30,7 @@ from apps.core.access import editable_company_ids
 from apps.core.forms import (
     CompanyOnboardingForm,
     CompanyProviderModeForm,
+    CompanyTeamMemberForm,
     DIOPlatformForm,
     ERPOnboardingForm,
     OLTPlatformForm,
@@ -306,6 +308,74 @@ def company_provider_mode(request):
             return redirect("erp-onboarding")
         return redirect("account-panel")
     return render(request, "company_provider_mode.html", {"form": form, "company": company})
+
+
+@login_required
+def company_team(request):
+    membership = (
+        CompanyMembership.objects.filter(
+            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+        )
+        .select_related("company")
+        .first()
+    )
+    if request.user.is_superuser or membership is None:
+        messages.info(
+            request,
+            "Somente um usuário com permissão de edição pode gerenciar a equipe da empresa.",
+        )
+        return redirect("account-panel")
+    company = membership.company
+    action = request.POST.get("action") if request.method == "POST" else None
+
+    if action in ("toggle_active", "change_role"):
+        target = (
+            CompanyMembership.objects.filter(
+                pk=request.POST.get("membership_id"), company=company
+            )
+            .exclude(pk=membership.pk)
+            .first()
+        )
+        if target is None:
+            messages.error(request, "Membro não encontrado nesta empresa.")
+        elif action == "toggle_active":
+            target.active = not target.active
+            target.save(update_fields=["active"])
+            messages.success(request, "Acesso do membro atualizado.")
+        elif action == "change_role":
+            new_role = request.POST.get("role")
+            if new_role in CompanyMembership.Role.values:
+                target.role = new_role
+                target.save(update_fields=["role"])
+                messages.success(request, "Nível de acesso atualizado.")
+        return redirect("company-team")
+
+    form = CompanyTeamMemberForm(request.POST if action == "create" else None)
+    if action == "create" and form.is_valid():
+        new_user = User.objects.create_user(
+            username=form.cleaned_data["username"],
+            password=form.cleaned_data["password"],
+            first_name=form.cleaned_data["first_name"],
+        )
+        CompanyMembership.objects.create(
+            company=company,
+            user=new_user,
+            role=form.cleaned_data["role"],
+            active=True,
+        )
+        messages.success(request, f"Usuário {new_user.username} cadastrado com sucesso.")
+        return redirect("company-team")
+
+    team = (
+        CompanyMembership.objects.filter(company=company)
+        .select_related("user")
+        .order_by("user__first_name", "user__username")
+    )
+    return render(
+        request,
+        "company_team.html",
+        {"form": form, "company": company, "team": team, "own_membership_id": membership.pk},
+    )
 
 
 @login_required

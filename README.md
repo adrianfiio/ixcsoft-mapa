@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.27.1 — Login direto na visão geral e topo da tela mais limpo**
+**v0.28.0 — Empresas cadastram sua própria equipe (VIEW/EDIT)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

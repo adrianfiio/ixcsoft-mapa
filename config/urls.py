@@ -9,6 +9,7 @@ from apps.core.views import (
     company_alerts,
     company_onboarding,
     company_provider_mode,
+    company_team,
     create_company_asset,
     erp_onboarding,
 )
@@ -29,6 +30,7 @@ urlpatterns = [
     path("painel/", AccountPanelView.as_view(), name="account-panel"),
     path("painel/primeiro-acesso/", company_onboarding, name="company-onboarding"),
     path("painel/modo-operacao/", company_provider_mode, name="company-provider-mode"),
+    path("painel/equipe/", company_team, name="company-team"),
     path("painel/alertas/", company_alerts, name="company-alerts"),
     path("painel/novo/<str:asset_type>/", create_company_asset, name="company-asset-create"),
     path("painel/integracao/", erp_onboarding, name="erp-onboarding"),

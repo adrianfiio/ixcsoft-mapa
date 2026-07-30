@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.28.0] - 2026-07-30
+
+### Adicionado
+
+- Página **Minha equipe** (`/painel/equipe/`), onde um usuário EDIT cadastra novas pessoas da própria empresa com usuário e senha definidos na hora, escolhendo o papel VIEW ou EDIT.
+- O usuário principal pode ativar/desativar o acesso de qualquer membro da sua equipe e trocar o papel (VIEW ↔ EDIT) a qualquer momento, sem depender do suporte.
+- Atalho "Minha equipe" no dashboard (provedor e projetista) e em "Minha administração", visível apenas para quem tem permissão de edição.
+
+### Observação
+
+- A senha definida para o novo membro passa pelas mesmas validações padrão do Django (tamanho mínimo, não pode ser trivial/numérica). O usuário criado nunca tem acesso ao Django Admin nem a outras empresas.
+
 ## [0.27.1] - 2026-07-30
 
 ### Alterado

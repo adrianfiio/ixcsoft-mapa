@@ -56,6 +56,7 @@
                 <a class="quick-link" href="{% url 'map' %}"><strong>Mapa de projetos</strong><small>{{ project_count|default:0 }} projetos · {{ element_count|default:0 }} elementos</small></a>
                 <a class="quick-link" href="{% url 'equipment-list' %}"><strong>Equipamentos</strong><small>{{ element_count|default:0 }} elementos cadastrados</small></a>
                 <a class="quick-link" href="{% url 'account-panel' %}#infraestrutura"><strong>CPD, OLT e DIO</strong><small>{{ olt_count|default:0 }} OLTs cadastradas</small></a>
+                {% if can_edit_company_assets %}<a class="quick-link" href="{% url 'company-team' %}"><strong>Minha equipe</strong><small>Gerenciar acessos VIEW/EDIT</small></a>{% endif %}
             </div>
         </article>
     </div>

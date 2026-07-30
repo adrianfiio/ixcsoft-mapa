@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Minha equipe | AFService Map{% endblock %}
+{% block topbar_title %}Minha equipe{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>Minha equipe</h1>
+        <p>Cadastre pessoas da sua empresa com acesso de visualização (VIEW) ou edição (EDIT).</p>
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <div class="dashboard-column">
+        <article class="panel">
+            <div class="panel-header"><h2 class="panel-title">Adicionar membro</h2></div>
+            <form class="platform-form onboarding-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <div class="platform-form-grid">
+                    {% for field in form %}
+                    <label><strong>{{ field.label }}</strong>{{ field }}
+                        {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="platform-form-actions"><button type="submit">Cadastrar →</button></div>
+            </form>
+        </article>
+    </div>
+
+    <div class="dashboard-column">
+        <article class="panel">
+            <div class="panel-header"><h2 class="panel-title">Equipe da empresa</h2></div>
+            <div class="account-items">
+                {% for membership in team %}
+                <div>
+                    <span>
+                        <strong>{{ membership.user.get_full_name|default:membership.user.username }}</strong>
+                        <small>{{ membership.user.username }} · {{ membership.get_role_display }}</small>
+                    </span>
+                    {% if membership.pk == own_membership_id %}
+                    <span class="team-status active">Você</span>
+                    {% else %}
+                    <span class="team-actions">
+                        <span class="team-status {% if membership.active %}active{% else %}inactive{% endif %}">
+                            {% if membership.active %}Ativo{% else %}Inativo{% endif %}
+                        </span>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="change_role">
+                            <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                            <input type="hidden" name="role" value="{% if membership.role == 'edit' %}view{% else %}edit{% endif %}">
+                            <button type="submit">{% if membership.role == 'edit' %}Tornar VIEW{% else %}Tornar EDIT{% endif %}</button>
+                        </form>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="toggle_active">
+                            <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                            <button type="submit">{% if membership.active %}Desativar{% else %}Reativar{% endif %}</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="empty-state">Nenhum membro cadastrado ainda.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

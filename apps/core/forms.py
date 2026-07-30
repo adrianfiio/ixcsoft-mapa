@@ -1,7 +1,9 @@
 from django import forms
+from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 
 from .crypto import SecretCipher
-from .models import Company, MapBaseConfiguration
+from .models import Company, CompanyMembership, MapBaseConfiguration
 from apps.network_map.models import NetworkProject, POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
@@ -207,3 +209,21 @@ class CompanyProviderModeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["integration_mode"].required = True
+
+
+class CompanyTeamMemberForm(forms.Form):
+    first_name = forms.CharField(label="Nome", max_length=150)
+    username = forms.CharField(label="Usuário de acesso", max_length=150)
+    password = forms.CharField(label="Senha", widget=forms.PasswordInput)
+    role = forms.ChoiceField(label="Nível de acesso", choices=CompanyMembership.Role.choices)
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("Já existe um usuário com este nome de acesso.")
+        return username
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        validate_password(password)
+        return password
