@@ -684,8 +684,9 @@
                 const isExpanded = explicit ? explicit === "expanded" : hasUsedFiber;
                 const toggleButton = `<button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${isExpanded ? "−" : "+"}</button>`;
                 const summary = !isExpanded && hasUsedFiber ? `<small>${usedCount}/${cable.fibers.length} em uso</small>` : "";
+                const visibleFibers = isExpanded ? cable.fibers : cable.fibers.filter((fiber) => usedFiberIds.has(fiber.id));
                 return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
-                <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "" : 'draggable="true"'} data-used="${usedFiberIds.has(fiber.id)}" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`;
+                <div class="fiber-port-list">${visibleFibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "" : 'draggable="true"'} data-used="${usedFiberIds.has(fiber.id)}" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || `<span>${isExpanded ? "Sem fibras geradas" : "Nenhuma fibra em uso"}</span>`}</div></section>`;
             }).join("");
             const splitterNodes = allSplitters.map((splitter, index) => {
                 const position = layout[`splitter-${splitter.id}`] || { x: 470 + (index % 2) * 260, y: 40 + Math.floor(index / 2) * 220 };
@@ -808,18 +809,30 @@
                 svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
                 const lineStyle = document.getElementById("connection-style").value;
                 let gradientIndex = 0;
-                const isHiddenByCollapse = (node) => {
-                    const cableNode = node.closest(".fiber-cable-node");
-                    return cableNode && !cableNode.classList.contains("expanded");
-                };
                 const drawLink = (source, target, colors, action = null) => {
-                    if (!source || !target || isHiddenByCollapse(source) || isHiddenByCollapse(target)) return;
+                    if (!source || !target) return;
                     const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
                     const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
                     const x2 = b.left + b.width / 2 - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
+                    const sourceNode = source.closest(".graph-node");
+                    const targetNode = target.closest(".graph-node");
+                    const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+                    const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+                    const obstacleTops = [];
+                    content.querySelectorAll(".graph-node").forEach((node) => {
+                        if (node === sourceNode || node === targetNode) return;
+                        const r = node.getBoundingClientRect();
+                        const rect = { left: r.left - graphRect.left, right: r.right - graphRect.left, top: r.top - graphRect.top, bottom: r.bottom - graphRect.top };
+                        if (maxX >= rect.left && minX <= rect.right && maxY >= rect.top && minY <= rect.bottom) {
+                            obstacleTops.push(rect.top);
+                        }
+                    });
                     let path = `M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`;
-                    if (lineStyle === "straight") path = `M${x1},${y1} L${x2},${y2}`;
-                    if (lineStyle === "orthogonal") path = `M${x1},${y1} H${(x1+x2)/2} V${y2} H${x2}`;
+                    if (obstacleTops.length) {
+                        const safeY = Math.min(y1, y2, Math.min(...obstacleTops) - 24);
+                        path = `M${x1},${y1} C${x1},${safeY} ${x2},${safeY} ${x2},${y2}`;
+                    } else if (lineStyle === "straight") path = `M${x1},${y1} L${x2},${y2}`;
+                    else if (lineStyle === "orthogonal") path = `M${x1},${y1} H${(x1+x2)/2} V${y2} H${x2}`;
                     const palette = (Array.isArray(colors) ? colors : [colors]).filter(Boolean);
                     let stroke = escapeHtml(palette[0] || "#94a3b8");
                     if (palette.length > 1 && palette[0] !== palette[1]) {
@@ -942,10 +955,14 @@
                     };
                     grip.onpointerup = async () => {
                         grip.onpointermove = null;
-                        layout[node.dataset.nodeKey] = {
-                            x: Math.round(parseFloat(node.style.left)),
-                            y: Math.round(parseFloat(node.style.top)),
-                        };
+                        const x = Math.round(parseFloat(node.style.left));
+                        const y = Math.round(parseFloat(node.style.top));
+                        if (node.dataset.nodeKey.startsWith("note-")) {
+                            const noteId = node.dataset.nodeKey.slice("note-".length);
+                            layout.notes = notes.map((note) => String(note.id) === noteId ? { ...note, x, y } : note);
+                        } else {
+                            layout[node.dataset.nodeKey] = { x, y };
+                        }
                         await api(`/api/map/elements/${element.id}/layout/`, {
                             method: "PATCH", body: JSON.stringify({ layout }),
                         });
@@ -1082,8 +1099,9 @@
             const isExpanded = explicit ? explicit === "expanded" : hasUsedPort;
             const toggleButton = `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as portas">${isExpanded ? "−" : "+"}</button>`;
             const summary = !isExpanded && hasUsedPort ? `<small>${usedCount}/${dio.ports.length} em uso</small>` : "";
+            const visiblePorts = isExpanded ? dio.ports : dio.ports.filter((port) => port.fusion_used);
             return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
-            <div class="fiber-port-list">${dio.ports.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""}>${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || '<span>Nenhuma porta cadastrada.</span>'}</div>
+            <div class="fiber-port-list">${visiblePorts.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""}>${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || `<span>${isExpanded ? "Nenhuma porta cadastrada." : "Nenhuma porta em uso."}</span>`}</div>
         </section>`;
         }).join("");
         const cableCards = cables.map((cable, index) => {
@@ -1095,8 +1113,9 @@
             const isExpanded = explicit ? explicit === "expanded" : hasUsedFiber;
             const toggleButton = `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as fibras">${isExpanded ? "−" : "+"}</button>`;
             const summary = !isExpanded && hasUsedFiber ? `<small>${usedCount}/${(cable.fibers || []).length} em uso</small>` : "";
+            const visibleFibers = isExpanded ? (cable.fibers || []) : (cable.fibers || []).filter((fiber) => fiber.used);
             return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
-            <div class="fiber-port-list">${(cable.fibers || []).map((fiber) => `<button type="button" class="fiber-port ${fiber.used ? "used" : ""}" data-used="${fiber.used}" data-fiber-id="${fiber.id}" ${fiber.link_id ? `data-link-id="${fiber.link_id}"` : ""} style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div>
+            <div class="fiber-port-list">${visibleFibers.map((fiber) => `<button type="button" class="fiber-port ${fiber.used ? "used" : ""}" data-used="${fiber.used}" data-fiber-id="${fiber.id}" ${fiber.link_id ? `data-link-id="${fiber.link_id}"` : ""} style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? " · Em uso" : ""}</button>`).join("") || `<span>${isExpanded ? "Sem fibras geradas" : "Nenhuma fibra em uso"}</span>`}</div>
         </section>`;
         }).join("");
         const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
@@ -1111,13 +1130,9 @@
             const graphRect = graph.getBoundingClientRect();
             svg.innerHTML = "";
             svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
-            const isHiddenByCollapse = (node) => {
-                const cardNode = node.closest(".fiber-cable-node");
-                return cardNode && !cardNode.classList.contains("expanded");
-            };
             content.querySelectorAll(".fiber-port[data-link-id]").forEach((fiberChip) => {
                 const portButton = content.querySelector(`.dio-fusion-port[data-link-id="${fiberChip.dataset.linkId}"]`);
-                if (!portButton || isHiddenByCollapse(fiberChip) || isHiddenByCollapse(portButton)) return;
+                if (!portButton) return;
                 const a = fiberChip.getBoundingClientRect(), b = portButton.getBoundingClientRect();
                 const x1 = a.right - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
                 const x2 = b.left - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
@@ -1178,10 +1193,14 @@
                 };
                 grip.onpointerup = async () => {
                     grip.onpointermove = null;
-                    layout[node.dataset.nodeKey] = {
-                        x: Math.round(parseFloat(node.style.left)),
-                        y: Math.round(parseFloat(node.style.top)),
-                    };
+                    const x = Math.round(parseFloat(node.style.left));
+                    const y = Math.round(parseFloat(node.style.top));
+                    if (node.dataset.nodeKey.startsWith("note-")) {
+                        const noteId = node.dataset.nodeKey.slice("note-".length);
+                        layout.notes = notes.map((note) => String(note.id) === noteId ? { ...note, x, y } : note);
+                    } else {
+                        layout[node.dataset.nodeKey] = { x, y };
+                    }
                     await saveLayout();
                     notify("Posição salva.");
                 };

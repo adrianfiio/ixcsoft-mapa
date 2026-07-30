@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.38.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.37.0`.
+
+### Corrigido
+
+- **Nota não salvava a posição ao arrastar**: a posição arrastada era gravada numa chave do layout que o desenho nunca lia de volta — a nota sempre voltava para o lugar original ao reabrir. Corrigido nos dois diagramas de Fusões (CEO e rack).
+- **Recolher um bloco escondia as portas em uso, e não as livres**: o recolher era só um recorte visual (mostrava o topo da lista, o que calhasse estar lá). Agora, ao recolher, só as portas/fibras **livres** somem — as que estão em uso continuam visíveis, e a linha continua desenhando para elas normalmente.
+- Linhas do diagrama de Fusões da CEO agora desviam por cima quando o caminho reto passaria por dentro de outro bloco no meio do caminho (splitters em cascata, por exemplo). Ainda não é um roteador perfeito, mas resolve o caso comum de uma linha atravessando uma caixa.
+
+### Alterado
+
+- Removido o botão "Fechar" grandão do rodapé do diálogo de Fusões — o × no canto já fecha, e sobra mais espaço pro diagrama.
+- Barra de rolagem do diagrama e das listas de portas/fibras redesenhada para combinar com o tema escuro.
+
 ## [0.37.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.36.0`.
