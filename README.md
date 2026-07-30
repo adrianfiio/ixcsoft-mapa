@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.27.0 — Tipo de empresa (provedor/projetista) e dashboard por perfil**
+**v0.27.1 — Login direto na visão geral e topo da tela mais limpo**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
@@ -212,6 +212,33 @@ apply
 O comando atualiza a branch `main`, reconstrói os containers, aguarda o health
 check e exibe um relatório final. Se houver alterações locais ou algum serviço
 falhar, o processo para sem sobrescrever arquivos e mostra os logs recentes.
+
+### Evitar usuário e senha em toda atualização
+
+Por padrão o Git pede usuário e senha do GitHub a cada `apply`, porque o
+repositório usa HTTPS. Para não digitar toda vez, no servidor Debian, rode
+uma única vez como o mesmo usuário que executa o `apply`:
+
+```bash
+git config --global credential.helper store
+```
+
+Na próxima chamada de `git fetch`/`git pull` (ou `apply`), quando pedir a
+senha, use um **Personal Access Token** do GitHub (Settings → Developer
+settings → Personal access tokens → Tokens (classic), com permissão `repo`)
+no lugar da senha da conta. O Git guarda a credencial em texto simples em
+`~/.git-credentials`; garanta que apenas o usuário que roda o `apply` tem
+acesso de leitura a esse arquivo.
+
+Alternativa mais segura, sem token em texto plano: trocar o remoto para SSH
+com uma chave de deploy dedicada ao repositório.
+
+```bash
+git remote set-url origin git@github.com:adrianfiio/ixcsoft-mapa.git
+```
+
+Isso exige gerar uma chave SSH no servidor (`ssh-keygen`) e cadastrá-la em
+GitHub → Settings → SSH and GPG keys (ou como Deploy Key do repositório).
 
 ## Endpoints principais
 

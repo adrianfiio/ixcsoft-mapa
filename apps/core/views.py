@@ -19,7 +19,7 @@ from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
 from apps.core.models import Company, MapBaseConfiguration
-from apps.core.access import accessible_company_ids, has_any_edit_access
+from apps.core.access import accessible_company_ids, has_any_edit_access, onboarding_redirect_name
 from apps.core.models import CompanyMembership
 from apps.network_map.models import FiberCable, NetworkProject
 from apps.network_map.models import POP
@@ -44,6 +44,12 @@ from apps.olt_integration.models import OLT, ONU
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        redirect_name = onboarding_redirect_name(request.user)
+        if redirect_name:
+            return redirect(redirect_name)
+        return super().dispatch(request, *args, **kwargs)
 
     def _primary_company(self):
         if self.request.user.is_superuser:
@@ -192,29 +198,9 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
     template_name = "account_panel.html"
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            membership = CompanyMembership.objects.filter(
-                user=request.user, active=True
-            ).select_related("company").first()
-            if membership and membership.role == CompanyMembership.Role.EDIT:
-                company = membership.company
-                if company.needs_type_choice:
-                    return redirect("company-onboarding")
-                if company.needs_provider_mode_choice:
-                    return redirect("company-provider-mode")
-        if (
-            not request.user.is_superuser
-            and has_any_edit_access(request.user)
-            and CompanyMembership.objects.filter(
-                user=request.user,
-                active=True,
-                company__integration_mode="erp",
-            ).exists()
-            and not IXCConfiguration.objects.filter(
-                company_id__in=editable_company_ids(request.user), enabled=True
-            ).exists()
-        ):
-            return redirect("erp-onboarding")
+        redirect_name = onboarding_redirect_name(request.user)
+        if redirect_name:
+            return redirect(redirect_name)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.27.1] - 2026-07-30
+
+### Alterado
+
+- Login passa a abrir direto a Visão geral (dashboard), em vez do painel técnico "Minha administração".
+- Topo da tela mostra apenas o nome do usuário e "Sair"; removidos o atalho "API" e o círculo com iniciais.
+- Documentado como configurar um Personal Access Token (ou SSH) no servidor Debian para o `apply` parar de pedir usuário e senha a cada atualização.
+
+### Corrigido
+
+- O gate de primeiro acesso (escolha de tipo de empresa, modo ERP/manual e configuração pendente do IXCSoft) agora também é aplicado à Visão geral e ao mapa, não só ao painel técnico — evita que uma conta com onboarding incompleto "escape" da configuração inicial ao entrar direto pela página principal.
+
 ## [0.27.0] - 2026-07-30
 
 ### Adicionado

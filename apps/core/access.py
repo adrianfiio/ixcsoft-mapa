@@ -62,6 +62,34 @@ def can_edit_company(user, company_id):
     ).exists()
 
 
+def onboarding_redirect_name(user):
+    """Nome da url de onboarding pendente para o usuário, ou None se já completo."""
+    from apps.ixc_integration.models import IXCConfiguration
+
+    if not user or not user.is_authenticated or user.is_superuser:
+        return None
+    membership = CompanyMembership.objects.filter(
+        user=user, active=True
+    ).select_related("company").first()
+    if membership and membership.role == CompanyMembership.Role.EDIT:
+        company = membership.company
+        if company.needs_type_choice:
+            return "company-onboarding"
+        if company.needs_provider_mode_choice:
+            return "company-provider-mode"
+    if (
+        has_any_edit_access(user)
+        and CompanyMembership.objects.filter(
+            user=user, active=True, company__integration_mode="erp"
+        ).exists()
+        and not IXCConfiguration.objects.filter(
+            company_id__in=editable_company_ids(user), enabled=True
+        ).exists()
+    ):
+        return "erp-onboarding"
+    return None
+
+
 def has_any_edit_access(user):
     if not user or not user.is_authenticated:
         return False
