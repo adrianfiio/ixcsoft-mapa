@@ -894,6 +894,9 @@ def container_equipment(request, element_id):
             12, 24, 36, 48, 72, 96, 144, 192, 244,
         }:
             return JsonResponse({"detail": "Escolha uma capacidade padrão para o DIO."}, status=400)
+        connector_type = str(request.data.get("connector_type", "")).strip()
+        if connector_type and connector_type not in dict(ContainerEquipment.ConnectorType.choices):
+            return JsonResponse({"detail": "Tipo de conector inválido."}, status=400)
         provisioning_mode = request.data.get("provisioning_mode") or "manual"
         management_ip = request.data.get("management_ip") or None
         if (
@@ -913,7 +916,8 @@ def container_equipment(request, element_id):
                 name=equipment_name,
                 description=str(request.data.get("description", "")).strip(),
                 equipment_type=equipment_type,
-                management_ip=management_ip if equipment_type != ContainerEquipment.EquipmentType.DIO else None,
+                management_ip=management_ip,
+                connector_type=connector_type if equipment_type == ContainerEquipment.EquipmentType.DIO else "",
                 provisioning_mode=provisioning_mode,
                 vendor=str(request.data.get("vendor", "")).strip(),
                 model=str(request.data.get("model", "")).strip(),
@@ -929,7 +933,9 @@ def container_equipment(request, element_id):
         "container": {"id": container.id, "name": container.name, "type": container.element_type},
         "equipment": [
             _container_equipment_payload(item)
-            for item in container.internal_equipments.prefetch_related("cards", "ports").all()
+            for item in container.internal_equipments.prefetch_related(
+                "cards", "ports__incoming_links", "ports__outgoing_link"
+            ).all()
         ],
         "cables": [
             {
@@ -947,10 +953,7 @@ def container_equipment(request, element_id):
             {
                 "id": link.id,
                 "source_port_id": link.source_port_id,
-                "source": (
-                    f"{link.source_port.equipment.name} · {link.source_port.label}"
-                    if link.source_port else "Fusão direta do cabo"
-                ),
+                "source": f"{link.source_port.equipment.name} · {link.source_port.label}",
                 "destination_port_id": link.destination_port_id,
                 "destination": f"{link.destination_port.equipment.name} · {link.destination_port.label}",
                 "cable_id": link.cable_id,
@@ -958,7 +961,7 @@ def container_equipment(request, element_id):
                 "link_type": link.link_type,
                 "link_type_label": link.get_link_type_display(),
             }
-            for link in container.internal_port_links.select_related(
+            for link in container.internal_port_links.filter(source_port__isnull=False).select_related(
                 "source_port__equipment", "destination_port__equipment", "cable"
             )
         ],
@@ -979,12 +982,26 @@ def container_equipment_detail(request, element_id, equipment_id):
     return HttpResponse(status=204)
 
 
-def _container_link(port):
-    return getattr(port, "outgoing_link", None) or getattr(port, "incoming_link", None)
+def _cord_link(port):
+    """Ligação de cordão (frente da porta): equipamento a equipamento, ex.: PON da OLT -> porta do DIO."""
+    outgoing = getattr(port, "outgoing_link", None)
+    if outgoing:
+        return outgoing
+    return next((link for link in port.incoming_links.all() if link.source_port_id), None)
+
+
+def _fusion_link(port):
+    """Ligação de fusão (fundo da porta): fibra do cabo fundida na porta do DIO."""
+    return next((link for link in port.incoming_links.all() if link.cable_fiber_id), None)
 
 
 def _linked_cable_name(port):
-    link = _container_link(port)
+    link = _cord_link(port)
+    return link.cable.name if link and link.cable else None
+
+
+def _fusion_cable_name(port):
+    link = _fusion_link(port)
     return link.cable.name if link and link.cable else None
 
 
@@ -1011,6 +1028,8 @@ def _container_equipment_payload(item):
         "vendor": item.vendor,
         "model": item.model,
         "serial_number": item.serial_number,
+        "connector_type": item.connector_type,
+        "connector_type_label": item.get_connector_type_display(),
         "has_snmp_community": bool(item.metadata.get("snmp_community_encrypted")),
         "card_count": item.card_count,
         "pons_per_card": item.pons_per_card,
@@ -1035,9 +1054,12 @@ def _container_equipment_payload(item):
                 "card_number": port.card_number,
                 "port_number": port.port_number,
                 "label": port.label,
-                "used": hasattr(port, "outgoing_link") or hasattr(port, "incoming_link"),
+                "used": _cord_link(port) is not None,
                 "linked_cable": _linked_cable_name(port),
-                "link_id": getattr(_container_link(port), "id", None),
+                "link_id": getattr(_cord_link(port), "id", None),
+                "fusion_used": _fusion_link(port) is not None,
+                "fusion_link_id": getattr(_fusion_link(port), "id", None),
+                "fusion_linked_cable": _fusion_cable_name(port),
             }
             for port in item.ports.all()
         ],
@@ -1216,9 +1238,17 @@ def container_port_links(request, element_id):
         )
     if source is not None and (source.pk == destination.pk or source.equipment_id == destination.equipment_id):
         return JsonResponse({"detail": "Escolha portas de equipamentos diferentes."}, status=400)
-    in_use_query = Q(destination_port=destination)
-    if source is not None:
-        in_use_query |= Q(source_port=source) | Q(destination_port=source) | Q(source_port=destination)
+    if source is None:
+        # Fusão: só conflita com outra fusão já existente na mesma porta do
+        # DIO. O cordão da frente (se houver) é uma ligação independente.
+        in_use_query = Q(destination_port=destination, cable_fiber__isnull=False)
+    else:
+        # Cordão: só conflita com outro cordão já existente na mesma porta de
+        # destino, além dos conflitos usuais nas duas pontas do cabo/cordão.
+        in_use_query = (
+            Q(destination_port=destination, source_port__isnull=False)
+            | Q(source_port=source) | Q(destination_port=source) | Q(source_port=destination)
+        )
     if ContainerPortLink.objects.filter(in_use_query).exists():
         return JsonResponse({"detail": "Uma das portas já está em uso."}, status=409)
     link_type = str(request.data.get("link_type", "fiber"))

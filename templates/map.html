@@ -280,8 +280,9 @@
                 </aside>
             </div>
             <details id="container-optical-links" class="container-optical-links" hidden>
-                <summary><strong id="container-link-title">Fusões — OLT → DIO</strong><span>abrir diagrama</span></summary>
+                <summary><strong id="container-link-title">Ligações de cordões</strong><span>abrir formulário</span></summary>
                 <p id="container-link-help">Selecione duas portas compatíveis.</p>
+                <button type="button" class="secondary-button" id="container-open-fusions">Abrir Fusões</button>
                 <form id="container-link-form">
                     <div class="dialog-grid">
                         <label>Porta de origem<select name="source_port_id" required></select></label>
@@ -325,12 +326,23 @@
                 </fieldset>
                 <fieldset id="container-dio-fields" class="cto-fields" hidden>
                     <legend>Estrutura do DIO</legend>
-                    <label>Quantidade de portas
-                        <select name="dio_port_capacity">
-                            <option>12</option><option selected>24</option><option>36</option><option>48</option>
-                            <option>72</option><option>96</option><option>144</option><option>192</option><option>244</option>
-                        </select>
-                    </label>
+                    <div class="dialog-grid">
+                        <label>Quantidade de portas
+                            <select name="dio_port_capacity">
+                                <option>12</option><option selected>24</option><option>36</option><option>48</option>
+                                <option>72</option><option>96</option><option>144</option><option>192</option><option>244</option>
+                            </select>
+                        </label>
+                        <label>Tipo de conector
+                            <select name="connector_type">
+                                <option value="">Não informado</option>
+                                <option value="sc_apc">SC/APC</option>
+                                <option value="sc_upc">SC/UPC</option>
+                                <option value="lc_upc">LC/LC UPC</option>
+                                <option value="lc_apc">LC/LC APC</option>
+                            </select>
+                        </label>
+                    </div>
                 </fieldset>
                 <footer><button class="primary-button" type="submit">Adicionar à estrutura</button></footer>
             </form>

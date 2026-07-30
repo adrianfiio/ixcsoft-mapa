@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.33.0 — Diagrama de Fusões do rack, igual ao da CTO/CEO**
+**v0.34.0 — Fusões do rack: porta de DIO com frente (cordão) e fundo (fusão)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

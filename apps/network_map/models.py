@@ -158,6 +158,12 @@ class ContainerEquipment(CompanyScopedModel, NamedModel):
         MANUAL = "manual", "Cadastro manual"
         SNMP = "snmp", "Descoberta e coleta SNMP"
 
+    class ConnectorType(models.TextChoices):
+        SC_APC = "sc_apc", "SC/APC"
+        SC_UPC = "sc_upc", "SC/UPC"
+        LC_UPC = "lc_upc", "LC/LC UPC"
+        LC_APC = "lc_apc", "LC/LC APC"
+
     container = models.ForeignKey(
         NetworkElement,
         on_delete=models.CASCADE,
@@ -166,6 +172,12 @@ class ContainerEquipment(CompanyScopedModel, NamedModel):
     )
     equipment_type = models.CharField(max_length=30, choices=EquipmentType.choices)
     management_ip = models.GenericIPAddressField(null=True, blank=True)
+    connector_type = models.CharField(
+        max_length=20,
+        choices=ConnectorType.choices,
+        blank=True,
+        help_text="Tipo de conector das portas do DIO (SC/APC, SC/UPC, LC/LC UPC, LC/LC APC).",
+    )
     provisioning_mode = models.CharField(
         max_length=10,
         choices=ProvisioningMode.choices,
@@ -274,10 +286,12 @@ class ContainerPortLink(TimeStampedModel):
         blank=True,
         help_text="Em branco para uma fusão direta de cabo numa porta do DIO, sem OLT do outro lado.",
     )
-    destination_port = models.OneToOneField(
+    destination_port = models.ForeignKey(
         ContainerEquipmentPort,
         on_delete=models.CASCADE,
-        related_name="incoming_link",
+        related_name="incoming_links",
+        help_text="Uma porta de DIO pode ter até duas ligações: o cordão para a "
+        "OLT (frente) e a fusão da fibra do cabo (atrás).",
     )
     cable = models.ForeignKey(
         "FiberCable",
@@ -303,6 +317,18 @@ class ContainerPortLink(TimeStampedModel):
 
     class Meta:
         ordering = ["container", "source_port__equipment", "source_port__number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["destination_port"],
+                condition=models.Q(source_port__isnull=False),
+                name="unique_cord_link_per_destination_port",
+            ),
+            models.UniqueConstraint(
+                fields=["destination_port"],
+                condition=models.Q(cable_fiber__isnull=False),
+                name="unique_fusion_link_per_destination_port",
+            ),
+        ]
 
 
 class CTOSplitter(TimeStampedModel):

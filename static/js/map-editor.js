@@ -464,7 +464,7 @@
         const mode = containerEquipmentForm.elements.provisioning_mode.value;
         document.getElementById("container-olt-fields").hidden = type !== "olt";
         document.getElementById("container-dio-fields").hidden = type !== "dio";
-        document.getElementById("container-management-fields").hidden = type === "dio" || (type === "olt" && mode === "manual");
+        document.getElementById("container-management-fields").hidden = type === "olt" && mode === "manual";
         document.getElementById("container-model-field").hidden = type === "dio" || type === "olt";
         document.getElementById("container-serial-field").hidden = type === "dio" || type === "olt";
         document.getElementById("container-provisioning-field").hidden = type === "dio";
@@ -494,7 +494,7 @@
             ? data.equipment.map((item) => {
                 const detail = item.type === "olt"
                     ? `${item.card_count} placa(s) · ${item.pon_count} PONs`
-                    : item.type === "dio" ? `${item.dio_port_capacity} portas` : (item.management_ip || "Sem IP");
+                    : item.type === "dio" ? `${item.dio_port_capacity} portas${item.connector_type ? ` · ${escapeHtml(item.connector_type_label)}` : ""}` : (item.management_ip || "Sem IP");
                 const cards = item.cards?.length
                     ? `<div class="equipment-card-list">${item.cards.map((card) => `<span><b>Slot ${card.slot} · ${escapeHtml(card.name)}</b><br>${card.pon_count} PONs${card.model ? ` · ${escapeHtml(card.model)}` : ""}</span>`).join("")}</div>`
                     : "";
@@ -518,10 +518,13 @@
         const opticalLinks = document.getElementById("container-optical-links");
         opticalLinks.hidden = !data.equipment.length;
         document.getElementById("container-link-title").textContent = data.container.type === "rack"
-            ? "Fusões — OLT → DIO" : "Diagrama e ligações da torre";
+            ? "Ligações de cordões — OLT → DIO" : "Diagrama e ligações da torre";
         document.getElementById("container-link-help").textContent = data.container.type === "rack"
-            ? "Ligue uma PON à porta do DIO e associe o cabo óptico que sai do rack."
+            ? "Ligue o cordão de uma PON à frente da porta do DIO. Para fundir a fibra do cabo no fundo da porta, use o botão Fusões."
             : "Ligue switch, AP e rádio PTP por RJ45/SFP ou registre o enlace wireless.";
+        const openFusionsButton = document.getElementById("container-open-fusions");
+        openFusionsButton.hidden = data.container.type !== "rack";
+        openFusionsButton.onclick = () => showUnifilar(id).catch((error) => notify(error.message, true));
         containerLinkForm.elements.link_type.value = data.container.type === "rack" ? "fiber" : "copper";
         containerLinkForm.elements.source_port_id.innerHTML = sourcePorts
             .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
@@ -933,13 +936,13 @@
         const cableCards = cables.map((cable) => `<section class="fiber-cable-node"><header>${escapeHtml(cable.name)}</header>
             <div class="fiber-port-list">${(cable.fibers || []).map((fiber) => `<button type="button" class="fiber-port ${fiber.used ? "used" : ""}" data-used="${fiber.used}" data-fiber-id="${fiber.id}" ${fiber.link_id ? `data-link-id="${fiber.link_id}"` : ""} style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div>
         </section>`).join("");
-        const dioCards = dios.map((dio) => `<section class="fiber-cable-node"><header>${escapeHtml(dio.name)}</header>
-            <div class="fiber-port-list">${dio.ports.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.used ? "used" : ""}" data-used="${port.used}" data-port-id="${port.id}" ${port.link_id ? `data-link-id="${port.link_id}"` : ""}>${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</button>`).join("") || '<span>Nenhuma porta cadastrada.</span>'}</div>
+        const dioCards = dios.map((dio) => `<section class="fiber-cable-node"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}</header>
+            <div class="fiber-port-list">${dio.ports.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""}>${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || '<span>Nenhuma porta cadastrada.</span>'}</div>
         </section>`).join("");
         content.innerHTML = `<div class="ceo-instructions">Clique numa fibra do cabo e depois numa porta do DIO para criar a fusão. Clique numa fibra ou porta já ligada para desfazer.</div>
             <div class="rack-fusion-graph"><svg class="optical-links"></svg><div class="rack-fusion-columns">
-                <div class="rack-fusion-column"><h3>Cabos do rack</h3>${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}</div>
                 <div class="rack-fusion-column"><h3>DIOs do rack</h3>${dioCards || "<p>Nenhum DIO cadastrado.</p>"}</div>
+                <div class="rack-fusion-column"><h3>Cabos do rack</h3>${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}</div>
             </div></div>`;
         const redrawRackFusionLinks = () => {
             const graph = content.querySelector(".rack-fusion-graph");

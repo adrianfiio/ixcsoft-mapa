@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.34.0] - 2026-07-30
+
+### Corrigido
+
+- No diagrama de "Fusões" do rack, uma porta do DIO já ligada ao cordão da OLT aparecia como "ligada" mesmo sem nenhuma fibra fundida nela. Causa: o modelo só permitia uma ligação por porta de DIO, então o cordão (frente da porta) e a fusão (fundo da porta) competiam pelo mesmo registro. Agora uma porta de DIO pode ter as duas ligações ao mesmo tempo — cordão para a OLT e fusão da fibra do cabo — e o diagrama de Fusões só mostra "ligada" quando existe mesmo uma fibra fundida.
+- No diagrama de Fusões do rack, DIOs e cabos trocam de lado: DIOs sempre à esquerda (entrada), cabos sempre à direita (saída), igual à convenção já usada na CTO/CEO.
+
+### Alterado
+
+- A seção "Fusões — OLT → DIO" dentro de "Estrutura" foi renomeada para "Ligações de cordões — OLT → DIO", já que ali só se registra o cordão (patch cord) da frente da porta, não uma fusão. Ganhou um botão "Abrir Fusões" que leva direto ao diagrama de fusões do rack.
+- Cadastro de DIO volta a pedir IP de gerência (opcional) e ganhou o campo "Tipo de conector" (SC/APC, SC/UPC, LC/LC UPC, LC/LC APC).
+
 ## [0.33.0] - 2026-07-30
 
 ### Adicionado
