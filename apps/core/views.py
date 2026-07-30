@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db.models.functions import Length, Transform
 from django.db import connection
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, FloatField, Q, Sum
 from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -76,13 +76,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def _designer_context(self, company):
         company_ids = [company.id]
-        cable_length = (
-            FiberCable.objects.filter(company_id__in=company_ids, geometry__isnull=False)
-            # Transformado para Web Mercator (metros) só para uma estimativa de
-            # km de cabo no dashboard — não precisa da precisão de uma geography.
-            .annotate(length=Length(Transform("geometry", 3857)))
-            .aggregate(total=Sum("length"))["total"]
-        )
+        try:
+            cable_length = (
+                FiberCable.objects.filter(company_id__in=company_ids, geometry__isnull=False)
+                # Transformado para Web Mercator (metros) só para uma estimativa de
+                # km de cabo no dashboard — não precisa da precisão de uma geography.
+                .annotate(length=Length(Transform("geometry", 3857), output_field=FloatField()))
+                .aggregate(total=Sum("length"))["total"]
+            )
+        except Exception:
+            cable_length = None
         return {
             "app_version": settings.APP_VERSION,
             "company": company,

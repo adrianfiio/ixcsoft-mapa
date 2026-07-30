@@ -2,10 +2,10 @@ from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic import (
-    CreateView,
     DeleteView,
     DetailView,
     ListView,
+    RedirectView,
     UpdateView,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -125,22 +125,17 @@ class EquipmentDetailView(CompanyEquipmentMixin, DetailView):
     context_object_name = "equipment"
 
 
-class EquipmentCreateView(CompanyEquipmentFormMixin, CreateView):
-    model = NetworkElement
-    form_class = NetworkElementForm
-    template_name = "network_map/equipment/form.html"
-    success_url = reverse_lazy("equipment-list")
+class EquipmentCreateView(LoginRequiredMixin, RedirectView):
+    """Cadastro de equipamento fica só pelo mapa, onde já existe projeto e posição."""
 
-    def form_valid(self, form):
-        project = form.cleaned_data.get("project")
-        if not project or not can_edit_company(self.request.user, project.company_id):
-            raise PermissionDenied
-        form.instance.company = project.company
-        messages.success(
-            self.request,
-            "Equipamento cadastrado com sucesso.",
+    pattern_name = "map"
+
+    def get(self, request, *args, **kwargs):
+        messages.info(
+            request,
+            "Cadastre novos equipamentos pelo mapa — lá o projeto e a posição já ficam definidos.",
         )
-        return super().form_valid(form)
+        return super().get(request, *args, **kwargs)
 
 
 class EquipmentUpdateView(CompanyEquipmentFormMixin, UpdateView):

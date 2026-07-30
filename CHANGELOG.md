@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.29.2] - 2026-07-30
+
+### Corrigido
+
+- **Crítico**: Visão geral do projetista quebrava com erro 500 assim que existia pelo menos um cabo desenhado com geometria — o cálculo de "km de cabo" não informava explicitamente o tipo de retorno da função de comprimento (`output_field`), o que só falhava com dado real (antes era nunca exercitado com o queryset vazio). Agora o cálculo é explícito e, mesmo que a geometria de algum cabo seja inválida, o dashboard não quebra mais (só mostra 0 km nesse caso).
+- Página "Equipamentos": o formulário de "+ Novo equipamento" exigia um campo "Projeto" que nunca era exibido na tela, fazendo o cadastro falhar silenciosamente (sem nenhuma mensagem de erro visível). Editar equipamento existente tinha o mesmo problema.
+
+### Removido
+
+- "+ Novo equipamento" na página "Equipamentos": cadastro de equipamento passa a ser feito só pelo mapa, onde o projeto e a posição já ficam definidos. A página "Equipamentos" continua para ver, editar e excluir.
+
 ## [0.29.1] - 2026-07-30
 
 ### Corrigido
