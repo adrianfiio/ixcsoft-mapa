@@ -117,19 +117,13 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
     font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; white-space: nowrap;
 }
 .map-context-menu button:hover { color: #04211e; background: var(--primary); }
-.fusion-picker { padding: 12px; margin-bottom: 14px; background: #071424; border: 1px solid var(--border); border-radius: 10px; }
-.fusion-picker[hidden] { display: none; }
-.fusion-picker h4 { margin: 0 0 8px; color: #dbeafe; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
-.fusion-picker-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.fusion-picker-list { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
-.fusion-item {
-    padding: 8px 10px; color: #dbeafe; background: #10233b; border: 1px solid #35506f; border-radius: 7px;
-    font-size: 11px; text-align: left; cursor: pointer;
-}
-.fusion-item:hover { border-color: var(--primary); }
-.fusion-item.selected { color: #04211e; background: var(--primary); border-color: var(--primary); font-weight: 700; }
+.rack-fusion-graph { position: relative; padding: 20px; background: #070f1d; border: 1px solid var(--border); border-radius: 10px; }
+.rack-fusion-columns { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+.rack-fusion-column h3 { margin: 0 0 10px; font-size: 12px; color: #dbeafe; }
+.rack-fusion-column .fiber-cable-node { margin-bottom: 14px; }
+.rack-fusion-graph .fiber-port.used { cursor: pointer; opacity: .85; }
 @media (max-width: 900px) {
-    .fusion-picker-columns { grid-template-columns: 1fr; }
+    .rack-fusion-columns { grid-template-columns: 1fr; gap: 20px; }
 }
 .editor-dialog { width: min(440px, calc(100% - 30px)); padding: 0; color: var(--text); background: #0d1b2d; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 25px 90px rgba(0,0,0,.55); }
 .container-dialog {

@@ -286,6 +286,14 @@ class ContainerPortLink(TimeStampedModel):
         blank=True,
         related_name="container_port_links",
     )
+    cable_fiber = models.ForeignKey(
+        "FiberStrand",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="container_port_links",
+        help_text="Fibra específica do cabo fundida nesta porta, quando aplicável.",
+    )
     notes = models.CharField(max_length=180, blank=True)
     link_type = models.CharField(
         max_length=20,

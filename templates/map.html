@@ -280,24 +280,11 @@
                 </aside>
             </div>
             <details id="container-optical-links" class="container-optical-links" hidden>
-                <summary><strong id="container-link-title">Fusões</strong><span>abrir diagrama</span></summary>
-                <p id="container-link-help">Selecione duas portas compatíveis, ou deixe a porta de origem em branco para uma fusão direta de um cabo numa porta do DIO.</p>
-                <div id="fusion-picker" class="fusion-picker" hidden>
-                    <p class="field-help">Fusão rápida: clique numa porta do DIO à esquerda e no cabo à direita para ligar.</p>
-                    <div class="fusion-picker-columns">
-                        <div>
-                            <h4>Portas do DIO</h4>
-                            <div id="fusion-ports" class="fusion-picker-list"></div>
-                        </div>
-                        <div>
-                            <h4>Cabos do rack</h4>
-                            <div id="fusion-cables" class="fusion-picker-list"></div>
-                        </div>
-                    </div>
-                </div>
+                <summary><strong id="container-link-title">Fusões — OLT → DIO</strong><span>abrir diagrama</span></summary>
+                <p id="container-link-help">Selecione duas portas compatíveis.</p>
                 <form id="container-link-form">
                     <div class="dialog-grid">
-                        <label>Porta de origem<select name="source_port_id"><option value="">— fusão direta do cabo —</option></select></label>
+                        <label>Porta de origem<select name="source_port_id" required></select></label>
                         <label>Porta de destino<select name="destination_port_id" required></select></label>
                     </div>
                     <label>Tipo da ligação<select name="link_type">

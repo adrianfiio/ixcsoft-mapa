@@ -932,9 +932,15 @@ def container_equipment(request, element_id):
             for item in container.internal_equipments.prefetch_related("cards", "ports").all()
         ],
         "cables": [
-            {"id": cable.id, "name": cable.name, "fiber_count": cable.fiber_count}
+            {
+                "id": cable.id,
+                "name": cable.name,
+                "fiber_count": cable.fiber_count,
+                "fibers": [_fiber_payload(fiber) for fiber in cable.fibers.select_related("color").all()],
+            }
             for cable in FiberCable.objects.filter(company=container.company)
             .filter(Q(origin=container) | Q(destination=container))
+            .prefetch_related("fibers__color", "fibers__container_port_links")
             .order_by("name")
         ],
         "links": [
@@ -973,9 +979,25 @@ def container_equipment_detail(request, element_id, equipment_id):
     return HttpResponse(status=204)
 
 
+def _container_link(port):
+    return getattr(port, "outgoing_link", None) or getattr(port, "incoming_link", None)
+
+
 def _linked_cable_name(port):
-    link = getattr(port, "outgoing_link", None) or getattr(port, "incoming_link", None)
+    link = _container_link(port)
     return link.cable.name if link and link.cable else None
+
+
+def _fiber_payload(fiber):
+    link = fiber.container_port_links.first()
+    return {
+        "id": fiber.id,
+        "number": fiber.number,
+        "color_name": fiber.color.name,
+        "color_hex": fiber.color.hex_color,
+        "used": link is not None,
+        "link_id": link.id if link else None,
+    }
 
 
 def _container_equipment_payload(item):
@@ -1015,6 +1037,7 @@ def _container_equipment_payload(item):
                 "label": port.label,
                 "used": hasattr(port, "outgoing_link") or hasattr(port, "incoming_link"),
                 "linked_cable": _linked_cable_name(port),
+                "link_id": getattr(_container_link(port), "id", None),
             }
             for port in item.ports.all()
         ],
@@ -1166,7 +1189,22 @@ def container_port_links(request, element_id):
         equipment__container=container,
     )
     cable = None
-    if request.data.get("cable_id"):
+    cable_fiber = None
+    if request.data.get("cable_fiber_id"):
+        cable_fiber = get_object_or_404(
+            FiberStrand.objects.select_related("cable", "color"),
+            pk=request.data.get("cable_fiber_id"),
+        )
+        if not FiberCable.objects.filter(
+            Q(origin=container) | Q(destination=container),
+            pk=cable_fiber.cable_id,
+            company=container.company,
+        ).exists():
+            return JsonResponse({"detail": "Fibra não pertence a um cabo deste rack/torre."}, status=400)
+        if ContainerPortLink.objects.filter(cable_fiber=cable_fiber).exists():
+            return JsonResponse({"detail": "Esta fibra já está em uso."}, status=409)
+        cable = cable_fiber.cable
+    elif request.data.get("cable_id"):
         cable = get_object_or_404(
             FiberCable.objects.filter(Q(origin=container) | Q(destination=container)),
             pk=request.data.get("cable_id"),
@@ -1203,6 +1241,7 @@ def container_port_links(request, element_id):
         source_port=source,
         destination_port=destination,
         cable=cable,
+        cable_fiber=cable_fiber,
         link_type=link_type,
     )
     return JsonResponse({"link": {"id": link.id}}, status=201)

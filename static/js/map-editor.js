@@ -479,8 +479,6 @@
     async function manageContainer(id) {
         const data = await api(`/api/map/elements/${id}/equipment/`);
         state.containerId = id;
-        let fusionSelectedPortId = null;
-        let fusionSelectedCableId = null;
         document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
         document.getElementById("container-dialog-subtitle").textContent = data.container.type === "rack"
             ? "OLT e DIO instalados neste rack"
@@ -525,55 +523,13 @@
             ? "Ligue uma PON à porta do DIO e associe o cabo óptico que sai do rack."
             : "Ligue switch, AP e rádio PTP por RJ45/SFP ou registre o enlace wireless.";
         containerLinkForm.elements.link_type.value = data.container.type === "rack" ? "fiber" : "copper";
-        containerLinkForm.elements.source_port_id.innerHTML = '<option value="">— fusão direta do cabo —</option>'
-            + sourcePorts.map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
+        containerLinkForm.elements.source_port_id.innerHTML = sourcePorts
+            .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
         containerLinkForm.elements.destination_port_id.innerHTML = destinationPorts
             .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
         containerLinkForm.elements.cable_id.innerHTML = '<option value="">Ainda sem cabo vinculado</option>'
             + data.cables.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`).join("");
-        containerLinkForm.querySelector("button[type='submit']").disabled = !destinationPorts.length;
-        function renderFusionPicker() {
-            const picker = document.getElementById("fusion-picker");
-            if (data.container.type !== "rack" || !destinationPorts.length) {
-                picker.hidden = true;
-                return;
-            }
-            picker.hidden = false;
-            const portsBox = document.getElementById("fusion-ports");
-            const cablesBox = document.getElementById("fusion-cables");
-            portsBox.innerHTML = destinationPorts
-                .map((port) => `<button type="button" class="fusion-item ${String(fusionSelectedPortId) === String(port.id) ? "selected" : ""}" data-fusion-port="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</button>`)
-                .join("");
-            cablesBox.innerHTML = data.cables.length
-                ? data.cables.map((cable) => `<button type="button" class="fusion-item ${String(fusionSelectedCableId) === String(cable.id) ? "selected" : ""}" data-fusion-cable="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</button>`).join("")
-                : '<p class="field-help">Nenhum cabo ligado ao rack.</p>';
-            portsBox.querySelectorAll("[data-fusion-port]").forEach((button) => {
-                button.onclick = () => { fusionSelectedPortId = button.dataset.fusionPort; maybeCreateFusion(); };
-            });
-            cablesBox.querySelectorAll("[data-fusion-cable]").forEach((button) => {
-                button.onclick = () => { fusionSelectedCableId = button.dataset.fusionCable; maybeCreateFusion(); };
-            });
-        }
-        async function maybeCreateFusion() {
-            if (!fusionSelectedPortId || !fusionSelectedCableId) {
-                renderFusionPicker();
-                return;
-            }
-            try {
-                await api(`/api/map/elements/${id}/equipment-links/`, {
-                    method: "POST",
-                    body: JSON.stringify({ destination_port_id: fusionSelectedPortId, cable_id: fusionSelectedCableId }),
-                });
-                notify("Fusão criada.");
-                await manageContainer(id);
-            } catch (error) {
-                notify(error.message, true);
-                fusionSelectedPortId = null;
-                fusionSelectedCableId = null;
-                renderFusionPicker();
-            }
-        }
-        renderFusionPicker();
+        containerLinkForm.querySelector("button[type='submit']").disabled = !sourcePorts.length || !destinationPorts.length;
         document.getElementById("container-link-list").innerHTML = data.links.length
             ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${escapeHtml(link.link_type_label)}${link.cable ? ` · Cabo: ${escapeHtml(link.cable)}` : ""}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
             : "<p>Nenhuma ligação interna registrada.</p>";
@@ -950,6 +906,11 @@
             requestAnimationFrame(redrawOpticalLinks);
             return;
         }
+        if (element.element_type === "rack") {
+            await renderRackFusionDiagram(element, content);
+            unifilarDialog.showModal();
+            return;
+        }
         const splitters = element.cto?.splitters || [];
         content.innerHTML = splitters.length ? splitters.map((splitter) => `
             <article class="splitter-card">
@@ -963,6 +924,78 @@
                 </div>
             </article>`).join("") : '<p class="help-text">Nenhum splitter configurado.</p>';
         unifilarDialog.showModal();
+    }
+    async function renderRackFusionDiagram(element, content) {
+        document.getElementById("unifilar-subtitle").textContent = "Fusão de fibras nas portas do DIO";
+        const data = await api(`/api/map/elements/${element.id}/equipment/`);
+        const dios = data.equipment.filter((item) => item.type === "dio");
+        const cables = data.cables || [];
+        const cableCards = cables.map((cable) => `<section class="fiber-cable-node"><header>${escapeHtml(cable.name)}</header>
+            <div class="fiber-port-list">${(cable.fibers || []).map((fiber) => `<button type="button" class="fiber-port ${fiber.used ? "used" : ""}" data-used="${fiber.used}" data-fiber-id="${fiber.id}" ${fiber.link_id ? `data-link-id="${fiber.link_id}"` : ""} style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div>
+        </section>`).join("");
+        const dioCards = dios.map((dio) => `<section class="fiber-cable-node"><header>${escapeHtml(dio.name)}</header>
+            <div class="fiber-port-list">${dio.ports.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.used ? "used" : ""}" data-used="${port.used}" data-port-id="${port.id}" ${port.link_id ? `data-link-id="${port.link_id}"` : ""}>${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</button>`).join("") || '<span>Nenhuma porta cadastrada.</span>'}</div>
+        </section>`).join("");
+        content.innerHTML = `<div class="ceo-instructions">Clique numa fibra do cabo e depois numa porta do DIO para criar a fusão. Clique numa fibra ou porta já ligada para desfazer.</div>
+            <div class="rack-fusion-graph"><svg class="optical-links"></svg><div class="rack-fusion-columns">
+                <div class="rack-fusion-column"><h3>Cabos do rack</h3>${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}</div>
+                <div class="rack-fusion-column"><h3>DIOs do rack</h3>${dioCards || "<p>Nenhum DIO cadastrado.</p>"}</div>
+            </div></div>`;
+        const redrawRackFusionLinks = () => {
+            const graph = content.querySelector(".rack-fusion-graph");
+            const svg = content.querySelector(".optical-links");
+            if (!graph || !svg) return;
+            const graphRect = graph.getBoundingClientRect();
+            svg.innerHTML = "";
+            svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
+            content.querySelectorAll(".fiber-port[data-link-id]").forEach((fiberChip) => {
+                const portButton = content.querySelector(`.dio-fusion-port[data-link-id="${fiberChip.dataset.linkId}"]`);
+                if (!portButton) return;
+                const a = fiberChip.getBoundingClientRect(), b = portButton.getBoundingClientRect();
+                const x1 = a.right - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
+                const x2 = b.left - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`);
+                path.setAttribute("stroke", fiberChip.style.getPropertyValue("--fiber-color") || "#94a3b8");
+                svg.appendChild(path);
+            });
+        };
+        let selectedFiberId = null;
+        content.querySelectorAll(".fiber-port:not(.dio-fusion-port)").forEach((chip) => {
+            chip.onclick = async () => {
+                if (chip.dataset.used === "true") {
+                    if (!confirm("Remover esta fusão?")) return;
+                    await api(`/api/map/elements/${element.id}/equipment-links/${chip.dataset.linkId}/`, { method: "DELETE" });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
+                    return;
+                }
+                content.querySelectorAll(".fiber-port.selected").forEach((item) => item.classList.remove("selected"));
+                selectedFiberId = chip.dataset.fiberId;
+                chip.classList.add("selected");
+                notify("Fibra selecionada. Clique na porta do DIO.");
+            };
+        });
+        content.querySelectorAll(".dio-fusion-port").forEach((button) => {
+            button.onclick = async () => {
+                if (button.dataset.used === "true") {
+                    if (!confirm("Remover esta fusão?")) return;
+                    await api(`/api/map/elements/${element.id}/equipment-links/${button.dataset.linkId}/`, { method: "DELETE" });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
+                    return;
+                }
+                if (!selectedFiberId) return notify("Selecione primeiro uma fibra do cabo.", true);
+                try {
+                    await api(`/api/map/elements/${element.id}/equipment-links/`, {
+                        method: "POST",
+                        body: JSON.stringify({ destination_port_id: button.dataset.portId, cable_fiber_id: selectedFiberId }),
+                    });
+                    unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada.");
+                } catch (error) { notify(error.message, true); }
+            };
+        });
+        requestAnimationFrame(redrawRackFusionLinks);
+        window.addEventListener("resize", redrawRackFusionLinks);
+        unifilarDialog.addEventListener("close", () => window.removeEventListener("resize", redrawRackFusionLinks), { once: true });
     }
     async function deleteCable(id) {
         if (!confirm("Excluir este cabo do projeto?")) return;
@@ -1176,7 +1209,7 @@
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
             const editing = canEdit && state.mapMode === "edit";
-            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Fusões</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
+            const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box", "rack"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Fusões</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
                 const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: editing });
                 marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}${actions}`);
@@ -1561,7 +1594,6 @@
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
         if (!payload.cable_id) delete payload.cable_id;
-        if (!payload.source_port_id) delete payload.source_port_id;
         try {
             await api(`/api/map/elements/${state.containerId}/equipment-links/`, {
                 method: "POST",

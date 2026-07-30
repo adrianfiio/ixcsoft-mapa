@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.33.0] - 2026-07-30
+
+### Adicionado
+
+- Botão "Fusões" no popup do rack no mapa, igual ao que já existe para CTO/CEO. Abre um diagrama visual dedicado: cabos ligados ao rack (com suas fibras coloridas) de um lado, DIOs cadastrados do outro. Clique numa fibra e depois numa porta do DIO para criar a fusão; clique numa fibra ou porta já ligada para desfazer. Uma linha conecta visualmente cada fibra à porta correspondente.
+- A fusão agora é registrada no nível da fibra específica (não só do cabo inteiro), reaproveitando o mesmo modelo de fibras coloridas já usado na CTO/CEO.
+
+### Removido
+
+- A lista de fusão rápida (portas do DIO à esquerda, cabos à direita) dentro do modal "Estrutura" do rack, substituída pelo diagrama dedicado acima. O formulário de ligação PON da OLT ↔ porta do DIO dentro de "Estrutura" continua exatamente como estava.
+
 ## [0.32.1] - 2026-07-30
 
 ### Adicionado
