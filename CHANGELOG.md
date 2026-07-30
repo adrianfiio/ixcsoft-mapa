@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.37.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.36.0`.
+
+### Corrigido
+
+- **Causa da linha "falhada" no diagrama de Fusões do rack**: rolar a tela dentro do diagrama não redesenhava as linhas, então elas ficavam apontando para a posição antiga (antes de rolar), parecendo quebradas. Corrigido: rolar a tela agora redesenha as linhas, na CEO e no rack.
+- Diagramas de Fusões (CEO e rack) agora permitem recolher qualquer bloco manualmente, mesmo com portas/fibras em uso — quando recolhido, mostra um resumo "X/Y em uso" no título e simplesmente não desenha linha para dentro dele (em vez de apontar para um lugar errado).
+
+### Adicionado
+
+- **Editar equipamento**: OLT e DIO cadastrados no rack (e switch/AP/PTP na torre) agora têm um botão "Editar" para alterar nome, fabricante, modelo, número de série, IP de gerência, cadastro SNMP e tipo de conector — antes só dava para excluir e recadastrar.
+- **Cordão colorido por tipo de conector**: porta do DIO ligada à OLT fica azul quando o DIO é UPC e verde quando é APC.
+- **Ligação de cordão por clique**: no rack, ligar uma PON da OLT a uma porta do DIO agora é clicar na porta PON e depois na porta do DIO, direto nos cards de equipamento — sem formulário de seleção no meio. A torre continua usando o formulário (switch/AP/PTP/wireless têm mais combinações possíveis).
+- Diagrama de Fusões do rack: botão direito no fundo do quadro agora também adiciona nota (igual à CEO).
+
+### Alterado
+
+- Equipamentos do rack/torre (OLT, DIO, switch, AP, PTP) agora aparecem empilhados um embaixo do outro em vez de lado a lado.
+
+### Pendente
+
+- As linhas do diagrama de Fusões ainda são curvas retas ponto-a-ponto — não desviam de blocos no caminho. Fazer isso direito (roteamento que evita obstáculos) é um projeto de desenho maior, ainda não feito.
+- Splitter dentro do diagrama de Fusões do rack ainda não existe — hoje um splitter só liga fibra a fibra (CEO/CTO), e as portas do DIO no rack não são fibras. Preciso entender melhor o que a saída de um splitter ligaria ali antes de implementar.
+
 ## [0.36.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.35.0`.

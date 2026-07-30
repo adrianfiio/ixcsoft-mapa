@@ -970,7 +970,7 @@ def container_equipment(request, element_id):
     })
 
 
-@api_view(["DELETE"])
+@api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def container_equipment_detail(request, element_id, equipment_id):
     equipment = get_object_or_404(
@@ -980,8 +980,36 @@ def container_equipment_detail(request, element_id, equipment_id):
     )
     if not can_edit_company(request.user, equipment.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-    equipment.delete()
-    return HttpResponse(status=204)
+    if request.method == "DELETE":
+        equipment.delete()
+        return HttpResponse(status=204)
+    data = request.data
+    update_fields = []
+    for field in ("name", "vendor", "model", "serial_number", "description"):
+        if field in data:
+            setattr(equipment, field, str(data[field]).strip())
+            update_fields.append(field)
+    if "management_ip" in data and equipment.equipment_type != ContainerEquipment.EquipmentType.DIO:
+        equipment.management_ip = data["management_ip"] or None
+        update_fields.append("management_ip")
+    if "provisioning_mode" in data and equipment.equipment_type == ContainerEquipment.EquipmentType.OLT:
+        equipment.provisioning_mode = data["provisioning_mode"]
+        update_fields.append("provisioning_mode")
+    if "connector_type" in data and equipment.equipment_type == ContainerEquipment.EquipmentType.DIO:
+        connector_type = str(data["connector_type"]).strip()
+        if connector_type and connector_type not in dict(ContainerEquipment.ConnectorType.choices):
+            return JsonResponse({"detail": "Tipo de conector inválido."}, status=400)
+        equipment.connector_type = connector_type
+        update_fields.append("connector_type")
+    snmp_community = str(data.get("snmp_community", "")).strip()
+    if snmp_community:
+        metadata = dict(equipment.metadata)
+        metadata["snmp_community_encrypted"] = SecretCipher().encrypt(snmp_community)
+        equipment.metadata = metadata
+        update_fields.append("metadata")
+    if update_fields:
+        equipment.save(update_fields=[*update_fields, "updated_at"])
+    return JsonResponse({"equipment": _container_equipment_payload(equipment)})
 
 
 def _cord_link(port):

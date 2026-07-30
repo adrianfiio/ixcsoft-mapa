@@ -32,7 +32,7 @@
         drawingExistingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lightAnimationGeneration: 0, mapMode: "view",
-        containerId: null,
+        containerId: null, editingContainerEquipmentId: null,
     };
 
     const googleConfigElement = document.getElementById("google-maps-config");
@@ -480,6 +480,9 @@
             ? [["olt", "OLT"], ["dio", "DIO"]]
             : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"]];
         containerEquipmentForm.reset();
+        state.editingContainerEquipmentId = null;
+        containerEquipmentForm.elements.equipment_type.disabled = false;
+        containerEquipmentForm.querySelector("button[type='submit']").textContent = "Adicionar à estrutura";
         containerEquipmentForm.elements.equipment_type.innerHTML = types
             .map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
         updateContainerEquipmentFields();
@@ -491,15 +494,18 @@
                 const cards = item.cards?.length
                     ? `<div class="equipment-card-list">${item.cards.map((card) => `<span><b>Slot ${card.slot} · ${escapeHtml(card.name)}</b><br>${card.pon_count} PONs${card.model ? ` · ${escapeHtml(card.model)}` : ""}</span>`).join("")}</div>`
                     : "";
+                const connectorClass = item.type === "dio" && item.connector_type
+                    ? (item.connector_type.endsWith("_upc") ? "connector-upc" : "connector-apc")
+                    : "";
                 const ports = item.ports?.length
-                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<span class="equipment-port ${port.used ? "used" : ""}">${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</span>`).join("")}</div>`
+                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<button type="button" class="equipment-port ${port.used ? `used ${connectorClass}` : ""}" data-port-id="${port.id}" data-port-type="${port.type}" ${port.link_id ? `data-link-id="${port.link_id}"` : ""}>${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</button>`).join("")}</div>`
                     : '<p class="field-help">Nenhuma porta cadastrada.</p>';
                 const configure = item.type === "olt"
                     ? `<button class="secondary-button" type="button" data-add-equipment-card="${item.id}">+ Placa</button>`
                     : ["switch", "access_point", "ptp"].includes(item.type)
                         ? `<button class="secondary-button" type="button" data-add-equipment-ports="${item.id}">+ Portas</button>`
                         : "";
-                return `<article><div class="equipment-head"><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></div>${cards}${ports}<div class="equipment-actions">${configure}</div></article>`;
+                return `<article><div class="equipment-head"><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><div class="equipment-head-actions"><button class="secondary-button" type="button" data-edit-container-equipment="${item.id}">Editar</button><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></div></div>${cards}${ports}<div class="equipment-actions">${configure}</div></article>`;
             }).join("")
             : "<p>Nenhum equipamento instalado.</p>";
         const sourcePorts = data.equipment.flatMap((item) => item.ports
@@ -508,17 +514,19 @@
         const destinationPorts = data.equipment.flatMap((item) => item.ports
             .filter((port) => !port.used && (data.container.type === "tower" || port.type === "dio"))
             .map((port) => ({ ...port, equipment: item.name })));
+        const isRack = data.container.type === "rack";
         const opticalLinks = document.getElementById("container-optical-links");
         opticalLinks.hidden = !data.equipment.length;
-        document.getElementById("container-link-title").textContent = data.container.type === "rack"
+        document.getElementById("container-link-title").textContent = isRack
             ? "Ligações de cordões — OLT → DIO" : "Diagrama e ligações da torre";
-        document.getElementById("container-link-help").textContent = data.container.type === "rack"
-            ? "Ligue o cordão de uma PON à frente da porta do DIO. Para fundir a fibra do cabo no fundo da porta, use o botão Fusões."
+        document.getElementById("container-link-help").textContent = isRack
+            ? "Clique numa porta PON da OLT e depois numa porta do DIO, nos equipamentos acima, para criar o cordão. Clique numa porta já ligada para desligar. Para fundir a fibra do cabo no fundo da porta, use o botão Fusões."
             : "Ligue switch, AP e rádio PTP por RJ45/SFP ou registre o enlace wireless.";
         const openFusionsButton = document.getElementById("container-open-fusions");
-        openFusionsButton.hidden = data.container.type !== "rack";
+        openFusionsButton.hidden = !isRack;
         openFusionsButton.onclick = () => showUnifilar(id).catch((error) => notify(error.message, true));
-        containerLinkForm.elements.link_type.value = data.container.type === "rack" ? "fiber" : "copper";
+        containerLinkForm.hidden = isRack;
+        containerLinkForm.elements.link_type.value = isRack ? "fiber" : "copper";
         containerLinkForm.elements.source_port_id.innerHTML = sourcePorts
             .map((port) => `<option value="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("");
         containerLinkForm.elements.destination_port_id.innerHTML = destinationPorts
@@ -563,6 +571,28 @@
                 await manageContainer(id);
             };
         });
+        document.querySelectorAll("[data-edit-container-equipment]").forEach((button) => {
+            button.onclick = () => {
+                const item = data.equipment.find((equipment) => String(equipment.id) === String(button.dataset.editContainerEquipment));
+                if (!item) return;
+                state.editingContainerEquipmentId = item.id;
+                containerEquipmentForm.elements.equipment_type.value = item.type;
+                containerEquipmentForm.elements.equipment_type.disabled = true;
+                containerEquipmentForm.elements.name.value = item.name;
+                containerEquipmentForm.elements.vendor.value = item.vendor || "";
+                containerEquipmentForm.elements.model.value = item.model || "";
+                containerEquipmentForm.elements.serial_number.value = item.serial_number || "";
+                containerEquipmentForm.elements.management_ip.value = item.management_ip || "";
+                containerEquipmentForm.elements.provisioning_mode.value = item.provisioning_mode || "manual";
+                containerEquipmentForm.elements.snmp_community.value = "";
+                if (containerEquipmentForm.elements.connector_type) {
+                    containerEquipmentForm.elements.connector_type.value = item.connector_type || "";
+                }
+                updateContainerEquipmentFields();
+                containerEquipmentForm.querySelector("button[type='submit']").textContent = "Salvar alterações";
+                containerEquipmentForm.scrollIntoView({ behavior: "smooth", block: "center" });
+            };
+        });
         document.querySelectorAll("[data-delete-container-link]").forEach((button) => {
             button.onclick = async () => {
                 if (!confirm("Remover esta ligação entre a OLT e o DIO?")) return;
@@ -570,6 +600,34 @@
                 await manageContainer(id);
             };
         });
+        if (isRack) {
+            let selectedSourcePortId = null;
+            document.querySelectorAll(".equipment-port").forEach((button) => {
+                button.onclick = async () => {
+                    if (button.classList.contains("used")) {
+                        if (!button.dataset.linkId || !confirm("Desligar este cordão?")) return;
+                        await api(`/api/map/elements/${id}/equipment-links/${button.dataset.linkId}/`, { method: "DELETE" });
+                        await manageContainer(id);
+                        return;
+                    }
+                    if (!selectedSourcePortId) {
+                        if (button.dataset.portType !== "pon") return notify("Selecione primeiro uma porta PON da OLT.", true);
+                        selectedSourcePortId = button.dataset.portId;
+                        button.classList.add("selected");
+                        notify("Porta PON selecionada. Clique na porta do DIO.");
+                        return;
+                    }
+                    try {
+                        await api(`/api/map/elements/${id}/equipment-links/`, {
+                            method: "POST",
+                            body: JSON.stringify({ source_port_id: selectedSourcePortId, destination_port_id: button.dataset.portId }),
+                        });
+                        notify("Cordão criado.");
+                        await manageContainer(id);
+                    } catch (error) { notify(error.message, true); }
+                };
+            });
+        }
     }
     async function showUnifilar(id) {
         const data = await api(`/api/map/elements/${id}/`);
@@ -583,7 +641,6 @@
                 api(`/api/map/elements/${element.id}/layout/`),
             ]);
             const layout = savedLayout.layout || {};
-            const expandedCables = new Set((layout.expandedCables || []).map(String));
             const notes = layout.notes || [];
             const fiberById = new Map(optical.cables.flatMap((cable) => cable.fibers.map((fiber) => [String(fiber.id), fiber])));
             const trayId = element.splice_box.trays[0]?.id || null;
@@ -621,11 +678,13 @@
                         ? { x: 900, y: 30 + outgoingIndex * 330 }
                         : { x: 20 + (otherIndex % 2) * 880, y: 30 + Math.floor(otherIndex / 2) * 330 };
                 const position = layout[`cable-${cable.id}`] || defaultPosition;
-                const hasUsedFiber = cable.fibers.some((fiber) => usedFiberIds.has(fiber.id));
-                const manuallyExpanded = expandedCables.has(String(cable.id));
-                const isExpanded = hasUsedFiber || manuallyExpanded;
-                const toggleButton = hasUsedFiber ? "" : `<button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${manuallyExpanded ? "−" : "+"}</button>`;
-                return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
+                const usedCount = cable.fibers.filter((fiber) => usedFiberIds.has(fiber.id)).length;
+                const hasUsedFiber = usedCount > 0;
+                const explicit = (layout.cardState || {})[`cable-${cable.id}`];
+                const isExpanded = explicit ? explicit === "expanded" : hasUsedFiber;
+                const toggleButton = `<button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${isExpanded ? "−" : "+"}</button>`;
+                const summary = !isExpanded && hasUsedFiber ? `<small>${usedCount}/${cable.fibers.length} em uso</small>` : "";
+                return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
                 <div class="fiber-port-list">${cable.fibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "" : 'draggable="true"'} data-used="${usedFiberIds.has(fiber.id)}" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div></section>`;
             }).join("");
             const splitterNodes = allSplitters.map((splitter, index) => {
@@ -749,8 +808,12 @@
                 svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
                 const lineStyle = document.getElementById("connection-style").value;
                 let gradientIndex = 0;
+                const isHiddenByCollapse = (node) => {
+                    const cableNode = node.closest(".fiber-cable-node");
+                    return cableNode && !cableNode.classList.contains("expanded");
+                };
                 const drawLink = (source, target, colors, action = null) => {
-                    if (!source || !target) return;
+                    if (!source || !target || isHiddenByCollapse(source) || isHiddenByCollapse(target)) return;
                     const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
                     const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
                     const x2 = b.left + b.width / 2 - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
@@ -857,15 +920,12 @@
                 button.onclick = async () => {
                     const cableId = String(button.dataset.expandCable);
                     const cableNode = content.querySelector(`[data-cable-node-id="${cableId}"]`);
-                    cableNode.classList.toggle("expanded");
-                    if (cableNode.classList.contains("expanded")) expandedCables.add(cableId);
-                    else expandedCables.delete(cableId);
-                    button.textContent = cableNode.classList.contains("expanded") ? "−" : "+";
-                    layout.expandedCables = [...expandedCables];
-                    redrawOpticalLinks();
+                    const nowExpanded = !cableNode.classList.contains("expanded");
+                    layout.cardState = { ...(layout.cardState || {}), [`cable-${cableId}`]: nowExpanded ? "expanded" : "collapsed" };
                     await api(`/api/map/elements/${element.id}/layout/`, {
                         method: "PATCH", body: JSON.stringify({ layout }),
                     });
+                    unifilarDialog.close(); await showUnifilar(element.id);
                 };
             });
             content.querySelectorAll(".graph-node").forEach((node) => {
@@ -977,7 +1037,11 @@
             requestAnimationFrame(redrawOpticalLinks);
             setTimeout(redrawOpticalLinks, 150);
             window.addEventListener("resize", redrawOpticalLinks);
-            unifilarDialog.addEventListener("close", () => window.removeEventListener("resize", redrawOpticalLinks), { once: true });
+            graphEl.addEventListener("scroll", redrawOpticalLinks);
+            content.addEventListener("scroll", redrawOpticalLinks);
+            unifilarDialog.addEventListener("close", () => {
+                window.removeEventListener("resize", redrawOpticalLinks);
+            }, { once: true });
             return;
         }
         if (element.element_type === "rack") {
@@ -1006,33 +1070,40 @@
             api(`/api/map/elements/${element.id}/layout/`),
         ]);
         const layout = savedLayout.layout || {};
-        const expandedNodes = new Set((layout.expandedNodes || []).map(String));
+        const notes = layout.notes || [];
         const dios = data.equipment.filter((item) => item.type === "dio");
         const cables = data.cables || [];
         const dioCards = dios.map((dio, index) => {
             const position = layout[`dio-${dio.id}`] || { x: 20, y: 20 + index * 260 };
             const nodeKey = `dio-${dio.id}`;
-            const hasUsedPort = dio.ports.some((port) => port.fusion_used);
-            const manuallyExpanded = expandedNodes.has(nodeKey);
-            const isExpanded = hasUsedPort || manuallyExpanded;
-            const toggleButton = hasUsedPort ? "" : `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as portas">${manuallyExpanded ? "−" : "+"}</button>`;
-            return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
+            const usedCount = dio.ports.filter((port) => port.fusion_used).length;
+            const hasUsedPort = usedCount > 0;
+            const explicit = (layout.cardState || {})[nodeKey];
+            const isExpanded = explicit ? explicit === "expanded" : hasUsedPort;
+            const toggleButton = `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as portas">${isExpanded ? "−" : "+"}</button>`;
+            const summary = !isExpanded && hasUsedPort ? `<small>${usedCount}/${dio.ports.length} em uso</small>` : "";
+            return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
             <div class="fiber-port-list">${dio.ports.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""}>${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || '<span>Nenhuma porta cadastrada.</span>'}</div>
         </section>`;
         }).join("");
         const cableCards = cables.map((cable, index) => {
             const position = layout[`cable-${cable.id}`] || { x: 900, y: 20 + index * 260 };
             const nodeKey = `cable-${cable.id}`;
-            const hasUsedFiber = (cable.fibers || []).some((fiber) => fiber.used);
-            const manuallyExpanded = expandedNodes.has(nodeKey);
-            const isExpanded = hasUsedFiber || manuallyExpanded;
-            const toggleButton = hasUsedFiber ? "" : `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as fibras">${manuallyExpanded ? "−" : "+"}</button>`;
-            return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
+            const usedCount = (cable.fibers || []).filter((fiber) => fiber.used).length;
+            const hasUsedFiber = usedCount > 0;
+            const explicit = (layout.cardState || {})[nodeKey];
+            const isExpanded = explicit ? explicit === "expanded" : hasUsedFiber;
+            const toggleButton = `<button class="expand-fibers" type="button" data-expand-node="${nodeKey}" title="Expandir ou recolher todas as fibras">${isExpanded ? "−" : "+"}</button>`;
+            const summary = !isExpanded && hasUsedFiber ? `<small>${usedCount}/${(cable.fibers || []).length} em uso</small>` : "";
+            return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
             <div class="fiber-port-list">${(cable.fibers || []).map((fiber) => `<button type="button" class="fiber-port ${fiber.used ? "used" : ""}" data-used="${fiber.used}" data-fiber-id="${fiber.id}" ${fiber.link_id ? `data-link-id="${fiber.link_id}"` : ""} style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? " · Em uso" : ""}</button>`).join("") || '<span>Sem fibras geradas</span>'}</div>
         </section>`;
         }).join("");
-        content.innerHTML = `<div class="ceo-instructions">Arraste os blocos pelo ⋮⋮. Clique numa fibra do cabo e depois numa porta do DIO para criar a fusão. Clique numa fibra ou porta já ligada para desfazer.<span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
-            <div class="optical-graph rack-fusion"><svg class="optical-links"></svg><div class="graph-nodes">${dioCards || "<p>Nenhum DIO cadastrado.</p>"}${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}</div></div>`;
+        const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
+            <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
+            <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
+        content.innerHTML = `<div class="ceo-instructions">Arraste os blocos pelo ⋮⋮. Clique numa fibra do cabo e depois numa porta do DIO para criar a fusão. Clique numa fibra ou porta já ligada para desfazer. Botão direito no fundo do quadro para adicionar nota.<span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
+            <div class="optical-graph rack-fusion"><svg class="optical-links"></svg><div class="graph-nodes">${dioCards || "<p>Nenhum DIO cadastrado.</p>"}${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}${noteNodes}</div><div class="map-context-menu rack-canvas-menu" hidden><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
         const redrawRackFusionLinks = () => {
             const graph = content.querySelector(".optical-graph");
             const svg = content.querySelector(".optical-links");
@@ -1040,9 +1111,13 @@
             const graphRect = graph.getBoundingClientRect();
             svg.innerHTML = "";
             svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
+            const isHiddenByCollapse = (node) => {
+                const cardNode = node.closest(".fiber-cable-node");
+                return cardNode && !cardNode.classList.contains("expanded");
+            };
             content.querySelectorAll(".fiber-port[data-link-id]").forEach((fiberChip) => {
                 const portButton = content.querySelector(`.dio-fusion-port[data-link-id="${fiberChip.dataset.linkId}"]`);
-                if (!portButton) return;
+                if (!portButton || isHiddenByCollapse(fiberChip) || isHiddenByCollapse(portButton)) return;
                 const a = fiberChip.getBoundingClientRect(), b = portButton.getBoundingClientRect();
                 const x1 = a.right - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
                 const x2 = b.left - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
@@ -1083,13 +1158,10 @@
             button.onclick = async () => {
                 const nodeKey = button.dataset.expandNode;
                 const node = content.querySelector(`[data-node-key="${nodeKey}"]`);
-                node.classList.toggle("expanded");
-                if (node.classList.contains("expanded")) expandedNodes.add(nodeKey);
-                else expandedNodes.delete(nodeKey);
-                button.textContent = node.classList.contains("expanded") ? "−" : "+";
-                layout.expandedNodes = [...expandedNodes];
-                redrawRackFusionLinks();
+                const nowExpanded = !node.classList.contains("expanded");
+                layout.cardState = { ...(layout.cardState || {}), [nodeKey]: nowExpanded ? "expanded" : "collapsed" };
                 await saveLayout();
+                unifilarDialog.close(); await showUnifilar(element.id);
             };
         });
         content.querySelectorAll(".graph-node").forEach((node) => {
@@ -1113,6 +1185,51 @@
                     await saveLayout();
                     notify("Posição salva.");
                 };
+            };
+        });
+        const rackGraphEl = content.querySelector(".optical-graph");
+        const rackCanvasMenu = content.querySelector(".rack-canvas-menu");
+        let rackCanvasMenuPoint = null;
+        rackGraphEl.addEventListener("contextmenu", (event) => {
+            if (event.target.closest(".graph-node") || event.target.closest(".rack-canvas-menu")) return;
+            event.preventDefault();
+            const graphRect = rackGraphEl.getBoundingClientRect();
+            rackCanvasMenuPoint = {
+                x: (event.clientX - graphRect.left) / graphZoom,
+                y: (event.clientY - graphRect.top) / graphZoom,
+            };
+            rackCanvasMenu.style.left = `${event.clientX - graphRect.left}px`;
+            rackCanvasMenu.style.top = `${event.clientY - graphRect.top}px`;
+            rackCanvasMenu.hidden = false;
+        });
+        content.addEventListener("click", (event) => {
+            if (!event.target.closest(".rack-canvas-menu")) rackCanvasMenu.hidden = true;
+        });
+        rackCanvasMenu.querySelector('[data-canvas-action="add-note"]').onclick = async () => {
+            rackCanvasMenu.hidden = true;
+            if (!rackCanvasMenuPoint) return;
+            const text = await askValue({ title: "Adicionar nota", label: "Texto" });
+            if (!text) return;
+            layout.notes = [...notes, { id: `n${Date.now()}`, x: Math.round(rackCanvasMenuPoint.x), y: Math.round(rackCanvasMenuPoint.y), text }];
+            await saveLayout();
+            unifilarDialog.close(); await showUnifilar(element.id); notify("Nota adicionada.");
+        };
+        content.querySelectorAll("[data-delete-note]").forEach((button) => {
+            button.onclick = async () => {
+                if (!confirm("Excluir esta nota?")) return;
+                layout.notes = notes.filter((note) => String(note.id) !== String(button.dataset.deleteNote));
+                await saveLayout();
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Nota excluída.");
+            };
+        });
+        content.querySelectorAll("[data-note-id]").forEach((textEl) => {
+            textEl.onclick = async () => {
+                const note = notes.find((item) => String(item.id) === String(textEl.dataset.noteId));
+                const text = await askValue({ title: "Editar nota", label: "Texto", value: note?.text || "" });
+                if (text === null) return;
+                layout.notes = notes.map((item) => String(item.id) === String(textEl.dataset.noteId) ? { ...item, text } : item);
+                await saveLayout();
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Nota atualizada.");
             };
         });
         let selectedFiberId = null;
@@ -1150,6 +1267,8 @@
         });
         requestAnimationFrame(redrawRackFusionLinks);
         window.addEventListener("resize", redrawRackFusionLinks);
+        content.querySelector(".optical-graph").addEventListener("scroll", redrawRackFusionLinks);
+        content.addEventListener("scroll", redrawRackFusionLinks);
         unifilarDialog.addEventListener("close", () => window.removeEventListener("resize", redrawRackFusionLinks), { once: true });
     }
     async function deleteCable(id) {
@@ -1709,13 +1828,14 @@
     containerEquipmentForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
+        const editingId = state.editingContainerEquipmentId;
         try {
-            await api(`/api/map/elements/${state.containerId}/equipment/`, {
-                method: "POST",
-                body: JSON.stringify(payload),
-            });
+            await api(
+                editingId ? `/api/map/elements/${state.containerId}/equipment/${editingId}/` : `/api/map/elements/${state.containerId}/equipment/`,
+                { method: editingId ? "PATCH" : "POST", body: JSON.stringify(payload) },
+            );
             await manageContainer(state.containerId);
-            notify("Equipamento adicionado à estrutura.");
+            notify(editingId ? "Equipamento atualizado." : "Equipamento adicionado à estrutura.");
         } catch (error) { notify(error.message, true); }
     };
     containerCardForm.onsubmit = async (event) => {
