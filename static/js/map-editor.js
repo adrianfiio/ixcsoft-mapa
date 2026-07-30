@@ -32,7 +32,7 @@
         drawingExistingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lightAnimationGeneration: 0, mapMode: "view",
-        containerId: null, editingContainerEquipmentId: null,
+        containerId: null, editingContainerEquipmentId: null, topologyZoom: 1,
     };
 
     const googleConfigElement = document.getElementById("google-maps-config");
@@ -641,6 +641,21 @@
                 };
             });
         }
+        const topologyEl = document.getElementById("container-equipment-list");
+        const applyTopologyZoom = () => {
+            topologyEl.style.transform = `scale(${state.topologyZoom})`;
+            document.getElementById("topology-zoom-value").value = `${Math.round(state.topologyZoom * 100)}%`;
+        };
+        document.getElementById("topology-zoom-out").onclick = () => {
+            state.topologyZoom = Math.max(.5, state.topologyZoom - .1); applyTopologyZoom();
+        };
+        document.getElementById("topology-zoom-in").onclick = () => {
+            state.topologyZoom = Math.min(1.5, state.topologyZoom + .1); applyTopologyZoom();
+        };
+        document.getElementById("topology-zoom-reset").onclick = () => {
+            state.topologyZoom = 1; applyTopologyZoom();
+        };
+        applyTopologyZoom();
     }
     async function showUnifilar(id) {
         const data = await api(`/api/map/elements/${id}/`);
@@ -1514,13 +1529,13 @@
         const currentLight = state.lightSourceId || lightSelect.value;
         lightSelect.innerHTML = '<option value="">Selecione a OLT de origem</option>';
         elements.features.filter((feature) => feature.properties.tipo === "olt").forEach((feature) => {
-            lightSelect.add(new Option(feature.properties.nome, `element:${feature.properties.id}`));
+            lightSelect.add(new Option(`${feature.properties.nome} (elemento avulso)`, `element:${feature.properties.id}`));
         });
         const rackOlts = new Map();
         cables.features.forEach((feature) => {
             const p = feature.properties;
             if (p.origin_olt_id && !rackOlts.has(p.origin_olt_id)) {
-                rackOlts.set(p.origin_olt_id, `${p.origem || "Rack"} · ${p.origin_olt_name || "OLT"}`);
+                rackOlts.set(p.origin_olt_id, `${p.origin_olt_name || "OLT"} · rack ${p.origem || "?"}`);
             }
         });
         rackOlts.forEach((label, oltId) => {
@@ -1937,13 +1952,12 @@
     };
     function updateCableDefaults() {
         const model = state.cableModels.get(String(cableForm.elements.cable_model_id.value));
-        if (model) cableForm.elements.fiber_count.value = model.fiber_count;
-        cableForm.elements.fiber_count.readOnly = Boolean(model);
+        cableForm.elements.fiber_count.value = model ? model.fiber_count : "";
         if (!cableForm.elements.name.value && state.cableOriginId && state.cableDestinationId) {
             const origin = state.elements.find((feature) => String(feature.properties.id) === String(state.cableOriginId));
             const destination = state.elements.find((feature) => String(feature.properties.id) === String(state.cableDestinationId));
-            const fiberCount = model?.fiber_count || cableForm.elements.fiber_count.value;
-            cableForm.elements.name.value = `CABO ${origin?.properties.nome || "ORIGEM"} → ${destination?.properties.nome || "DESTINO"} · ${fiberCount}F`;
+            const suffix = model ? ` · ${model.fiber_count}F` : "";
+            cableForm.elements.name.value = `CABO ${origin?.properties.nome || "ORIGEM"} → ${destination?.properties.nome || "DESTINO"}${suffix}`;
         }
     }
     function openNewCableDialog() {
@@ -1954,7 +1968,6 @@
         cableForm.elements.origin_id.value = String(state.cableOriginId || "");
         cableForm.elements.destination_id.value = String(state.cableDestinationId || "");
         cableForm.elements.cable_model_id.disabled = false;
-        cableForm.elements.fiber_count.readOnly = false;
         document.getElementById("edit-geometry-button").hidden = true;
         document.getElementById("cable-dialog-title").textContent = "Novo cabo";
         updateCableDefaults();

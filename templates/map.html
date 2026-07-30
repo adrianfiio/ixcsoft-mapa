@@ -235,9 +235,9 @@
             <header><div><h2 id="container-dialog-title">Equipamentos internos</h2><p id="container-dialog-subtitle"></p></div><button class="dialog-close" type="button">×</button></header>
             <div class="container-workspace">
                 <section>
-                    <h3>Diagrama da estrutura</h3>
+                    <div class="topology-heading"><h3>Diagrama da estrutura</h3><span class="unifilar-zoom"><button id="topology-zoom-out" type="button" title="Diminuir">−</button><output id="topology-zoom-value">100%</output><button id="topology-zoom-in" type="button" title="Ampliar">+</button><button id="topology-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
                     <p class="field-help">Cadastre placas e portas por equipamento. As ligações aparecem no diagrama interno.</p>
-                    <div id="container-equipment-list" class="container-equipment-list container-topology"></div>
+                    <div class="container-topology-scroll"><div id="container-equipment-list" class="container-equipment-list container-topology"></div></div>
                 </section>
                 <aside>
                     <form id="container-card-form" hidden>
@@ -349,8 +349,8 @@
                     <option value="drop">Drop</option>
                 </select>
             </label>
-            <label>Modelo / quantidade de fibras<select name="cable_model_id"><option value="">Escolha a quantidade/modelo</option></select></label>
-            <label>Quantidade de fibras<input name="fiber_count" type="number" min="1" max="4096" value="12"></label>
+            <label>Modelo / quantidade de fibras<select name="cable_model_id" required><option value="">Escolha a quantidade/modelo</option></select></label>
+            <label>Quantidade de fibras<input name="fiber_count" type="number" min="1" max="4096" readonly placeholder="Escolha o modelo acima"></label>
             <div class="dialog-grid">
                 <label>Origem<select name="origin_id"><option value="">Sem conexão</option></select></label>
                 <label>Destino<select name="destination_id"><option value="">Sem conexão</option></select></label>

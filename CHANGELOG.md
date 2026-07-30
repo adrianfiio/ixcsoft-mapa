@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.41.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.40.0`.
+
+### Corrigido
+
+- Cadastro de cabo: o nome não vem mais pré-preenchido com "12F" antes de você escolher o modelo — só aparece a quantidade de fibras depois que você escolhe o modelo. "Modelo / quantidade de fibras" agora é obrigatório, e o campo "Quantidade de fibras" só existe para mostrar o que o modelo escolhido define (não dá mais para digitar um número solto ali).
+
+### Adicionado
+
+- Diagrama da estrutura (Equipamentos do rack/torre) ganhou controle de zoom, mais espaçamento entre os botões Editar/Excluir e ajustes para telas pequenas (celular).
+- Lista "OLT de origem" do sinal de luz agora identifica no próprio nome se a OLT é um elemento avulso no mapa ou uma OLT dentro de um rack, pra facilitar escolher a certa.
+
+### Investigado
+
+- Sinal de luz da OLT ainda não aparecendo: revisei toda a lógica adicionada na v0.40.0 (resolução do caminho OLT → DIO → cabo) linha por linha e não encontrei erro no código. Preciso de uma confirmação sua pra continuar: depois do apply, a OLT que você ligou aparece na lista "OLT de origem" (com o texto "· rack NOME")? Se não aparecer, o problema é na busca do cabo no servidor. Se aparecer mas a luz não acender, o problema é no desenho do mapa — são causas bem diferentes e preciso saber qual pra corrigir certo.
+
 ## [0.40.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.39.0`.

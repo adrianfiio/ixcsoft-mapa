@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.40.0 — Causa raiz da linha desalinhada no zoom, sinal de luz reconhece OLT no rack**
+**v0.41.0 — Corrige formulário de cabo, zoom no diagrama de estrutura**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
