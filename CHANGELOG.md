@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.31.0] - 2026-07-30
+
+### Corrigido
+
+- **Regressão da v0.30.0**: clicar nos ícones da toolbar de cima ou da barra inferior do mapa, com uma ferramenta de adicionar equipamento ativa, abria o diálogo de "Novo elemento" na posição do clique. A causa: ao mover essas barras para dentro do `#map` (para centralizar corretamente), o clique nelas passou a vazar para o mapa do Leaflet por baixo. Corrigido bloqueando a propagação de clique/scroll dessas barras para o mapa.
+
+### Adicionado
+
+- Menu de clique direito no mapa (modo edição, com projeto selecionado): adiciona CTO, CEO, Rack ou Torre diretamente no ponto clicado, sem precisar armar a ferramenta na barra lateral primeiro. Cabo não entra nesse menu, já que sempre precisa de origem e destino.
+
 ## [0.30.0] - 2026-07-30
 
 ### Adicionado

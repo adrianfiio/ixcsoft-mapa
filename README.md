@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.30.0 — Editor de mapa: camadas por tipo, toolbar centralizada e diagrama de fusões**
+**v0.31.0 — Corrige clique vazando pro mapa e adiciona menu de clique direito**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

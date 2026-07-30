@@ -40,6 +40,13 @@
         ? JSON.parse(googleConfigElement.textContent)
         : { enabled: false, defaultLayer: "esri_satellite" };
     const map = L.map("map", { preferCanvas: true, maxZoom: 23 }).setView([-24.45, -50.62], 10);
+    // Essas barras flutuam dentro de #map (para ficar centralizadas na área do
+    // mapa, não na tela toda) — sem isso, cliques nelas vazam para o mapa e
+    // acionam a ferramenta de posicionar equipamento quando ela está ativa.
+    document.querySelectorAll(".map-mode-control, #map-search, #drawing-bar, .map-group-control").forEach((element) => {
+        L.DomEvent.disableClickPropagation(element);
+        L.DomEvent.disableScrollPropagation(element);
+    });
     const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxNativeZoom: 19, maxZoom: 23, attribution: "&copy; OpenStreetMap",
     });
@@ -1302,7 +1309,24 @@
         document.querySelectorAll(".tool-button").forEach((button) => button.classList.remove("active"));
         document.querySelectorAll("[data-quick-tool]").forEach((button) => button.classList.remove("active"));
     }
+    function openElementDialogAt(tool, latlng) {
+        state.editingElementId = null;
+        elementForm.reset();
+        elementForm.elements.element_type.value = tool;
+        elementForm.elements.latitude.value = latlng.lat;
+        elementForm.elements.longitude.value = latlng.lng;
+        document.getElementById("cto-fields").hidden = tool !== "cto";
+        document.getElementById("ceo-fields").hidden = tool !== "splice_box";
+        document.getElementById("container-fields").hidden = !["rack", "tower"].includes(tool);
+        document.getElementById("container-fields-title").textContent = tool === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
+        populateSplitterCables(null);
+        loadSplitterFibers("");
+        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", rack: "Novo rack", tower: "Nova torre" };
+        document.getElementById("element-dialog-title").textContent = titles[tool] || "Novo elemento";
+        elementDialog.showModal();
+    }
     map.on("click", (event) => {
+        mapContextMenu.hidden = true;
         if (!state.tool) return;
         if (state.tool === "reserve") {
             createReserveAt(state.reserveCableId, event.latlng).catch((error) => notify(error.message, true));
@@ -1319,20 +1343,37 @@
             state.drawingLine.addLatLng(event.latlng);
             return;
         }
-        state.editingElementId = null;
-        elementForm.reset();
-        elementForm.elements.element_type.value = state.tool;
-        elementForm.elements.latitude.value = event.latlng.lat;
-        elementForm.elements.longitude.value = event.latlng.lng;
-        document.getElementById("cto-fields").hidden = state.tool !== "cto";
-        document.getElementById("ceo-fields").hidden = state.tool !== "splice_box";
-        document.getElementById("container-fields").hidden = !["rack", "tower"].includes(state.tool);
-        document.getElementById("container-fields-title").textContent = state.tool === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
-        populateSplitterCables(null);
-        loadSplitterFibers("");
-        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", rack: "Novo rack", tower: "Nova torre" };
-        document.getElementById("element-dialog-title").textContent = titles[state.tool] || "Novo elemento";
-        elementDialog.showModal();
+        openElementDialogAt(state.tool, event.latlng);
+    });
+    map.on("movestart zoomstart", () => { mapContextMenu.hidden = true; });
+    // Menu de adicionar por clique direito: atalho para CTO/CEO/Rack/Torre
+    // direto no ponto clicado, sem precisar armar a ferramenta na barra lateral.
+    const mapContextMenu = document.createElement("div");
+    mapContextMenu.className = "map-context-menu";
+    mapContextMenu.hidden = true;
+    mapContextMenu.innerHTML = [
+        ["cto", "CTO"], ["splice_box", "CEO"], ["rack", "Rack"], ["tower", "Torre"],
+    ].map(([value, label]) => `<button type="button" data-add-at="${value}">${label}</button>`).join("");
+    document.getElementById("map").appendChild(mapContextMenu);
+    L.DomEvent.disableClickPropagation(mapContextMenu);
+    let contextMenuLatLng = null;
+    map.on("contextmenu", (event) => {
+        L.DomEvent.preventDefault(event.originalEvent);
+        if (state.mapMode !== "edit") return notify("Clique no lápis para liberar as ferramentas de edição.", true);
+        if (!state.projectId) return notify("Selecione um projeto primeiro.", true);
+        contextMenuLatLng = event.latlng;
+        const point = map.latLngToContainerPoint(event.latlng);
+        mapContextMenu.style.left = `${point.x}px`;
+        mapContextMenu.style.top = `${point.y}px`;
+        mapContextMenu.hidden = false;
+    });
+    mapContextMenu.querySelectorAll("[data-add-at]").forEach((button) => {
+        button.addEventListener("click", () => {
+            mapContextMenu.hidden = true;
+            if (!contextMenuLatLng) return;
+            clearTool();
+            openElementDialogAt(button.dataset.addAt, contextMenuLatLng);
+        });
     });
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };

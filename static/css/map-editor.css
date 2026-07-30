@@ -103,6 +103,17 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .map-icon-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .map-icon-toggle:hover { background: rgba(45,212,191,.1); color: #dbeafe; }
 .map-icon-toggle.active { color: #04211e; background: var(--primary); }
+.map-context-menu {
+    position: absolute; z-index: 1300; display: grid; gap: 2px; padding: 6px;
+    background: rgba(7,17,31,.97); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.4); transform: translate(-6px, 8px);
+}
+.map-context-menu[hidden] { display: none; }
+.map-context-menu button {
+    padding: 8px 16px; color: #dbeafe; background: transparent; border: 0; border-radius: 6px;
+    font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; white-space: nowrap;
+}
+.map-context-menu button:hover { color: #04211e; background: var(--primary); }
 .editor-dialog { width: min(440px, calc(100% - 30px)); padding: 0; color: var(--text); background: #0d1b2d; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 25px 90px rgba(0,0,0,.55); }
 .container-dialog {
     width: calc(100vw - 24px);
