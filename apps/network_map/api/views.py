@@ -637,6 +637,27 @@ def fiber_cables_geojson(request):
         optical_adjacency.setdefault(first_cable_id, set()).add(second_cable_id)
         optical_adjacency.setdefault(second_cable_id, set()).add(first_cable_id)
 
+    # Caminho OLT -> DIO -> cabo dentro de um rack: a fibra do cabo é fundida
+    # no fundo de uma porta do DIO (cable_fiber) cuja frente tem o cordão da
+    # PON da OLT (source_port). O sinal de luz precisa nascer nesse cabo.
+    cable_origin_olt = {}
+    fusion_links = ContainerPortLink.objects.filter(
+        container__project_id=project_id,
+        cable_fiber__isnull=False,
+        destination_port__port_type=ContainerEquipmentPort.PortType.DIO,
+    ).select_related("cable_fiber")
+    dio_port_ids = [link.destination_port_id for link in fusion_links]
+    cord_by_dio_port = {
+        link.destination_port_id: link.source_port.equipment
+        for link in ContainerPortLink.objects.filter(
+            destination_port_id__in=dio_port_ids, source_port__isnull=False
+        ).select_related("source_port__equipment")
+    }
+    for link in fusion_links:
+        olt = cord_by_dio_port.get(link.destination_port_id)
+        if olt and link.cable_fiber_id and link.cable_fiber.cable_id not in cable_origin_olt:
+            cable_origin_olt[link.cable_fiber.cable_id] = olt
+
     for cable in queryset:
 
         if not cable.geometry:
@@ -666,6 +687,8 @@ def fiber_cables_geojson(request):
                     ),
                     "origin_id": cable.origin_id,
                     "destination_id": cable.destination_id,
+                    "origin_olt_id": getattr(cable_origin_olt.get(cable.id), "id", None),
+                    "origin_olt_name": getattr(cable_origin_olt.get(cable.id), "name", None),
                     "optical_next_cable_ids": sorted(
                         optical_adjacency.get(cable.id, set())
                     ),

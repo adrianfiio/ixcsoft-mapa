@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.40.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.39.0`.
+
+### Corrigido
+
+- **Causa raiz da linha desalinhada ao dar zoom/rolar no diagrama de Fusões**: as linhas eram calculadas usando a posição na tela (que muda com zoom e rolagem) num SVG que não acompanhava esses dois efeitos ao mesmo tempo. Reescrito para calcular a posição das linhas do mesmo jeito que os blocos são posicionados — agora o SVG vive dentro do mesmo bloco que é ampliado/reduzido, então linha e bloco sempre andam juntos, em qualquer zoom, rolagem ou depois de arrastar.
+- O menu de botão direito (Adicionar splitter/nota) também não considerava a rolagem da tela ao calcular onde colocar o novo bloco — corrigido junto.
+
+### Adicionado
+
+- **Sinal de luz da OLT reconhece o caminho novo (OLT → DIO → cabo)**: antes, o seletor de "OLT de origem" só enxergava OLTs cadastradas como elemento avulso no mapa (o jeito antigo). Agora também lista as OLTs cadastradas dentro de um rack, resolvendo o caminho cordão (OLT → porta do DIO) + fusão (porta do DIO → fibra do cabo) para descobrir qual cabo de fato sai daquela OLT.
+
 ## [0.39.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.38.0`.

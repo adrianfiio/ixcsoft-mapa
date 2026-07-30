@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.39.0 — Corrige direção do recolher, reverte arco-íris, bloqueia sobreposição**
+**v0.40.0 — Causa raiz da linha desalinhada no zoom, sinal de luz reconhece OLT no rack**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

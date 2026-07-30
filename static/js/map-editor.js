@@ -185,6 +185,19 @@
         item.textContent = value == null ? "" : String(value);
         return item.innerHTML;
     }
+    function offsetWithin(el, container) {
+        let x = 0, y = 0, node = el;
+        while (node && node !== container) {
+            x += node.offsetLeft;
+            y += node.offsetTop;
+            node = node.offsetParent;
+        }
+        return { x, y };
+    }
+    function centerWithin(el, container) {
+        const { x, y } = offsetWithin(el, container);
+        return { x: x + el.offsetWidth / 2, y: y + el.offsetHeight / 2 };
+    }
     function normalizeSearch(value) {
         return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
@@ -698,7 +711,7 @@
                 <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
                 <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
             content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
-                <div class="optical-graph"><svg class="optical-links"></svg><div class="graph-nodes">${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
+                <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
             let draggedFiber = null;
             let selectedFiber = null;
             let selectedSplitterPort = null;
@@ -802,18 +815,20 @@
                 };
             });
             const redrawOpticalLinks = () => {
-                const graph = content.querySelector(".optical-graph");
+                const graphNodesEl = content.querySelector(".graph-nodes");
                 const svg = content.querySelector(".optical-links");
-                const graphRect = graph.getBoundingClientRect();
+                if (!graphNodesEl || !svg) return;
+                const width = graphNodesEl.scrollWidth, height = graphNodesEl.scrollHeight;
                 svg.innerHTML = "";
-                svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
+                svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+                svg.style.width = `${width}px`;
+                svg.style.height = `${height}px`;
                 const lineStyle = document.getElementById("connection-style").value;
                 let gradientIndex = 0;
                 const drawLink = (source, target, colors, action = null) => {
                     if (!source || !target) return;
-                    const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
-                    const x1 = a.left + a.width / 2 - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
-                    const x2 = b.left + b.width / 2 - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
+                    const { x: x1, y: y1 } = centerWithin(source, graphNodesEl);
+                    const { x: x2, y: y2 } = centerWithin(target, graphNodesEl);
                     let path = `M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`;
                     if (lineStyle === "straight") path = `M${x1},${y1} L${x2},${y2}`;
                     if (lineStyle === "orthogonal") path = `M${x1},${y1} H${(x1+x2)/2} V${y2} H${x2}`;
@@ -973,8 +988,8 @@
                 event.preventDefault();
                 const graphRect = graphEl.getBoundingClientRect();
                 canvasMenuPoint = {
-                    x: (event.clientX - graphRect.left) / graphZoom,
-                    y: (event.clientY - graphRect.top) / graphZoom,
+                    x: (event.clientX - graphRect.left + graphEl.scrollLeft) / graphZoom,
+                    y: (event.clientY - graphRect.top + graphEl.scrollTop) / graphZoom,
                 };
                 canvasMenu.style.left = `${event.clientX - graphRect.left}px`;
                 canvasMenu.style.top = `${event.clientY - graphRect.top}px`;
@@ -1117,20 +1132,22 @@
             <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
             <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
         content.innerHTML = `<div class="ceo-instructions">Arraste os blocos pelo ⋮⋮. Clique numa fibra do cabo e depois numa porta do DIO para criar a fusão. Clique numa fibra ou porta já ligada para desfazer. Botão direito no fundo do quadro para adicionar nota.<span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
-            <div class="optical-graph rack-fusion"><svg class="optical-links"></svg><div class="graph-nodes">${dioCards || "<p>Nenhum DIO cadastrado.</p>"}${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}${noteNodes}</div><div class="map-context-menu rack-canvas-menu" hidden><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
+            <div class="optical-graph rack-fusion"><div class="graph-nodes"><svg class="optical-links"></svg>${dioCards || "<p>Nenhum DIO cadastrado.</p>"}${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}${noteNodes}</div><div class="map-context-menu rack-canvas-menu" hidden><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
         const redrawRackFusionLinks = () => {
-            const graph = content.querySelector(".optical-graph");
+            const graphNodesEl = content.querySelector(".graph-nodes");
             const svg = content.querySelector(".optical-links");
-            if (!graph || !svg) return;
-            const graphRect = graph.getBoundingClientRect();
+            if (!graphNodesEl || !svg) return;
+            const width = graphNodesEl.scrollWidth, height = graphNodesEl.scrollHeight;
             svg.innerHTML = "";
-            svg.setAttribute("viewBox", `0 0 ${graphRect.width} ${graphRect.height}`);
+            svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            svg.style.width = `${width}px`;
+            svg.style.height = `${height}px`;
             content.querySelectorAll(".fiber-port[data-link-id]").forEach((fiberChip) => {
                 const portButton = content.querySelector(`.dio-fusion-port[data-link-id="${fiberChip.dataset.linkId}"]`);
                 if (!portButton) return;
-                const a = fiberChip.getBoundingClientRect(), b = portButton.getBoundingClientRect();
-                const x1 = a.right - graphRect.left, y1 = a.top + a.height / 2 - graphRect.top;
-                const x2 = b.left - graphRect.left, y2 = b.top + b.height / 2 - graphRect.top;
+                const a = offsetWithin(fiberChip, graphNodesEl), b = offsetWithin(portButton, graphNodesEl);
+                const x1 = a.x + fiberChip.offsetWidth, y1 = a.y + fiberChip.offsetHeight / 2;
+                const x2 = b.x, y2 = b.y + portButton.offsetHeight / 2;
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`);
                 path.setAttribute("stroke", fiberChip.style.getPropertyValue("--fiber-color") || "#94a3b8");
@@ -1220,8 +1237,8 @@
             event.preventDefault();
             const graphRect = rackGraphEl.getBoundingClientRect();
             rackCanvasMenuPoint = {
-                x: (event.clientX - graphRect.left) / graphZoom,
-                y: (event.clientY - graphRect.top) / graphZoom,
+                x: (event.clientX - graphRect.left + rackGraphEl.scrollLeft) / graphZoom,
+                y: (event.clientY - graphRect.top + rackGraphEl.scrollTop) / graphZoom,
             };
             rackCanvasMenu.style.left = `${event.clientX - graphRect.left}px`;
             rackCanvasMenu.style.top = `${event.clientY - graphRect.top}px`;
@@ -1497,7 +1514,17 @@
         const currentLight = state.lightSourceId || lightSelect.value;
         lightSelect.innerHTML = '<option value="">Selecione a OLT de origem</option>';
         elements.features.filter((feature) => feature.properties.tipo === "olt").forEach((feature) => {
-            lightSelect.add(new Option(feature.properties.nome, feature.properties.id));
+            lightSelect.add(new Option(feature.properties.nome, `element:${feature.properties.id}`));
+        });
+        const rackOlts = new Map();
+        cables.features.forEach((feature) => {
+            const p = feature.properties;
+            if (p.origin_olt_id && !rackOlts.has(p.origin_olt_id)) {
+                rackOlts.set(p.origin_olt_id, `${p.origem || "Rack"} · ${p.origin_olt_name || "OLT"}`);
+            }
+        });
+        rackOlts.forEach((label, oltId) => {
+            lightSelect.add(new Option(label, `equipment:${oltId}`));
         });
         if (currentLight) lightSelect.value = String(currentLight);
         state.lightSourceId = lightSelect.value || null;
@@ -1557,8 +1584,11 @@
         const illuminatedCables = new Set();
         if (state.lightSourceId && document.getElementById("layer-light-flow").checked) {
             const cableById = new Map(cables.features.map((feature) => [feature.properties.id, feature]));
+            const [sourceType, sourceId] = String(state.lightSourceId).split(":");
             const queue = cables.features
-                .filter((feature) => feature.properties.origin_id === Number(state.lightSourceId))
+                .filter((feature) => sourceType === "equipment"
+                    ? feature.properties.origin_olt_id === Number(sourceId)
+                    : feature.properties.origin_id === Number(sourceId))
                 .map((feature) => feature.properties.id);
             while (queue.length) {
                 const cableId = queue.shift();
