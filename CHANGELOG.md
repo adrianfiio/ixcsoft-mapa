@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.39.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.38.0`.
+
+### Corrigido
+
+- **Direção do recolher estava invertida**: ao recolher um cabo/DIO no diagrama de Fusões, a intenção é esconder o que **já está ligado** e continuar mostrando só o que falta ligar. A v0.38.0 tinha feito o oposto (escondia o livre, mostrava o em uso). Corrigido nos dois diagramas (CEO e rack); recolhido agora mostra só as portas/fibras livres.
+- **Linha "arco-íris"**: o desvio automático de linha adicionado na v0.38.0 (para não passar por dentro de blocos) criava um arco grande e feio em vez de desviar de forma discreta. Como piorou o visual em vez de melhorar, foi revertido — linhas voltam a ser as curvas/retas/ortogonais diretas de antes. Desviar de obstáculo de verdade fica para uma solução futura mais bem pensada.
+
+### Adicionado
+
+- **Bloqueio de sobreposição**: ao arrastar um cabo ou splitter no diagrama de Fusões, ele não entra mais por cima de outro bloco — o movimento para na borda em vez de sobrepor. Notas continuam livres para se sobrepor a qualquer coisa.
+
 ## [0.38.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.37.0`.

@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.38.0 — Nota salva posição, recolher esconde só portas livres, linhas desviam de blocos**
+**v0.39.0 — Corrige direção do recolher, reverte arco-íris, bloqueia sobreposição**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
