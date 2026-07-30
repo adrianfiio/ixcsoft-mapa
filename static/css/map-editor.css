@@ -117,14 +117,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
     font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; white-space: nowrap;
 }
 .map-context-menu button:hover { color: #04211e; background: var(--primary); }
-.rack-fusion-graph { position: relative; padding: 20px; background: #070f1d; border: 1px solid var(--border); border-radius: 10px; }
-.rack-fusion-columns { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
-.rack-fusion-column h3 { margin: 0 0 10px; font-size: 12px; color: #dbeafe; }
-.rack-fusion-column .fiber-cable-node { margin-bottom: 14px; }
-.rack-fusion-graph .fiber-port.used { cursor: pointer; opacity: .85; }
-@media (max-width: 900px) {
-    .rack-fusion-columns { grid-template-columns: 1fr; gap: 20px; }
-}
+.rack-fusion .fiber-port.used { cursor: pointer; opacity: .85; }
 .editor-dialog { width: min(440px, calc(100% - 30px)); padding: 0; color: var(--text); background: #0d1b2d; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 25px 90px rgba(0,0,0,.55); }
 .container-dialog {
     width: calc(100vw - 24px);
@@ -156,6 +149,7 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .editor-dialog h2 { margin: 0; font-size: 18px; }
 .dialog-close { color: var(--muted); background: transparent; border: 0; font-size: 24px; cursor: pointer; }
 .editor-dialog label { display: block; margin-bottom: 14px; color: #cbd5e1; font-size: 11px; font-weight: 700; }
+.editor-dialog label[hidden] { display: none; }
 .editor-dialog input, .editor-dialog textarea, .editor-dialog select { margin-top: 7px; }
 .editor-dialog footer { display: flex; justify-content: flex-end; padding-top: 5px; }
 .editor-dialog fieldset { padding: 12px; margin: 0 0 13px; border: 1px solid var(--border); border-radius: 9px; }

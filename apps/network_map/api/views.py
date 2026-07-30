@@ -840,6 +840,7 @@ def element_detail_payload(element):
                             "ratio": splitter.ratio,
                             "output_ports": splitter.output_ports,
                             "input_fiber_id": splitter.input_fiber_id,
+                            "input_splitter_port_id": splitter.input_splitter_port_id,
                             "ports": [
                                 {
                                     "id": port.id,
@@ -2108,6 +2109,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "splitter_id": splitter.id,
                     "tray_id": splitter.tray_id,
                     "input_fiber_id": splitter.input_fiber_id,
+                    "input_splitter_port_id": splitter.input_splitter_port_id,
                     "ports": [
                         {
                             "id": port.id,
@@ -2156,6 +2158,35 @@ def splice_box_fibers(request, element_id, splice_id=None):
         fiber.status = FiberStrand.Status.USED
         fiber.save(update_fields=["status", "updated_at"])
         return JsonResponse({"success": True})
+    if connection_type == "splitter_cascade":
+        splitter = get_object_or_404(
+            SpliceTraySplitter,
+            pk=request.data.get("splitter_id"),
+            tray__splice_box=element,
+        )
+        source_port = get_object_or_404(
+            SpliceTraySplitterPort,
+            pk=request.data.get("source_port_id"),
+            splitter__tray__splice_box=element,
+        )
+        if splitter.input_fiber_id or splitter.input_splitter_port_id:
+            return JsonResponse({"success": False, "error": "Este splitter já tem uma entrada ligada."}, status=409)
+        if source_port.output_fiber_id or SpliceTraySplitter.objects.filter(input_splitter_port=source_port).exists():
+            return JsonResponse({"success": False, "error": "Esta saída já está utilizada em outra ligação."}, status=409)
+        if source_port.splitter_id == splitter.id:
+            return JsonResponse({"success": False, "error": "Um splitter não pode alimentar a si mesmo."}, status=400)
+        visited = {splitter.id}
+        current = source_port.splitter
+        for _ in range(50):
+            if current.id in visited:
+                return JsonResponse({"success": False, "error": "Essa ligação criaria um laço entre splitters."}, status=400)
+            visited.add(current.id)
+            if not current.input_splitter_port_id:
+                break
+            current = current.input_splitter_port.splitter
+        splitter.input_splitter_port = source_port
+        splitter.save(update_fields=["input_splitter_port", "updated_at"])
+        return JsonResponse({"success": True})
     if connection_type == "clear_splitter_input":
         splitter = get_object_or_404(
             SpliceTraySplitter,
@@ -2163,7 +2194,8 @@ def splice_box_fibers(request, element_id, splice_id=None):
             tray__splice_box=element,
         )
         splitter.input_fiber = None
-        splitter.save(update_fields=["input_fiber", "updated_at"])
+        splitter.input_splitter_port = None
+        splitter.save(update_fields=["input_fiber", "input_splitter_port", "updated_at"])
         return JsonResponse({"success": True})
     if connection_type == "clear_splitter_output":
         port = get_object_or_404(
@@ -2173,6 +2205,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
         )
         port.output_fiber = None
         port.save(update_fields=["output_fiber", "updated_at"])
+        SpliceTraySplitter.objects.filter(input_splitter_port=port).update(input_splitter_port=None)
         return JsonResponse({"success": True})
     try:
         tray = element.splice_trays.get(pk=int(request.data.get("tray_id")))
@@ -2210,6 +2243,8 @@ def splice_box_layout(request, element_id):
         element_type__in=[
             NetworkElement.ElementType.SPLICE_BOX,
             NetworkElement.ElementType.CTO,
+            NetworkElement.ElementType.RACK,
+            NetworkElement.ElementType.TOWER,
         ],
     )
     if request.method == "GET":

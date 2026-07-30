@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.34.0 — Fusões do rack: porta de DIO com frente (cordão) e fundo (fusão)**
+**v0.35.0 — Causa raiz do bug de campos ocultos, cascata de splitters, editor livre no rack**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

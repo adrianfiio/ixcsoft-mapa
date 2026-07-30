@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.35.0] - 2026-07-30
+
+### Corrigido
+
+- **Causa raiz encontrada**: campos que deveriam ficar ocultos nos formulários dentro dos diálogos do mapa (ex.: Cadastro Manual/SNMP e Modelo/Número de série do DIO) continuavam aparecendo mesmo com a lógica de ocultar correta. O CSS `.editor-dialog label { display: block; }` sobrescrevia o atributo `hidden` do HTML em qualquer `<label>` dentro desses diálogos. Faltava a regra `.editor-dialog label[hidden] { display: none; }`. Isso também explica o problema relatado antes com o formulário da OLT manual.
+- Diagrama de Fusões da CEO: adicionado um redesenho extra 150ms após abrir e redesenho ao redimensionar a janela, para os casos em que as linhas não terminavam de aparecer na primeira renderização do diálogo.
+
+### Adicionado
+
+- Splitters da CEO/CTO agora podem ser ligados em cascata: a saída de um splitter pode alimentar a entrada de outro splitter (inclusive em outra bandeja), sem precisar de uma fibra de cabo entre eles. Selecione a saída do splitter de origem e clique no "ENT" do splitter de destino.
+- Diagrama de Fusões do rack (DIO ↔ cabo) ganhou o mesmo editor livre da CEO: blocos arrastáveis, zoom e posições salvas — em vez do layout fixo em duas colunas.
+
+### Pendente
+
+- O diagrama de Fusões da CTO ainda usa a lista simples antiga (sem desenho de linhas nem arrastar). Trazer a CTO para o mesmo editor gráfico da CEO é um trabalho maior, ainda não feito.
+
 ## [0.34.0] - 2026-07-30
 
 ### Corrigido

@@ -1094,6 +1094,15 @@ class SpliceTraySplitter(TimeStampedModel):
         blank=True,
         related_name="splice_box_splitter_inputs",
     )
+    input_splitter_port = models.ForeignKey(
+        "SpliceTraySplitterPort",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cascaded_splitters",
+        help_text="Entrada alimentada por uma saída de outro splitter (cascata), "
+        "em vez de uma fibra do cabo. Alternativo a input_fiber.",
+    )
 
     class Meta:
         ordering = ["tray", "position"]
