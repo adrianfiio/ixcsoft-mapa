@@ -11,6 +11,7 @@
     --warning: #f5b942;
     --danger: #f35d6d;
     --blue: #5ba7ff;
+    --panel: linear-gradient(145deg, rgba(18, 36, 58, .94), rgba(11, 27, 45, .94));
 }
 
 * { box-sizing: border-box; }
@@ -109,6 +110,10 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .status-row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; font-size: 12px; }
 .status-row span:nth-child(2) { color: var(--muted); }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.info-list { display: flex; flex-direction: column; gap: 12px; }
+.info-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 12px; }
+.info-row span { color: var(--muted); }
+.info-row strong { color: var(--text); text-align: right; }
 .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .quick-link { padding: 14px; background: rgba(7,17,31,.55); border: 1px solid var(--border); border-radius: 10px; }
 .quick-link:hover { border-color: var(--primary); }

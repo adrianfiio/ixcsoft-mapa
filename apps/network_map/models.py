@@ -11,7 +11,7 @@ class NetworkProject(CompanyScopedModel, NamedModel):
         PAUSED = "paused", "Pausado"
         ARCHIVED = "archived", "Arquivado"
 
-    code = models.CharField(max_length=100, unique=True, db_index=True)
+    code = models.CharField(max_length=100, db_index=True)
     ixc_project_id = models.CharField(max_length=80, blank=True, db_index=True)
     status = models.CharField(
         max_length=20,
@@ -39,7 +39,11 @@ class NetworkProject(CompanyScopedModel, NamedModel):
                 fields=("company", "ixc_project_id"),
                 condition=~models.Q(ixc_project_id=""),
                 name="unique_ixc_project_per_company",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=("company", "code"),
+                name="unique_project_code_per_company",
+            ),
         ]
 
 
@@ -51,7 +55,7 @@ class NetworkRoute(CompanyScopedModel, NamedModel):
         blank=True,
         related_name="routes",
     )
-    code = models.CharField(max_length=80, unique=True)
+    code = models.CharField(max_length=80)
     geometry = models.MultiLineStringField(srid=4326, null=True, blank=True)
     status = models.CharField(
         max_length=20,
@@ -70,6 +74,12 @@ class NetworkRoute(CompanyScopedModel, NamedModel):
     class Meta:
         ordering = ["name"]
         indexes = [models.Index(fields=["status", "enabled"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("company", "code"),
+                name="unique_route_code_per_company",
+            ),
+        ]
 
 
 class NetworkElement(CompanyScopedModel, NamedModel):

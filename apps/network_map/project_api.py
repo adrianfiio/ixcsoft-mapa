@@ -70,11 +70,6 @@ def projects(request):
             {"success": False, "error": "Nome e código são obrigatórios."},
             status=400,
         )
-    if NetworkProject.objects.filter(code__iexact=code).exists():
-        return JsonResponse(
-            {"success": False, "error": "Já existe um projeto com esse código."},
-            status=409,
-        )
     if status_value not in dict(NetworkProject.Status.choices):
         return JsonResponse(
             {"success": False, "error": "Status de projeto inválido."},
@@ -103,6 +98,18 @@ def projects(request):
                 status=400,
             )
         company = get_object_or_404(Company, pk=allowed[0])
+
+    duplicate_query = NetworkProject.objects.filter(code__iexact=code)
+    duplicate_query = (
+        duplicate_query.filter(company=company)
+        if company
+        else duplicate_query.filter(company__isnull=True)
+    )
+    if duplicate_query.exists():
+        return JsonResponse(
+            {"success": False, "error": "Já existe um projeto com esse código nesta empresa."},
+            status=409,
+        )
 
     project = NetworkProject.objects.create(
         company=company,

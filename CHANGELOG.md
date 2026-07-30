@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.29.1] - 2026-07-30
+
+### Corrigido
+
+- **Crítico**: o código de projeto (`NetworkProject.code`) e de rota (`NetworkRoute.code`) era único **globalmente** no banco, entre todas as empresas, em vez de único só dentro de cada empresa. Isso impedia uma empresa nova de criar um projeto com um código (ex.: "CTO 01") já usado por qualquer outra empresa na plataforma, mesmo sendo dados totalmente isolados. Agora a unicidade é por empresa (`company + code`), replicando o mesmo padrão já usado em POP, modelo de cabo e padrão de cores.
+- A checagem de "já existe um projeto com esse código" no editor de mapa também comparava contra todas as empresas; agora compara só dentro da empresa do projeto sendo criado.
+- Login sempre abria "Minha administração" em vez da Visão geral, mesmo com `LOGIN_REDIRECT_URL` configurado para `/` desde a v0.27.1: o formulário de login tinha um campo oculto `next` com valor fixo `/painel/`, que sempre vencia a configuração. Removido o valor fixo.
+- Dropdown de sugestões da busca aparecia praticamente transparente: a variável CSS `--panel`, usada em vários componentes (busca, formulários, acordeões), nunca havia sido definida em `:root` — bug antigo do CSS que só ficou visível com o dropdown flutuando sobre outros cards.
+- Card "Dados da empresa" do dashboard do projetista exibia rótulo e valor sobrepostos (ex.: "NorLC-PROJETOS") por reaproveitar uma grade pensada para 3 colunas com apenas 2 elementos.
+
+### Observação
+
+- Migração segura sem necessidade de limpeza de dados: como o código já era único globalmente antes, não podem existir hoje dois registros com o mesmo código — a nova regra (mais permissiva) nunca falha ao ser aplicada.
+
 ## [0.29.0] - 2026-07-30
 
 ### Adicionado

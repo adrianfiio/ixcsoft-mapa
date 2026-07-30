@@ -42,11 +42,11 @@
                 <h2 class="panel-title">Dados da empresa</h2>
                 <a class="panel-link" href="{% url 'company-onboarding' %}">Editar →</a>
             </div>
-            <div class="status-list">
-                <div class="status-row"><span>Nome</span><strong>{{ company.name }}</strong></div>
-                <div class="status-row"><span>Documento</span><strong>{{ company.document|default:"—" }}</strong></div>
-                <div class="status-row"><span>Contato</span><strong>{{ company.contact_name|default:"—" }}</strong></div>
-                <div class="status-row"><span>Telefone</span><strong>{{ company.contact_phone|default:"—" }}</strong></div>
+            <div class="info-list">
+                <div class="info-row"><span>Nome</span><strong>{{ company.name }}</strong></div>
+                <div class="info-row"><span>Documento</span><strong>{{ company.document|default:"—" }}</strong></div>
+                <div class="info-row"><span>Contato</span><strong>{{ company.contact_name|default:"—" }}</strong></div>
+                <div class="info-row"><span>Telefone</span><strong>{{ company.contact_phone|default:"—" }}</strong></div>
             </div>
         </article>
 
