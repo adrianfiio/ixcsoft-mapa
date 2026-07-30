@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
     <link rel="stylesheet" href="{% static 'css/map-editor.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/kmz-import-wizard.css' %}?v={{ app_version }}">
 </head>
 <body data-can-edit="{{ can_edit_map|yesno:'true,false' }}">
     {{ google_maps_config|json_script:"google-maps-config" }}
@@ -91,7 +92,6 @@
                         <button class="tool-button" data-tool="tower" type="button"><svg viewBox="0 0 24 24"><path d="M12 2 6 22m6-20 6 20M8 15h8M9 10h6M5 22h14"></path></svg><span>Torre</span></button>
                     </div>
                     <button id="import-button" class="secondary-button" type="button">Importar KML/KMZ</button>
-                    <input id="import-file" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" hidden>
                     {% if not request.user.is_authenticated %}
                         <a class="login-notice" href="/admin/login/?next=/mapa/">Entre como administrador para editar</a>
                     {% endif %}
@@ -416,8 +416,11 @@
         </form>
     </dialog>
 
+    {% include "includes/kmz_import_dialog.html" %}
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
 </body>
 </html>

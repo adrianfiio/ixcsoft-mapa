@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.46.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.45.0`.
+
+### Corrigido
+
+- Fusões da CEO/CTO: a entrada (ENT) de um splitter — tanto quando alimentada por uma fibra quanto em cascata de outro splitter — não tinha informações de rota calculadas. Corrigido; agora toda ligação mostra o caminho e a potência estimada.
+
+### Adicionado
+
+- **Assistente de importação KML/KMZ — fase 1 (análise, sem gravar)**: nova tela "Importar KML/KMZ" analisa o arquivo e mostra, antes de qualquer gravação: cores de cabo encontradas (com opção de definir a quantidade de fibras por cor), pastas candidatas a rota, e grupos de pontos sugeridos automaticamente (CTO/NAP → CTO; CEO/CDO/CE/emenda → caixa de emenda; RT/reserva/sobra → reserva técnica; nomes numéricos → CTO com confiança baixa, exigindo confirmação). Essa etapa não grava nada no banco — só organiza a decisão. A importação de verdade (gravação) é o próximo passo.
+
 ## [0.45.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.44.0`.

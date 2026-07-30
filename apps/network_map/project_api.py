@@ -24,6 +24,7 @@ from apps.network_map.models import (
     NetworkProject,
     NetworkRoute,
 )
+from apps.network_map.kmz_import import KMZAnalyzer
 
 
 def project_payload(project, user=None):
@@ -216,6 +217,35 @@ def imported_element_type(name):
     if "poste" in normalized:
         return NetworkElement.ElementType.POLE
     return NetworkElement.ElementType.OTHER
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def analyze_project_import(request, project_id):
+    """
+    Analisa um KML/KMZ sem gravar nada no banco: identifica pastas, cores de
+    cabo, e sugere a classificação de cada ponto (CTO, caixa de emenda,
+    reserva técnica etc.), para revisão antes da importação de verdade.
+
+    POST /api/map/projects/<id>/import/analyze/
+    """
+    project = get_object_or_404(NetworkProject, pk=project_id, enabled=True)
+    if not can_edit_company(request.user, project.company_id):
+        return JsonResponse(
+            {"success": False, "error": "Seu acesso é somente VIEW."},
+            status=403,
+        )
+    upload = request.FILES.get("file")
+    if upload is None:
+        return JsonResponse(
+            {"success": False, "error": "Selecione um arquivo KML ou KMZ."},
+            status=400,
+        )
+    try:
+        analysis = KMZAnalyzer.from_upload(upload).analyze(upload.name)
+        return JsonResponse({"success": True, "analysis": analysis})
+    except (ValueError, TypeError, zipfile.BadZipFile) as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
 
 
 @api_view(["POST"])

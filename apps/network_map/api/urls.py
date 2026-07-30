@@ -29,6 +29,7 @@ from apps.network_map.api.views import (
     update_cable_geometry,
 )
 from apps.network_map.project_api import (
+    analyze_project_import,
     import_project_file,
     project_detail,
     project_routes_geojson,
@@ -56,6 +57,11 @@ urlpatterns = [
     path("elements/<int:element_id>/equipment-links/<int:link_id>/", container_port_link_detail, name="container-port-link-detail"),
     path("routes/", project_routes_geojson, name="project-routes"),
     path("projects/<int:project_id>/", project_detail, name="project-detail"),
+    path(
+        "projects/<int:project_id>/import/analyze/",
+        analyze_project_import,
+        name="project-import-analyze",
+    ),
     path(
         "projects/<int:project_id>/import/",
         import_project_file,

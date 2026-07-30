@@ -1,0 +1,18 @@
+.kmz-import-dialog { width: min(1080px, 94vw); max-height: 92vh; }
+.kmz-import-dialog .dialog-body { overflow: auto; max-height: 72vh; padding: 0 1rem 1rem; }
+.kmz-import-file-row { display:flex; gap:.75rem; align-items:end; margin-bottom:1rem; }
+.kmz-import-file-row label { flex:1; }
+.kmz-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; margin:1rem 0; }
+.kmz-summary-grid article { background:#0f1e30; border:1px solid #24364d; border-radius:12px; padding:1rem; display:flex; flex-direction:column; }
+.kmz-summary-grid strong { font-size:1.25rem; }
+.kmz-summary-grid span { color:#94a3b8; font-size:.82rem; }
+.kmz-import-dialog details { border:1px solid #24364d; border-radius:12px; margin:.75rem 0; overflow:hidden; }
+.kmz-import-dialog summary { cursor:pointer; padding:.9rem 1rem; font-weight:700; background:#0b1727; }
+.kmz-import-dialog details > p { padding:0 1rem; color:#94a3b8; }
+.kmz-table-wrap { overflow:auto; }
+.kmz-import-dialog table { width:100%; border-collapse:collapse; }
+.kmz-import-dialog th,.kmz-import-dialog td { padding:.7rem .9rem; border-top:1px solid #24364d; text-align:left; vertical-align:top; }
+.kmz-color-chip { display:inline-block; width:14px; height:14px; border-radius:50%; background:var(--kmz-color); margin-right:.5rem; border:1px solid #fff8; }
+.kmz-warning { padding:.8rem 1rem; border:1px solid #f59e0b66; background:#f59e0b18; border-radius:10px; color:#fbbf24; }
+.kmz-next-note { margin-top:1rem; padding:1rem; border-radius:10px; background:#2dd4bf12; border:1px solid #2dd4bf55; }
+@media (max-width:760px){.kmz-summary-grid{grid-template-columns:repeat(2,1fr)}.kmz-import-file-row{align-items:stretch;flex-direction:column}}

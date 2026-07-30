@@ -2325,6 +2325,13 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "tray_id": splitter.tray_id,
                     "input_fiber_id": splitter.input_fiber_id,
                     "input_splitter_port_id": splitter.input_splitter_port_id,
+                    "input_budget": (
+                        _fiber_budget_payload(splitter.input_fiber)
+                        if splitter.input_fiber_id
+                        else _fiber_budget_payload(splitter.input_splitter_port.output_fiber)
+                        if splitter.input_splitter_port_id and splitter.input_splitter_port.output_fiber_id
+                        else None
+                    ),
                     "ports": [
                         {
                             "id": port.id,

@@ -897,13 +897,15 @@
                         content.querySelector(`[data-fiber-id="${link.input_fiber_id}"]`),
                         content.querySelector(`[data-splitter-id="${link.splitter_id}"]`),
                         inputColor,
-                        { type: "splitter_input", id: link.splitter_id }
+                        { type: "splitter_input", id: link.splitter_id },
+                        link.input_budget
                     );
                     if (link.input_splitter_port_id) drawLink(
                         content.querySelector(`[data-port-id="${link.input_splitter_port_id}"]`),
                         content.querySelector(`[data-splitter-id="${link.splitter_id}"]`),
                         "#2dd4bf",
-                        { type: "splitter_input", id: link.splitter_id }
+                        { type: "splitter_input", id: link.splitter_id },
+                        link.input_budget
                     );
                     link.ports.forEach((port) => {
                         if (port.output_fiber_id) drawLink(
@@ -2101,17 +2103,8 @@
             notify(editing ? "Cabo e conexões atualizados." : "Cabo conectado e adicionado ao projeto.");
         } catch (error) { notify(error.message, true); }
     };
-    document.getElementById("import-button").onclick = () => document.getElementById("import-file").click();
-    document.getElementById("import-file").onchange = async (event) => {
-        const file = event.target.files[0];
-        if (!file || !state.projectId) return;
-        const formData = new FormData(); formData.append("file", file); notify(`Importando ${file.name}...`);
-        try {
-            const data = await api(`/api/map/projects/${state.projectId}/import/`, { method: "POST", body: formData });
-            await loadStructure(true); notify(`Importação concluída: ${data.imported.elements} pontos e ${data.imported.routes} rotas.`);
-        } catch (error) { notify(error.message, true); }
-        event.target.value = "";
-    };
+    // O botão de importação é controlado por kmz-import-wizard.js, que abre
+    // o assistente de análise (sem gravar nada) antes de importar de fato.
     document.getElementById("layer-structure").onchange = () => {
         refreshCableLayer();
         refreshEquipmentLayer();

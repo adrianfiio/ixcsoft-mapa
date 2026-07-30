@@ -1,0 +1,25 @@
+<dialog id="kmz-import-dialog" class="editor-dialog kmz-import-dialog">
+    <form id="kmz-import-form">
+        <header>
+            <div>
+                <h2>Assistente de importação KML/KMZ</h2>
+                <p class="help-text">Análise segura: nenhuma informação é gravada nesta etapa.</p>
+            </div>
+            <button class="dialog-close" type="button">×</button>
+        </header>
+        <div class="dialog-body">
+            <div class="kmz-import-file-row">
+                <label>Arquivo
+                    <input id="import-file" name="file" type="file"
+                           accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
+                           required>
+                </label>
+                <button class="primary-button" type="submit">Analisar arquivo</button>
+            </div>
+            <div id="kmz-import-status" class="editor-message"></div>
+            <div id="kmz-import-content">
+                <p class="help-text">Selecione um arquivo para identificar pastas, cores, cabos, CTOs, CDOs, CEOs, RTs e pontos desconhecidos.</p>
+            </div>
+        </div>
+    </form>
+</dialog>
