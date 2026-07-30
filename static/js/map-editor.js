@@ -206,6 +206,14 @@
         const legLoss = (percent) => (-10 * Math.log10(percent / 100) + 0.3).toFixed(1);
         return `~${legLoss(a)}/${legLoss(b)}dB`;
     }
+    function formatBudgetTooltip(budget) {
+        if (!budget) return "";
+        const route = (budget.path || []).map((item) => item.name).join(" → ") || "Caminho não identificado";
+        const power = budget.budget_dbm !== null && budget.budget_dbm !== undefined
+            ? `Potência estimada: ${budget.budget_dbm} dBm`
+            : "Potência não calculada (informe a potência de saída da OLT).";
+        return `${route}\nPerda acumulada: ${budget.loss_db} dB\n${power}`;
+    }
     function normalizeSearch(value) {
         return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
@@ -744,7 +752,7 @@
                 <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
                 <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
             content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
-                <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
+                <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div><div class="map-context-menu link-action-menu" hidden><button type="button" data-link-action="info">Informações de rota</button><button type="button" class="danger" data-link-action="delete">Excluir</button></div></div>`;
             let draggedFiber = null;
             let selectedFiber = null;
             let selectedSplitterPort = null;
@@ -858,7 +866,7 @@
                 svg.style.height = `${height}px`;
                 const lineStyle = document.getElementById("connection-style").value;
                 let gradientIndex = 0;
-                const drawLink = (source, target, colors, action = null) => {
+                const drawLink = (source, target, colors, action = null, budget = null) => {
                     if (!source || !target) return;
                     const { x: x1, y: y1 } = centerWithin(source, graphNodesEl);
                     const { x: x2, y: y2 } = centerWithin(target, graphNodesEl);
@@ -873,13 +881,15 @@
                         stroke = `url(#${gradientId})`;
                     }
                     const actionData = action ? `data-link-type="${action.type}" data-link-id="${action.id}"` : "";
-                    svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${stroke}" ${actionData}></path>`);
+                    const tooltip = budget ? formatBudgetTooltip(budget) : "";
+                    svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${stroke}" ${actionData}>${tooltip ? `<title>${escapeHtml(tooltip)}</title>` : ""}</path>`);
                 };
                 optical.splices.forEach((splice) => drawLink(
                     content.querySelector(`[data-fiber-id="${splice.input_fiber_id}"]`),
                     content.querySelector(`[data-fiber-id="${splice.output_fiber_id}"]`),
                     [splice.input.color_hex, splice.output.color_hex],
-                    { type: "splice", id: splice.id }
+                    { type: "splice", id: splice.id },
+                    splice.budget
                 ));
                 optical.splitter_links.forEach((link) => {
                     const inputColor = fiberById.get(String(link.input_fiber_id))?.color_hex;
@@ -900,28 +910,49 @@
                             content.querySelector(`[data-port-id="${port.id}"]`),
                             content.querySelector(`[data-fiber-id="${port.output_fiber_id}"]`),
                             [inputColor, fiberById.get(String(port.output_fiber_id))?.color_hex],
-                            { type: "splitter_output", id: port.id }
+                            { type: "splitter_output", id: port.id },
+                            port.budget
                         );
                     });
                 });
                 svg.querySelectorAll("[data-link-type]").forEach((path) => {
-                    path.onclick = async () => {
-                        if (!confirm("Excluir esta ligação para redesenhar?")) return;
-                        if (path.dataset.linkType === "splice") {
-                            await api(`/api/map/elements/${element.id}/splices/${path.dataset.linkId}/`, { method: "DELETE" });
-                        } else {
-                            await api(`/api/map/elements/${element.id}/splices/`, {
-                                method: "POST",
-                                body: JSON.stringify({
-                                    connection_type: `clear_${path.dataset.linkType}`,
-                                    [path.dataset.linkType === "splitter_input" ? "splitter_id" : "port_id"]: path.dataset.linkId,
-                                }),
-                            });
-                        }
-                        unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+                    path.onclick = (event) => {
+                        activeLinkPath = path;
+                        const graphRect = content.querySelector(".optical-graph").getBoundingClientRect();
+                        linkActionMenu.style.left = `${event.clientX - graphRect.left}px`;
+                        linkActionMenu.style.top = `${event.clientY - graphRect.top}px`;
+                        linkActionMenu.hidden = false;
                     };
                 });
             };
+            const linkActionMenu = content.querySelector(".link-action-menu");
+            let activeLinkPath = null;
+            const removeActiveLink = async () => {
+                if (activeLinkPath.dataset.linkType === "splice") {
+                    await api(`/api/map/elements/${element.id}/splices/${activeLinkPath.dataset.linkId}/`, { method: "DELETE" });
+                } else {
+                    await api(`/api/map/elements/${element.id}/splices/`, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            connection_type: `clear_${activeLinkPath.dataset.linkType}`,
+                            [activeLinkPath.dataset.linkType === "splitter_input" ? "splitter_id" : "port_id"]: activeLinkPath.dataset.linkId,
+                        }),
+                    });
+                }
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+            };
+            linkActionMenu.querySelector('[data-link-action="info"]').onclick = () => {
+                linkActionMenu.hidden = true;
+                const tooltip = activeLinkPath?.querySelector("title")?.textContent;
+                alert(tooltip || "Sem informações de rota calculadas para esta ligação.");
+            };
+            linkActionMenu.querySelector('[data-link-action="delete"]').onclick = async () => {
+                linkActionMenu.hidden = true;
+                if (activeLinkPath) await removeActiveLink();
+            };
+            content.addEventListener("click", (event) => {
+                if (!event.target.closest(".link-action-menu") && !event.target.closest("[data-link-type]")) linkActionMenu.hidden = true;
+            });
             const styleSelect = document.getElementById("connection-style");
             styleSelect.value = layout.connectionStyle || "curve";
             styleSelect.onchange = async () => {

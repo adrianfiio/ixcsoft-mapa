@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.45.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.44.0`.
+
+### Adicionado
+
+- **Orçamento óptico completo por ligação, na CEO/CTO**: passar o mouse numa linha de fusão ou saída de splitter mostra o caminho todo (OLT → DIO → cabo → CEO → splitter → ...) com a perda acumulada e a potência estimada chegando ali, calculando inclusive a atenuação da fibra por KM (0,35 dB/km, padrão de mercado). Clicar na linha agora abre duas opções — "Informações de rota" e "Excluir" — em vez de excluir direto.
+
 ## [0.44.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.43.0`.

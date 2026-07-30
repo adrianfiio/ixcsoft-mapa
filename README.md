@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.44.0 — Sinal de luz atualiza sozinho, potência da OLT e perda óptica**
+**v0.45.0 — Orçamento óptico completo com caminho da OLT até a fusão**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
