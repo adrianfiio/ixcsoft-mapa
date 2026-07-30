@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.26.0 — Acesso manual corrigido e inventário técnico mais seguro**
+**v0.27.0 — Tipo de empresa (provedor/projetista) e dashboard por perfil**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

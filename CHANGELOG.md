@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.27.0] - 2026-07-30
+
+### Adicionado
+
+- Tipo de empresa no primeiro acesso: **Provedor** (tem clientes, pode usar ERP ou não) ou **Projetista** (só desenha e mantém projetos de rede, sem clientes e sem opção de ERP).
+- Segunda etapa de onboarding exclusiva para provedores, para escolher entre operar com ERP ou sem ERP, separada do cadastro dos dados da empresa.
+- Dashboard próprio para empresas projetistas, com indicadores de CTOs, CEOs/caixas de emenda, DIOs, OLTs e quilometragem de cabo desenhada, além de atalho para editar os dados da empresa e abrir o mapa.
+- Campo `company_type` no Django Admin de Empresas, para o suporte da plataforma liberar a troca de tipo depois do primeiro acesso (mudança sujeita a plano/custo mensal diferente).
+
+### Corrigido
+
+- `NameError` que impedia usuários não administradores de acessar a etapa de integração ERP (`Company` não estava importado em `apps/core/views.py`).
+
+### Alterado
+
+- Empresas que já haviam concluído o cadastro antes desta versão foram classificadas automaticamente como **Provedor**, preservando o comportamento atual; nenhuma reclassificação manual é necessária.
+
 ## [0.26.0] - 2026-07-29
 
 ### Adicionado

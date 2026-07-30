@@ -173,7 +173,7 @@ class CompanyOnboardingForm(forms.ModelForm):
         model = Company
         fields = (
             "name", "trade_name", "document", "contact_name", "contact_phone",
-            "contact_email", "address", "integration_mode",
+            "contact_email", "address", "company_type",
         )
         labels = {
             "name": "Razão social ou nome",
@@ -183,10 +183,27 @@ class CompanyOnboardingForm(forms.ModelForm):
             "contact_phone": "Telefone / WhatsApp",
             "contact_email": "E-mail",
             "address": "Endereço",
+            "company_type": "Como sua empresa vai operar?",
+        }
+
+    def __init__(self, *args, lock_company_type=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("name", "document", "contact_name", "contact_phone", "contact_email", "address", "company_type"):
+            self.fields[name].required = True
+        if lock_company_type:
+            # Depois de escolhido, o tipo só muda pelo suporte (via Django Admin) —
+            # planos de provedor e projetista têm custo mensal diferente.
+            self.fields["company_type"].disabled = True
+
+
+class CompanyProviderModeForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = ("integration_mode",)
+        labels = {
             "integration_mode": "Como deseja começar?",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ("name", "document", "contact_name", "contact_phone", "contact_email", "address", "integration_mode"):
-            self.fields[name].required = True
+        self.fields["integration_mode"].required = True

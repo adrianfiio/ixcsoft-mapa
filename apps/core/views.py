@@ -1,6 +1,7 @@
 from django.conf import settings
+from django.contrib.gis.db.models.functions import Length, Transform
 from django.db import connection
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
@@ -17,7 +18,7 @@ from apps.ixc_integration.models import IXCCustomer, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
-from apps.core.models import MapBaseConfiguration
+from apps.core.models import Company, MapBaseConfiguration
 from apps.core.access import accessible_company_ids, has_any_edit_access
 from apps.core.models import CompanyMembership
 from apps.network_map.models import FiberCable, NetworkProject
@@ -25,7 +26,14 @@ from apps.network_map.models import POP
 from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
 from apps.core.access import editable_company_ids
-from apps.core.forms import CompanyOnboardingForm, DIOPlatformForm, ERPOnboardingForm, OLTPlatformForm, POPPlatformForm
+from apps.core.forms import (
+    CompanyOnboardingForm,
+    CompanyProviderModeForm,
+    DIOPlatformForm,
+    ERPOnboardingForm,
+    OLTPlatformForm,
+    POPPlatformForm,
+)
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.fiber_models import IXCFiberAssignment
 from apps.ixc_integration.clients.ixc_client import IXCClient
@@ -37,8 +45,55 @@ from apps.olt_integration.models import OLT, ONU
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
 
+    def _primary_company(self):
+        if self.request.user.is_superuser:
+            return None
+        membership = (
+            CompanyMembership.objects.filter(user=self.request.user, active=True)
+            .select_related("company")
+            .first()
+        )
+        return membership.company if membership else None
+
+    def get_template_names(self):
+        if self.template_name != "dashboard.html":
+            return [self.template_name]
+        company = self._primary_company()
+        if company and company.is_designer:
+            return ["dashboard_designer.html"]
+        return ["dashboard.html"]
+
+    def _designer_context(self, company):
+        company_ids = [company.id]
+        cable_length = (
+            FiberCable.objects.filter(company_id__in=company_ids, geometry__isnull=False)
+            # Transformado para Web Mercator (metros) só para uma estimativa de
+            # km de cabo no dashboard — não precisa da precisão de uma geography.
+            .annotate(length=Length(Transform("geometry", 3857)))
+            .aggregate(total=Sum("length"))["total"]
+        )
+        return {
+            "app_version": settings.APP_VERSION,
+            "company": company,
+            "project_count": NetworkProject.objects.filter(company_id__in=company_ids).count(),
+            "element_count": NetworkElement.objects.filter(company_id__in=company_ids).count(),
+            "cto_count": CTO.objects.filter(company_id__in=company_ids).count(),
+            "ceo_count": NetworkElement.objects.filter(
+                company_id__in=company_ids,
+                element_type=NetworkElement.ElementType.SPLICE_BOX,
+            ).count(),
+            "dio_count": DIO.objects.filter(company_id__in=company_ids).count(),
+            "olt_count": OLT.objects.filter(cpd__company_id__in=company_ids).count(),
+            "cable_km": round((cable_length or 0) / 1000, 2),
+        }
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if self.template_name == "dashboard.html":
+            company = self._primary_company()
+            if company and company.is_designer:
+                context.update(self._designer_context(company))
+                return context
         company_ids = accessible_company_ids(self.request.user)
         company_filter = {} if company_ids is None else {"company_id__in": company_ids}
 
@@ -141,12 +196,12 @@ class AccountPanelView(LoginRequiredMixin, TemplateView):
             membership = CompanyMembership.objects.filter(
                 user=request.user, active=True
             ).select_related("company").first()
-            if (
-                membership
-                and membership.role == CompanyMembership.Role.EDIT
-                and not membership.company.onboarding_completed
-            ):
-                return redirect("company-onboarding")
+            if membership and membership.role == CompanyMembership.Role.EDIT:
+                company = membership.company
+                if company.needs_type_choice:
+                    return redirect("company-onboarding")
+                if company.needs_provider_mode_choice:
+                    return redirect("company-provider-mode")
         if (
             not request.user.is_superuser
             and has_any_edit_access(request.user)
@@ -218,16 +273,53 @@ def company_onboarding(request):
         )
         return redirect("account-panel")
     company = membership.company
-    form = CompanyOnboardingForm(request.POST or None, instance=company)
+    form = CompanyOnboardingForm(
+        request.POST or None,
+        instance=company,
+        lock_company_type=not company.needs_type_choice,
+    )
+    if request.method == "POST" and form.is_valid():
+        company = form.save(commit=False)
+        if company.is_designer:
+            company.integration_mode = ""
+            company.onboarding_completed = True
+        company.save()
+        messages.success(request, "Dados da empresa salvos com sucesso.")
+        if company.is_provider:
+            return redirect("company-provider-mode")
+        return redirect("account-panel")
+    return render(request, "company_onboarding.html", {"form": form, "company": company})
+
+
+@login_required
+def company_provider_mode(request):
+    membership = CompanyMembership.objects.filter(
+        user=request.user,
+        active=True,
+    ).select_related("company").first()
+    if request.user.is_superuser or membership is None:
+        return redirect("account-panel")
+    if membership.role != CompanyMembership.Role.EDIT:
+        messages.info(
+            request,
+            "Seu acesso é somente para visualização. Solicite permissão de edição para configurar a empresa.",
+        )
+        return redirect("account-panel")
+    company = membership.company
+    if company.needs_type_choice:
+        return redirect("company-onboarding")
+    if not company.is_provider:
+        return redirect("account-panel")
+    form = CompanyProviderModeForm(request.POST or None, instance=company)
     if request.method == "POST" and form.is_valid():
         company = form.save(commit=False)
         company.onboarding_completed = True
         company.save()
-        messages.success(request, "Dados da empresa salvos com sucesso.")
+        messages.success(request, "Modo de operação da empresa salvo com sucesso.")
         if company.integration_mode == company.IntegrationMode.ERP:
             return redirect("erp-onboarding")
         return redirect("account-panel")
-    return render(request, "company_onboarding.html", {"form": form, "company": company})
+    return render(request, "company_provider_mode.html", {"form": form, "company": company})
 
 
 @login_required

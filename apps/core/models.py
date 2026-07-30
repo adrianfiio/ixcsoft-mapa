@@ -34,6 +34,10 @@ class NamedModel(TimeStampedModel):
 
 
 class Company(TimeStampedModel):
+    class CompanyType(models.TextChoices):
+        PROVIDER = "provider", "Provedor (ISP, com clientes)"
+        DESIGNER = "designer", "Projetista (sem clientes)"
+
     class IntegrationMode(models.TextChoices):
         ERP = "erp", "Usar com ERP"
         MANUAL = "manual", "Usar sem ERP"
@@ -45,6 +49,16 @@ class Company(TimeStampedModel):
     contact_phone = models.CharField(max_length=40, blank=True)
     contact_email = models.EmailField(blank=True)
     address = models.CharField(max_length=255, blank=True)
+    company_type = models.CharField(
+        max_length=20,
+        choices=CompanyType.choices,
+        blank=True,
+        verbose_name="Tipo de empresa",
+        help_text=(
+            "Definido pela empresa no primeiro acesso. Depois de definido, só o "
+            "suporte da plataforma pode alterar (planos possuem custos diferentes)."
+        ),
+    )
     integration_mode = models.CharField(
         max_length=20,
         choices=IntegrationMode.choices,
@@ -61,6 +75,22 @@ class Company(TimeStampedModel):
 
     def __str__(self):
         return self.trade_name or self.name
+
+    @property
+    def is_designer(self):
+        return self.company_type == self.CompanyType.DESIGNER
+
+    @property
+    def is_provider(self):
+        return self.company_type == self.CompanyType.PROVIDER
+
+    @property
+    def needs_type_choice(self):
+        return not self.company_type
+
+    @property
+    def needs_provider_mode_choice(self):
+        return self.is_provider and not self.integration_mode
 
 
 class CompanyMembership(TimeStampedModel):

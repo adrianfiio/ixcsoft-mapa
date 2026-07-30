@@ -15,8 +15,8 @@ admin.site.has_permission = lambda request: (
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("name", "trade_name", "document", "slug", "active")
-    list_filter = ("active",)
+    list_display = ("name", "trade_name", "document", "company_type", "integration_mode", "slug", "active")
+    list_filter = ("company_type", "integration_mode", "active")
     search_fields = ("name", "trade_name", "document", "slug")
 
 

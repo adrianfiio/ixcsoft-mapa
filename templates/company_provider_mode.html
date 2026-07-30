@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Primeiro acesso | AFService Map{% endblock %}
+{% block title %}Modo de operação | AFService Map{% endblock %}
 {% block topbar_title %}Configuração inicial{% endblock %}
 {% block content %}
 <section class="onboarding-shell">
   <div class="onboarding-intro">
-    <p class="eyebrow">BEM-VINDO À AFSERVICE MAP</p>
-    <h1>Vamos preparar sua empresa</h1>
-    <p>Informe os dados básicos e o tipo de operação da sua empresa.</p>
+    <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+    <h1>Como sua empresa vai operar?</h1>
+    <p>Você poderá conectar um ERP agora ou começar o mapa manualmente.</p>
   </div>
   <form class="platform-form onboarding-form" method="post">
     {% csrf_token %}
@@ -18,8 +18,8 @@
       {% endfor %}
     </div>
     <div class="onboarding-choice-note">
-      <strong>Provedor:</strong> você tem clientes e pode operar com ou sem ERP.
-      <strong>Projetista:</strong> você só desenha e mantém projetos de rede, sem clientes.
+      <strong>Com ERP:</strong> importa clientes, contratos, PPPoE e estrutura disponível.
+      <strong>Sem ERP:</strong> você cria projetos e equipamentos manualmente ou importa KML/KMZ.
     </div>
     <div class="platform-form-actions"><button type="submit">Continuar →</button></div>
   </form>
