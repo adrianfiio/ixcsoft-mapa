@@ -479,6 +479,8 @@
     async function manageContainer(id) {
         const data = await api(`/api/map/elements/${id}/equipment/`);
         state.containerId = id;
+        let fusionSelectedPortId = null;
+        let fusionSelectedCableId = null;
         document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
         document.getElementById("container-dialog-subtitle").textContent = data.container.type === "rack"
             ? "OLT e DIO instalados neste rack"
@@ -530,6 +532,48 @@
         containerLinkForm.elements.cable_id.innerHTML = '<option value="">Ainda sem cabo vinculado</option>'
             + data.cables.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`).join("");
         containerLinkForm.querySelector("button[type='submit']").disabled = !destinationPorts.length;
+        function renderFusionPicker() {
+            const picker = document.getElementById("fusion-picker");
+            if (data.container.type !== "rack" || !destinationPorts.length) {
+                picker.hidden = true;
+                return;
+            }
+            picker.hidden = false;
+            const portsBox = document.getElementById("fusion-ports");
+            const cablesBox = document.getElementById("fusion-cables");
+            portsBox.innerHTML = destinationPorts
+                .map((port) => `<button type="button" class="fusion-item ${String(fusionSelectedPortId) === String(port.id) ? "selected" : ""}" data-fusion-port="${port.id}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</button>`)
+                .join("");
+            cablesBox.innerHTML = data.cables.length
+                ? data.cables.map((cable) => `<button type="button" class="fusion-item ${String(fusionSelectedCableId) === String(cable.id) ? "selected" : ""}" data-fusion-cable="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</button>`).join("")
+                : '<p class="field-help">Nenhum cabo ligado ao rack.</p>';
+            portsBox.querySelectorAll("[data-fusion-port]").forEach((button) => {
+                button.onclick = () => { fusionSelectedPortId = button.dataset.fusionPort; maybeCreateFusion(); };
+            });
+            cablesBox.querySelectorAll("[data-fusion-cable]").forEach((button) => {
+                button.onclick = () => { fusionSelectedCableId = button.dataset.fusionCable; maybeCreateFusion(); };
+            });
+        }
+        async function maybeCreateFusion() {
+            if (!fusionSelectedPortId || !fusionSelectedCableId) {
+                renderFusionPicker();
+                return;
+            }
+            try {
+                await api(`/api/map/elements/${id}/equipment-links/`, {
+                    method: "POST",
+                    body: JSON.stringify({ destination_port_id: fusionSelectedPortId, cable_id: fusionSelectedCableId }),
+                });
+                notify("Fusão criada.");
+                await manageContainer(id);
+            } catch (error) {
+                notify(error.message, true);
+                fusionSelectedPortId = null;
+                fusionSelectedCableId = null;
+                renderFusionPicker();
+            }
+        }
+        renderFusionPicker();
         document.getElementById("container-link-list").innerHTML = data.links.length
             ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${escapeHtml(link.link_type_label)}${link.cable ? ` · Cabo: ${escapeHtml(link.cable)}` : ""}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
             : "<p>Nenhuma ligação interna registrada.</p>";

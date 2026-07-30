@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.32.1] - 2026-07-30
+
+### Adicionado
+
+- Fusão rápida por clique, dentro da seção "Fusões" do rack: portas livres do DIO listadas à esquerda, cabos ligados ao rack à direita — clique numa porta e num cabo para criar a fusão direto, sem preencher formulário. Fica lado a lado com o formulário por seleção que já existia (mantido como estava).
+
 ## [0.32.0] - 2026-07-30
 
 ### Adicionado

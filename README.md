@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.32.0 — Fusão direta de cabo no DIO, cadastro de OLT/DIO mais enxuto**
+**v0.32.1 — Fusão em duas colunas: portas do DIO × cabos do rack**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
