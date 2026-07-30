@@ -183,6 +183,14 @@ class ContainerEquipment(CompanyScopedModel, NamedModel):
         choices=ProvisioningMode.choices,
         default=ProvisioningMode.MANUAL,
     )
+    tx_power_dbm = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Potência óptica de saída da OLT (dBm), informada manualmente "
+        "quando não há coleta SNMP.",
+    )
     vendor = models.CharField(max_length=80, blank=True)
     model = models.CharField(max_length=120, blank=True)
     serial_number = models.CharField(max_length=120, blank=True)
@@ -313,6 +321,13 @@ class ContainerPortLink(TimeStampedModel):
         max_length=20,
         choices=LinkType.choices,
         default=LinkType.FIBER,
+    )
+    loss_db = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=0.3,
+        help_text="Perda óptica estimada (dB): conector do cordão (frente) ou "
+        "fusão da fibra no fundo da porta.",
     )
 
     class Meta:

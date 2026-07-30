@@ -198,6 +198,14 @@
         const { x, y } = offsetWithin(el, container);
         return { x: x + el.offsetWidth / 2, y: y + el.offsetHeight / 2 };
     }
+    const BALANCED_SPLITTER_LOSS_DB = { "1:2": 3.6, "1:4": 7.2, "1:8": 10.5, "1:16": 13.8, "1:32": 17.1, "1:64": 20.5 };
+    function splitterLossLabel(ratio) {
+        if (BALANCED_SPLITTER_LOSS_DB[ratio] !== undefined) return `~${BALANCED_SPLITTER_LOSS_DB[ratio]}dB`;
+        const [a, b] = ratio.split(":").map(Number);
+        if (!a || !b) return "";
+        const legLoss = (percent) => (-10 * Math.log10(percent / 100) + 0.3).toFixed(1);
+        return `~${legLoss(a)}/${legLoss(b)}dB`;
+    }
     function normalizeSearch(value) {
         return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
@@ -483,6 +491,7 @@
             : "Ex.: Enlace PTP prefeitura";
     }
     async function manageContainer(id) {
+        loadStructure().catch(() => {});
         const data = await api(`/api/map/elements/${id}/equipment/`);
         state.containerId = id;
         document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
@@ -502,7 +511,7 @@
         document.getElementById("container-equipment-list").innerHTML = data.equipment.length
             ? data.equipment.map((item) => {
                 const detail = item.type === "olt"
-                    ? `${item.card_count} placa(s) · ${item.pon_count} PONs`
+                    ? `${item.card_count} placa(s) · ${item.pon_count} PONs${item.tx_power_dbm !== null && item.tx_power_dbm !== undefined ? ` · ${item.tx_power_dbm} dBm` : ""}`
                     : item.type === "dio" ? `${item.dio_port_capacity} portas${item.connector_type ? ` · ${escapeHtml(item.connector_type_label)}` : ""}` : (item.management_ip || "Sem IP");
                 const cards = item.cards?.length
                     ? `<div class="equipment-card-list">${item.cards.map((card) => `<span><b>Slot ${card.slot} · ${escapeHtml(card.name)}</b><br>${card.pon_count} PONs${card.model ? ` · ${escapeHtml(card.model)}` : ""}</span>`).join("")}</div>`
@@ -511,7 +520,7 @@
                     ? (item.connector_type.endsWith("_upc") ? "connector-upc" : "connector-apc")
                     : "";
                 const ports = item.ports?.length
-                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<button type="button" class="equipment-port ${port.used ? `used ${connectorClass}` : ""}" data-port-id="${port.id}" data-port-type="${port.type}" ${port.link_id ? `data-link-id="${port.link_id}"` : ""}>${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</button>`).join("")}</div>`
+                    ? `<div class="equipment-port-grid">${item.ports.map((port) => `<button type="button" class="equipment-port ${port.used ? `used ${connectorClass}` : ""}" data-port-id="${port.id}" data-port-type="${port.type}" ${port.link_id ? `data-link-id="${port.link_id}"` : ""} data-loss-db="${port.link_loss_db ?? ""}" data-budget-dbm="${port.budget_dbm ?? ""}">${escapeHtml(port.label)}${port.linked_cable ? ` · ${escapeHtml(port.linked_cable)}` : port.used ? " · ligada" : ""}</button>`).join("")}</div>`
                     : '<p class="field-help">Nenhuma porta cadastrada.</p>';
                 const configure = item.type === "olt"
                     ? `<button class="secondary-button" type="button" data-add-equipment-card="${item.id}">+ Placa</button>`
@@ -601,6 +610,9 @@
                 if (containerEquipmentForm.elements.connector_type) {
                     containerEquipmentForm.elements.connector_type.value = item.connector_type || "";
                 }
+                if (containerEquipmentForm.elements.tx_power_dbm) {
+                    containerEquipmentForm.elements.tx_power_dbm.value = item.tx_power_dbm ?? "";
+                }
                 updateContainerEquipmentFields();
                 containerEquipmentForm.querySelector("button[type='submit']").textContent = "Salvar alterações";
                 containerEquipmentForm.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -618,7 +630,12 @@
             document.querySelectorAll(".equipment-port").forEach((button) => {
                 button.onclick = async () => {
                     if (button.classList.contains("used")) {
-                        if (!button.dataset.linkId || !confirm("Desligar este cordão?")) return;
+                        if (!button.dataset.linkId) return;
+                        const details = [
+                            button.dataset.lossDb ? `Perda do cordão: ${button.dataset.lossDb} dB` : "",
+                            button.dataset.budgetDbm ? `Potência estimada no cabo: ${button.dataset.budgetDbm} dBm` : "Potência estimada: informe a potência de saída da OLT para calcular.",
+                        ].filter(Boolean).join("\n");
+                        if (!confirm(`${details}\n\nDesligar este cordão?`)) return;
                         await api(`/api/map/elements/${id}/equipment-links/${button.dataset.linkId}/`, { method: "DELETE" });
                         await manageContainer(id);
                         return;
@@ -658,6 +675,7 @@
         applyTopologyZoom();
     }
     async function showUnifilar(id) {
+        loadStructure().catch(() => {});
         const data = await api(`/api/map/elements/${id}/`);
         const element = data.element;
         document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
@@ -719,7 +737,7 @@
             const splitterNodes = allSplitters.map((splitter, index) => {
                 const position = layout[`splitter-${splitter.id}`] || { x: 470 + (index % 2) * 260, y: 40 + Math.floor(index / 2) * 220 };
                 return `<div class="graph-splitter-node graph-node" data-node-key="splitter-${splitter.id}" style="left:${position.x}px;top:${position.y}px">
-                <div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id || splitter.input_splitter_port_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || splitter.input_splitter_port_id || ""}" data-splitter-id="${splitter.id}" title="${splitter.input_splitter_port_id ? "Alimentado por outro splitter (cascata)" : ""}">ENT</button><b>${escapeHtml(splitter.ratio)}</b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id || cascadeUsedPortIds.has(port.id) ? "linked" : ""}" data-linked="${port.output_fiber_id || (cascadeUsedPortIds.has(port.id) ? "cascade" : "")}" data-port-id="${port.id}" title="${cascadeUsedPortIds.has(port.id) ? "Alimenta outro splitter (cascata)" : `Fibra ${port.number} de saída do splitter`}">F${port.number}</button>`).join("")}</div></div>
+                <div class="graph-splitter"><button type="button" class="splitter-input-port ${splitter.input_fiber_id || splitter.input_splitter_port_id ? "linked" : ""}" data-linked="${splitter.input_fiber_id || splitter.input_splitter_port_id || ""}" data-splitter-id="${splitter.id}" title="${splitter.input_splitter_port_id ? "Alimentado por outro splitter (cascata)" : ""}">ENT</button><b title="Perda estimada">${escapeHtml(splitter.ratio)}<small>${splitterLossLabel(splitter.ratio)}</small></b><div class="splitter-output-grid">${splitter.ports.map((port) => `<button type="button" class="splitter-output-port ${port.output_fiber_id || cascadeUsedPortIds.has(port.id) ? "linked" : ""}" data-linked="${port.output_fiber_id || (cascadeUsedPortIds.has(port.id) ? "cascade" : "")}" data-port-id="${port.id}" title="${cascadeUsedPortIds.has(port.id) ? "Alimenta outro splitter (cascata)" : `Fibra ${port.number} de saída do splitter`}">F${port.number}</button>`).join("")}</div></div>
                 <div class="splitter-actions"><span class="drag-grip">⋮⋮</span><button type="button" data-edit-splitter="${splitter.id}" data-ratio="${escapeHtml(splitter.ratio)}">Editar</button><button type="button" data-delete-splitter="${splitter.id}">×</button></div></div>`;
             }).join("");
             const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
@@ -1126,7 +1144,7 @@
             const summary = !isExpanded && hasUsedPort ? `<small>${usedCount}/${dio.ports.length} em uso</small>` : "";
             const visiblePorts = isExpanded ? dio.ports : dio.ports.filter((port) => !port.fusion_used);
             return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="${nodeKey}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(dio.name)}${dio.connector_type ? ` <small>${escapeHtml(dio.connector_type_label)}</small>` : ""}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
-            <div class="fiber-port-list">${visiblePorts.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""}>${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || `<span>${isExpanded ? "Nenhuma porta cadastrada." : "Todas as portas em uso."}</span>`}</div>
+            <div class="fiber-port-list">${visiblePorts.map((port) => `<button type="button" class="fiber-port dio-fusion-port ${port.fusion_used ? "used" : ""}" data-used="${port.fusion_used}" data-port-id="${port.id}" ${port.fusion_link_id ? `data-link-id="${port.fusion_link_id}"` : ""} data-loss-db="${port.fusion_loss_db ?? ""}" data-budget-dbm="${port.budget_dbm ?? ""}">${escapeHtml(port.label)}${port.fusion_linked_cable ? ` · ${escapeHtml(port.fusion_linked_cable)}` : port.fusion_used ? " · fundida" : ""}</button>`).join("") || `<span>${isExpanded ? "Nenhuma porta cadastrada." : "Todas as portas em uso."}</span>`}</div>
         </section>`;
         }).join("");
         const cableCards = cables.map((cable, index) => {
@@ -1323,7 +1341,11 @@
         content.querySelectorAll(".dio-fusion-port").forEach((button) => {
             button.onclick = async () => {
                 if (button.dataset.used === "true") {
-                    if (!confirm("Remover esta fusão?")) return;
+                    const details = [
+                        button.dataset.lossDb ? `Perda da fusão: ${button.dataset.lossDb} dB` : "",
+                        button.dataset.budgetDbm ? `Potência estimada no cabo: ${button.dataset.budgetDbm} dBm` : "",
+                    ].filter(Boolean).join("\n");
+                    if (!confirm(`${details}${details ? "\n\n" : ""}Remover esta fusão?`)) return;
                     await api(`/api/map/elements/${element.id}/equipment-links/${button.dataset.linkId}/`, { method: "DELETE" });
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão removida.");
                     return;

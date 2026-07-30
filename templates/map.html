@@ -309,6 +309,8 @@
                     <legend>Estrutura da OLT</legend>
                     <input name="card_count" type="hidden" value="0">
                     <input name="pons_per_card" type="hidden" value="0">
+                    <label>Potência de saída (dBm)<input name="tx_power_dbm" type="number" step="0.01" placeholder="Ex.: 5.00"></label>
+                    <p class="field-help">Informe manualmente quando não há coleta SNMP. Usada para calcular a potência estimada nas fusões.</p>
                     <p class="field-help">Crie a OLT e depois adicione cada placa individualmente, escolhendo slot e quantidade de PONs.</p>
                 </fieldset>
                 <fieldset id="container-dio-fields" class="cto-fields" hidden>

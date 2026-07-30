@@ -258,9 +258,10 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .note-node header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .note-node .note-delete { padding: 0 6px; color: #fde68a; background: transparent; border: 1px solid #f7b731; border-radius: 4px; cursor: pointer; }
 .note-node .note-text { color: #fde68a; font-size: 11px; white-space: pre-wrap; cursor: text; }
-.graph-splitter { display: grid; grid-template-columns: 54px 38px minmax(48px, 1fr); align-items: center; gap: 7px; padding: 9px; background: #0b192a; border: 1px solid #64748b; border-radius: 6px; }
+.graph-splitter { display: grid; grid-template-columns: 54px 58px minmax(48px, 1fr); align-items: center; gap: 7px; padding: 9px; background: #0b192a; border: 1px solid #64748b; border-radius: 6px; }
 .graph-splitter button { min-height: 25px; color: white; background: #1d3553; border: 1px solid #64748b; border-radius: 4px; font-size: 8px; cursor: crosshair; }
-.graph-splitter > b { position: relative; padding: 0 6px; font-size: 12px; }
+.graph-splitter > b { position: relative; padding: 0 6px; font-size: 12px; text-align: center; }
+.graph-splitter > b small { display: block; font-size: 8px; font-weight: 400; color: var(--muted); white-space: nowrap; }
 .graph-splitter > b::before, .graph-splitter > b::after { position: absolute; top: 50%; width: 7px; height: 2px; content: ""; background: #2dd4bf; transform: translateY(-50%); }
 .graph-splitter > b::before { left: -5px; }.graph-splitter > b::after { right: -5px; }
 .splitter-input-port { width: 54px; }

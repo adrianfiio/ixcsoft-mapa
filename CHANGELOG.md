@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.44.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.43.0`.
+
+### Corrigido
+
+- **Sinal de luz exigia salvar algo sem relação para atualizar**: criar/remover um cordão, fusão ou splitter não atualizava o mapa por trás do diálogo — só percebia a mudança depois de editar e salvar outra coisa qualquer. Agora o mapa atualiza sozinho toda vez que esses diálogos abrem ou uma ligação muda.
+
+### Adicionado
+
+- **Potência de saída da OLT (manual)**: campo novo no cadastro da OLT para informar a potência óptica de saída (dBm) quando não há coleta SNMP.
+- **Perda óptica por ligação**: cordão e fusão agora guardam uma perda estimada (dB), com valor padrão sensato (0,5 dB cordão / 0,1 dB fusão) que pode ser conferido antes de desligar uma ligação.
+- **Perda dos splitters**: o diagrama de Fusões da CEO agora mostra a perda estimada ao lado da proporção do splitter — balanceados usam a tabela padrão da indústria (1:2 a 1:64), desbalanceados calculam a perda de cada perna a partir do percentual.
+- **Antes de excluir, mostra o cálculo**: clicar num cordão ou fusão já ligada agora mostra a perda e a potência estimada chegando no cabo antes de perguntar se quer desligar.
+
 ## [0.43.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.42.0`.

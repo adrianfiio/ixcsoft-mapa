@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.43.0 — Fusão do rack aceita clicar em qualquer ordem (DIO ou cabo primeiro)**
+**v0.44.0 — Sinal de luz atualiza sozinho, potência da OLT e perda óptica**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

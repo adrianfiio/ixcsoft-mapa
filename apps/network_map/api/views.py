@@ -930,6 +930,12 @@ def container_equipment(request, element_id):
             and not management_ip
         ):
             return JsonResponse({"detail": "Informe o IP de gerência para cadastro por SNMP."}, status=400)
+        tx_power_dbm = None
+        if equipment_type == ContainerEquipment.EquipmentType.OLT and request.data.get("tx_power_dbm"):
+            try:
+                tx_power_dbm = Decimal(str(request.data["tx_power_dbm"]))
+            except (InvalidOperation, ValueError):
+                return JsonResponse({"detail": "Potência de saída inválida."}, status=400)
         metadata = {}
         snmp_community = str(request.data.get("snmp_community", "")).strip()
         if snmp_community:
@@ -943,6 +949,7 @@ def container_equipment(request, element_id):
                 equipment_type=equipment_type,
                 management_ip=management_ip if equipment_type != ContainerEquipment.EquipmentType.DIO else None,
                 connector_type=connector_type if equipment_type == ContainerEquipment.EquipmentType.DIO else "",
+                tx_power_dbm=tx_power_dbm,
                 provisioning_mode=provisioning_mode,
                 vendor=str(request.data.get("vendor", "")).strip(),
                 model=str(request.data.get("model", "")).strip(),
@@ -1024,6 +1031,16 @@ def container_equipment_detail(request, element_id, equipment_id):
             return JsonResponse({"detail": "Tipo de conector inválido."}, status=400)
         equipment.connector_type = connector_type
         update_fields.append("connector_type")
+    if "tx_power_dbm" in data and equipment.equipment_type == ContainerEquipment.EquipmentType.OLT:
+        raw_power = data.get("tx_power_dbm")
+        if raw_power:
+            try:
+                equipment.tx_power_dbm = Decimal(str(raw_power))
+            except (InvalidOperation, ValueError):
+                return JsonResponse({"detail": "Potência de saída inválida."}, status=400)
+        else:
+            equipment.tx_power_dbm = None
+        update_fields.append("tx_power_dbm")
     snmp_community = str(data.get("snmp_community", "")).strip()
     if snmp_community:
         metadata = dict(equipment.metadata)
@@ -1058,6 +1075,22 @@ def _fusion_cable_name(port):
     return link.cable.name if link and link.cable else None
 
 
+def _port_budget_dbm(port):
+    """Potência estimada (dBm) injetada no cabo nesta porta: TX da OLT menos
+    a perda do cordão (frente) e da fusão (fundo), quando conhecidas."""
+    cord = _cord_link(port)
+    if not cord or not cord.source_port_id:
+        return None
+    olt = cord.source_port.equipment
+    if olt.tx_power_dbm is None:
+        return None
+    power = float(olt.tx_power_dbm) - float(cord.loss_db)
+    fusion = _fusion_link(port)
+    if fusion:
+        power -= float(fusion.loss_db)
+    return round(power, 2)
+
+
 def _fiber_payload(fiber):
     link = fiber.container_port_links.first()
     return {
@@ -1078,6 +1111,7 @@ def _container_equipment_payload(item):
         "type_label": item.get_equipment_type_display(),
         "management_ip": item.management_ip,
         "provisioning_mode": item.provisioning_mode,
+        "tx_power_dbm": float(item.tx_power_dbm) if item.tx_power_dbm is not None else None,
         "vendor": item.vendor,
         "model": item.model,
         "serial_number": item.serial_number,
@@ -1110,9 +1144,12 @@ def _container_equipment_payload(item):
                 "used": _cord_link(port) is not None,
                 "linked_cable": _linked_cable_name(port),
                 "link_id": getattr(_cord_link(port), "id", None),
+                "link_loss_db": float(_cord_link(port).loss_db) if _cord_link(port) else None,
                 "fusion_used": _fusion_link(port) is not None,
                 "fusion_link_id": getattr(_fusion_link(port), "id", None),
                 "fusion_linked_cable": _fusion_cable_name(port),
+                "fusion_loss_db": float(_fusion_link(port).loss_db) if _fusion_link(port) else None,
+                "budget_dbm": _port_budget_dbm(port),
             }
             for port in item.ports.all()
         ],
@@ -1319,6 +1356,14 @@ def container_port_links(request, element_id):
         link_type = ContainerPortLink.LinkType.FIBER
     elif link_type not in dict(ContainerPortLink.LinkType.choices):
         return JsonResponse({"detail": "Tipo de ligação inválido."}, status=400)
+    default_loss = 0.1 if source is None else 0.5
+    if request.data.get("loss_db"):
+        try:
+            loss_db = Decimal(str(request.data["loss_db"]))
+        except (InvalidOperation, ValueError):
+            return JsonResponse({"detail": "Perda óptica inválida."}, status=400)
+    else:
+        loss_db = default_loss
     link = ContainerPortLink.objects.create(
         container=container,
         source_port=source,
@@ -1326,22 +1371,31 @@ def container_port_links(request, element_id):
         cable=cable,
         cable_fiber=cable_fiber,
         link_type=link_type,
+        loss_db=loss_db,
     )
     return JsonResponse({"link": {"id": link.id}}, status=201)
 
 
-@api_view(["DELETE"])
+@api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def container_port_link_detail(request, element_id, link_id):
     link = get_object_or_404(
-        ContainerPortLink.objects.select_related("container"),
+        ContainerPortLink.objects.select_related("container", "source_port__equipment", "destination_port__equipment"),
         pk=link_id,
         container_id=element_id,
     )
     if not can_edit_company(request.user, link.container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-    link.delete()
-    return HttpResponse(status=204)
+    if request.method == "DELETE":
+        link.delete()
+        return HttpResponse(status=204)
+    if request.data.get("loss_db") is not None:
+        try:
+            link.loss_db = Decimal(str(request.data["loss_db"]))
+        except (InvalidOperation, ValueError):
+            return JsonResponse({"detail": "Perda óptica inválida."}, status=400)
+        link.save(update_fields=["loss_db", "updated_at"])
+    return JsonResponse({"link": {"id": link.id, "loss_db": float(link.loss_db)}})
 
 
 @api_view(["POST"])
