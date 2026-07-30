@@ -1,12 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Primeiro acesso | AFService Map{% endblock %}
-{% block topbar_title %}Configuração inicial{% endblock %}
+{% block title %}{% if company.onboarding_completed %}Dados da empresa{% else %}Primeiro acesso{% endif %} | AFService Map{% endblock %}
+{% block topbar_title %}{% if company.onboarding_completed %}Dados da empresa{% else %}Configuração inicial{% endif %}{% endblock %}
 {% block content %}
 <section class="onboarding-shell">
   <div class="onboarding-intro">
+    {% if company.onboarding_completed %}
+    <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+    <h1>Dados da empresa</h1>
+    <p>Atualize as informações cadastrais da sua empresa.</p>
+    {% else %}
     <p class="eyebrow">BEM-VINDO À AFSERVICE MAP</p>
     <h1>Vamos preparar sua empresa</h1>
     <p>Informe os dados básicos e o tipo de operação da sua empresa.</p>
+    {% endif %}
   </div>
   <form class="platform-form onboarding-form" method="post">
     {% csrf_token %}

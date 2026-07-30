@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.28.1] - 2026-07-30
+
+### Adicionado
+
+- "Minha administração" agora tem um item próprio no menu lateral, além do nome do usuário no topo.
+- Novo bloco "Configurações da empresa" no topo do painel, com atalhos diretos para Dados da empresa, Minha equipe, Integração ERP (quando aplicável) e Central de alertas.
+- A página de dados da empresa (`/painel/primeiro-acesso/`) muda o texto para "Dados da empresa" quando acessada depois do onboarding, em vez de repetir a mensagem de boas-vindas do primeiro acesso.
+
+### Removido
+
+- Seções duplicadas de "Integração ERP" e o aviso genérico de "Alertas" dentro do painel — ambas já têm página própria, agora promovidas para os atalhos de "Configurações da empresa".
+
+### Observação
+
+- SMTP/e-mail de alertas fica para uma próxima etapa: hoje nada no sistema envia e-mail (nem recuperação de senha, nem o motor de alertas, que ainda não existe), então configurar SMTP agora não teria efeito visível.
+
 ## [0.28.0] - 2026-07-30
 
 ### Adicionado

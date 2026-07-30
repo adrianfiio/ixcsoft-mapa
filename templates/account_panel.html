@@ -26,13 +26,22 @@
 </section>
 
 {% if can_manage_assets %}
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Configurações da empresa</h2></div>
+    <div class="quick-grid">
+        <a class="quick-link" href="{% url 'company-onboarding' %}"><strong>Dados da empresa</strong><small>Razão social, contato, documento e tipo</small></a>
+        <a class="quick-link" href="{% url 'company-team' %}"><strong>Minha equipe</strong><small>Usuários VIEW e EDIT</small></a>
+        {% if show_erp_navigation %}<a class="quick-link" href="{% url 'erp-onboarding' %}"><strong>Integração ERP</strong><small>IXCSoft e sincronização</small></a>{% endif %}
+        <a class="quick-link" href="{% url 'company-alerts' %}"><strong>Central de alertas</strong><small>Ocorrências da empresa</small></a>
+    </div>
+</section>
+
 <nav class="company-create-actions">
-    <strong>Adicionar à empresa</strong>
+    <strong>Adicionar à rede</strong>
     <a href="{% url 'company-asset-create' 'cpd' %}">+ CPD / POP</a>
     <a href="{% url 'company-asset-create' 'olt' %}">+ OLT</a>
     <a href="{% url 'company-asset-create' 'dio' %}">+ DIO</a>
     <a href="{% url 'map' %}">+ Projeto ou equipamento no mapa</a>
-    <a href="{% url 'company-team' %}">+ Pessoa da equipe</a>
 </nav>
 {% endif %}
 
@@ -52,18 +61,6 @@
             </div>
             {% endfor %}
         </div>
-    </details>
-    {% if show_erp_navigation %}<details id="integracao" data-account-section>
-        <summary><strong>Integração ERP</strong><small>IXCSoft e opções de sincronização</small></summary>
-        <div class="account-items">
-            <a data-searchable href="{% url 'erp-onboarding' %}">
-                <span><strong>Configurar IXCSoft</strong><small>PPPoE, contratos ativos, projetos, elementos e CTOs</small></span><b>Configurar →</b>
-            </a>
-        </div>
-    </details>{% endif %}
-    <details id="alertas" data-account-section>
-        <summary><strong>Alertas</strong><small>Monitoramento da empresa</small></summary>
-        <div class="account-items"><p>A central operacional de alertas será exibida aqui sem acesso ao painel técnico.</p></div>
     </details>
     <details open data-account-section>
         <summary><strong>Projetos</strong><small>{{ projects|length }} disponíveis</small></summary>
