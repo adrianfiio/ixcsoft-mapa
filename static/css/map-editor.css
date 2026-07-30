@@ -126,8 +126,17 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
     max-height: none;
     margin: 12px;
 }
-.container-dialog > section { height: 100%; overflow: auto; box-sizing: border-box; }
-.container-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; }
+.container-dialog > section {
+    height: 100%; overflow: auto; box-sizing: border-box;
+    scrollbar-color: #2dd4bf #0d1b2d; scrollbar-width: thin;
+}
+.container-dialog > section::-webkit-scrollbar { width: 10px; }
+.container-dialog > section::-webkit-scrollbar-track { background: #0d1b2d; }
+.container-dialog > section::-webkit-scrollbar-thumb { background: #2dd4bf; border-radius: 6px; border: 2px solid #0d1b2d; }
+.container-workspace { display: grid; grid-template-columns: 1fr; gap: 18px; }
+.container-workspace:has(aside form:not([hidden])) { grid-template-columns: minmax(0, 1fr) 360px; }
+.container-workspace > aside { display: contents; }
+.container-workspace:has(aside form:not([hidden])) > aside { display: block; }
 .container-workspace > section, .container-workspace > aside > form {
     padding: 18px; background: #071424; border: 1px solid var(--border); border-radius: 12px;
 }

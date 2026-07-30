@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.42.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.41.0`.
+
+### Adicionado
+
+- **Sinal de luz agora avisa o que aconteceu**: ao escolher uma OLT na lista "OLT de origem", o mapa mostra um aviso dizendo quantos cabos foram iluminados — ou, se nenhum cabo for encontrado, avisa para conferir se existe cordão da PON e fusão de fibra na mesma porta do DIO. Isso torna visível se o problema é a OLT não ser encontrada ou o desenho não aparecer.
+
+### Corrigido
+
+- Diagrama da estrutura (Equipamentos do rack/torre): removido o espaço grande e vazio à direita do painel — a coluna de formulários (Adicionar placa/portas) só ocupa espaço quando um desses formulários está realmente aberto.
+- Barra de rolagem do diálogo de Equipamentos redesenhada para combinar com o tema escuro.
+
 ## [0.41.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.40.0`.

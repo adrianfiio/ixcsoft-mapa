@@ -31,7 +31,7 @@
         editingElementId: null, editingCableId: null,
         drawingExistingCableId: null,
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
-        lightSourceId: null, lightAnimationGeneration: 0, mapMode: "view",
+        lightSourceId: null, lastAnnouncedLightSourceId: undefined, lightAnimationGeneration: 0, mapMode: "view",
         containerId: null, editingContainerEquipmentId: null, topologyZoom: 1,
     };
 
@@ -1605,6 +1605,7 @@
                     ? feature.properties.origin_olt_id === Number(sourceId)
                     : feature.properties.origin_id === Number(sourceId))
                 .map((feature) => feature.properties.id);
+            const seedCount = queue.length;
             while (queue.length) {
                 const cableId = queue.shift();
                 if (illuminatedCables.has(cableId)) continue;
@@ -1618,6 +1619,14 @@
                         && !illuminatedCables.has(nextId)
                     ) queue.push(nextId);
                 });
+            }
+            if (state.lastAnnouncedLightSourceId !== state.lightSourceId) {
+                state.lastAnnouncedLightSourceId = state.lightSourceId;
+                if (!seedCount) {
+                    notify("Nenhum cabo encontrado para essa OLT. Confira se há um cordão da PON e uma fusão de fibra na mesma porta do DIO.", true);
+                } else {
+                    notify(`Sinal de luz ligado em ${illuminatedCables.size} cabo(s) a partir de ${lightSelect.options[lightSelect.selectedIndex]?.text || "OLT"}.`);
+                }
             }
         }
         cables.features.forEach((feature) => {
