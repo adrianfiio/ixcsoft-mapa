@@ -94,6 +94,27 @@
         return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(Number(value || 0));
     }
 
+    function formatBytes(value) {
+        const bytes = Number(value || 0);
+        if (!bytes) return "0 KB";
+        if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+    }
+
+    function applyPointTypeDefaults(rule, type) {
+        rule.type = type;
+        if (type === "cto" && !rule.capacity) rule.capacity = 16;
+        if (type === "technical_reserve" && !rule.length_m) rule.length_m = 20;
+        if (type === "dio" && !rule.port_capacity) rule.port_capacity = 24;
+        if (type === "splice_box" && !rule.subtype) rule.subtype = "ceo";
+        return rule;
+    }
+
+    function normalizedPointRule(rule) {
+        const normalized = { ...(rule || {}) };
+        return applyPointTypeDefaults(normalized, normalized.type || "review");
+    }
+
     function csrfToken() {
         const item = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="));
         return item ? decodeURIComponent(item.split("=")[1]) : "";
@@ -145,7 +166,10 @@
     }
 
     function effectiveLineRule(line) {
-        return state.decisions.line_items[line.source_id] || lineGroupRule(line.group_key);
+        return {
+            ...lineGroupRule(line.group_key),
+            ...(state.decisions.line_items[line.source_id] || {}),
+        };
     }
 
     function pointGroupRule(groupKey) {
@@ -153,7 +177,35 @@
     }
 
     function effectivePointRule(point) {
-        return state.decisions.point_items[point.source_id] || pointGroupRule(point.group_key);
+        return normalizedPointRule({
+            ...pointGroupRule(point.group_key),
+            ...(state.decisions.point_items[point.source_id] || {}),
+        });
+    }
+
+    function firstPendingStep() {
+        if (!state.analysis) return 1;
+        const linePending = state.analysis.lines.some((line) => {
+            const rule = effectiveLineRule(line);
+            return ["review", "", "unknown", "pending"].includes(rule.action || "review")
+                || (rule.action === "cable" && !rule.fiber_count);
+        });
+        if (linePending) return 2;
+        const pointPending = state.analysis.points.some((point) => {
+            const rule = effectivePointRule(point);
+            return ["review", "", "unknown", "pending"].includes(rule.type || "review")
+                || (rule.type === "cto" && !rule.capacity)
+                || (rule.type === "technical_reserve" && !(rule.length_m || point.length_hint_m))
+                || (rule.type === "dio" && !rule.port_capacity);
+        });
+        return pointPending ? 3 : 5;
+    }
+
+    function goToPending() {
+        const target = firstPendingStep();
+        setStep(target);
+        setStatus("Revise os campos destacados. As regras do grupo valem para todos os itens, salvo exceções individuais.", true);
+        content.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function unresolvedItems() {
@@ -205,13 +257,13 @@
         analysis.point_groups.forEach((group) => {
             const explicitConfirmation = group.key === "numeric_name" || group.suggested_type === "unknown";
             const type = explicitConfirmation ? "review" : (group.suggested_type || "review");
-            state.decisions.point_groups[group.key] = {
+            state.decisions.point_groups[group.key] = applyPointTypeDefaults({
                 type,
                 capacity: type === "cto" ? 16 : "",
                 length_m: type === "technical_reserve" ? (group.length_hint_m || 20) : "",
                 subtype: group.subtype_hint || (group.key.includes("cdo") ? "cdo" : "ceo"),
                 port_capacity: type === "dio" ? 24 : "",
-            };
+            }, type);
         });
         state.decisions.routes = analysis.folders.filter((folder) => folder.route_candidate).map((folder) => folder.path);
     }
@@ -276,11 +328,23 @@
     }
 
     function step1() {
+        const fileName = state.file?.name || "Nenhum arquivo selecionado";
+        const fileMeta = state.file ? `${formatBytes(state.file.size)} · KML/KMZ pronto para análise` : "Arraste o arquivo aqui ou use o botão abaixo";
         return `<h3>Arquivo de origem</h3>
             <p>O arquivo é analisado sem gravar. A importação definitiva só será liberada depois da prévia topológica.</p>
-            <div class="kmz-upload-row">
-                <input id="kmz-file" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz">
-                <button id="kmz-analyze" class="primary-button" type="button">Analisar arquivo</button>
+            <div class="kmz-file-drop ${state.file ? "has-file" : ""}" data-kmz-dropzone>
+                <input id="kmz-file" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" hidden>
+                <div class="kmz-file-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4"></path><path d="M4 14v5h16v-5"></path></svg>
+                </div>
+                <div class="kmz-file-copy">
+                    <strong>${escapeHtml(fileName)}</strong>
+                    <span>${escapeHtml(fileMeta)}</span>
+                </div>
+                <div class="kmz-file-actions">
+                    <button id="kmz-choose-file" class="secondary-button" type="button">${state.file ? "Trocar arquivo" : "Selecionar arquivo"}</button>
+                    <button id="kmz-analyze" class="primary-button" type="button" ${state.file ? "" : "disabled"}>Analisar arquivo</button>
+                </div>
             </div>
             ${state.analysis ? summaryCards() : ""}
             <div class="kmz-management">
@@ -330,22 +394,25 @@
     }
 
     function step2() {
-        const rows = state.analysis.line_groups.map((group) => {
+        const cards = state.analysis.line_groups.map((group) => {
             const rule = lineGroupRule(group.key);
             const label = group.profile === "drop" ? "DROP detectado" : (group.profile === "reserve" ? "Reserva desenhada" : "Cabo comum");
-            return `<tr class="${rule.action === "review" ? "kmz-review" : ""}">
-                <td><span class="kmz-color-chip" style="--kmz-color:${group.hex || "#64748b"}"></span>${escapeHtml(group.hex || "Sem cor")}<div class="kmz-samples">${label}</div></td>
-                <td>${group.count}<div class="kmz-samples">${escapeHtml(group.samples.join(", "))}</div></td>
-                <td>${formatMeters(group.total_length_m)} m<div class="kmz-samples">${escapeHtml(group.folders.join(" · "))}</div></td>
-                <td><select data-line-group-action="${escapeHtml(group.key)}">${optionList(LINE_ACTIONS, rule.action)}</select></td>
-                <td>${lineFields(rule, group.key, "group")}</td>
-                <td><details><summary>Revisar ${group.count} trechos</summary><div class="kmz-subtable"><table><thead><tr><th>Trecho</th><th>Regra</th><th>Dados</th></tr></thead><tbody>${lineItemRows(group)}</tbody></table></div></details></td>
-            </tr>`;
+            return `<article class="kmz-rule-card ${rule.action === "review" ? "kmz-review" : ""}">
+                <header class="kmz-rule-card-header">
+                    <div><span class="kmz-color-chip" style="--kmz-color:${group.hex || "#64748b"}"></span><strong>${escapeHtml(group.hex || "Sem cor")}</strong><span class="kmz-card-subtitle">${escapeHtml(label)}</span></div>
+                    <span class="kmz-count-pill">${group.count} trecho${group.count === 1 ? "" : "s"}</span>
+                </header>
+                <div class="kmz-card-metrics"><span><strong>${formatMeters(group.total_length_m)} m</strong> de cabo</span><span>${escapeHtml(group.folders.join(" · ") || "Sem pasta")}</span></div>
+                <div class="kmz-card-samples">${escapeHtml(group.samples.join(", "))}</div>
+                <div class="kmz-rule-controls">
+                    <label>Ação<select data-line-group-action="${escapeHtml(group.key)}">${optionList(LINE_ACTIONS, rule.action)}</select></label>
+                    <div class="kmz-rule-data">${lineFields(rule, group.key, "group")}</div>
+                </div>
+                <details class="kmz-details"><summary>Exceções individuais (${group.count})</summary><div class="kmz-subtable"><table><thead><tr><th>Trecho</th><th>Regra</th><th>Dados</th></tr></thead><tbody>${lineItemRows(group)}</tbody></table></div></details>
+            </article>`;
         }).join("");
-        return `${summaryCards()}<h3>Cabos, DROP e reservas desenhadas</h3>
-            <p>O grupo preto com nome <strong>Drop 01 FO</strong> fica separado e sugerido como <strong>Drop de 1 fibra</strong>. Cada trecho pode sobrescrever a regra do grupo.</p>
-            <button id="kmz-raw-preview" class="secondary-button" type="button">Ver arquivo bruto no mapa</button>
-            <div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Cor/perfil</th><th>Trechos</th><th>Metragem</th><th>Ação</th><th>Dados</th><th>Exceções</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        return `${summaryCards()}<div class="kmz-section-heading"><div><h3>Cabos, DROP e reservas desenhadas</h3><p>As decisões abaixo são aplicadas ao grupo inteiro. Abra “Exceções individuais” apenas para alterar um trecho específico.</p></div><button id="kmz-raw-preview" class="secondary-button" type="button">Ver arquivo bruto no mapa</button></div>
+            <div class="kmz-rule-list">${cards}</div>`;
     }
 
     function pointExtra(rule, key, scope) {
@@ -378,21 +445,25 @@
     }
 
     function step3() {
-        const rows = state.analysis.point_groups.map((group) => {
-            const rule = pointGroupRule(group.key);
-            return `<tr class="${rule.type === "review" ? "kmz-review" : ""}">
-                <td>${escapeHtml(group.key)}<div class="kmz-samples">confiança ${Math.round((group.confidence || 0) * 100)}%</div></td>
-                <td>${group.count}</td>
-                <td>${escapeHtml(group.samples.join(", "))}</td>
-                <td><select data-point-group-type="${escapeHtml(group.key)}">${optionList(POINT_TYPES, rule.type)}</select></td>
-                <td>${pointExtra(rule, group.key, "group")}</td>
-                <td><details><summary>Revisar ${group.count} pontos</summary><div class="kmz-subtable"><table><thead><tr><th>Ponto</th><th>Regra</th><th>Dados</th></tr></thead><tbody>${pointItemRows(group)}</tbody></table></div></details></td>
-            </tr>`;
+        const cards = state.analysis.point_groups.map((group) => {
+            const rule = normalizedPointRule(pointGroupRule(group.key));
+            const resolvedByGroup = state.analysis.points.filter((point) => point.group_key === group.key && !state.decisions.point_items[point.source_id]).length;
+            return `<article class="kmz-rule-card ${rule.type === "review" ? "kmz-review" : ""}">
+                <header class="kmz-rule-card-header">
+                    <div><strong>${escapeHtml(group.key)}</strong><span class="kmz-card-subtitle">confiança ${Math.round((group.confidence || 0) * 100)}%</span></div>
+                    <span class="kmz-count-pill">${group.count} ponto${group.count === 1 ? "" : "s"}</span>
+                </header>
+                <div class="kmz-card-samples">${escapeHtml(group.samples.join(", "))}</div>
+                <div class="kmz-rule-controls">
+                    <label>Tipo<select data-point-group-type="${escapeHtml(group.key)}">${optionList(POINT_TYPES, rule.type)}</select></label>
+                    <div class="kmz-rule-data">${pointExtra(rule, group.key, "group")}</div>
+                </div>
+                <div class="kmz-group-application"><strong>Regra do grupo:</strong> aplicada automaticamente a ${resolvedByGroup} item(ns). As exceções abaixo substituem somente os pontos editados.</div>
+                <details class="kmz-details"><summary>Exceções individuais (${group.count})</summary><div class="kmz-subtable"><table><thead><tr><th>Ponto</th><th>Regra</th><th>Dados</th></tr></thead><tbody>${pointItemRows(group)}</tbody></table></div></details>
+            </article>`;
         }).join("");
-        return `<h3>Classificação dos pontos</h3>
-            <p>A coluna é dinâmica: CTO pede portas, RT pede metragem, DIO pede capacidade e CEO/CDO pede subtipo. Nomes numéricos e desconhecidos ficam em Revisar até sua confirmação.</p>
-            <button id="kmz-raw-preview" class="secondary-button" type="button">Ver pontos e linhas no mapa</button>
-            <div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Regra</th><th>Qtd.</th><th>Amostras</th><th>Tipo</th><th>Dados adicionais</th><th>Exceções</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        return `<div class="kmz-section-heading"><div><h3>Classificação dos pontos</h3><p>Escolha o tipo uma vez por grupo. CTO usa a capacidade informada para todos os pontos do grupo; RT usa a metragem; DIO usa a quantidade de portas.</p></div><button id="kmz-raw-preview" class="secondary-button" type="button">Ver pontos e linhas no mapa</button></div>
+            <div class="kmz-rule-list">${cards}</div>`;
     }
 
     function step4() {
@@ -519,7 +590,10 @@
     function drawPreview(geojson) {
         clearPreview();
         const map = window.networkMap?.map;
-        if (!window.L || !map) throw new Error("O mapa Leaflet não foi exposto por window.networkMap.map.");
+        if (!window.L || !map) throw new Error("A prévia não conseguiu acessar o mapa. Confirme window.networkMap = { map, loadStructure } no final de map-editor.js.");
+        dialog.close();
+        returnButton.hidden = false;
+        map.invalidateSize();
         state.previewLayer = L.geoJSON(geojson, {
             style(feature) {
                 return { color: feature.properties.color || "#22d3ee", weight: 4, opacity: 0.9, dashArray: feature.properties.kind === "junction" ? "4 4" : null };
@@ -538,18 +612,18 @@
                 layer.bindPopup(previewPopup(feature.properties || {}));
             },
         }).addTo(map);
-        try {
-            map.fitBounds(state.previewLayer.getBounds(), { padding: [35, 35], maxZoom: 19 });
-        } catch (_error) {
-            // Arquivos com uma única geometria podem não gerar bounds válidos.
-        }
-        dialog.close();
-        returnButton.hidden = false;
+        window.setTimeout(() => {
+            map.invalidateSize();
+            try { map.fitBounds(state.previewLayer.getBounds(), { padding: [35, 35], maxZoom: 19 }); } catch (_error) { /* bounds inválidos */ }
+        }, 80);
     }
 
     async function generatePreview() {
         const pending = unresolvedItems();
-        if (pending.length) throw new Error(`Existem ${pending.length} itens pendentes. Resolva ou ignore todos.`);
+        if (pending.length) {
+            goToPending();
+            throw new Error(`Existem ${pending.length} itens pendentes. A tela foi aberta no primeiro grupo que precisa de ajuste.`);
+        }
         if (!state.topologyCalculated) throw new Error("Calcule as ligações antes da prévia final.");
         setStatus("Gerando a prévia topológica sem gravar...");
         const data = await apiPost(`/api/map/projects/${projectId()}/import/preview/`);
@@ -565,10 +639,10 @@
         const pending = unresolvedItems();
         const previewReady = Boolean(state.decisions.preview_token);
         return `<h3>Prévia topológica obrigatória</h3>
-            ${pending.length ? `<div class="kmz-warning"><strong>${pending.length} pendências:</strong><br>${pending.slice(0, 20).map(escapeHtml).join("<br>")}${pending.length > 20 ? `<br>... e mais ${pending.length - 20}` : ""}</div>` : '<div class="kmz-success">Classificações resolvidas.</div>'}
+            ${pending.length ? `<div class="kmz-warning"><strong>${pending.length} pendências impedem a prévia.</strong><br>${pending.slice(0, 12).map(escapeHtml).join("<br>")}${pending.length > 12 ? `<br>... e mais ${pending.length - 12}` : ""}<br><button id="kmz-fix-pending" class="secondary-button" type="button">Ir para as pendências</button></div>` : '<div class="kmz-success">Classificações resolvidas.</div>'}
             ${!state.topologyCalculated ? '<div class="kmz-warning">Volte à etapa Ligações e execute a detecção.</div>' : ""}
-            <button id="kmz-generate-preview" class="primary-button" type="button" ${pending.length || !state.topologyCalculated ? "disabled" : ""}>Gerar e abrir prévia no mapa</button>
-            ${previewReady ? '<div class="kmz-success">Prévia confirmada para as decisões atuais. Qualquer alteração invalida este token.</div>' : '<p>Nada será gravado nesta etapa.</p>'}`;
+            <button id="kmz-generate-preview" class="primary-button" type="button">Gerar e abrir prévia no mapa</button>
+            ${previewReady ? '<div class="kmz-success">Prévia confirmada para as decisões atuais. Qualquer alteração invalida este token.</div>' : '<p>Nada será gravado nesta etapa. Caso exista alguma pendência, o botão levará você diretamente ao local que precisa de correção.</p>'}`;
     }
 
     async function loadBatches() {
@@ -677,8 +751,38 @@
     }
 
     function bindCurrentStep() {
-        document.getElementById("kmz-file")?.addEventListener("change", (event) => {
+        const fileInput = document.getElementById("kmz-file");
+        const chooseFile = document.getElementById("kmz-choose-file");
+        const dropzone = document.querySelector("[data-kmz-dropzone]");
+        chooseFile?.addEventListener("click", () => fileInput?.click());
+        fileInput?.addEventListener("change", (event) => {
             state.file = event.target.files[0] || null;
+            state.analysis = null;
+            state.decisions = freshDecisions();
+            setStatus(state.file ? `${state.file.name} selecionado. Clique em Analisar arquivo.` : "");
+            render();
+        });
+        ["dragenter", "dragover"].forEach((eventName) => dropzone?.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropzone.classList.add("is-dragging");
+        }));
+        ["dragleave", "drop"].forEach((eventName) => dropzone?.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropzone.classList.remove("is-dragging");
+        }));
+        dropzone?.addEventListener("drop", (event) => {
+            const file = event.dataTransfer?.files?.[0] || null;
+            if (!file) return;
+            const extension = file.name.toLowerCase().split(".").pop();
+            if (!["kml", "kmz"].includes(extension)) {
+                setStatus("Selecione um arquivo .kml ou .kmz.", true);
+                return;
+            }
+            state.file = file;
+            state.analysis = null;
+            state.decisions = freshDecisions();
+            setStatus(`${file.name} selecionado. Clique em Analisar arquivo.`);
+            render();
         });
         document.getElementById("kmz-analyze")?.addEventListener("click", () => analyze().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-raw-preview")?.addEventListener("click", () => {
@@ -710,7 +814,8 @@
         bindValue("[data-line-item-length]", (element) => { ensureLineOverride(element.dataset.lineItemLength).length_m = element.value; invalidatePreview(); });
 
         bindValue("[data-point-group-type]", (element) => {
-            state.decisions.point_groups[element.dataset.pointGroupType].type = element.value;
+            const rule = state.decisions.point_groups[element.dataset.pointGroupType];
+            applyPointTypeDefaults(rule, element.value);
             invalidateTopology();
             render();
         });
@@ -722,7 +827,7 @@
         bindValue("[data-point-item-type]", (element) => {
             const id = element.dataset.pointItemType;
             if (element.value === "inherit") delete state.decisions.point_items[id];
-            else ensurePointOverride(id).type = element.value;
+            else applyPointTypeDefaults(ensurePointOverride(id), element.value);
             invalidateTopology();
             render();
         });
@@ -754,7 +859,11 @@
             invalidatePreview();
         });
 
-        document.getElementById("kmz-generate-preview")?.addEventListener("click", () => generatePreview().catch((error) => setStatus(error.message, true)));
+        document.getElementById("kmz-fix-pending")?.addEventListener("click", goToPending);
+        document.getElementById("kmz-generate-preview")?.addEventListener("click", () => generatePreview().catch((error) => {
+            setStatus(error.message, true);
+            content.scrollTo({ top: 0, behavior: "smooth" });
+        }));
         document.getElementById("kmz-refresh-batches")?.addEventListener("click", () => loadBatches().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-check-cleanup-final")?.addEventListener("click", () => checkLegacyCleanup().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-run-cleanup")?.addEventListener("click", () => executeLegacyCleanup().catch((error) => setStatus(error.message, true)));
@@ -802,7 +911,9 @@
             return;
         }
         if (state.step === 4 && unresolvedItems().length) {
-            setStatus(`Ainda existem ${unresolvedItems().length} itens em Revisar. Você pode continuar para ver as ligações somente depois de resolver todos.`, true);
+            setStatus(`Ainda existem ${unresolvedItems().length} itens pendentes. Corrija os grupos antes de calcular as ligações.`, true);
+            goToPending();
+            return;
         }
         setStep(state.step + 1);
     };

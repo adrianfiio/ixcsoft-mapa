@@ -72,18 +72,30 @@ def point_group_key(classification: dict) -> str:
     return reason
 
 
+def _point_defaults(rule: dict) -> dict:
+    normalized = dict(rule or {})
+    target = normalized.get("type") or "review"
+    if target == "cto" and not normalized.get("capacity"):
+        normalized["capacity"] = 16
+    elif target == "technical_reserve" and not normalized.get("length_m"):
+        normalized["length_m"] = 20
+    elif target == "dio" and not normalized.get("port_capacity"):
+        normalized["port_capacity"] = 24
+    elif target == "splice_box" and not normalized.get("subtype"):
+        normalized["subtype"] = "ceo"
+    return normalized
+
+
 def effective_point_rule(point_record: dict, decisions: dict) -> dict:
-    item_rule = (decisions.get("point_items") or {}).get(point_record["source_id"])
-    if item_rule:
-        return item_rule
-    return (decisions.get("point_groups") or {}).get(point_record["group_key"], {})
+    group_rule = (decisions.get("point_groups") or {}).get(point_record["group_key"], {})
+    item_rule = (decisions.get("point_items") or {}).get(point_record["source_id"], {})
+    return _point_defaults({**group_rule, **item_rule})
 
 
 def effective_line_rule(line_record: dict, decisions: dict) -> dict:
-    item_rule = (decisions.get("line_items") or {}).get(line_record["source_id"])
-    if item_rule:
-        return item_rule
-    return (decisions.get("line_groups") or {}).get(line_record["group_key"], {})
+    group_rule = (decisions.get("line_groups") or {}).get(line_record["group_key"], {})
+    item_rule = (decisions.get("line_items") or {}).get(line_record["source_id"], {})
+    return {**group_rule, **item_rule}
 
 
 def route_for_folder(selected_routes: set[str], folder: str) -> str | None:

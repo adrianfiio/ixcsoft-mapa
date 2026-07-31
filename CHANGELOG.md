@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.53.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.52.0`.
+
+### Corrigido
+
+- Assistente KMZ, etapa "Pontos": ao mudar um grupo pra CTO, o campo mostrava "16" mas o valor não era gravado no estado — cada uma das 143 CTOs de um grupo era cobrada individualmente na validação, mesmo com o valor "certo" visível na tela. Corrigido tanto no frontend quanto no backend (`kmz_topology.py`): regra do grupo e exceção individual agora fazem *merge* (a exceção só sobrescreve os campos que ela de fato define, herdando o resto do grupo — antes ela substituía o objeto inteiro), e valores padrão (CTO → 16 portas, RT → 20 m, DIO → 24 portas, CEO/CDO → subtipo CEO) são aplicados automaticamente quando o campo fica vazio.
+- "Gerar e abrir prévia no mapa" não fazia nada visível quando havia pendências — agora informa quantas pendências existem e abre automaticamente a primeira etapa (Cabos ou Pontos) que precisa de ajuste.
+- Mapa não recalculava o tamanho depois de fechar o modal da prévia (ficava com área cortada até a próxima interação) — adicionado `map.invalidateSize()` antes e depois de desenhar a camada temporária.
+
+### Adicionado
+
+- Seletor de arquivo moderno no assistente KMZ: arrastar-e-soltar, ícone, nome/tamanho do arquivo, botão "Selecionar"/"Trocar arquivo" — substitui o input nativo do navegador.
+- Etapas "Cabos" e "Pontos" do assistente agora usam cartões responsivos (CSS Grid `auto-fit`/`minmax`, container queries, `clamp()`, `dvh`) em vez da tabela larga anterior, que ficava apertada em zooms/resoluções diferentes.
+
+Obs.: o pacote recebido também trazia cópias desatualizadas de `kmz_import_api.py` e `kmz_import_models.py` (sem as correções de `related_name` e do vazamento entre projetos da v0.50.2/v0.50.3) — não foram aplicadas; só os 3 arquivos documentados (`kmz-import-wizard.js`, `kmz-import-wizard.css`, `kmz_topology.py`) entraram nesta versão.
+
 ## [0.52.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.51.0`.
