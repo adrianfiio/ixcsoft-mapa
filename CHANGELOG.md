@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.56.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.55.0` (também disponível como branch `backup/mapa-pre-v06-20260731`).
+
+### Corrigido
+
+- **Cabos importados por KMZ ficavam sem fibras**: o importador só procurava um `CableModel` já cadastrado; sem um compatível, o cabo era salvo sem tubos/fibras (inclusive DROP de 1 FO). Agora a importação cria/reaproveita um modelo técnico gerável para qualquer quantidade de fibras e chama `generate_cable_fibers()` explicitamente. Lotes já importados (como o lote #1) podem ser corrigidos sem reimportar: histórico → **Gerar/reparar fibras** — ação idempotente, não recria fibra em cabo que já tem.
+- **Primeiro clique em "Fusões" não abria** (piscava e exigia um segundo clique): o clique recarregava toda a estrutura do mapa ao mesmo tempo em que o popup do Leaflet fechava e o modal tentava abrir. O modal agora abre imediatamente com um indicador de carregamento, sem recarregar a estrutura inteira.
+- Tela de fusões: zoom inicial em 70% (era 50%), "Ajustar" agora considera largura E altura disponíveis, "Organizar" usa a altura real dos cartões para não sobrepor colunas, e as setas nativas de campos numéricos foram trocadas por controles `− valor +` consistentes com o resto do sistema.
+- Histórico de importação mostrava o resumo do lote como JSON cru (`{"ctos":261,...}`) — agora aparece como indicadores legíveis (261 CTOs, 313 cabos, 24 rotas etc.).
+
+### Sobre a integração deste pacote
+
+Este pacote veio pronto (ZIP + patches) de uma sessão de trabalho externa focada só no mapa/KMZ, em paralelo ao trabalho de dashboard/whitelabel desta mesma rodada (v0.55.0) — áreas de arquivo totalmente separadas, sem conflito. Antes de aplicar, a revisão encontrou e corrigiu 3 problemas no pacote original que não foram copiados como vieram:
+
+- `kmz_import_models.py` revertia `KMZImportObject.batch` para `related_name="objects"` — isso sobrescreve o manager padrão `KMZImportBatch.objects` (o Django troca o atributo de classe pelo descriptor da relação reversa), quebrando `KMZImportBatch.objects.create/filter(...)` em qualquer lugar do sistema. Esse related_name já tinha sido corrigido para `tracked_objects` na migration `0031`, por causa exatamente desse bug; o pacote revertia a correção sem saber da nossa migration. Restaurado, e os dois pontos do novo `kmz_import_api.py` que assumiam o related_name errado (reparo de fibras e "Desfazer lote") foram ajustados para `batch.tracked_objects`.
+- A limpeza de importações antigas (`cleanup_legacy_kmz_import`, que exige digitar "LIMPAR {código do projeto}" antes de apagar) perdeu o filtro `cable__project=project` nas reservas candidatas — sem ele, a limpeza de um projeto podia apagar `CableReserve` de OUTRO projeto (de qualquer empresa) só por ter uma nota contendo "Importado do KMZ". Filtro restaurado.
+- `CHANGELOG.md` e `README.md` do projeto real tinham sido sobrescritos pelo changelog/readme do próprio pacote (histórico de versões "v0.6/v0.5/v0.4" do pacote, não deste projeto) — restaurados a partir do commit anterior antes desta entrada ser escrita.
+
 ## [0.55.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.54.0`.

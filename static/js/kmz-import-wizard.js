@@ -58,6 +58,7 @@
         returnStep: 6,
         cleanup: null,
         batches: [],
+        completedImport: null,
         decisions: freshDecisions(),
     };
 
@@ -68,7 +69,7 @@
             point_groups: {},
             point_items: {},
             routes: [],
-            topology: { proximity_m: 12, endpoint_tolerance_m: 18 },
+            topology: { proximity_m: 30, endpoint_tolerance_m: 40 },
             topology_defaults: {
                 cto: "cut",
                 splice_box: "cut",
@@ -99,6 +100,16 @@
         if (!bytes) return "0 KB";
         if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
         return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+    }
+
+    function numberControl({ label, attributes, value, min = 0, max = "", step = 1, suffix = "" }) {
+        const safeMax = max === "" ? "" : ` max="${escapeHtml(max)}"`;
+        return `<label class="kmz-number-field"><span>${escapeHtml(label)}</span>
+            <span class="kmz-number-control">
+                <button type="button" data-number-step="-1" aria-label="Diminuir ${escapeHtml(label)}">−</button>
+                <input ${attributes} type="number" inputmode="decimal" min="${escapeHtml(min)}"${safeMax} step="${escapeHtml(step)}" value="${escapeHtml(value)}">
+                <button type="button" data-number-step="1" aria-label="Aumentar ${escapeHtml(label)}">+</button>
+            </span>${suffix ? `<small>${escapeHtml(suffix)}</small>` : ""}</label>`;
     }
 
     function applyPointTypeDefaults(rule, type) {
@@ -241,6 +252,7 @@
         state.topologyJunctions = [];
         state.topologySummary = null;
         state.topologyCalculated = false;
+        state.completedImport = null;
         state.decisions = freshDecisions();
         const prefix = selectedProject()?.textContent?.trim().split("·")[0]?.trim() || "PROJ";
         state.decisions.naming.project_prefix = prefix;
@@ -373,7 +385,14 @@
             </div>`;
         }
         if (rule.action === "reserve_line") {
-            return `<label>Metragem da reserva <input ${prefix}-length="${escapeHtml(key)}" type="number" min="0.1" step="0.1" value="${escapeHtml(rule.length_m || 20)}"> m</label>`;
+            return numberControl({
+                label: "Metragem da reserva",
+                attributes: `${prefix}-length="${escapeHtml(key)}"`,
+                value: rule.length_m || 20,
+                min: 0.1,
+                step: 0.1,
+                suffix: "m",
+            });
         }
         return '<span class="kmz-muted">Sem dados adicionais</span>';
     }
@@ -418,16 +437,37 @@
     function pointExtra(rule, key, scope) {
         const prefix = scope === "item" ? "data-point-item" : "data-point-group";
         if (rule.type === "cto") {
-            return `<label>Portas da CTO <input ${prefix}-capacity="${escapeHtml(key)}" type="number" min="1" value="${escapeHtml(rule.capacity || 16)}"></label>`;
+            return numberControl({
+                label: "Portas da CTO",
+                attributes: `${prefix}-capacity="${escapeHtml(key)}"`,
+                value: rule.capacity || 16,
+                min: 1,
+                max: 128,
+                step: 1,
+            });
         }
         if (rule.type === "technical_reserve") {
-            return `<label>Metragem da RT <input ${prefix}-length="${escapeHtml(key)}" type="number" min="0.1" step="0.1" value="${escapeHtml(rule.length_m || 20)}"> m</label>`;
+            return numberControl({
+                label: "Metragem da RT",
+                attributes: `${prefix}-length="${escapeHtml(key)}"`,
+                value: rule.length_m || 20,
+                min: 0.1,
+                step: 0.1,
+                suffix: "m",
+            });
         }
         if (rule.type === "splice_box") {
             return `<label>Subtipo <select ${prefix}-subtype="${escapeHtml(key)}"><option value="ceo" ${rule.subtype === "ceo" ? "selected" : ""}>CEO</option><option value="cdo" ${rule.subtype === "cdo" ? "selected" : ""}>CDO</option><option value="generic" ${rule.subtype === "generic" ? "selected" : ""}>Genérica</option></select></label>`;
         }
         if (rule.type === "dio") {
-            return `<label>Portas do DIO <input ${prefix}-ports="${escapeHtml(key)}" type="number" min="1" value="${escapeHtml(rule.port_capacity || 24)}"></label>`;
+            return numberControl({
+                label: "Portas do DIO",
+                attributes: `${prefix}-ports="${escapeHtml(key)}"`,
+                value: rule.port_capacity || 24,
+                min: 1,
+                max: 576,
+                step: 1,
+            });
         }
         return '<span class="kmz-muted">Sem dado obrigatório</span>';
     }
@@ -476,8 +516,8 @@
             <div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Rota</th><th>Pontos</th><th>Linhas</th><th>Composição</th><th>Criar</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Nenhuma pasta ROTA detectada.</td></tr>'}</tbody></table></div>
             <div class="kmz-settings-grid">
                 <label>Prefixo do projeto <input id="kmz-project-prefix" maxlength="24" value="${escapeHtml(naming.project_prefix)}" placeholder="Ex.: JDS"></label>
-                <label><input id="kmz-preserve-names" type="checkbox" ${naming.preserve_source_names ? "checked" : ""}> Manter nome original dos equipamentos</label>
-                <label>Distância máxima da RT ao cabo <input id="kmz-reserve-distance" type="number" min="1" value="${escapeHtml(state.decisions.reserve_max_distance_m)}"> m</label>
+                <label class="kmz-check-field"><input id="kmz-preserve-names" type="checkbox" ${naming.preserve_source_names ? "checked" : ""}><span>Manter nome original dos equipamentos</span></label>
+                ${numberControl({ label: "Distância máxima da RT ao cabo", attributes: 'id="kmz-reserve-distance"', value: state.decisions.reserve_max_distance_m, min: 1, max: 500, step: 1, suffix: "m" })}
             </div>
             <div class="kmz-code-example"><strong>Padrão:</strong> CAB-JDS-ROTA-05-001 · DROP-JDS-ROTA-05-001 · CTO-JDS-ROTA-05-001 · CEO/CDO-JDS-ROTA-05-001. O nome e a pasta originais ficam no lote.</div>`;
     }
@@ -515,9 +555,9 @@
         }).join("");
         return `<h3>Ligações e cortes automáticos</h3>
             <p>O sistema projeta cada CTO/CEO/CDO sobre o cabo próximo. Você decide se conecta, corta, apenas passa ou cria uma derivação. Cortes e derivações geram novos segmentos com origem/destino.</p>
-            <div class="kmz-settings-grid">
-                <label>Proximidade máxima <input id="kmz-topology-distance" type="number" min="1" max="100" value="${escapeHtml(topology.proximity_m)}"> m</label>
-                <label>Tolerância de ponta <input id="kmz-endpoint-distance" type="number" min="1" max="100" value="${escapeHtml(topology.endpoint_tolerance_m)}"> m</label>
+            <div class="kmz-settings-grid kmz-topology-settings">
+                ${numberControl({ label: "Proximidade máxima", attributes: 'id="kmz-topology-distance"', value: topology.proximity_m, min: 1, max: 100, step: 1, suffix: "m" })}
+                ${numberControl({ label: "Tolerância de ponta", attributes: 'id="kmz-endpoint-distance"', value: topology.endpoint_tolerance_m, min: 1, max: 100, step: 1, suffix: "m" })}
                 <label>CTO no meio <select id="kmz-default-cto">${optionList(JUNCTION_ACTIONS, defaults.cto)}</select></label>
                 <label>CEO/CDO no meio <select id="kmz-default-splice">${optionList(JUNCTION_ACTIONS, defaults.splice_box)}</select></label>
             </div>
@@ -668,6 +708,30 @@
         alert(`Lote #${batchId} desfeito.`);
     }
 
+    async function repairBatchFibers(batchId) {
+        if (!confirm(`Verificar e gerar tubos/fibras dos cabos do lote #${batchId}?\nCabos que já possuem fibras não serão alterados.`)) return;
+        setStatus(`Reparando fibras do lote #${batchId}...`);
+        const response = await fetch(`/api/map/projects/${projectId()}/import/batches/${batchId}/repair-fibers/`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRFToken": csrfToken(), Accept: "application/json" },
+        });
+        const data = await response.json().catch(() => ({ error: "Resposta inválida." }));
+        if (!response.ok && response.status !== 207) throw new Error(data.error || `HTTP ${response.status}`);
+        if (window.networkMap?.loadStructure) await window.networkMap.loadStructure(true);
+        await loadBatches();
+        const repair = data.repair || {};
+        const message = [
+            `Lote #${batchId} verificado.`,
+            `${repair.cables_repaired || 0} cabo(s) reparado(s).`,
+            `${repair.fibers_created || 0} fibra(s) criada(s).`,
+            `${repair.already_ready || 0} cabo(s) já estavam prontos.`,
+            ...(data.errors?.length ? ["Falhas:", ...data.errors.slice(0, 12)] : []),
+        ].join("\n");
+        setStatus(data.errors?.length ? `Reparo concluído com ${data.errors.length} aviso(s).` : "Tubos e fibras gerados com sucesso.", Boolean(data.errors?.length));
+        alert(message);
+    }
+
     async function checkLegacyCleanup() {
         const response = await fetch(`/api/map/projects/${projectId()}/import/cleanup-legacy/`, { credentials: "same-origin", headers: { Accept: "application/json" } });
         const data = await response.json();
@@ -694,9 +758,21 @@
         render();
     }
 
+    function importSummaryHtml(summary) {
+        const labels = {
+            ctos: "CTOs", elements: "equipamentos", cables: "cabos", routes: "rotas",
+            reserves: "reservas", fibers: "fibras", fiber_tubes: "tubos",
+            cable_relations: "ligações", ignored_points: "pontos ignorados",
+            cable_models_created: "modelos criados", cables_without_fibers: "cabos sem fibras",
+        };
+        const entries = Object.entries(summary || {}).filter(([, value]) => Number(value || 0) > 0);
+        if (!entries.length) return '<span class="kmz-muted">Sem resumo</span>';
+        return `<div class="kmz-summary-badges">${entries.map(([key, value]) => `<span class="kmz-badge ${key === "cables_without_fibers" ? "warning" : ""}"><strong>${escapeHtml(value)}</strong> ${escapeHtml(labels[key] || key.replaceAll("_", " "))}</span>`).join("")}</div>`;
+    }
+
     function batchesHtml() {
         if (!state.batches.length) return '<p class="kmz-muted">Histórico ainda não carregado ou vazio.</p>';
-        return `<div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Lote</th><th>Arquivo</th><th>Status</th><th>Resumo</th><th>Ação</th></tr></thead><tbody>${state.batches.map((batch) => `<tr><td>#${batch.id}<div class="kmz-samples">${escapeHtml(new Date(batch.created_at).toLocaleString("pt-BR"))}</div></td><td>${escapeHtml(batch.filename)}</td><td>${escapeHtml(batch.status_label)}</td><td>${escapeHtml(JSON.stringify(batch.summary || {}))}</td><td>${batch.status === "imported" ? `<button class="danger-button" data-undo-batch="${batch.id}" type="button">Desfazer</button>` : "—"}</td></tr>`).join("")}</tbody></table></div>`;
+        return `<div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Lote</th><th>Arquivo</th><th>Status</th><th>Resumo</th><th>Ação</th></tr></thead><tbody>${state.batches.map((batch) => `<tr><td>#${batch.id}<div class="kmz-samples">${escapeHtml(new Date(batch.created_at).toLocaleString("pt-BR"))}</div></td><td>${escapeHtml(batch.filename)}</td><td>${escapeHtml(batch.status_label)}</td><td>${importSummaryHtml(batch.summary)}</td><td>${batch.status === "imported" ? `<div class="kmz-batch-actions"><button class="secondary-button" data-repair-batch="${batch.id}" type="button">Gerar/reparar fibras</button><button class="danger-button" data-undo-batch="${batch.id}" type="button">Desfazer lote</button></div>` : "—"}</td></tr>`).join("")}</tbody></table></div>`;
     }
 
     function cleanupHtml() {
@@ -708,8 +784,9 @@
     function step7() {
         const pending = unresolvedItems();
         const ready = !pending.length && Boolean(state.decisions.preview_token);
+        const completed = state.completedImport;
         return `<h3>Importação definitiva e histórico</h3>
-            ${ready ? '<div class="kmz-success">Tudo pronto. A operação será atômica e registrada em um lote que pode ser desfeito.</div>' : `<div class="kmz-warning"><strong>Importação bloqueada.</strong><br>${pending.length ? `${pending.length} classificações pendentes.<br>` : ""}${state.decisions.preview_token ? "" : "Gere novamente a prévia final."}</div>`}
+            ${completed ? `<div class="kmz-success"><strong>Importação concluída no lote #${escapeHtml(completed.batch_id)}.</strong><br>${importSummaryHtml(completed.imported)}</div>` : (ready ? '<div class="kmz-success">Tudo pronto. A operação será atômica e registrada em um lote que pode ser desfeito.</div>' : `<div class="kmz-warning"><strong>Importação bloqueada.</strong><br>${pending.length ? `${pending.length} classificações pendentes.<br>` : ""}${state.decisions.preview_token ? "" : "Gere novamente a prévia final."}</div>`)}
             <div class="kmz-management"><button id="kmz-refresh-batches" class="secondary-button" type="button">Atualizar histórico</button><button id="kmz-check-cleanup-final" class="danger-button" type="button">Revisar limpeza do teste antigo</button></div>
             ${cleanupHtml()}
             ${batchesHtml()}`;
@@ -719,7 +796,7 @@
         if (!state.analysis && state.step > 1) state.step = 1;
         const steps = [null, step1, step2, step3, step4, step5, step6, step7];
         content.innerHTML = steps[state.step]();
-        executeButton.disabled = state.step === 7 && (unresolvedItems().length > 0 || !state.decisions.preview_token);
+        executeButton.disabled = state.step === 7 && (Boolean(state.completedImport) || unresolvedItems().length > 0 || !state.decisions.preview_token);
         bindCurrentStep();
     }
 
@@ -750,7 +827,28 @@
         });
     }
 
+    function bindNumberSteppers() {
+        document.querySelectorAll(".kmz-number-control").forEach((control) => {
+            const input = control.querySelector("input[type='number']");
+            if (!input) return;
+            control.querySelectorAll("[data-number-step]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const direction = Number(button.dataset.numberStep || 0);
+                    const step = Number(input.step || 1);
+                    const current = Number(input.value || input.min || 0);
+                    const min = input.min === "" ? -Infinity : Number(input.min);
+                    const max = input.max === "" ? Infinity : Number(input.max);
+                    const precision = String(step).includes(".") ? String(step).split(".")[1].length : 0;
+                    const next = Math.min(max, Math.max(min, current + direction * step));
+                    input.value = next.toFixed(precision);
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                });
+            });
+        });
+    }
+
     function bindCurrentStep() {
+        bindNumberSteppers();
         const fileInput = document.getElementById("kmz-file");
         const chooseFile = document.getElementById("kmz-choose-file");
         const dropzone = document.querySelector("[data-kmz-dropzone]");
@@ -867,6 +965,9 @@
         document.getElementById("kmz-refresh-batches")?.addEventListener("click", () => loadBatches().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-check-cleanup-final")?.addEventListener("click", () => checkLegacyCleanup().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-run-cleanup")?.addEventListener("click", () => executeLegacyCleanup().catch((error) => setStatus(error.message, true)));
+        document.querySelectorAll("[data-repair-batch]").forEach((button) => {
+            button.addEventListener("click", () => repairBatchFibers(button.dataset.repairBatch).catch((error) => setStatus(error.message, true)));
+        });
         document.querySelectorAll("[data-undo-batch]").forEach((button) => {
             button.addEventListener("click", () => undoBatch(button.dataset.undoBatch).catch((error) => setStatus(error.message, true)));
         });
@@ -880,10 +981,14 @@
         const data = await apiPost(`/api/map/projects/${projectId()}/import/execute/`);
         clearPreview();
         if (window.networkMap?.loadStructure) await window.networkMap.loadStructure(true);
+        state.completedImport = data;
         state.decisions.preview_token = "";
         await loadBatches();
-        setStatus(`Importação concluída no lote #${data.batch_id}.`);
-        alert(`Importação concluída.\nLote #${data.batch_id}\n${JSON.stringify(data.imported, null, 2)}${data.warnings?.length ? `\nAvisos:\n${data.warnings.join("\n")}` : ""}`);
+        setStatus(`Importação concluída no lote #${data.batch_id}. Cabos e fibras foram recarregados no mapa.`);
+        setStep(7);
+        if (data.warnings?.length) {
+            alert(`Importação concluída no lote #${data.batch_id}.\nAvisos:\n${data.warnings.join("\n")}`);
+        }
     }
 
     openButton.onclick = () => {
@@ -893,6 +998,7 @@
         state.topologyJunctions = [];
         state.topologyCalculated = false;
         state.cleanup = null;
+        state.completedImport = null;
         state.decisions = freshDecisions();
         clearPreview();
         dialog.showModal();

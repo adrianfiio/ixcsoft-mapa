@@ -185,3 +185,155 @@
 .kmz-element-cables-dialog > header { display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #21384d; }
 .kmz-element-cables-dialog .dialog-body { max-height: 72vh; overflow: auto; padding: 18px; }
 .kmz-connection-section + .kmz-connection-section { margin-top: 22px; }
+
+/* v0.6 — acabamento visual e controles responsivos */
+.kmz-import-dialog {
+    --kmz-field-bg: #09192a;
+    --kmz-field-border: #31536f;
+    --kmz-focus: #2dd4bf;
+}
+.kmz-import-dialog button,
+.kmz-import-dialog select,
+.kmz-import-dialog input,
+.kmz-import-dialog summary {
+    font: inherit;
+}
+.kmz-import-dialog button {
+    transition: transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease, opacity .14s ease;
+}
+.kmz-import-dialog button:not(:disabled):hover { transform: translateY(-1px); }
+.kmz-import-dialog button:not(:disabled):active { transform: translateY(0); }
+.kmz-import-dialog select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 38px !important;
+    background-color: var(--kmz-field-bg) !important;
+    background-image:
+        linear-gradient(45deg, transparent 50%, #9fb8cc 50%),
+        linear-gradient(135deg, #9fb8cc 50%, transparent 50%);
+    background-position:
+        calc(100% - 17px) calc(50% - 2px),
+        calc(100% - 11px) calc(50% - 2px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+.kmz-import-dialog select:hover,
+.kmz-import-dialog input:not([type="checkbox"]):hover { border-color: #477390; }
+.kmz-import-dialog select:focus,
+.kmz-import-dialog input:not([type="checkbox"]):focus {
+    border-color: var(--kmz-focus);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, .13);
+}
+.kmz-import-dialog input[type="number"] { appearance: textfield; -moz-appearance: textfield; text-align: center; }
+.kmz-import-dialog input[type="number"]::-webkit-inner-spin-button,
+.kmz-import-dialog input[type="number"]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+
+.kmz-rule-list {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 610px), 1fr));
+}
+.kmz-rule-card { align-content: start; }
+.kmz-rule-controls {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    align-items: end;
+}
+.kmz-rule-data,
+.kmz-rule-data > .kmz-inline-fields { display: contents; }
+.kmz-rule-controls > label,
+.kmz-rule-data label { min-width: 0; }
+.kmz-rule-controls select { text-overflow: ellipsis; }
+
+.kmz-number-field { display: grid; gap: 6px; min-width: 0; color: #b7c5d5; }
+.kmz-number-field > span:first-child { font-size: .82rem; font-weight: 700; color: #c9d7e5; }
+.kmz-number-field > small { color: #91a4b9; font-size: .76rem; }
+.kmz-number-control {
+    display: grid;
+    grid-template-columns: 40px minmax(64px, 1fr) 40px;
+    min-height: 42px;
+    overflow: hidden;
+    border: 1px solid var(--kmz-field-border);
+    border-radius: 10px;
+    background: var(--kmz-field-bg);
+}
+.kmz-number-control:focus-within { border-color: var(--kmz-focus); box-shadow: 0 0 0 3px rgba(45, 212, 191, .13); }
+.kmz-number-control input {
+    min-height: 40px !important;
+    padding: 7px 6px !important;
+    border: 0 !important;
+    border-inline: 1px solid #28475f !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.kmz-number-control button {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    background: #112d45;
+    color: #d8f7f3;
+    font-size: 1.15rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+.kmz-number-control button:hover { background: #174d62; color: #fff; }
+.kmz-check-field {
+    align-self: stretch;
+    display: flex !important;
+    align-items: center;
+    gap: 10px !important;
+    min-height: 42px;
+    padding: 9px 12px;
+    border: 1px solid var(--kmz-field-border);
+    border-radius: 10px;
+    background: var(--kmz-field-bg);
+}
+.kmz-check-field input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--primary); }
+.kmz-topology-settings { align-items: end; }
+
+.kmz-summary-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.kmz-summary-badges .kmz-badge { margin: 0; }
+.kmz-badge.warning { border-color: #a16207; color: #fcd34d; background: rgba(161, 98, 7, .12); }
+
+.kmz-details summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+}
+.kmz-details summary::-webkit-details-marker { display: none; }
+.kmz-details summary::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #9fb8cc;
+    border-bottom: 2px solid #9fb8cc;
+    transform: rotate(-45deg);
+    transition: transform .16s ease;
+}
+.kmz-details[open] summary::before { transform: rotate(45deg); }
+
+@container (max-width: 700px) {
+    .kmz-rule-controls { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+}
+@media (max-width: 720px) {
+    .kmz-rule-list { grid-template-columns: 1fr; }
+    .kmz-number-control { grid-template-columns: 38px minmax(56px, 1fr) 38px; }
+}
+
+/* v0.6 · histórico e reparo dos cabos importados */
+.kmz-batch-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 190px;
+}
+.kmz-batch-actions .secondary-button,
+.kmz-batch-actions .danger-button {
+    width: auto;
+    min-height: 36px;
+    margin: 0;
+    padding: 8px 12px;
+    white-space: nowrap;
+}

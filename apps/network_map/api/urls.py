@@ -35,6 +35,7 @@ from apps.network_map.kmz_import_api import (
     execute_kmz_import,
     kmz_import_batches,
     preview_kmz_import,
+    repair_kmz_batch_fibers,
     topology_kmz_import,
     undo_kmz_import,
 )
@@ -94,6 +95,11 @@ urlpatterns = [
         "projects/<int:project_id>/import/batches/<int:batch_id>/undo/",
         undo_kmz_import,
         name="kmz-import-undo",
+    ),
+    path(
+        "projects/<int:project_id>/import/batches/<int:batch_id>/repair-fibers/",
+        repair_kmz_batch_fibers,
+        name="kmz-import-repair-fibers",
     ),
     path(
         "projects/<int:project_id>/import/cleanup-legacy/",

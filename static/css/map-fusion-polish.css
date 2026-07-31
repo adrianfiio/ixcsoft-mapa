@@ -1,0 +1,227 @@
+/* v0.6 — acabamento da tela de fusões/topologia */
+#unifilar-dialog,
+#unifilar-dialog * { box-sizing: border-box; }
+#unifilar-dialog.unifilar-dialog {
+    width: min(1500px, calc(100vw - 28px));
+    max-width: none;
+    height: min(920px, calc(100dvh - 28px));
+    max-height: none;
+    margin: auto;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 16px;
+}
+#unifilar-dialog > section {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+}
+#unifilar-dialog > section > header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #0d1b2d;
+}
+#unifilar-title { margin: 0 0 4px; font-size: clamp(1rem, 1.8vw, 1.35rem); }
+#unifilar-subtitle { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+#unifilar-content {
+    min-height: 0;
+    overflow: auto;
+    padding: 14px;
+    scrollbar-gutter: stable both-edges;
+}
+#unifilar-content.is-loading {
+    display: grid;
+    place-items: center;
+}
+
+.ceo-instructions {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 12px 14px;
+    border: 1px solid #1f7084;
+    border-radius: 12px;
+    background: rgba(8, 77, 101, .96);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .22);
+    line-height: 1.45;
+}
+.ceo-instructions > label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+.ceo-instructions select {
+    appearance: none;
+    min-width: 128px;
+    padding: 7px 34px 7px 10px;
+    border: 1px solid #4c7895;
+    border-radius: 8px;
+    background:
+        linear-gradient(45deg, transparent 50%, #b7d6e8 50%) calc(100% - 16px) 50%/6px 6px no-repeat,
+        linear-gradient(135deg, #b7d6e8 50%, transparent 50%) calc(100% - 10px) 50%/6px 6px no-repeat,
+        #10253b;
+    color: #fff;
+}
+#unifilar-feedback {
+    flex: 1 1 100%;
+    margin: 0;
+}
+
+.unifilar-zoom.fusion-toolbar {
+    flex: 1 1 520px;
+    display: grid;
+    grid-template-columns: 38px minmax(130px, 1fr) 58px 38px auto auto auto auto;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    padding: 7px;
+    border: 1px solid rgba(103, 232, 249, .28);
+    border-radius: 11px;
+    background: rgba(7, 23, 39, .58);
+}
+.unifilar-zoom.fusion-toolbar button {
+    min-width: 38px;
+    min-height: 34px;
+    margin: 0;
+    padding: 6px 10px;
+    border: 1px solid #40647e;
+    border-radius: 8px;
+    background: #122a40;
+    color: #e7f7ff;
+    font-weight: 750;
+    cursor: pointer;
+    transition: background .14s ease, border-color .14s ease, transform .14s ease;
+}
+.unifilar-zoom.fusion-toolbar button:hover,
+.unifilar-zoom.fusion-toolbar button.active {
+    border-color: #2dd4bf;
+    background: #156072;
+    transform: translateY(-1px);
+}
+.unifilar-zoom.fusion-toolbar output {
+    min-width: 54px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+}
+.unifilar-zoom.fusion-toolbar input[type="range"] {
+    width: 100%;
+    height: 6px;
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2dd4bf, #168ca0);
+    outline: none;
+}
+.unifilar-zoom.fusion-toolbar input[type="range"]::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    appearance: none;
+    border: 2px solid #dffdfa;
+    border-radius: 50%;
+    background: #0e7490;
+    box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    cursor: grab;
+}
+.unifilar-zoom.fusion-toolbar input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #dffdfa;
+    border-radius: 50%;
+    background: #0e7490;
+    cursor: grab;
+}
+
+.optical-graph.fusion-v06,
+.optical-graph {
+    width: 100%;
+    min-width: 0;
+    height: clamp(470px, 66dvh, 720px);
+    min-height: 470px;
+    padding: 22px;
+    overflow: auto;
+    scroll-behavior: smooth;
+}
+.optical-graph.fusion-v06 .graph-nodes {
+    min-width: 1000px;
+    min-height: 620px;
+    transform-origin: top left;
+    transition: transform .14s ease;
+}
+.fiber-cable-node {
+    width: clamp(230px, 20vw, 310px);
+    min-width: 230px;
+    border-radius: 10px;
+}
+.fiber-cable-node header {
+    gap: 10px;
+    min-height: 42px;
+    padding: 9px 11px;
+    overflow-wrap: anywhere;
+}
+.fiber-port-list { max-height: min(380px, 48dvh); }
+.fiber-port { min-height: 30px; padding: 7px 10px; }
+.graph-splitter-node { min-width: 230px; border-radius: 10px; }
+.graph-node { contain: layout style; }
+
+/* remove os controles nativos antigos de number do Chromium/Windows */
+#unifilar-dialog input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+#unifilar-dialog input[type="number"]::-webkit-inner-spin-button,
+#unifilar-dialog input[type="number"]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+
+@media (max-width: 980px) {
+    #unifilar-dialog.unifilar-dialog {
+        width: 100vw;
+        height: 100dvh;
+        border-radius: 0;
+    }
+    #unifilar-content { padding: 10px; }
+    .ceo-instructions { position: relative; }
+    .unifilar-zoom.fusion-toolbar {
+        grid-template-columns: 38px minmax(100px, 1fr) 54px 38px repeat(2, minmax(80px, 1fr));
+    }
+    .unifilar-zoom.fusion-toolbar button[data-fusion-zoom="70"],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-auto] { display: none; }
+    .optical-graph.fusion-v06,
+    .optical-graph { height: calc(100dvh - 270px); min-height: 420px; }
+}
+@media (max-width: 620px) {
+    .unifilar-zoom.fusion-toolbar {
+        grid-template-columns: 38px 1fr 52px 38px;
+    }
+    .unifilar-zoom.fusion-toolbar button[data-fusion-organize],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-fit],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-auto],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-zoom="70"] { grid-column: span 2; display: block; }
+}
+.fusion-loading {
+    min-height: 320px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 14px;
+    color: #b8ccdc;
+}
+.fusion-spinner {
+    width: 42px;
+    height: 42px;
+    border: 3px solid #26465e;
+    border-top-color: #2dd4bf;
+    border-radius: 50%;
+    animation: fusion-spin .75s linear infinite;
+}
+@keyframes fusion-spin { to { transform: rotate(360deg); } }

@@ -38,12 +38,15 @@ from apps.network_map.kmz_topology import (
 from apps.network_map.models import (
     CableModel,
     CableReserve,
+    FiberColor,
     CTO,
     FiberCable,
     NetworkElement,
     NetworkProject,
     NetworkRoute,
 )
+from apps.network_map.services import FiberStructureError, generate_cable_fibers
+
 
 OBJECT_MODELS = {
     "cable_element_passage": CableElementPassage,
@@ -328,16 +331,113 @@ def _track(batch, obj, object_type, source=None, metadata=None):
     )
 
 
-def _resolve_cable_model(company_id, fiber_count, requested_id=None):
+DEFAULT_FIBER_COLORS = (
+    ("blue", "Azul", "#0066CC"),
+    ("orange", "Laranja", "#FF7A00"),
+    ("green", "Verde", "#19A64A"),
+    ("brown", "Marrom", "#8B5A2B"),
+    ("slate", "Cinza", "#8A94A6"),
+    ("white", "Branco", "#FFFFFF"),
+    ("red", "Vermelho", "#E53935"),
+    ("black", "Preto", "#111827"),
+    ("yellow", "Amarelo", "#FACC15"),
+    ("violet", "Violeta", "#8B5CF6"),
+    ("pink", "Rosa", "#EC4899"),
+    ("aqua", "Aqua", "#22D3EE"),
+)
+
+
+def _ensure_fiber_colors():
+    """Garante uma sequência mínima para que cabos importados sempre gerem fibras."""
+    if FiberColor.objects.exists():
+        return False
+    FiberColor.objects.bulk_create(
+        [
+            FiberColor(
+                code=code,
+                name=name,
+                hex_color=hex_color,
+                text_color="#111827" if code in {"white", "yellow", "aqua"} else "#FFFFFF",
+                order=index,
+            )
+            for index, (code, name, hex_color) in enumerate(DEFAULT_FIBER_COLORS, 1)
+        ],
+        ignore_conflicts=True,
+    )
+    return True
+
+
+def _model_can_generate(model, fiber_count):
+    return bool(
+        model
+        and int(model.fiber_count or 0) == int(fiber_count)
+        and int(model.tube_count or 0) > 0
+        and int(model.fibers_per_tube or 0) > 0
+        and int(model.tube_count) * int(model.fibers_per_tube) >= int(fiber_count)
+    )
+
+
+def _resolve_cable_model(company_id, fiber_count, cable_type, requested_id=None):
+    """Resolve um modelo válido ou cria um modelo técnico reutilizável da importação.
+
+    A versão anterior apenas procurava um CableModel existente. Quando não havia um
+    modelo exatamente compatível, o cabo era salvo sem tubos/fibras. Aqui todo cabo
+    importado recebe um modelo gerável, inclusive DROP 1 FO.
+    """
+    fiber_count = int(fiber_count)
     if requested_id:
         model = CableModel.objects.filter(pk=requested_id, company_id=company_id).first()
-        if model and model.fiber_count == fiber_count:
-            return model
-    return (
+        if _model_can_generate(model, fiber_count):
+            return model, False
+
+    existing = (
         CableModel.objects.filter(company_id=company_id, fiber_count=fiber_count)
         .order_by("id")
-        .first()
     )
+    for model in existing:
+        if _model_can_generate(model, fiber_count):
+            return model, False
+
+    is_drop = cable_type == FiberCable.CableType.DROP
+    fibers_per_tube = fiber_count if is_drop else min(12, fiber_count)
+    tube_count = max(1, math.ceil(fiber_count / fibers_per_tube))
+    construction = (
+        CableModel.Construction.DROP
+        if is_drop
+        else CableModel.Construction.LOOSE_TUBE
+    )
+    profile = "DROP" if is_drop else "LOOSE-TUBE"
+    model_code = f"KMZ-{profile}-{fiber_count}F"
+    model, created = CableModel.objects.get_or_create(
+        company_id=company_id,
+        manufacturer="IXCSoft MAPA",
+        model=model_code,
+        defaults={
+            "name": f"Importação KMZ · {profile} · {fiber_count} fibras",
+            "construction": construction,
+            "fiber_count": fiber_count,
+            "tube_count": tube_count,
+            "fibers_per_tube": fibers_per_tube,
+            "metadata": {
+                "managed_by": "kmz_import",
+                "auto_created": True,
+            },
+        },
+    )
+    if not _model_can_generate(model, fiber_count):
+        model.name = f"Importação KMZ · {profile} · {fiber_count} fibras"
+        model.construction = construction
+        model.fiber_count = fiber_count
+        model.tube_count = tube_count
+        model.fibers_per_tube = fibers_per_tube
+        model.metadata = {**(model.metadata or {}), "managed_by": "kmz_import", "auto_created": True}
+        model.save(
+            update_fields=[
+                "name", "construction", "fiber_count", "tube_count",
+                "fibers_per_tube", "metadata", "updated_at",
+            ]
+        )
+    return model, created
 
 
 def _route_object_for_path(route_by_path, path):
@@ -526,6 +626,9 @@ def execute_kmz_import(request, project_id):
                     counts["elements"] += 1
                 point_by_source[point["source_id"]] = obj
 
+            if _ensure_fiber_colors():
+                counts["fiber_color_palette_created"] += 1
+
             imported_cables = []
             for cable_plan in plan["cables"]:
                 rule = effective_line_rule(
@@ -537,11 +640,14 @@ def execute_kmz_import(request, project_id):
                     project.id,
                     cable_plan["proposed_code"].replace("{PROJECT}", project_prefix),
                 )
-                cable_model = _resolve_cable_model(
+                cable_model, auto_model_created = _resolve_cable_model(
                     project.company_id,
                     cable_plan["fiber_count"],
+                    cable_plan["cable_type"],
                     rule.get("cable_model_id"),
                 )
+                if auto_model_created:
+                    counts["cable_models_created"] += 1
                 cable = FiberCable.objects.create(
                     project=project,
                     company=project.company,
@@ -581,11 +687,13 @@ def execute_kmz_import(request, project_id):
                         "destination_source_id": cable_plan.get("destination_source_id"),
                     }
                 )
-                if cable_model is None:
-                    warnings.append(
-                        f"{code}: não existe CableModel de {cable_plan['fiber_count']} fibras; "
-                        "as fibras internas não serão geradas automaticamente."
-                    )
+                try:
+                    generated = generate_cable_fibers(cable)
+                    counts["fiber_tubes"] += generated["tube_count"]
+                    counts["fibers"] += generated["fiber_count"]
+                except FiberStructureError as exc:
+                    warnings.append(f"{code}: cabo criado, mas a estrutura de fibras falhou: {exc}")
+                    counts["cables_without_fibers"] += 1
                 counts["cables"] += 1
 
             # Registra passagem e as decisões de corte/conexão nos segmentos afetados.
@@ -754,6 +862,111 @@ def kmz_import_batches(request, project_id):
                 for batch in batches
             ],
         }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def repair_kmz_batch_fibers(request, project_id, batch_id):
+    """Gera/repara tubos e fibras dos cabos pertencentes a um lote já importado.
+
+    Esta ação atende lotes criados por versões anteriores do assistente, nas quais
+    o cabo podia ser salvo sem um CableModel gerável. Ela é idempotente: cabos
+    que já possuem fibras são apenas conferidos e não são recriados.
+    """
+    project, error = _project_for_edit(request, project_id)
+    if error:
+        return error
+    batch = get_object_or_404(KMZImportBatch, pk=batch_id, project=project)
+    if batch.status != KMZImportBatch.Status.IMPORTED:
+        return JsonResponse(
+            {"success": False, "error": "Somente lotes importados podem ser reparados."},
+            status=409,
+        )
+
+    cable_ids = list(
+        batch.tracked_objects.filter(object_type="fiber_cable").values_list(
+            "object_id", flat=True
+        )
+    )
+    cables = list(
+        FiberCable.objects.filter(project=project, pk__in=cable_ids)
+        .select_related("cable_model")
+        .order_by("id")
+    )
+    if not cables:
+        return JsonResponse(
+            {"success": False, "error": "O lote não possui cabos rastreados para reparar."},
+            status=404,
+        )
+
+    palette_created = _ensure_fiber_colors()
+    repaired = defaultdict(int)
+    errors = []
+
+    for cable in cables:
+        # Nunca força a recriação quando já há fibras, evitando tocar em fusões.
+        if cable.fibers.exists():
+            repaired["already_ready"] += 1
+            continue
+        try:
+            with transaction.atomic():
+                model, model_created = _resolve_cable_model(
+                    project.company_id,
+                    cable.fiber_count,
+                    cable.cable_type,
+                    cable.cable_model_id,
+                )
+                if model_created:
+                    repaired["cable_models_created"] += 1
+                if cable.cable_model_id != model.pk:
+                    cable.cable_model = model
+                    cable.save(update_fields=["cable_model", "updated_at"])
+
+                # Uma execução interrompida pode ter criado tubos sem fibras.
+                generated = generate_cable_fibers(
+                    cable,
+                    force=cable.tubes.exists() or cable.fibers.exists(),
+                )
+                repaired["cables_repaired"] += 1
+                repaired["fiber_tubes_created"] += generated["tube_count"]
+                repaired["fibers_created"] += generated["fiber_count"]
+        except (FiberStructureError, ValueError, TypeError) as exc:
+            repaired["failed_cables"] += 1
+            errors.append(f"{cable.code or cable.name}: {exc}")
+
+    # Recalcula o resumo real do lote, inclusive para lotes antigos cujo resumo
+    # não possuía os campos de fibras/tubos.
+    tracked_cables = FiberCable.objects.filter(project=project, pk__in=cable_ids)
+    total_fibers = sum(cable.fibers.count() for cable in tracked_cables)
+    total_tubes = sum(cable.tubes.count() for cable in tracked_cables)
+    without_fibers = sum(1 for cable in tracked_cables if not cable.fibers.exists())
+    summary = dict(batch.summary or {})
+    summary.update(
+        {
+            "fibers": total_fibers,
+            "fiber_tubes": total_tubes,
+            "cables_without_fibers": without_fibers,
+            "fiber_repair_runs": int(summary.get("fiber_repair_runs") or 0) + 1,
+        }
+    )
+    if palette_created:
+        summary["fiber_color_palette_created"] = 1
+    warnings = list(batch.warning_messages or [])
+    warnings.extend(f"Reparo de fibras: {message}" for message in errors)
+    batch.summary = summary
+    batch.warning_messages = warnings[-100:]
+    batch.save(update_fields=["summary", "warning_messages", "updated_at"])
+
+    return JsonResponse(
+        {
+            "success": not errors,
+            "batch_id": batch.pk,
+            "repair": dict(repaired),
+            "summary": summary,
+            "errors": errors,
+        },
+        status=207 if errors else 200,
     )
 
 

@@ -496,7 +496,13 @@
     }
     function popupAction(selector, callback) {
         const button = document.querySelector(selector);
-        if (button) button.onclick = callback;
+        if (button) {
+            button.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                return callback(event);
+            };
+        }
     }
     async function deleteElement(id) {
         if (!confirm("Excluir este elemento do projeto?")) return;
@@ -730,12 +736,20 @@
         applyTopologyZoom();
     }
     async function showUnifilar(id) {
-        loadStructure().catch(() => {});
+        // Não recarregue toda a estrutura ao abrir as fusões. Isso fechava o
+        // popup do Leaflet durante o primeiro clique e causava o efeito de
+        // piscar/abrir somente na segunda tentativa.
+        map.closePopup();
+        unifilarDialog.dataset.elementId = String(id);
+        const content = document.getElementById("unifilar-content");
+        document.getElementById("unifilar-title").textContent = "Carregando fusões...";
+        document.getElementById("unifilar-subtitle").textContent = "Consultando cabos, fibras e layout";
+        content.innerHTML = '<div class="fusion-loading"><span class="fusion-spinner"></span><strong>Preparando diagrama óptico</strong></div>';
+        if (!unifilarDialog.open) unifilarDialog.showModal();
         const data = await api(`/api/map/elements/${id}/`);
         const element = data.element;
         document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
-        const content = document.getElementById("unifilar-content");
         if (element.splice_box) {
             const [optical, savedLayout] = await Promise.all([
                 api(`/api/map/elements/${element.id}/splices/`),
@@ -1018,9 +1032,14 @@
             const zoomOutput = document.getElementById("unifilar-zoom-value");
             const fitZoom = () => {
                 const graph = content.querySelector(".optical-graph");
-                return Math.max(.5, Math.min(1, (graph.clientWidth - 40) / Math.max(1, graphNodes.scrollWidth)));
+                const widthZoom = (graph.clientWidth - 48) / Math.max(1, graphNodes.scrollWidth);
+                const heightZoom = (graph.clientHeight - 48) / Math.max(1, graphNodes.scrollHeight);
+                return Math.max(.4, Math.min(1.15, widthZoom, heightZoom));
             };
-            let graphZoom = layout.zoom ? Math.max(.5, Math.min(1.6, Number(layout.zoom))) : null;
+            let graphZoom = layout.zoom ? Math.max(.4, Math.min(1.6, Number(layout.zoom))) : .7;
+            // Layouts antigos ficaram persistidos em 50%. A nova base visual é
+            // 70%, mantendo os cartões legíveis sem perder a visão geral.
+            if (graphZoom < .65) graphZoom = .7;
             const applyGraphZoom = () => {
                 if (graphZoom === null) graphZoom = fitZoom();
                 graphNodes.style.transform = `scale(${graphZoom})`;
@@ -1176,7 +1195,7 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter excluído.");
                 };
             });
-            unifilarDialog.showModal();
+            if (!unifilarDialog.open) unifilarDialog.showModal();
             requestAnimationFrame(redrawOpticalLinks);
             setTimeout(redrawOpticalLinks, 150);
             window.addEventListener("resize", redrawOpticalLinks);
@@ -1189,7 +1208,7 @@
         }
         if (element.element_type === "rack") {
             await renderRackFusionDiagram(element, content);
-            unifilarDialog.showModal();
+            if (!unifilarDialog.open) unifilarDialog.showModal();
             return;
         }
         const splitters = element.cto?.splitters || [];
@@ -1204,7 +1223,7 @@
                     <div class="port-grid">${splitter.ports.map((port) => `<div class="port ${escapeHtml(port.status)}">P${port.number}<br>${escapeHtml(port.status_label)}</div>`).join("")}</div>
                 </div>
             </article>`).join("") : '<p class="help-text">Nenhum splitter configurado.</p>';
-        unifilarDialog.showModal();
+        if (!unifilarDialog.open) unifilarDialog.showModal();
     }
     async function renderRackFusionDiagram(element, content) {
         document.getElementById("unifilar-subtitle").textContent = "Fusão de fibras nas portas do DIO";
@@ -1274,9 +1293,12 @@
         const zoomOutput = document.getElementById("unifilar-zoom-value");
         const fitZoom = () => {
             const graph = content.querySelector(".optical-graph");
-            return Math.max(.5, Math.min(1, (graph.clientWidth - 40) / Math.max(1, graphNodes.scrollWidth)));
+            const widthZoom = (graph.clientWidth - 48) / Math.max(1, graphNodes.scrollWidth);
+            const heightZoom = (graph.clientHeight - 48) / Math.max(1, graphNodes.scrollHeight);
+            return Math.max(.4, Math.min(1.15, widthZoom, heightZoom));
         };
-        let graphZoom = layout.zoom ? Math.max(.5, Math.min(1.6, Number(layout.zoom))) : null;
+        let graphZoom = layout.zoom ? Math.max(.4, Math.min(1.6, Number(layout.zoom))) : .7;
+        if (graphZoom < .65) graphZoom = .7;
         const applyGraphZoom = () => {
             if (graphZoom === null) graphZoom = fitZoom();
             graphNodes.style.transform = `scale(${graphZoom})`;
@@ -2206,5 +2228,5 @@
     // Usado pelo assistente de importação KMZ para desenhar a prévia
     // temporária no Leaflet sem gravar nada, e para recarregar a estrutura
     // depois de uma importação definitiva.
-    window.networkMap = { map, loadStructure };
+    window.networkMap = { map, loadStructure, showUnifilar };
 })();
