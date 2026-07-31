@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.50.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.49.0`.
+
+### Adicionado
+
+- **Excluir projeto pelo painel "Minha administração"**: cada projeto listado em `/painel/` agora tem um link "Excluir projeto" (visível só para quem tem edição em alguma empresa). Ele leva para uma tela de confirmação que mostra quantos elementos, cabos, rotas, lotes de importação KMZ e POP serão perdidos, e só executa a exclusão se o usuário digitar o código exato do projeto — igual ao padrão já usado no comando `wipe_network_project`. A exclusão apaga toda a estrutura e o projeto em si (diferente do comando de manutenção, que zera a estrutura mas mantém o projeto).
+- `apps/network_map/services.py` ganhou `project_structure_counts()` e `wipe_project_structure()`, reaproveitadas tanto pela tela nova quanto pelo comando `wipe_network_project` (antes a lógica de apagar estava duplicada só no comando).
+- `base.html` (o layout usado por praticamente todas as páginas "de site", fora do editor de mapa) não tinha nenhum bloco pra mostrar mensagens do Django (`messages.success`/`messages.error`) — elas eram geradas mas nunca apareciam na tela. Corrigido; agora aparecem no topo do conteúdo, coloridas por tipo (sucesso, erro, aviso, info).
+
 ## [0.49.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.48.1`.

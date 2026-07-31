@@ -6,6 +6,7 @@ from .views import (
     EquipmentDetailView,
     EquipmentListView,
     EquipmentUpdateView,
+    NetworkProjectDeleteView,
 )
 
 
@@ -34,5 +35,10 @@ urlpatterns = [
         "rede/equipamentos/<int:pk>/excluir/",
         EquipmentDeleteView.as_view(),
         name="equipment-delete",
+    ),
+    path(
+        "rede/projetos/<int:pk>/excluir/",
+        NetworkProjectDeleteView.as_view(),
+        name="project-delete",
     ),
 ]

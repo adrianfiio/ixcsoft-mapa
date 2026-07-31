@@ -65,6 +65,13 @@
             </header>
 
             <main class="{% block main_class %}page-content{% endblock %}">
+                {% if messages %}
+                <div class="page-messages">
+                    {% for message in messages %}
+                    <div class="page-message page-message-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 {% block content %}{% endblock %}
             </main>
         </div>

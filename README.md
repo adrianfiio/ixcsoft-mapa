@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.49.0 — Painel de rota moderno nas fusões (imprimir/exportar) e botões redesenhados**
+**v0.50.0 — Excluir projeto inteiro pelo painel de administração da empresa**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

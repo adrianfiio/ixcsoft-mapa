@@ -15,7 +15,8 @@ from django.shortcuts import redirect
 from apps.core.access import can_edit_company, editable_company_ids, scope_company_queryset
 
 from .forms import NetworkElementForm
-from .models import NetworkElement
+from .models import NetworkElement, NetworkProject
+from .services import project_structure_counts, wipe_project_structure
 
 
 class CompanyEquipmentMixin(LoginRequiredMixin):
@@ -177,3 +178,46 @@ class EquipmentDeleteView(CompanyEquipmentMixin, DeleteView):
             "Equipamento excluído com sucesso.",
         )
         return super().form_valid(form)
+
+
+class NetworkProjectDeleteView(LoginRequiredMixin, DeleteView):
+    """Exclusão definitiva de um projeto de rede inteiro, com tudo que ele
+    contém (postes, CTOs, cabos, splitters, fusões, reservas, lotes de
+    importação KMZ, POP). Usada pelo painel de administração da empresa."""
+
+    model = NetworkProject
+    template_name = "network_map/project_delete.html"
+    context_object_name = "project"
+    success_url = reverse_lazy("account-panel")
+
+    def get_queryset(self):
+        return scope_company_queryset(NetworkProject.objects.all(), self.request.user)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not can_edit_company(request.user, self.object.company_id):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["structure_counts"] = project_structure_counts(self.object)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        typed_code = request.POST.get("confirm_code", "").strip()
+        if typed_code != self.object.code:
+            messages.error(
+                request,
+                "O código digitado não confere com o código do projeto. Nada foi apagado.",
+            )
+            return redirect("project-delete", pk=self.object.pk)
+        project = self.object
+        project_name = project.name
+        wipe_project_structure(project)
+        project.delete()
+        messages.success(
+            request,
+            f'Projeto "{project_name}" excluído com sucesso, junto com toda a estrutura.',
+        )
+        return redirect(self.success_url)

@@ -185,6 +185,21 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .platform-form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; }
 .platform-form-actions button { padding: 12px 18px; color: #05201d; background: var(--primary); border: 0; border-radius: 8px; font-weight: 850; }
 .form-error { color: #fda4af; }
+.panel-danger { border: 1px solid rgba(243,93,109,.4); }
+.panel-danger .panel-title { color: var(--danger); }
+.cancel-link { color: var(--muted); font-size: 13px; font-weight: 700; }
+.cancel-link:hover { color: var(--text); }
+.danger-action { padding: 12px 18px; color: #fff; background: var(--danger); border: 0; border-radius: 8px; font-weight: 850; cursor: pointer; }
+.danger-action:hover { filter: brightness(1.1); }
+.account-items > div.account-item-actions { justify-content: flex-end; padding: 7px 12px; background: transparent; }
+.account-items .danger-link { padding: 5px 10px; color: var(--danger); background: rgba(243,93,109,.1); border: 1px solid rgba(243,93,109,.4); border-radius: 6px; font-size: 10px; font-weight: 800; }
+.account-items .danger-link:hover { background: rgba(243,93,109,.2); }
+.page-messages { display: grid; gap: 10px; margin-bottom: 20px; }
+.page-message { padding: 13px 16px; border-radius: 9px; font-size: 13px; line-height: 1.5; }
+.page-message-success { color: #dcfce7; background: rgba(22,101,52,.5); border: 1px solid var(--success); }
+.page-message-error { color: #fee2e2; background: rgba(127,29,29,.5); border: 1px solid var(--danger); }
+.page-message-warning { color: #fef3c7; background: rgba(120,53,15,.5); border: 1px solid var(--warning); }
+.page-message-info { color: #dbeafe; background: rgba(30,58,138,.4); border: 1px solid var(--blue); }
 .location-actions { display: flex; gap: 9px; margin-top: 12px; }
 .location-actions button, .location-search button, .location-dialog footer button { padding: 10px 13px; color: #05201d; background: var(--primary); border: 0; border-radius: 8px; font-weight: 800; cursor: pointer; }
 .location-dialog { width: min(900px, calc(100% - 30px)); padding: 0; color: var(--text); background: #0d1b2d; border: 1px solid #355371; border-radius: 14px; }

@@ -1,15 +1,16 @@
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 from django.db.models import Q
 
-from apps.network_map.kmz_import_models import KMZImportBatch
-from apps.network_map.models import (
-    FiberCable,
-    NetworkElement,
-    NetworkProject,
-    NetworkRoute,
-    POP,
-)
+from apps.network_map.models import NetworkProject
+from apps.network_map.services import project_structure_counts, wipe_project_structure
+
+LABELS = {
+    "kmz_batches": "Lotes de importação KMZ",
+    "cables": "Cabos (tubos, fibras, reservas e passagens ligados a eles)",
+    "elements": "Elementos (postes, CTOs, CEOs/CDOs, racks, DIOs, OLTs, splitters, fusões...)",
+    "routes": "Rotas",
+    "pop": "POP",
+}
 
 
 class Command(BaseCommand):
@@ -50,23 +51,9 @@ class Command(BaseCommand):
         if not options["dry_run"] and options["confirm"] != project.code:
             raise CommandError(f"Confirme o alvo com --confirm {project.code}")
 
-        targets = [
-            ("Lotes de importação KMZ", KMZImportBatch.objects.filter(project=project)),
-            (
-                "Cabos (tubos, fibras, reservas e passagens ligados a eles)",
-                FiberCable.objects.filter(project=project),
-            ),
-            (
-                "Elementos (postes, CTOs, CEOs/CDOs, racks, DIOs, OLTs, splitters, fusões...)",
-                NetworkElement.objects.filter(project=project),
-            ),
-            ("Rotas", NetworkRoute.objects.filter(project=project)),
-            ("POP", POP.objects.filter(project=project)),
-        ]
-
         self.stdout.write(f"Projeto: {project.name} ({project.code})")
-        for label, queryset in targets:
-            self.stdout.write(f"- {label}: {queryset.count()}")
+        for key, count in project_structure_counts(project).items():
+            self.stdout.write(f"- {LABELS.get(key, key)}: {count}")
 
         if options["dry_run"]:
             self.stdout.write(
@@ -74,11 +61,7 @@ class Command(BaseCommand):
             )
             return
 
-        with transaction.atomic():
-            # Cabos antes dos elementos: limpa reservas/passagens/tubos/fibras
-            # ligados a eles por CASCADE antes de remover o restante da estrutura.
-            for _, queryset in targets:
-                queryset.delete()
+        wipe_project_structure(project)
 
         self.stdout.write(
             self.style.SUCCESS(

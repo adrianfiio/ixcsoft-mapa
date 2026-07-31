@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Excluir projeto | AFService Map{% endblock %}
+{% block topbar_title %}Excluir projeto{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ project.company }}</p>
+        <h1>Excluir "{{ project.name }}"</h1>
+        <p>Essa ação apaga o projeto inteiro e tudo que está nele. Não pode ser desfeita.</p>
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <div class="dashboard-column">
+        <article class="panel">
+            <div class="panel-header"><h2 class="panel-title">O que será perdido</h2></div>
+            <div class="account-items">
+                <div><span><strong>Elementos</strong><small>postes, CTOs, CEOs/CDOs, racks, DIOs, OLTs, splitters, fusões...</small></span><b>{{ structure_counts.elements }}</b></div>
+                <div><span><strong>Cabos</strong><small>com tubos, fibras, reservas e passagens ligados a eles</small></span><b>{{ structure_counts.cables }}</b></div>
+                <div><span><strong>Rotas</strong></span><b>{{ structure_counts.routes }}</b></div>
+                <div><span><strong>Lotes de importação KMZ</strong></span><b>{{ structure_counts.kmz_batches }}</b></div>
+                <div><span><strong>POP</strong></span><b>{{ structure_counts.pop }}</b></div>
+            </div>
+        </article>
+    </div>
+
+    <div class="dashboard-column">
+        <article class="panel panel-danger">
+            <div class="panel-header"><h2 class="panel-title">Confirmar exclusão definitiva</h2></div>
+            <p>Para confirmar, digite o código do projeto: <strong>{{ project.code }}</strong></p>
+            <form method="post" class="platform-form">
+                {% csrf_token %}
+                <div class="platform-form-grid">
+                    <label><strong>Código do projeto</strong>
+                        <input type="text" name="confirm_code" placeholder="{{ project.code }}" autocomplete="off" required>
+                    </label>
+                </div>
+                <div class="platform-form-actions">
+                    <a href="{% url 'account-panel' %}" class="cancel-link">Cancelar</a>
+                    <button type="submit" class="danger-action">Excluir projeto e tudo dentro dele</button>
+                </div>
+            </form>
+        </article>
+    </div>
+</section>
+{% endblock %}

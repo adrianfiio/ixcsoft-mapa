@@ -71,6 +71,11 @@
             <a data-searchable href="{% url 'map' %}?project={{ project.id }}">
                 <span><strong>{{ project.name }}</strong><small>{{ project.company }} · {{ project.code }}</small></span><b>Ver no mapa →</b>
             </a>
+            {% if can_manage_assets %}
+            <div class="account-item-actions">
+                <a class="danger-link" href="{% url 'project-delete' project.id %}">Excluir projeto</a>
+            </div>
+            {% endif %}
             {% empty %}<p>Nenhum projeto liberado.</p>{% endfor %}
         </div>
     </details>

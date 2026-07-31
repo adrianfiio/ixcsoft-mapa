@@ -6,6 +6,10 @@ from .models import (
     FiberColor,
     FiberStrand,
     FiberTube,
+    KMZImportBatch,
+    NetworkElement,
+    NetworkRoute,
+    POP,
 )
 
 
@@ -192,3 +196,30 @@ def generate_cable_fibers(cable, force=False):
         "tube_count": len(created_tubes),
         "fiber_count": len(created_fibers),
     }
+
+
+def project_structure_counts(project):
+    """Conta, por categoria, tudo que `wipe_project_structure` apagaria."""
+    return {
+        "kmz_batches": KMZImportBatch.objects.filter(project=project).count(),
+        "cables": FiberCable.objects.filter(project=project).count(),
+        "elements": NetworkElement.objects.filter(project=project).count(),
+        "routes": NetworkRoute.objects.filter(project=project).count(),
+        "pop": POP.objects.filter(project=project).count(),
+    }
+
+
+def wipe_project_structure(project):
+    """Apaga toda a estrutura de rede de um projeto (postes, CTOs, cabos,
+    tubos/fibras, splitters, fusões, reservas, lotes de importação KMZ,
+    POP), preservando o projeto em si (nome, código, empresa)."""
+    targets = [
+        KMZImportBatch.objects.filter(project=project),
+        FiberCable.objects.filter(project=project),
+        NetworkElement.objects.filter(project=project),
+        NetworkRoute.objects.filter(project=project),
+        POP.objects.filter(project=project),
+    ]
+    with transaction.atomic():
+        for queryset in targets:
+            queryset.delete()
