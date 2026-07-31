@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.48.1] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.48.0`.
+
+### Adicionado
+
+- Comando de manutenção `wipe_network_project`: apaga toda a estrutura de rede de um projeto (postes, CTOs, cabos, tubos/fibras, splitters, fusões, reservas, lotes de importação KMZ), preservando o projeto em si. Segue o mesmo padrão de segurança do `reset_company_imported_data` já existente: roda em modo simulação por padrão (mostra as contagens sem apagar nada) e só apaga de verdade com `--confirm <código-do-projeto>`.
+
 ## [0.48.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.47.0`.

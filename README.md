@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.48.0 — Importação KML/KMZ inteligente (topologia, cortes, lote e desfazer)**
+**v0.48.1 — Importação KML/KMZ inteligente + comando de limpeza de projeto**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
