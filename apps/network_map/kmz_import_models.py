@@ -50,7 +50,7 @@ class KMZImportObject(TimeStampedModel):
     batch = models.ForeignKey(
         KMZImportBatch,
         on_delete=models.CASCADE,
-        related_name="objects",
+        related_name="tracked_objects",
     )
     object_type = models.CharField(max_length=40, db_index=True)
     object_id = models.PositiveBigIntegerField(db_index=True)

@@ -87,7 +87,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         except Exception:
             cable_length = None
         return {
-            "app_version": settings.APP_VERSION,
             "company": company,
             "project_count": NetworkProject.objects.filter(company_id__in=company_ids).count(),
             "element_count": NetworkElement.objects.filter(company_id__in=company_ids).count(),
@@ -158,7 +157,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         context.update(
             {
-                "app_version": settings.APP_VERSION,
                 "access": access_summary,
                 "onus": onu_summary,
                 "customer_count": customer_queryset.count(),

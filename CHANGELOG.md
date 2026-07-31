@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.50.2] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.50.1`.
+
+### Corrigido
+
+- **Causa real do 500 ao excluir projeto**: `KMZImportObject.batch` usava `related_name="objects"`, que sobrescreve o manager padrão `KMZImportBatch.objects` (o Django troca esse atributo de classe pelo descriptor da relação reversa). Qualquer `KMZImportBatch.objects.filter/create/get(...)` quebrava com `AttributeError: 'ReverseManyToOneDescriptor' object has no attribute 'filter'`. Isso não afetava só a tela nova — as telas de histórico/desfazer importação KMZ (`v0.48.0`) e a própria gravação do lote na importação definitiva também estavam quebradas desde então, só que ninguém tinha chegado nesse ponto ainda. Renomeado para `related_name="tracked_objects"`, com migration.
+- **Número de versão errado em Alertas e Minha administração**: `app_version` só era injetado manualmente no contexto de duas views (Dashboard e Mapa); as demais páginas caíam no valor padrão fixo do template (`0.7.0`). Agora `app_version` vem de um context processor global, disponível em toda página automaticamente.
+
 ## [0.50.1] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.50.0`.

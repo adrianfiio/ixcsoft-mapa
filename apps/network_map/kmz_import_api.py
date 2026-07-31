@@ -781,7 +781,7 @@ def undo_kmz_import(request, project_id, batch_id):
         ]:
             model = OBJECT_MODELS[object_type]
             ids = list(
-                batch.objects.filter(object_type=object_type).values_list(
+                batch.tracked_objects.filter(object_type=object_type).values_list(
                     "object_id", flat=True
                 )
             )

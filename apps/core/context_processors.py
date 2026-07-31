@@ -1,5 +1,11 @@
+from django.conf import settings
+
 from .access import has_any_edit_access
 from .models import Company, CompanyMembership
+
+
+def app_version(request):
+    return {"app_version": settings.APP_VERSION}
 
 
 def company_navigation(request):
