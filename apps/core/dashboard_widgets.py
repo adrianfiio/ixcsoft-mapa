@@ -16,7 +16,7 @@ PROVIDER_WIDGETS = [
     ("panel_access_status", "Painel · Estado dos acessos"),
     ("panel_shortcuts", "Painel · Atalhos operacionais"),
     ("panel_recent_alerts", "Painel · Alertas recentes"),
-    ("panel_sync", "Painel · Sincronização IXCSoft"),
+    ("panel_sync", "Painel · Sincronização com ERP"),
     ("panel_gpon", "Painel · Resumo GPON"),
 ]
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.53.1] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.53.0`.
+
+### Corrigido
+
+- **Arrastar não funcionava no editor de dashboard**: cada widget tinha `order: N` fixado por CSS (pra funcionar sem JS na visão normal da empresa) — mas o SortableJS reordena movendo nós de verdade no DOM, e o `order` fixo fazia o item voltar pra posição antiga visualmente assim que soltava, mesmo com o arrastar "funcionando" por baixo. Corrigido: a ordem agora fica numa custom property (`--order`) e só vira `order` de CSS de verdade fora do modo de edição (`.dashboard-edit-mode`); dentro do editor, o JS reordena o DOM de verdade a partir de `--order` antes de inicializar o arrastar.
+- Se o SortableJS não carregar (falha de rede/CDN), o editor agora avisa e continua deixando mostrar/esconder e salvar funcionando — antes, a falta da biblioteca travava a tela inteira silenciosamente.
+- Painel "Sincronização IXCSoft" da visão geral renomeado para "Sincronização com ERP", com o nome do provedor (ex.: IXCSoft) mostrado dinamicamente abaixo — o sistema não é exclusivo de um único ERP, só o IXC está integrado hoje por já termos acesso a ele.
+
 ## [0.53.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.52.0`.

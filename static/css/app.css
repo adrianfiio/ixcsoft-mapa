@@ -87,6 +87,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .dashboard-editor-toolbar .editor-status { font-size: 12px; color: var(--muted); }
 .dashboard-editor-toolbar .editor-status.success { color: var(--success); }
 .dashboard-editor-toolbar .editor-status.error { color: var(--danger); }
+.page-content:not(.dashboard-edit-mode) [data-widget] { order: var(--order, 0); }
 .widget-hidden { opacity: .4; }
 .widget-edit-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); font-size: 11px; color: var(--muted); }
 .widget-edit-bar label { display: flex; align-items: center; gap: 5px; cursor: pointer; }

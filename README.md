@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.53.0 — Assistente KMZ com seletor moderno, cartões responsivos e herança grupo/exceção**
+**v0.53.1 — Corrige arrastar no editor de dashboard e generaliza rótulo de sincronização ERP**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

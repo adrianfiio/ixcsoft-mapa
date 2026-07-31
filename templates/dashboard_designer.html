@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block title %}Visão geral | AFService Map{% endblock %}
+{% block main_class %}page-content{% if edit_mode %} dashboard-edit-mode{% endif %}{% endblock %}
 
 {% block content %}
 {% if edit_mode %}
@@ -28,35 +29,35 @@
 
 <section class="metric-grid" aria-label="Indicadores da infraestrutura" id="widget-zone-metrics">
     {% if edit_mode or not widget_meta.metric_cto.hidden %}
-    <article class="metric-card{% if widget_meta.metric_cto.hidden %} widget-hidden{% endif %}" data-widget="metric_cto" style="--accent: var(--blue); order: {{ widget_meta.metric_cto.order|default:0 }};">
+    <article class="metric-card{% if widget_meta.metric_cto.hidden %} widget-hidden{% endif %}" data-widget="metric_cto" style="--accent: var(--blue); --order: {{ widget_meta.metric_cto.order|default:0 }};">
         {% include "includes/widget_edit_bar.html" with widget_key="metric_cto" hidden=widget_meta.metric_cto.hidden %}
         <div class="metric-head"><span>CTOs</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ cto_count|default:0 }}</div>
     </article>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_ceo.hidden %}
-    <article class="metric-card{% if widget_meta.metric_ceo.hidden %} widget-hidden{% endif %}" data-widget="metric_ceo" style="--accent: var(--blue); order: {{ widget_meta.metric_ceo.order|default:0 }};">
+    <article class="metric-card{% if widget_meta.metric_ceo.hidden %} widget-hidden{% endif %}" data-widget="metric_ceo" style="--accent: var(--blue); --order: {{ widget_meta.metric_ceo.order|default:0 }};">
         {% include "includes/widget_edit_bar.html" with widget_key="metric_ceo" hidden=widget_meta.metric_ceo.hidden %}
         <div class="metric-head"><span>CEOs / caixas de emenda</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ ceo_count|default:0 }}</div>
     </article>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_dio.hidden %}
-    <article class="metric-card{% if widget_meta.metric_dio.hidden %} widget-hidden{% endif %}" data-widget="metric_dio" style="--accent: var(--blue); order: {{ widget_meta.metric_dio.order|default:0 }};">
+    <article class="metric-card{% if widget_meta.metric_dio.hidden %} widget-hidden{% endif %}" data-widget="metric_dio" style="--accent: var(--blue); --order: {{ widget_meta.metric_dio.order|default:0 }};">
         {% include "includes/widget_edit_bar.html" with widget_key="metric_dio" hidden=widget_meta.metric_dio.hidden %}
         <div class="metric-head"><span>DIOs</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ dio_count|default:0 }}</div>
     </article>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_olt.hidden %}
-    <article class="metric-card{% if widget_meta.metric_olt.hidden %} widget-hidden{% endif %}" data-widget="metric_olt" style="--accent: var(--blue); order: {{ widget_meta.metric_olt.order|default:0 }};">
+    <article class="metric-card{% if widget_meta.metric_olt.hidden %} widget-hidden{% endif %}" data-widget="metric_olt" style="--accent: var(--blue); --order: {{ widget_meta.metric_olt.order|default:0 }};">
         {% include "includes/widget_edit_bar.html" with widget_key="metric_olt" hidden=widget_meta.metric_olt.hidden %}
         <div class="metric-head"><span>OLTs</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ olt_count|default:0 }}</div>
     </article>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_cable_km.hidden %}
-    <article class="metric-card{% if widget_meta.metric_cable_km.hidden %} widget-hidden{% endif %}" data-widget="metric_cable_km" style="--accent: var(--success); order: {{ widget_meta.metric_cable_km.order|default:0 }};">
+    <article class="metric-card{% if widget_meta.metric_cable_km.hidden %} widget-hidden{% endif %}" data-widget="metric_cable_km" style="--accent: var(--success); --order: {{ widget_meta.metric_cable_km.order|default:0 }};">
         {% include "includes/widget_edit_bar.html" with widget_key="metric_cable_km" hidden=widget_meta.metric_cable_km.hidden %}
         <div class="metric-head"><span>Cabos desenhados</span><span class="metric-icon">⟿</span></div>
         <div class="metric-value">{{ cable_km|default:0 }} km</div>
@@ -67,7 +68,7 @@
 <section class="dashboard-grid">
     <div class="dashboard-column" id="widget-zone-col-1">
         {% if edit_mode or not widget_meta.panel_company_info.hidden %}
-        <article class="panel{% if widget_meta.panel_company_info.hidden %} widget-hidden{% endif %}" data-widget="panel_company_info" style="order: {{ widget_meta.panel_company_info.order|default:0 }};">
+        <article class="panel{% if widget_meta.panel_company_info.hidden %} widget-hidden{% endif %}" data-widget="panel_company_info" style="--order: {{ widget_meta.panel_company_info.order|default:0 }};">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_company_info" hidden=widget_meta.panel_company_info.hidden %}
             <div class="panel-header">
                 <h2 class="panel-title">Dados da empresa</h2>
@@ -83,7 +84,7 @@
         {% endif %}
 
         {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
-        <article class="panel{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}" data-widget="panel_shortcuts" style="order: {{ widget_meta.panel_shortcuts.order|default:0 }};">
+        <article class="panel{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}" data-widget="panel_shortcuts" style="--order: {{ widget_meta.panel_shortcuts.order|default:0 }};">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_shortcuts" hidden=widget_meta.panel_shortcuts.hidden %}
             <div class="panel-header"><h2 class="panel-title">Atalhos</h2></div>
             <div class="quick-grid">
