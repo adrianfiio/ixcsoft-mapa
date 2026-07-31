@@ -90,7 +90,9 @@
             </div>
         </article>
         {% endif %}
+    </div>
 
+    <div class="dashboard-column" id="widget-zone-col-2">
         {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
         <article class="panel{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}" data-widget="panel_shortcuts" style="--order: {{ widget_meta.panel_shortcuts.order|default:0 }};">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_shortcuts" hidden=widget_meta.panel_shortcuts.hidden %}

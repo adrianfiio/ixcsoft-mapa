@@ -385,6 +385,10 @@ class PlatformOverviewView(LoginRequiredMixin, TemplateView):
         context["widget_meta"] = widget_meta(PLATFORM_WIDGETS, layout)
         context["dashboard_banner"] = layout.banner_text if layout else ""
         context["edit_mode"] = self.request.GET.get("edit") == "1"
+        # Superusuário já tem o Django admin pra qualquer outra tela — aqui
+        # (o "dashboard" dele desde o redirect de `/`) a barra lateral só
+        # ocupa espaço sem servir pra nada.
+        context["hide_sidebar"] = True
         return context
 
     def post(self, request, *args, **kwargs):

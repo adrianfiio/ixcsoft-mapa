@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.57.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.56.0`.
+
+### Adicionado
+
+- **Menu lateral retrátil**: o botão ☰ (antes só funcional no mobile) agora também recolhe/expande a barra lateral no desktop, liberando espaço de tela — funciona para qualquer usuário (empresas e superusuário), estado salvo no navegador (`localStorage`), persiste entre páginas.
+- **"Visão da plataforma" em tela cheia para o superusuário**: como essa página já é o "dashboard" do superadmin desde o redirect da v0.55.0, e ele já tem o Django admin para o resto, a barra lateral some nessa tela — fica só o conteúdo, o botão "Editar este painel" e um novo botão "Abrir mapa" (que substitui o link que sumiu da barra lateral).
+
+### Corrigido
+
+- **Dashboard do projetista** (`dashboard_designer.html`) tinha só uma coluna, forçando "Dados da empresa" e "Atalhos" um embaixo do outro sem opção de ficarem lado a lado — diferente do dashboard de provedor, que já tinha 2 colunas. Agora tem as mesmas 2 colunas.
+- Editor de dashboard: o arrastar-e-soltar (SortableJS) passa a usar o modo "fallback" (emulado por mouse/touch) em vez do drag nativo do navegador — o drag nativo podia deixar o "ghost" (espaço reservado semitransparente do item sendo arrastado) preso na tela em vez de sumir ao soltar.
+
+### Sobre o pacote do mapa/KMZ
+
+A partir de agora, entregas do ChatGPT para a área do mapa (`apps/network_map/`, `map-editor.js`, KMZ) são só recebidas, viram backup e são publicadas — sem reescrever a lógica dele aqui. Só a v0.56.0 teve uma revisão profunda (e havia motivo: 3 problemas reais encontrados). Essa área agora é responsabilidade dele, que já acompanha o repositório no GitHub; Claude foca no dashboard/whitelabel e no restante do projeto.
+
 ## [0.56.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.55.0` (também disponível como branch `backup/mapa-pre-v06-20260731`).

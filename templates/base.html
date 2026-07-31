@@ -13,6 +13,7 @@
 </head>
 <body>
     <div class="app-shell">
+        {% if not hide_sidebar %}
         <aside class="app-sidebar" id="app-sidebar">
             <a class="brand" href="{% url 'dashboard' %}">
                 {% if current_company.logo %}
@@ -56,11 +57,14 @@
                 </span>
             </div>
         </aside>
+        {% endif %}
 
-        <div class="app-main">
+        <div class="app-main{% if hide_sidebar %} sidebar-collapsed{% endif %}">
             <header class="app-topbar">
+                {% if not hide_sidebar %}
                 <button class="menu-toggle" id="menu-toggle" type="button"
                         aria-label="Abrir menu" aria-controls="app-sidebar">☰</button>
+                {% endif %}
                 <div>
                     <strong>{% block topbar_title %}Central de operações{% endblock %}</strong>
                     <span class="topbar-subtitle">{% now "d \d\e F, H:i" %}</span>
@@ -89,8 +93,22 @@
     <script>
         const menuToggle = document.getElementById("menu-toggle");
         const sidebar = document.getElementById("app-sidebar");
-        if (menuToggle && sidebar) {
-            menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+        const appMain = document.querySelector(".app-main");
+        const isMobile = () => window.matchMedia("(max-width: 760px)").matches;
+        if (sidebar && appMain && localStorage.getItem("sidebarCollapsed") === "1" && !isMobile()) {
+            sidebar.classList.add("desktop-collapsed");
+            appMain.classList.add("sidebar-collapsed");
+        }
+        if (menuToggle && sidebar && appMain) {
+            menuToggle.addEventListener("click", () => {
+                if (isMobile()) {
+                    sidebar.classList.toggle("open");
+                    return;
+                }
+                const collapsed = sidebar.classList.toggle("desktop-collapsed");
+                appMain.classList.toggle("sidebar-collapsed", collapsed);
+                localStorage.setItem("sidebarCollapsed", collapsed ? "1" : "0");
+            });
         }
     </script>
     {% block scripts %}{% endblock %}

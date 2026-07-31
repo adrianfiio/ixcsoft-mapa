@@ -33,6 +33,10 @@
                 animation: 150,
                 handle: ".widget-drag-handle",
                 ghostClass: "sortable-ghost",
+                // O drag nativo do navegador (HTML5 DnD) às vezes deixa o
+                // "ghost" preso na tela em vez de limpar ao soltar. O modo
+                // fallback (emulado por mouse/touch) evita essa falha.
+                forceFallback: true,
             });
         });
     } else if (status) {

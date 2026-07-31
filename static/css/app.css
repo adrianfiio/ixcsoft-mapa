@@ -29,7 +29,10 @@ a { color: inherit; text-decoration: none; }
     position: fixed; inset: 0 auto 0 0; z-index: 20;
     display: flex; flex-direction: column; width: 250px; padding: 24px 16px;
     background: rgba(8, 22, 37, .98); border-right: 1px solid var(--border);
+    transition: transform .2s ease;
 }
+.app-sidebar.desktop-collapsed { transform: translateX(-100%); }
+.app-main.sidebar-collapsed { margin-left: 0; width: 100%; }
 .brand { display: flex; align-items: center; width: 150px; padding: 0 0 28px; margin: 0 auto; }
 .brand-logo { width: 150px; height: 50px; object-fit: contain; object-position: left center; }
 .brand-mark {
@@ -53,7 +56,7 @@ a { color: inherit; text-decoration: none; }
     border-top: 1px solid var(--border); font-size: 12px;
 }
 .system-dot { width: 9px; height: 9px; background: var(--success); border-radius: 50%; box-shadow: 0 0 12px var(--success); }
-.app-main { width: calc(100% - 250px); min-height: 100vh; margin-left: 250px; }
+.app-main { width: calc(100% - 250px); min-height: 100vh; margin-left: 250px; transition: margin-left .2s ease, width .2s ease; }
 .app-topbar {
     display: flex; align-items: center; justify-content: space-between; height: 74px; padding: 0 34px;
     background: rgba(7, 17, 31, .78); border-bottom: 1px solid var(--border); backdrop-filter: blur(16px);
@@ -67,7 +70,7 @@ a { color: inherit; text-decoration: none; }
     color: var(--text); background: transparent; border: 0;
     font-size: 13px; font-weight: 700; cursor: pointer;
 }
-.menu-toggle { display: none; color: var(--text); background: transparent; border: 0; font-size: 22px; }
+.menu-toggle { display: inline-flex; color: var(--text); background: transparent; border: 0; font-size: 22px; cursor: pointer; }
 .page-content { width: min(1480px, calc(100% - 64px)); margin: 0 auto; padding: 34px 0 50px; }
 .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 27px; }
 .eyebrow { margin: 0 0 7px; color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }

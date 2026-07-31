@@ -23,7 +23,10 @@
         <h1>Visão da plataforma</h1>
         <p>Resumo de todas as empresas ativas: clientes, rede, alertas e sincronização com ERP.</p>
     </div>
-    {% if not edit_mode %}<a class="primary-action" href="?edit=1">Editar este painel →</a>{% endif %}
+    <div class="page-heading-actions">
+        {% if not edit_mode %}<a class="primary-action" href="?edit=1">Editar este painel →</a>{% endif %}
+        <a class="primary-action" href="{% url 'map' %}">⌖ Abrir mapa</a>
+    </div>
 </section>
 
 {% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}
