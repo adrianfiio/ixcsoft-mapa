@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.51.0 — Km de cabo e clientes em destaque na visão geral do provedor**
+**v0.52.0 — Editor visual de dashboard por empresa (admin-only)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Editor de dashboards | AFService Map{% endblock %}
+{% block topbar_title %}Editor de dashboards{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Ferramenta da plataforma</p>
+        <h1>Editor de dashboards</h1>
+        <p>Escolha uma empresa para reorganizar, esconder cartões/painéis e definir uma mensagem no topo do dashboard dela. Só você vê essa tela — a empresa nunca edita o próprio layout.</p>
+    </div>
+</section>
+
+<article class="panel">
+    <div class="panel-header"><h2 class="panel-title">Empresas</h2></div>
+    <div class="account-items">
+        {% for company in companies %}
+        <a href="{% url 'dashboard-layout-editor' company.id %}">
+            <span><strong>{{ company.trade_name|default:company.name }}</strong><small>{{ company.get_company_type_display|default:"Tipo não definido" }} · {{ company.slug }}</small></span>
+            <b>Editar dashboard →</b>
+        </a>
+        {% empty %}
+        <p class="empty-state">Nenhuma empresa ativa cadastrada.</p>
+        {% endfor %}
+    </div>
+</article>
+{% endblock %}

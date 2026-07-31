@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.52.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.51.0`.
+
+### Adicionado
+
+- **Editor visual de dashboard por empresa, admin-only**: em "Minha administração" (superusuário), novo link "Editor de dashboards →" abre uma lista de empresas; escolher uma abre o dashboard dela em modo de edição, com arrastar-e-soltar (SortableJS, via CDN) pra reordenar cartões/painéis, checkbox pra esconder/mostrar cada um, e um campo de mensagem opcional exibida no topo do dashboard daquela empresa. Só o superusuário edita — a empresa nunca vê nem controla essa tela, só o resultado salvo.
+  - Novo modelo `CompanyDashboardLayout` (`apps/core/models.py`): ordem/visibilidade dos widgets e a mensagem, por empresa.
+  - Novo registro `apps/core/dashboard_widgets.py`: chaves e rótulos dos widgets de cada variante do dashboard (provedor/projetista).
+  - `DashboardView` foi refatorada (`_provider_context`/`_designer_context` viraram métodos reaproveitáveis) pra que o editor renderize o dashboard de qualquer empresa escolhida, não só a do usuário logado.
+  - Sem layout salvo pra uma empresa, o dashboard continua exatamente como sempre foi — ordem e visibilidade padrão do template, nada muda pra quem nunca foi customizado.
+
 ## [0.51.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.50.3`.

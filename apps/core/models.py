@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -201,3 +202,44 @@ class MapBaseConfiguration(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+class CompanyDashboardLayout(TimeStampedModel):
+    """Personalização admin-only da visão geral de uma empresa: ordem e
+    visibilidade dos cartões/painéis, e uma mensagem opcional no topo. A
+    empresa em si nunca edita isso — só reflete o que foi salvo aqui."""
+
+    company = models.OneToOneField(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="dashboard_layout",
+    )
+    widget_order = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Lista ordenada das chaves de widget do dashboard dessa empresa.",
+    )
+    hidden_widgets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Chaves de widget ocultas nesse dashboard.",
+    )
+    banner_text = models.CharField(
+        max_length=280,
+        blank=True,
+        verbose_name="Mensagem no topo do dashboard",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    class Meta:
+        verbose_name = "Layout de dashboard da empresa"
+        verbose_name_plural = "Layouts de dashboard das empresas"
+
+    def __str__(self):
+        return f"Layout · {self.company}"

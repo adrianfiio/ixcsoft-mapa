@@ -1,6 +1,9 @@
+import json
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db.models.functions import Length, Transform
+from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.db.models import Count, FloatField, Q, Sum
 from django.http import JsonResponse
@@ -11,7 +14,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from redis import Redis
 
 from apps.access.models import AccessPoint
@@ -20,7 +23,8 @@ from apps.ixc_integration.models import IXCCustomer, IXCLogin, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
-from apps.core.models import Company, CompanyEmailConfiguration, MapBaseConfiguration
+from apps.core.dashboard_widgets import widget_meta_for, widgets_for
+from apps.core.models import Company, CompanyDashboardLayout, CompanyEmailConfiguration, MapBaseConfiguration
 from apps.core.access import accessible_company_ids, has_any_edit_access, onboarding_redirect_name
 from apps.core.models import CompanyMembership
 from apps.core.services.email import send_company_email
@@ -100,14 +104,17 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             "cable_km": round((cable_length or 0) / 1000, 2),
         }
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.template_name == "dashboard.html":
-            company = self._primary_company()
-            if company and company.is_designer:
-                context.update(self._designer_context(company))
-                return context
-        company_ids = accessible_company_ids(self.request.user)
+    def _dashboard_layout_context(self, company):
+        """Ordem/visibilidade dos widgets e mensagem no topo do dashboard,
+        conforme salvo (admin-only) em `CompanyDashboardLayout` — sem nada
+        salvo, cai no padrão do template (nada some, ordem de sempre)."""
+        layout = getattr(company, "dashboard_layout", None)
+        return {
+            "widget_meta": widget_meta_for(company, layout),
+            "dashboard_banner": layout.banner_text if layout else "",
+        }
+
+    def _provider_context(self, company_ids):
         company_filter = {} if company_ids is None else {"company_id__in": company_ids}
 
         access_summary = AccessPoint.objects.filter(**company_filter).aggregate(
@@ -169,28 +176,39 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         except Exception:
             cable_length = None
 
-        context.update(
-            {
-                "access": access_summary,
-                "onus": onu_summary,
-                "customer_count": customer_queryset.count(),
-                "olt_count": olt_queryset.count(),
-                "element_count": element_queryset.count(),
-                "cto_count": cto_queryset.count(),
-                "cable_km": round((cable_length or 0) / 1000, 2),
-                "active_alert_count": alert_queryset.filter(
-                    state__in=active_alert_states
-                ).count(),
-                "recent_alerts": alert_queryset.filter(
-                    state__in=active_alert_states
-                ).select_related("rule")[:5],
-                "latest_sync": sync_queryset.order_by(
-                    "-started_at", "-created_at"
-                ).first(),
-            }
-        )
-        if self.template_name == "map.html":
+        return {
+            "access": access_summary,
+            "onus": onu_summary,
+            "customer_count": customer_queryset.count(),
+            "olt_count": olt_queryset.count(),
+            "element_count": element_queryset.count(),
+            "cto_count": cto_queryset.count(),
+            "cable_km": round((cable_length or 0) / 1000, 2),
+            "active_alert_count": alert_queryset.filter(
+                state__in=active_alert_states
+            ).count(),
+            "recent_alerts": alert_queryset.filter(
+                state__in=active_alert_states
+            ).select_related("rule")[:5],
+            "latest_sync": sync_queryset.order_by(
+                "-started_at", "-created_at"
+            ).first(),
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.template_name == "dashboard.html":
             company = self._primary_company()
+            if company and company.is_designer:
+                context.update(self._designer_context(company))
+                context.update(self._dashboard_layout_context(company))
+                return context
+        company_ids = accessible_company_ids(self.request.user)
+        context.update(self._provider_context(company_ids))
+        company = self._primary_company()
+        if company:
+            context.update(self._dashboard_layout_context(company))
+        if self.template_name == "map.html":
             context["hide_client_layers"] = bool(company and company.is_designer)
             context["can_edit_map"] = has_any_edit_access(self.request.user)
             map_config = MapBaseConfiguration.objects.first()
@@ -215,6 +233,73 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 ),
             }
         return context
+
+
+class DashboardLayoutListView(LoginRequiredMixin, TemplateView):
+    """Lista de empresas pra escolher qual dashboard editar. Só a
+    plataforma (superusuário) tem acesso — nenhuma empresa cliente edita
+    o próprio layout."""
+
+    template_name = "dashboard_layout_list.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["companies"] = Company.objects.filter(active=True).order_by("name")
+        return context
+
+
+class DashboardLayoutEditorView(DashboardView):
+    """Editor visual (admin-only) da ordem/visibilidade dos widgets e da
+    mensagem no topo do dashboard de UMA empresa escolhida. Reaproveita o
+    mesmo template e o mesmo cálculo de contexto de `DashboardView`, só que
+    pra empresa selecionada pelo admin, não pela empresa do usuário logado."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        self.company = get_object_or_404(Company, pk=kwargs["company_id"])
+        return super(DashboardView, self).dispatch(request, *args, **kwargs)
+
+    def get_template_names(self):
+        return ["dashboard_designer.html" if self.company.is_designer else "dashboard.html"]
+
+    def get_context_data(self, **kwargs):
+        context = TemplateView.get_context_data(self, **kwargs)
+        if self.company.is_designer:
+            context.update(self._designer_context(self.company))
+        else:
+            context.update(self._provider_context([self.company.id]))
+        context.update(self._dashboard_layout_context(self.company))
+        context["edit_mode"] = True
+        context["editor_company"] = self.company
+        return context
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json.loads(request.body or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
+
+        valid_keys = {key for key, _label in widgets_for(self.company)}
+        order = [key for key in payload.get("widget_order") or [] if key in valid_keys]
+        hidden = [key for key in payload.get("hidden_widgets") or [] if key in valid_keys]
+        banner_text = str(payload.get("banner_text") or "")[:280]
+
+        CompanyDashboardLayout.objects.update_or_create(
+            company=self.company,
+            defaults={
+                "widget_order": order,
+                "hidden_widgets": hidden,
+                "banner_text": banner_text,
+                "updated_by": request.user,
+            },
+        )
+        return JsonResponse({"success": True})
 
 
 class AccountPanelView(LoginRequiredMixin, TemplateView):

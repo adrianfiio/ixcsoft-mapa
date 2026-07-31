@@ -1,8 +1,20 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Visão geral | AFService Map{% endblock %}
 
 {% block content %}
+{% if edit_mode %}
+{% csrf_token %}
+<div class="dashboard-editor-toolbar">
+    <a href="{% url 'dashboard-layouts' %}" class="cancel-link">← Empresas</a>
+    <strong>Editando: {{ editor_company.trade_name|default:editor_company.name }}</strong>
+    <input type="text" id="editor-banner-text" placeholder="Mensagem no topo do dashboard (opcional)" value="{{ dashboard_banner }}" maxlength="280">
+    <button type="button" id="editor-save">Salvar layout</button>
+    <span class="editor-status" id="editor-status"></span>
+</div>
+{% endif %}
+
 <section class="page-heading">
     <div>
         <p class="eyebrow">Projetista · sem clientes</p>
@@ -12,32 +24,51 @@
     <a class="primary-action" href="{% url 'map' %}">⌖ Abrir mapa</a>
 </section>
 
-<section class="metric-grid" aria-label="Indicadores da infraestrutura">
-    <article class="metric-card" style="--accent: var(--blue)">
+{% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}
+
+<section class="metric-grid" aria-label="Indicadores da infraestrutura" id="widget-zone-metrics">
+    {% if edit_mode or not widget_meta.metric_cto.hidden %}
+    <article class="metric-card{% if widget_meta.metric_cto.hidden %} widget-hidden{% endif %}" data-widget="metric_cto" style="--accent: var(--blue); order: {{ widget_meta.metric_cto.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_cto" hidden=widget_meta.metric_cto.hidden %}
         <div class="metric-head"><span>CTOs</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ cto_count|default:0 }}</div>
     </article>
-    <article class="metric-card" style="--accent: var(--blue)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_ceo.hidden %}
+    <article class="metric-card{% if widget_meta.metric_ceo.hidden %} widget-hidden{% endif %}" data-widget="metric_ceo" style="--accent: var(--blue); order: {{ widget_meta.metric_ceo.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_ceo" hidden=widget_meta.metric_ceo.hidden %}
         <div class="metric-head"><span>CEOs / caixas de emenda</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ ceo_count|default:0 }}</div>
     </article>
-    <article class="metric-card" style="--accent: var(--blue)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_dio.hidden %}
+    <article class="metric-card{% if widget_meta.metric_dio.hidden %} widget-hidden{% endif %}" data-widget="metric_dio" style="--accent: var(--blue); order: {{ widget_meta.metric_dio.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_dio" hidden=widget_meta.metric_dio.hidden %}
         <div class="metric-head"><span>DIOs</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ dio_count|default:0 }}</div>
     </article>
-    <article class="metric-card" style="--accent: var(--blue)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_olt.hidden %}
+    <article class="metric-card{% if widget_meta.metric_olt.hidden %} widget-hidden{% endif %}" data-widget="metric_olt" style="--accent: var(--blue); order: {{ widget_meta.metric_olt.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_olt" hidden=widget_meta.metric_olt.hidden %}
         <div class="metric-head"><span>OLTs</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ olt_count|default:0 }}</div>
     </article>
-    <article class="metric-card" style="--accent: var(--success)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_cable_km.hidden %}
+    <article class="metric-card{% if widget_meta.metric_cable_km.hidden %} widget-hidden{% endif %}" data-widget="metric_cable_km" style="--accent: var(--success); order: {{ widget_meta.metric_cable_km.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_cable_km" hidden=widget_meta.metric_cable_km.hidden %}
         <div class="metric-head"><span>Cabos desenhados</span><span class="metric-icon">⟿</span></div>
         <div class="metric-value">{{ cable_km|default:0 }} km</div>
     </article>
+    {% endif %}
 </section>
 
 <section class="dashboard-grid">
-    <div class="dashboard-column">
-        <article class="panel">
+    <div class="dashboard-column" id="widget-zone-col-1">
+        {% if edit_mode or not widget_meta.panel_company_info.hidden %}
+        <article class="panel{% if widget_meta.panel_company_info.hidden %} widget-hidden{% endif %}" data-widget="panel_company_info" style="order: {{ widget_meta.panel_company_info.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_company_info" hidden=widget_meta.panel_company_info.hidden %}
             <div class="panel-header">
                 <h2 class="panel-title">Dados da empresa</h2>
                 <a class="panel-link" href="{% url 'company-onboarding' %}">Editar →</a>
@@ -49,8 +80,11 @@
                 <div class="info-row"><span>Telefone</span><strong>{{ company.contact_phone|default:"—" }}</strong></div>
             </div>
         </article>
+        {% endif %}
 
-        <article class="panel">
+        {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
+        <article class="panel{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}" data-widget="panel_shortcuts" style="order: {{ widget_meta.panel_shortcuts.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_shortcuts" hidden=widget_meta.panel_shortcuts.hidden %}
             <div class="panel-header"><h2 class="panel-title">Atalhos</h2></div>
             <div class="quick-grid">
                 <a class="quick-link" href="{% url 'map' %}"><strong>Mapa de projetos</strong><small>{{ project_count|default:0 }} projetos · {{ element_count|default:0 }} elementos</small></a>
@@ -59,6 +93,14 @@
                 {% if can_edit_company_assets %}<a class="quick-link" href="{% url 'company-team' %}"><strong>Minha equipe</strong><small>Gerenciar acessos VIEW/EDIT</small></a>{% endif %}
             </div>
         </article>
+        {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+{% if edit_mode %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="{% static 'js/dashboard-layout-editor.js' %}?v={{ app_version }}"></script>
+{% endif %}
 {% endblock %}

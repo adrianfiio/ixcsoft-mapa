@@ -5,6 +5,8 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.core.views import (
     AccountPanelView,
+    DashboardLayoutEditorView,
+    DashboardLayoutListView,
     DashboardView,
     company_alerts,
     company_email_settings,
@@ -38,6 +40,12 @@ urlpatterns = [
     path("painel/alertas/", company_alerts, name="company-alerts"),
     path("painel/novo/<str:asset_type>/", create_company_asset, name="company-asset-create"),
     path("painel/integracao/", erp_onboarding, name="erp-onboarding"),
+    path("painel/dashboards/", DashboardLayoutListView.as_view(), name="dashboard-layouts"),
+    path(
+        "painel/dashboards/<int:company_id>/",
+        DashboardLayoutEditorView.as_view(),
+        name="dashboard-layout-editor",
+    ),
     path("admin/", admin.site.urls),
     path("api/", include("apps.core.urls")),
     path("api/ixc/", include("apps.ixc_integration.api.urls")),

@@ -1,8 +1,20 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Visão geral | AFService Map{% endblock %}
 
 {% block content %}
+{% if edit_mode %}
+{% csrf_token %}
+<div class="dashboard-editor-toolbar">
+    <a href="{% url 'dashboard-layouts' %}" class="cancel-link">← Empresas</a>
+    <strong>Editando: {{ editor_company.trade_name|default:editor_company.name }}</strong>
+    <input type="text" id="editor-banner-text" placeholder="Mensagem no topo do dashboard (opcional)" value="{{ dashboard_banner }}" maxlength="280">
+    <button type="button" id="editor-save">Salvar layout</button>
+    <span class="editor-status" id="editor-status"></span>
+</div>
+{% endif %}
+
 <section class="page-heading">
     <div>
         <p class="eyebrow">Monitoramento da rede</p>
@@ -12,42 +24,64 @@
     <a class="primary-action" href="{% url 'map' %}">⌖ Abrir mapa operacional</a>
 </section>
 
-<section class="metric-grid" aria-label="Indicadores principais">
-    <article class="metric-card" style="--accent: var(--success)">
+{% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}
+
+<section class="metric-grid" aria-label="Indicadores principais" id="widget-zone-metrics">
+    {% if edit_mode or not widget_meta.metric_access_online.hidden %}
+    <article class="metric-card{% if widget_meta.metric_access_online.hidden %} widget-hidden{% endif %}" data-widget="metric_access_online" style="--accent: var(--success); order: {{ widget_meta.metric_access_online.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_access_online" hidden=widget_meta.metric_access_online.hidden %}
         <div class="metric-head"><span>Acessos online</span><span class="metric-icon">↗</span></div>
         <div class="metric-value">{{ access.online|default:0 }}</div>
         <div class="metric-note"><strong>{{ access.total|default:0 }}</strong> acessos sincronizados</div>
     </article>
-    <article class="metric-card" style="--accent: var(--danger)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_access_offline.hidden %}
+    <article class="metric-card{% if widget_meta.metric_access_offline.hidden %} widget-hidden{% endif %}" data-widget="metric_access_offline" style="--accent: var(--danger); order: {{ widget_meta.metric_access_offline.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_access_offline" hidden=widget_meta.metric_access_offline.hidden %}
         <div class="metric-head"><span>Acessos offline</span><span class="metric-icon">↘</span></div>
         <div class="metric-value">{{ access.offline|default:0 }}</div>
         <div class="metric-note">{{ access.unknown|default:0 }} com estado desconhecido</div>
     </article>
-    <article class="metric-card" style="--accent: var(--blue)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_infra.hidden %}
+    <article class="metric-card{% if widget_meta.metric_infra.hidden %} widget-hidden{% endif %}" data-widget="metric_infra" style="--accent: var(--blue); order: {{ widget_meta.metric_infra.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_infra" hidden=widget_meta.metric_infra.hidden %}
         <div class="metric-head"><span>Infraestrutura</span><span class="metric-icon">◇</span></div>
         <div class="metric-value">{{ element_count|default:0 }}</div>
         <div class="metric-note"><strong>{{ cto_count|default:0 }}</strong> CTOs cadastradas</div>
     </article>
-    <article class="metric-card" style="--accent: var(--warning)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_alerts.hidden %}
+    <article class="metric-card{% if widget_meta.metric_alerts.hidden %} widget-hidden{% endif %}" data-widget="metric_alerts" style="--accent: var(--warning); order: {{ widget_meta.metric_alerts.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_alerts" hidden=widget_meta.metric_alerts.hidden %}
         <div class="metric-head"><span>Alertas ativos</span><span class="metric-icon">!</span></div>
         <div class="metric-value">{{ active_alert_count|default:0 }}</div>
         <div class="metric-note">Ocorrências que exigem atenção</div>
     </article>
-    <article class="metric-card" style="--accent: var(--primary)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_clients.hidden %}
+    <article class="metric-card{% if widget_meta.metric_clients.hidden %} widget-hidden{% endif %}" data-widget="metric_clients" style="--accent: var(--primary); order: {{ widget_meta.metric_clients.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_clients" hidden=widget_meta.metric_clients.hidden %}
         <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
         <div class="metric-value">{{ customer_count|default:0 }}</div>
         <div class="metric-note"><strong>{{ onus.total|default:0 }}</strong> ONUs vinculadas</div>
     </article>
-    <article class="metric-card" style="--accent: var(--success)">
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_cables.hidden %}
+    <article class="metric-card{% if widget_meta.metric_cables.hidden %} widget-hidden{% endif %}" data-widget="metric_cables" style="--accent: var(--success); order: {{ widget_meta.metric_cables.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_cables" hidden=widget_meta.metric_cables.hidden %}
         <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
         <div class="metric-value">{{ cable_km|default:0 }} km</div>
         <div class="metric-note"><strong>{{ olt_count|default:0 }}</strong> OLTs cadastradas</div>
     </article>
+    {% endif %}
 </section>
 
 <section class="dashboard-grid">
-    <div class="dashboard-column">
-        <article class="panel">
+    <div class="dashboard-column" id="widget-zone-col-1">
+        {% if edit_mode or not widget_meta.panel_access_status.hidden %}
+        <article class="panel{% if widget_meta.panel_access_status.hidden %} widget-hidden{% endif %}" data-widget="panel_access_status" style="order: {{ widget_meta.panel_access_status.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_access_status" hidden=widget_meta.panel_access_status.hidden %}
             <div class="panel-header">
                 <h2 class="panel-title">Estado dos acessos</h2>
                 <a class="panel-link" href="{% url 'map' %}">Ver no mapa →</a>
@@ -65,8 +99,11 @@
                 </div>
             </div>
         </article>
+        {% endif %}
 
-        <article class="panel">
+        {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
+        <article class="panel{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}" data-widget="panel_shortcuts" style="order: {{ widget_meta.panel_shortcuts.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_shortcuts" hidden=widget_meta.panel_shortcuts.hidden %}
             <div class="panel-header"><h2 class="panel-title">Atalhos operacionais</h2></div>
             <div class="quick-grid">
                 <a class="quick-link" href="{% url 'equipment-list' %}"><strong>Equipamentos</strong><small>{{ element_count|default:0 }} elementos cadastrados</small></a>
@@ -76,10 +113,13 @@
                 {% if can_edit_company_assets %}<a class="quick-link" href="{% url 'company-team' %}"><strong>Minha equipe</strong><small>Gerenciar acessos VIEW/EDIT</small></a>{% endif %}
             </div>
         </article>
+        {% endif %}
     </div>
 
-    <div class="dashboard-column">
-        <article class="panel">
+    <div class="dashboard-column" id="widget-zone-col-2">
+        {% if edit_mode or not widget_meta.panel_recent_alerts.hidden %}
+        <article class="panel{% if widget_meta.panel_recent_alerts.hidden %} widget-hidden{% endif %}" data-widget="panel_recent_alerts" style="order: {{ widget_meta.panel_recent_alerts.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_recent_alerts" hidden=widget_meta.panel_recent_alerts.hidden %}
             <div class="panel-header"><h2 class="panel-title">Alertas recentes</h2><a class="panel-link" href="{% url 'company-alerts' %}">Ver todos</a></div>
             <div class="alert-list">
                 {% for alert in recent_alerts %}
@@ -93,16 +133,22 @@
                 {% endfor %}
             </div>
         </article>
+        {% endif %}
 
-        <article class="panel sync-card">
+        {% if edit_mode or not widget_meta.panel_sync.hidden %}
+        <article class="panel sync-card{% if widget_meta.panel_sync.hidden %} widget-hidden{% endif %}" data-widget="panel_sync" style="order: {{ widget_meta.panel_sync.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_sync" hidden=widget_meta.panel_sync.hidden %}
             <div class="sync-info">
                 <strong>Sincronização IXCSoft</strong>
                 {% if latest_sync %}<small>Última execução {{ latest_sync.started_at|timesince }} atrás</small>{% else %}<small>Nenhuma sincronização registrada</small>{% endif %}
             </div>
             <span class="sync-badge">{% if latest_sync %}{{ latest_sync.status }}{% else %}Aguardando{% endif %}</span>
         </article>
+        {% endif %}
 
-        <article class="panel">
+        {% if edit_mode or not widget_meta.panel_gpon.hidden %}
+        <article class="panel{% if widget_meta.panel_gpon.hidden %} widget-hidden{% endif %}" data-widget="panel_gpon" style="order: {{ widget_meta.panel_gpon.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_gpon" hidden=widget_meta.panel_gpon.hidden %}
             <div class="panel-header"><h2 class="panel-title">Resumo GPON</h2></div>
             <div class="status-list">
                 <div class="status-row"><span class="legend-dot" style="background: var(--success)"></span><span>ONUs online</span><strong>{{ onus.online|default:0 }}</strong></div>
@@ -110,6 +156,14 @@
                 <div class="status-row"><span class="legend-dot" style="background: var(--warning)"></span><span>ONUs com LOS</span><strong>{{ onus.los|default:0 }}</strong></div>
             </div>
         </article>
+        {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+{% if edit_mode %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="{% static 'js/dashboard-layout-editor.js' %}?v={{ app_version }}"></script>
+{% endif %}
 {% endblock %}

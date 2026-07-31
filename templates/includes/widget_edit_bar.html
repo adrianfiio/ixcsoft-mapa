@@ -1,0 +1,4 @@
+{% if edit_mode %}<div class="widget-edit-bar">
+    <span class="widget-drag-handle" title="Arrastar para reordenar">⋮⋮</span>
+    <label><input type="checkbox" class="widget-visibility-toggle" data-widget-toggle="{{ widget_key }}" {% if not hidden %}checked{% endif %}> Visível</label>
+</div>{% endif %}

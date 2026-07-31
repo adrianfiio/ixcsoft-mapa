@@ -10,7 +10,12 @@
         <h1>Olá, {{ request.user.get_full_name|default:request.user.username }}</h1>
         <p>Você visualiza somente os dados liberados para sua conta.</p>
     </div>
-    {% if is_platform_admin %}<a class="primary-action" href="/admin/">Painel técnico completo →</a>{% endif %}
+    {% if is_platform_admin %}
+    <div class="page-heading-actions">
+        <a class="primary-action" href="{% url 'dashboard-layouts' %}">Editor de dashboards →</a>
+        <a class="primary-action" href="/admin/">Painel técnico completo →</a>
+    </div>
+    {% endif %}
 </section>
 
 <div class="account-search">
