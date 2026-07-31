@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.47.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.46.0`.
+
+### Corrigido
+
+- Orçamento óptico: quando um splitter alimenta outro splitter em cascata (ex.: 1:8 → 1:2) sem uma fibra própria cadastrada entre os dois, a entrada (ENT) do splitter filho não trazia nenhuma informação de rota. A porta do splitter de origem agora é percorrida diretamente, sem depender de uma fibra intermediária.
+- Assistente de importação KML/KMZ: a prévia no mapa usava `window.map`, que não existe (o Leaflet fica em uma variável local do editor); o mapa agora é exposto via `window.networkMap` e a prévia usa a referência correta.
+- Cabos importados do KMZ agora tentam casar automaticamente com um modelo de cabo já cadastrado (mesma empresa, mesma quantidade de fibras); quando existe, tubos e fibras são gerados sozinhos. Quando não existe, o cabo é criado do mesmo jeito (igual ao desenho manual de cabo) e um aviso indica que as fibras precisam ser geradas depois.
+
+### Adicionado
+
+- **Assistente de importação KML/KMZ — fase 2 (revisão completa e gravação real)**: o assistente ganhou seis etapas — arquivo/análise, cabos por cor, classificação de pontos, escolha de rotas, prévia e importação definitiva. Linhas pretas ou sem estilo entram como "Revisar" por padrão (não são mais assumidas como cabo). Pastas só entram como candidatas a rota quando o nome contém a palavra "ROTA" — a raiz do projeto, `CABOS`, `POP`, `CTO`, `CEO` e `CDO` não aparecem mais nessa lista. Um botão "Desenhar prévia no mapa" carrega temporariamente pontos e linhas no Leaflet (sem gravar) para clicar e conferir o que cada traço representa antes de decidir. Ao confirmar, a importação roda dentro de uma transação atômica: pastas de rota viram `NetworkRoute`, linhas viram `FiberCable`, CTOs viram `CTO`, CEO/CDO/postes/racks/OLT/DIO viram `NetworkElement`, e RT/reserva é associada ao cabo importado mais próximo (respeitando distância máxima) e vira `CableReserve`. POP é importado como `NetworkElement` do tipo Outro (o modelo de POP atual é único por projeto).
+- O importador antigo (`import_project_file`, que gravava direto e transformava toda linha em rota) foi removido do projeto — substituído integralmente pelo assistente novo.
+
 ## [0.46.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.45.0`.

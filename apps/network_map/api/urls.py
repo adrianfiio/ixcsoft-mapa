@@ -28,9 +28,8 @@ from apps.network_map.api.views import (
     update_network_element_position,
     update_cable_geometry,
 )
+from apps.network_map.kmz_import_api import analyze_kmz_import, execute_kmz_import
 from apps.network_map.project_api import (
-    analyze_project_import,
-    import_project_file,
     project_detail,
     project_routes_geojson,
     projects,
@@ -59,13 +58,13 @@ urlpatterns = [
     path("projects/<int:project_id>/", project_detail, name="project-detail"),
     path(
         "projects/<int:project_id>/import/analyze/",
-        analyze_project_import,
+        analyze_kmz_import,
         name="project-import-analyze",
     ),
     path(
-        "projects/<int:project_id>/import/",
-        import_project_file,
-        name="project-import",
+        "projects/<int:project_id>/import/execute/",
+        execute_kmz_import,
+        name="project-import-execute",
     ),
     path(
         "access-points/",

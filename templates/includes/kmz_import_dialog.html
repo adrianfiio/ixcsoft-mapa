@@ -1,25 +1,22 @@
 <dialog id="kmz-import-dialog" class="editor-dialog kmz-import-dialog">
-    <form id="kmz-import-form">
-        <header>
-            <div>
-                <h2>Assistente de importação KML/KMZ</h2>
-                <p class="help-text">Análise segura: nenhuma informação é gravada nesta etapa.</p>
-            </div>
-            <button class="dialog-close" type="button">×</button>
-        </header>
-        <div class="dialog-body">
-            <div class="kmz-import-file-row">
-                <label>Arquivo
-                    <input id="import-file" name="file" type="file"
-                           accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
-                           required>
-                </label>
-                <button class="primary-button" type="submit">Analisar arquivo</button>
-            </div>
-            <div id="kmz-import-status" class="editor-message"></div>
-            <div id="kmz-import-content">
-                <p class="help-text">Selecione um arquivo para identificar pastas, cores, cabos, CTOs, CDOs, CEOs, RTs e pontos desconhecidos.</p>
-            </div>
-        </div>
-    </form>
+  <form id="kmz-import-form">
+    <header>
+      <div><h2>Assistente de importação KML/KMZ</h2><p class="help-text">Analise, revise, visualize no mapa e só então grave.</p></div>
+      <button class="dialog-close" type="button">×</button>
+    </header>
+    <div class="dialog-body">
+      <nav class="kmz-steps" aria-label="Etapas">
+        <button type="button" data-step="1">1. Arquivo</button><button type="button" data-step="2">2. Cabos</button>
+        <button type="button" data-step="3">3. Pontos</button><button type="button" data-step="4">4. Rotas</button>
+        <button type="button" data-step="5">5. Prévia</button><button type="button" data-step="6">6. Importar</button>
+      </nav>
+      <div id="kmz-import-status" class="editor-message"></div>
+      <section id="kmz-import-content"></section>
+      <footer class="kmz-actions">
+        <button id="kmz-back" class="secondary-button" type="button">Voltar</button>
+        <button id="kmz-next" class="primary-button" type="button">Continuar</button>
+        <button id="kmz-execute" class="primary-button" type="button" hidden>Importar definitivamente</button>
+      </footer>
+    </div>
+  </form>
 </dialog>

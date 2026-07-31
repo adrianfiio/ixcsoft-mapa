@@ -1,10 +1,3 @@
-import io
-import uuid
-import zipfile
-from xml.etree import ElementTree
-
-from django.contrib.gis.geos import LineString, MultiLineString, Point
-from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
@@ -19,12 +12,9 @@ from apps.core.access import (
     scope_company_queryset,
 )
 from apps.network_map.models import (
-    CTO,
-    NetworkElement,
     NetworkProject,
     NetworkRoute,
 )
-from apps.network_map.kmz_import import KMZAnalyzer
 
 
 def project_payload(project, user=None):
@@ -171,159 +161,6 @@ def project_detail(request, project_id):
         project.status = status_value
     project.save()
     return JsonResponse({"success": True, "project": project_payload(project, request.user)})
-
-
-def read_kml(upload):
-    content = upload.read()
-    if len(content) > 20 * 1024 * 1024:
-        raise ValueError("O arquivo excede o limite de 20 MB.")
-
-    if zipfile.is_zipfile(io.BytesIO(content)):
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            members = [
-                item for item in archive.infolist()
-                if item.filename.lower().endswith(".kml")
-                and item.file_size <= 50 * 1024 * 1024
-            ]
-            if not members:
-                raise ValueError("O KMZ não contém um arquivo KML válido.")
-            content = archive.read(members[0])
-
-    try:
-        return ElementTree.fromstring(content)
-    except ElementTree.ParseError as exc:
-        raise ValueError("KML inválido ou corrompido.") from exc
-
-
-def coordinate_pairs(text):
-    pairs = []
-    for raw_value in (text or "").replace("\n", " ").split():
-        values = raw_value.split(",")
-        if len(values) < 2:
-            continue
-        longitude = float(values[0])
-        latitude = float(values[1])
-        if -180 <= longitude <= 180 and -90 <= latitude <= 90:
-            pairs.append((longitude, latitude))
-    return pairs
-
-
-def imported_element_type(name):
-    normalized = name.casefold()
-    if "cto" in normalized:
-        return NetworkElement.ElementType.CTO
-    if "ceo" in normalized or "emenda" in normalized:
-        return NetworkElement.ElementType.SPLICE_BOX
-    if "poste" in normalized:
-        return NetworkElement.ElementType.POLE
-    return NetworkElement.ElementType.OTHER
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def analyze_project_import(request, project_id):
-    """
-    Analisa um KML/KMZ sem gravar nada no banco: identifica pastas, cores de
-    cabo, e sugere a classificação de cada ponto (CTO, caixa de emenda,
-    reserva técnica etc.), para revisão antes da importação de verdade.
-
-    POST /api/map/projects/<id>/import/analyze/
-    """
-    project = get_object_or_404(NetworkProject, pk=project_id, enabled=True)
-    if not can_edit_company(request.user, project.company_id):
-        return JsonResponse(
-            {"success": False, "error": "Seu acesso é somente VIEW."},
-            status=403,
-        )
-    upload = request.FILES.get("file")
-    if upload is None:
-        return JsonResponse(
-            {"success": False, "error": "Selecione um arquivo KML ou KMZ."},
-            status=400,
-        )
-    try:
-        analysis = KMZAnalyzer.from_upload(upload).analyze(upload.name)
-        return JsonResponse({"success": True, "analysis": analysis})
-    except (ValueError, TypeError, zipfile.BadZipFile) as exc:
-        return JsonResponse({"success": False, "error": str(exc)}, status=400)
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def import_project_file(request, project_id):
-    project = get_object_or_404(NetworkProject, pk=project_id, enabled=True)
-    if not can_edit_company(request.user, project.company_id):
-        return JsonResponse(
-            {"success": False, "error": "Seu acesso é somente VIEW."},
-            status=403,
-        )
-    upload = request.FILES.get("file")
-    if upload is None:
-        return JsonResponse(
-            {"success": False, "error": "Selecione um arquivo KML ou KMZ."},
-            status=400,
-        )
-
-    try:
-        root = read_kml(upload)
-        point_count = 0
-        route_count = 0
-
-        with transaction.atomic():
-            for placemark in root.findall(".//{*}Placemark"):
-                name_node = placemark.find("./{*}name")
-                name = (
-                    name_node.text.strip()
-                    if name_node is not None and name_node.text
-                    else f"Importado {point_count + route_count + 1}"
-                )
-
-                point_node = placemark.find(".//{*}Point/{*}coordinates")
-                if point_node is not None:
-                    coordinates = coordinate_pairs(point_node.text)
-                    if coordinates:
-                        longitude, latitude = coordinates[0]
-                        element_type = imported_element_type(name)
-                        element_model = (
-                            CTO
-                            if element_type == NetworkElement.ElementType.CTO
-                            else NetworkElement
-                        )
-                        element_model.objects.create(
-                            project=project,
-                            company=project.company,
-                            name=name,
-                            code=f"IMP-{uuid.uuid4().hex[:8].upper()}",
-                            element_type=element_type,
-                            point=Point(longitude, latitude, srid=4326),
-                        )
-                        point_count += 1
-
-                line_node = placemark.find(".//{*}LineString/{*}coordinates")
-                if line_node is not None:
-                    coordinates = coordinate_pairs(line_node.text)
-                    if len(coordinates) >= 2:
-                        line = LineString(coordinates, srid=4326)
-                        NetworkRoute.objects.create(
-                            project=project,
-                            company=project.company,
-                            name=name,
-                            code=f"KML-{uuid.uuid4().hex[:8].upper()}",
-                            geometry=MultiLineString(line, srid=4326),
-                        )
-                        route_count += 1
-
-        return JsonResponse(
-            {
-                "success": True,
-                "imported": {"elements": point_count, "routes": route_count},
-            }
-        )
-    except (ValueError, TypeError) as exc:
-        return JsonResponse(
-            {"success": False, "error": str(exc)},
-            status=400,
-        )
 
 
 @api_view(["GET"])

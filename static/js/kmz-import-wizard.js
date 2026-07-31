@@ -1,129 +1,24 @@
-(function () {
-    "use strict";
-
-    const dialog = document.getElementById("kmz-import-dialog");
-    const form = document.getElementById("kmz-import-form");
-    const fileInput = document.getElementById("import-file");
-    const openButton = document.getElementById("import-button");
-    const closeButton = dialog?.querySelector(".dialog-close");
-    const content = document.getElementById("kmz-import-content");
-    const status = document.getElementById("kmz-import-status");
-
-    if (!dialog || !form || !fileInput || !openButton || !content || !status) return;
-
-    function escapeHtml(value) {
-        const span = document.createElement("span");
-        span.textContent = value == null ? "" : String(value);
-        return span.innerHTML;
-    }
-
-    function meters(value) {
-        return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(Number(value || 0));
-    }
-
-    function render(data) {
-        const summary = data.summary;
-        const colorRows = data.line_color_groups.map((group, index) => `
-            <tr>
-                <td><span class="kmz-color-chip" style="--kmz-color:${escapeHtml(group.hex || "#64748b")}"></span>${escapeHtml(group.hex || "Sem cor")}</td>
-                <td>${group.count}</td>
-                <td>${meters(group.total_length_m)} m</td>
-                <td>
-                    <select name="color_${index}_fiber_count">
-                        <option value="">Perguntar / revisar</option>
-                        ${data.supported_fiber_counts.map((count) => `<option value="${count}">${count} fibras</option>`).join("")}
-                    </select>
-                </td>
-            </tr>`).join("");
-
-        const folderRows = data.folders
-            .filter((folder) => folder.lines || folder.points)
-            .map((folder, index) => `
-                <tr>
-                    <td>${escapeHtml(folder.path)}</td>
-                    <td>${folder.points}</td>
-                    <td>${folder.lines}</td>
-                    <td><input type="checkbox" name="route_${index}" ${folder.route_candidate ? "checked" : ""}></td>
-                </tr>`).join("");
-
-        const groupRows = data.point_groups.map((group, index) => `
-            <tr>
-                <td>${escapeHtml(group.key)}</td>
-                <td>${group.count}</td>
-                <td>${escapeHtml(group.samples.join(", "))}</td>
-                <td>
-                    <select name="point_group_${index}">
-                        <option value="">Revisar</option>
-                        <option value="cto" ${group.key === "alias_cto" || group.key === "numeric_name" ? "selected" : ""}>CTO</option>
-                        <option value="splice_box" ${["alias_ceo", "alias_cdo", "alias_emenda"].includes(group.key) ? "selected" : ""}>Caixa de emenda</option>
-                        <option value="technical_reserve" ${group.key === "alias_rt" ? "selected" : ""}>Reserva técnica</option>
-                        <option value="pole">Poste</option>
-                        <option value="pop">POP/CPD</option>
-                        <option value="ignore">Ignorar</option>
-                    </select>
-                </td>
-            </tr>`).join("");
-
-        content.innerHTML = `
-            <section class="kmz-summary-grid">
-                <article><strong>${summary.placemarks}</strong><span>objetos</span></article>
-                <article><strong>${summary.points}</strong><span>pontos</span></article>
-                <article><strong>${summary.lines}</strong><span>linhas</span></article>
-                <article><strong>${meters(summary.total_line_length_m)} m</strong><span>metragem calculada</span></article>
-            </section>
-            ${data.warnings.length ? `<div class="kmz-warning">${data.warnings.map(escapeHtml).join("<br>")}</div>` : ""}
-            <details open><summary>1. Cores dos cabos</summary>
-                <p>Defina a quantidade de fibras por cor. O backend já converte a cor KML AABBGGRR para hexadecimal web.</p>
-                <div class="kmz-table-wrap"><table><thead><tr><th>Cor</th><th>Trechos</th><th>Metragem</th><th>Fibras</th></tr></thead><tbody>${colorRows}</tbody></table></div>
-            </details>
-            <details><summary>2. Pastas candidatas a rota</summary>
-                <div class="kmz-table-wrap"><table><thead><tr><th>Pasta</th><th>Pontos</th><th>Linhas</th><th>Criar rota</th></tr></thead><tbody>${folderRows}</tbody></table></div>
-            </details>
-            <details><summary>3. Grupos de pontos</summary>
-                <p>CDO e CEO são sugeridos como caixa de emenda. RT é sugerido como reserva técnica. Nomes numéricos são sugeridos como CTO com baixa confiança.</p>
-                <div class="kmz-table-wrap"><table><thead><tr><th>Regra</th><th>Qtd.</th><th>Amostras</th><th>Importar como</th></tr></thead><tbody>${groupRows}</tbody></table></div>
-            </details>
-            <div class="kmz-next-note">
-                Esta primeira entrega analisa e organiza as decisões sem gravar no banco.
-                A etapa seguinte transformará as escolhas em NetworkRoute, FiberCable, NetworkElement/CTO e CableReserve.
-            </div>`;
-    }
-
-    async function analyze(file) {
-        const projectSelect = document.getElementById("project-select");
-        if (!projectSelect?.value) throw new Error("Selecione um projeto antes de importar.");
-        const body = new FormData();
-        body.append("file", file);
-        status.textContent = `Analisando ${file.name}...`;
-        const csrf = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="))?.split("=")[1] || "";
-        const response = await fetch(`/api/map/projects/${projectSelect.value}/import/analyze/`, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "X-CSRFToken": decodeURIComponent(csrf), Accept: "application/json" },
-            body,
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || data.detail || `Erro HTTP ${response.status}`);
-        render(data.analysis);
-        status.textContent = `Análise concluída: ${data.analysis.summary.points} pontos e ${data.analysis.summary.lines} linhas.`;
-    }
-
-    openButton.onclick = () => {
-        form.reset();
-        content.innerHTML = '<p class="help-text">Selecione um KML ou KMZ para iniciar a análise sem gravar dados.</p>';
-        status.textContent = "";
-        dialog.showModal();
-    };
-    closeButton.onclick = () => dialog.close();
-    form.onsubmit = async (event) => {
-        event.preventDefault();
-        const file = fileInput.files[0];
-        if (!file) return;
-        try {
-            await analyze(file);
-        } catch (error) {
-            status.textContent = error.message;
-            status.classList.add("error");
-        }
-    };
+(function(){"use strict";
+const dialog=document.getElementById("kmz-import-dialog"),openButton=document.getElementById("import-button");
+if(!dialog||!openButton)return;
+const content=document.getElementById("kmz-import-content"),status=document.getElementById("kmz-import-status"),back=document.getElementById("kmz-back"),next=document.getElementById("kmz-next"),execute=document.getElementById("kmz-execute");
+const state={step:1,file:null,analysis:null,decisions:{line_groups:{},point_groups:{},routes:[],default_cto_capacity:16,default_reserve_length_m:20,reserve_max_distance_m:150},previewLayer:null};
+const esc=v=>{const s=document.createElement("span");s.textContent=v??"";return s.innerHTML};
+const meters=v=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:1}).format(Number(v||0));
+const csrf=()=>decodeURIComponent(document.cookie.split("; ").find(x=>x.startsWith("csrftoken="))?.split("=")[1]||"");
+function projectId(){return document.getElementById("project-select")?.value}
+function setStep(n){state.step=Math.max(1,Math.min(6,n));document.querySelectorAll(".kmz-steps button").forEach(b=>b.classList.toggle("active",Number(b.dataset.step)===state.step));back.hidden=state.step===1;next.hidden=state.step===6;execute.hidden=state.step!==6;render()}
+function clearPreview(){if(state.previewLayer&&window.networkMap?.map){window.networkMap.map.removeLayer(state.previewLayer)}state.previewLayer=null}
+function drawPreview(){clearPreview();const map=window.networkMap?.map;if(!window.L||!map||!state.analysis)return;state.previewLayer=L.geoJSON(state.analysis.preview_geojson,{style:f=>({color:f.properties.color||"#64748b",weight:4,opacity:.85}),pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:6,color:"#fff",weight:1,fillColor:"#f59e0b",fillOpacity:.9}),onEachFeature:(f,l)=>l.bindPopup(`<strong>${esc(f.properties.name)}</strong><br>${esc(f.properties.folder||"Sem pasta")}<br>${esc(f.properties.group_key||f.properties.color_key||"")}`)}).addTo(map);try{map.fitBounds(state.previewLayer.getBounds(),{padding:[30,30]})}catch(e){}dialog.close();status.textContent="Prévia carregada no mapa. Reabra o assistente para continuar."}
+async function analyze(){if(!state.file)throw new Error("Selecione um arquivo.");if(!projectId())throw new Error("Selecione um projeto.");const fd=new FormData();fd.append("file",state.file);status.textContent="Analisando arquivo...";const r=await fetch(`/api/map/projects/${projectId()}/import/analyze/`,{method:"POST",credentials:"same-origin",headers:{"X-CSRFToken":csrf(),Accept:"application/json"},body:fd});const d=await r.json();if(!r.ok)throw new Error(d.error||d.detail||`HTTP ${r.status}`);state.analysis=d.analysis;state.analysis.line_color_groups.forEach(g=>state.decisions.line_groups[g.key]={action:g.default_action,fiber_count:g.suggested_fibers||"",cable_type:"distribution"});state.analysis.point_groups.forEach(g=>state.decisions.point_groups[g.key]={type:g.suggested_type||"review",capacity:16});state.decisions.routes=state.analysis.folders.filter(f=>f.route_candidate).map(f=>f.path);status.textContent=`Análise concluída: ${d.analysis.summary.points} pontos e ${d.analysis.summary.lines} linhas.`;setStep(2)}
+function step1(){return `<div class="kmz-summary-grid"><article><strong>1</strong><span>Selecione o KMZ</span></article><article><strong>2</strong><span>Analise sem gravar</span></article><article><strong>3</strong><span>Revise decisões</span></article><article><strong>4</strong><span>Importe</span></article></div><p><input id="kmz-file" type="file" accept=".kml,.kmz" required></p><button id="kmz-analyze" class="primary-button" type="button">Analisar arquivo</button>`}
+function step2(){const rows=state.analysis.line_color_groups.map(g=>{const r=state.decisions.line_groups[g.key];return `<tr class="${r.action==='review'?'kmz-review':''}"><td><span class="kmz-color-chip" style="--kmz-color:${g.hex||'#64748b'}"></span>${esc(g.hex||'Sem cor/estilo')}</td><td>${g.count}<div class="kmz-samples">${esc(g.samples.join(', '))}</div></td><td>${meters(g.total_length_m)} m<div class="kmz-samples">${esc(g.folders.join(' · '))}</div></td><td><select data-line-action="${esc(g.key)}"><option value="review" ${r.action==='review'?'selected':''}>Revisar</option><option value="cable" ${r.action==='cable'?'selected':''}>Cabo óptico</option><option value="route" ${r.action==='route'?'selected':''}>Linha de rota</option><option value="ignore" ${r.action==='ignore'?'selected':''}>Ignorar</option></select></td><td><select data-line-fibers="${esc(g.key)}"><option value="">Definir</option>${state.analysis.supported_fiber_counts.map(n=>`<option value="${n}" ${String(r.fiber_count)===String(n)?'selected':''}>${n} fibras</option>`).join('')}</select></td></tr>`}).join('');return `<h3>Cabos e linhas por cor</h3><p>Preto e linhas sem estilo ficam em <strong>Revisar</strong>. Confira nomes, pastas e depois escolha se são cabo, rota ou desenho a ignorar. Cores com quantidade de fibras compatível com um modelo já cadastrado geram as fibras automaticamente; as demais precisam de geração manual depois de importar.</p><div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Cor</th><th>Trechos/amostras</th><th>Metragem/pastas</th><th>Importar como</th><th>Fibras</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+function step3(){const opts=[['review','Revisar'],['cto','CTO'],['splice_box','CEO/CDO - caixa de emenda'],['technical_reserve','Reserva técnica'],['pole','Poste'],['pop','POP/CPD'],['rack','Rack'],['tower','Torre'],['other','Outro'],['ignore','Ignorar']];const rows=state.analysis.point_groups.map(g=>{const r=state.decisions.point_groups[g.key];return `<tr><td>${esc(g.key)}<div class="kmz-samples">confiança ${Math.round((g.confidence||0)*100)}%</div></td><td>${g.count}</td><td>${esc(g.samples.join(', '))}</td><td><select data-point-type="${esc(g.key)}">${opts.map(([v,l])=>`<option value="${v}" ${r.type===v?'selected':''}>${l}</option>`).join('')}</select></td><td><input data-point-capacity="${esc(g.key)}" type="number" min="1" value="${r.capacity||16}" ${r.type==='cto'?'':'disabled'}></td></tr>`}).join('');return `<h3>Classificação dos pontos</h3><p>Nomes numéricos continuam em lote, mas você pode mudar a regra inteira. CDO/CEO viram caixa de emenda; RT vira reserva técnica associada ao cabo mais próximo.</p><div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Regra</th><th>Qtd.</th><th>Amostras</th><th>Tipo</th><th>Portas CTO</th></tr></thead><tbody>${rows}</tbody></table></div><p>Capacidade padrão das CTOs: <input id="kmz-default-capacity" type="number" min="1" value="${state.decisions.default_cto_capacity}"> · Reserva padrão: <input id="kmz-default-reserve" type="number" min="0.1" step="0.1" value="${state.decisions.default_reserve_length_m}"> m</p>`}
+function step4(){const rows=state.analysis.folders.filter(f=>f.route_candidate).map(f=>`<tr><td>${esc(f.path)}</td><td>${f.points}</td><td>${f.lines}</td><td>${Object.entries(f.composition||{}).map(([k,v])=>`<span class="kmz-badge">${esc(k)} ${v}</span>`).join('')}</td><td><input class="kmz-checkbox" data-route="${esc(f.path)}" type="checkbox" ${state.decisions.routes.includes(f.path)?'checked':''}></td></tr>`).join('');return `<h3>Pastas que realmente parecem rotas</h3><p>A raiz do projeto, CABOS, POP, CTO, CEO e CDO não são oferecidas como rota. Somente nomes contendo "ROTA" entram aqui.</p><div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Rota</th><th>Pontos</th><th>Linhas</th><th>Composição</th><th>Criar</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Nenhuma pasta com nome ROTA.</td></tr>'}</tbody></table></div>`}
+function step5(){const cables=state.analysis.line_color_groups.reduce((a,g)=>a+(state.decisions.line_groups[g.key].action==='cable'?g.count:0),0);const ignoredLines=state.analysis.line_color_groups.reduce((a,g)=>a+(['ignore','review'].includes(state.decisions.line_groups[g.key].action)?g.count:0),0);let ctos=0,elements=0,reserves=0,ignoredPoints=0;state.analysis.point_groups.forEach(g=>{const t=state.decisions.point_groups[g.key].type;if(t==='cto')ctos+=g.count;else if(t==='technical_reserve')reserves+=g.count;else if(['ignore','review'].includes(t))ignoredPoints+=g.count;else elements+=g.count});return `<h3>Prévia final</h3><div class="kmz-summary-grid"><article><strong>${cables}</strong><span>cabos</span></article><article><strong>${ctos}</strong><span>CTOs</span></article><article><strong>${elements}</strong><span>outros elementos</span></article><article><strong>${reserves}</strong><span>reservas técnicas</span></article><article><strong>${state.decisions.routes.length}</strong><span>rotas</span></article><article><strong>${ignoredLines}</strong><span>linhas ignoradas/revisar</span></article><article><strong>${ignoredPoints}</strong><span>pontos ignorados/revisar</span></article></div><div class="kmz-preview-help"><strong>Prévia visual:</strong> carregue temporariamente o KMZ no Leaflet sem salvar. Clique em cada linha/ponto para conferir nome, cor, pasta e regra.<br><button id="kmz-draw-preview" class="secondary-button" type="button">Desenhar prévia no mapa</button></div>`}
+function step6(){return `<h3>Pronto para importar</h3><div class="kmz-warning">A gravação é atômica: se ocorrer erro, o banco inteiro é revertido. Pontos/linhas ainda marcados como "Revisar" serão ignorados.</div><p>O arquivo será lido novamente e transformado em NetworkRoute, FiberCable, CTO, NetworkElement e CableReserve.</p>`}
+function bind(){document.getElementById("kmz-file")?.addEventListener("change",e=>state.file=e.target.files[0]);document.getElementById("kmz-analyze")?.addEventListener("click",()=>analyze().catch(e=>{status.textContent=e.message;status.classList.add('error')}));document.querySelectorAll('[data-line-action]').forEach(x=>x.onchange=()=>state.decisions.line_groups[x.dataset.lineAction].action=x.value);document.querySelectorAll('[data-line-fibers]').forEach(x=>x.onchange=()=>state.decisions.line_groups[x.dataset.lineFibers].fiber_count=x.value);document.querySelectorAll('[data-point-type]').forEach(x=>x.onchange=()=>{state.decisions.point_groups[x.dataset.pointType].type=x.value;render()});document.querySelectorAll('[data-point-capacity]').forEach(x=>x.onchange=()=>state.decisions.point_groups[x.dataset.pointCapacity].capacity=x.value);document.getElementById('kmz-default-capacity')?.addEventListener('change',e=>state.decisions.default_cto_capacity=e.target.value);document.getElementById('kmz-default-reserve')?.addEventListener('change',e=>state.decisions.default_reserve_length_m=e.target.value);document.querySelectorAll('[data-route]').forEach(x=>x.onchange=()=>{const p=x.dataset.route;state.decisions.routes=x.checked?[...new Set([...state.decisions.routes,p])]:state.decisions.routes.filter(v=>v!==p)});document.getElementById('kmz-draw-preview')?.addEventListener('click',drawPreview)}
+function render(){if(!state.analysis&&state.step>1)state.step=1;content.innerHTML=[null,step1,step2,step3,step4,step5,step6][state.step]();bind()}
+async function doImport(){if(!state.file)throw new Error('Arquivo não está mais disponível. Selecione novamente.');const fd=new FormData();fd.append('file',state.file);fd.append('decisions',JSON.stringify(state.decisions));status.textContent='Importando...';const r=await fetch(`/api/map/projects/${projectId()}/import/execute/`,{method:'POST',credentials:'same-origin',headers:{'X-CSRFToken':csrf(),Accept:'application/json'},body:fd});const d=await r.json();if(!r.ok)throw new Error(d.error||d.detail||`HTTP ${r.status}`);clearPreview();dialog.close();status.textContent='Importação concluída.';if(typeof window.networkMap?.loadStructure==='function')await window.networkMap.loadStructure(true);alert(`Importação concluída.\n${JSON.stringify(d.imported,null,2)}${d.warnings?.length?'\nAvisos:\n'+d.warnings.join('\n'):''}`)}
+openButton.onclick=()=>{state.step=1;state.file=null;state.analysis=null;clearPreview();dialog.showModal();setStep(1)};dialog.querySelector('.dialog-close').onclick=()=>dialog.close();back.onclick=()=>setStep(state.step-1);next.onclick=()=>{if(state.step===1&&!state.analysis)return;setStep(state.step+1)};execute.onclick=()=>doImport().catch(e=>{status.textContent=e.message;status.classList.add('error')});document.querySelectorAll('.kmz-steps button').forEach(b=>b.onclick=()=>{if(Number(b.dataset.step)===1||state.analysis)setStep(Number(b.dataset.step))});render();
 })();

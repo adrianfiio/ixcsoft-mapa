@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.46.0 — Assistente de importação KML/KMZ (fase 1: analisar sem gravar)**
+**v0.47.0 — Importação KML/KMZ completa (analisar, revisar, pré-visualizar e gravar)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
@@ -95,7 +95,7 @@ cadastro ao novo layout compartilhado.
 - Notificações por Telegram
 - Integração com Zabbix
 - Dashboards no Grafana
-- Importação de KML e KMZ (fase 1 pronta: análise e revisão sem gravar; falta a gravação definitiva)
+- Importação de KML/KMZ: falta lote/desfazer da importação e geração automática de fibras quando não há modelo de cabo cadastrado com a mesma quantidade
 - Integração das telas de cadastro ao layout do dashboard
 - Ampliação dos testes automatizados
 

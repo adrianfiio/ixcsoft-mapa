@@ -1,18 +1,1 @@
-.kmz-import-dialog { width: min(1080px, 94vw); max-height: 92vh; }
-.kmz-import-dialog .dialog-body { overflow: auto; max-height: 72vh; padding: 0 1rem 1rem; }
-.kmz-import-file-row { display:flex; gap:.75rem; align-items:end; margin-bottom:1rem; }
-.kmz-import-file-row label { flex:1; }
-.kmz-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; margin:1rem 0; }
-.kmz-summary-grid article { background:#0f1e30; border:1px solid #24364d; border-radius:12px; padding:1rem; display:flex; flex-direction:column; }
-.kmz-summary-grid strong { font-size:1.25rem; }
-.kmz-summary-grid span { color:#94a3b8; font-size:.82rem; }
-.kmz-import-dialog details { border:1px solid #24364d; border-radius:12px; margin:.75rem 0; overflow:hidden; }
-.kmz-import-dialog summary { cursor:pointer; padding:.9rem 1rem; font-weight:700; background:#0b1727; }
-.kmz-import-dialog details > p { padding:0 1rem; color:#94a3b8; }
-.kmz-table-wrap { overflow:auto; }
-.kmz-import-dialog table { width:100%; border-collapse:collapse; }
-.kmz-import-dialog th,.kmz-import-dialog td { padding:.7rem .9rem; border-top:1px solid #24364d; text-align:left; vertical-align:top; }
-.kmz-color-chip { display:inline-block; width:14px; height:14px; border-radius:50%; background:var(--kmz-color); margin-right:.5rem; border:1px solid #fff8; }
-.kmz-warning { padding:.8rem 1rem; border:1px solid #f59e0b66; background:#f59e0b18; border-radius:10px; color:#fbbf24; }
-.kmz-next-note { margin-top:1rem; padding:1rem; border-radius:10px; background:#2dd4bf12; border:1px solid #2dd4bf55; }
-@media (max-width:760px){.kmz-summary-grid{grid-template-columns:repeat(2,1fr)}.kmz-import-file-row{align-items:stretch;flex-direction:column}}
+.kmz-import-dialog{width:min(1180px,96vw);max-height:94vh}.kmz-import-dialog .dialog-body{overflow:auto;max-height:80vh}.kmz-steps{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}.kmz-steps button{padding:10px;border:1px solid #28425e;background:#0c1b2d;color:#9fb0c5;border-radius:8px}.kmz-steps button.active{background:#123752;color:#fff;border-color:#2dd4bf}.kmz-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kmz-summary-grid article{padding:18px;border:1px solid #28425e;border-radius:12px}.kmz-summary-grid strong{display:block;font-size:1.6rem}.kmz-table-wrap{overflow:auto}.kmz-table{width:100%;border-collapse:collapse}.kmz-table th,.kmz-table td{padding:12px;border-bottom:1px solid #28425e;text-align:left;vertical-align:top}.kmz-color-chip{display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:8px;background:var(--kmz-color);border:1px solid #fff}.kmz-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.kmz-preview-help{padding:12px;border:1px solid #0f7186;border-radius:10px;background:#0a2b39}.kmz-warning{padding:12px;border:1px solid #9b6a00;color:#ffc928;border-radius:10px;margin:12px 0}.kmz-samples{font-size:.88rem;color:#9fb0c5}.kmz-badge{display:inline-block;padding:3px 7px;border:1px solid #36516e;border-radius:999px;margin:2px}.kmz-review{border-color:#d59b00!important}.kmz-import-dialog select,.kmz-import-dialog input[type=number]{min-width:150px}.kmz-checkbox{transform:scale(1.35)}@media(max-width:900px){.kmz-steps{grid-template-columns:repeat(2,1fr)}.kmz-summary-grid{grid-template-columns:repeat(2,1fr)}}

@@ -1129,9 +1129,9 @@ def _trace_fiber_upstream(fiber, visited=None):
     potencia_tx_dbm) — potencia_tx_dbm vem None se a OLT não tiver potência
     cadastrada, ou se o caminho não chegar a nenhuma OLT."""
     visited = visited if visited is not None else set()
-    if fiber is None or fiber.id in visited or len(visited) > 40:
+    if fiber is None or ("fiber", fiber.id) in visited or len(visited) > 40:
         return [], 0.0, None
-    visited.add(fiber.id)
+    visited.add(("fiber", fiber.id))
 
     fusion = ContainerPortLink.objects.filter(
         cable_fiber=fiber, destination_port__port_type=ContainerEquipmentPort.PortType.DIO,
@@ -1164,27 +1164,56 @@ def _trace_fiber_upstream(fiber, visited=None):
         "splitter__tray__splice_box",
     ).first()
     if port:
-        splitter = port.splitter
-        if splitter.input_fiber_id:
-            upstream_path, upstream_loss, tx_power = _trace_fiber_upstream(splitter.input_fiber, visited)
-            cable_loss = _cable_length_km(splitter.input_fiber.cable) * FIBER_ATTENUATION_DB_PER_KM
-        elif splitter.input_splitter_port_id:
-            upstream_path, upstream_loss, tx_power = _trace_fiber_upstream(
-                splitter.input_splitter_port.output_fiber, visited
-            )
-            cable_loss = 0.0
-        else:
-            return [], 0.0, None
-        split_loss = _splitter_output_loss_db(splitter.ratio, port.number)
-        loss = upstream_loss + cable_loss + split_loss
-        box_name = splitter.tray.splice_box.name
-        return [*upstream_path, {"type": "splitter", "name": f"Splitter {splitter.ratio} · {box_name}"}], loss, tx_power
+        return _trace_splitter_port_upstream(port, visited)
 
     return [], 0.0, None
 
 
+def _trace_splitter_port_upstream(port, visited=None):
+    """Percorre para trás a partir de uma porta de saída de splitter. Uma
+    porta pode alimentar outra fibra normal OU, em cascata, entrar
+    diretamente na entrada de outro splitter sem que exista uma fibra
+    própria entre os dois (splitter->splitter físico dentro da mesma
+    caixa) — por isso este cálculo não depende de `output_fiber`."""
+    visited = visited if visited is not None else set()
+    if port is None or ("port", port.id) in visited or len(visited) > 40:
+        return [], 0.0, None
+    visited.add(("port", port.id))
+
+    splitter = port.splitter
+    if splitter.input_fiber_id:
+        upstream_path, upstream_loss, tx_power = _trace_fiber_upstream(splitter.input_fiber, visited)
+        cable_loss = _cable_length_km(splitter.input_fiber.cable) * FIBER_ATTENUATION_DB_PER_KM
+    elif splitter.input_splitter_port_id:
+        upstream_path, upstream_loss, tx_power = _trace_splitter_port_upstream(
+            splitter.input_splitter_port, visited
+        )
+        cable_loss = 0.0
+    else:
+        return [], 0.0, None
+    split_loss = _splitter_output_loss_db(splitter.ratio, port.number)
+    loss = upstream_loss + cable_loss + split_loss
+    box_name = splitter.tray.splice_box.name
+    return [*upstream_path, {"type": "splitter", "name": f"Splitter {splitter.ratio} · {box_name}"}], loss, tx_power
+
+
 def _fiber_budget_payload(fiber):
     path, loss_db, tx_power = _trace_fiber_upstream(fiber)
+    if tx_power is None:
+        return {
+            "path": path,
+            "loss_db": round(loss_db, 2),
+            "budget_dbm": None,
+        }
+    return {
+        "path": path,
+        "loss_db": round(loss_db, 2),
+        "budget_dbm": round(tx_power - loss_db, 2),
+    }
+
+
+def _splitter_port_budget_payload(port):
+    path, loss_db, tx_power = _trace_splitter_port_upstream(port)
     if tx_power is None:
         return {
             "path": path,
@@ -2328,8 +2357,8 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "input_budget": (
                         _fiber_budget_payload(splitter.input_fiber)
                         if splitter.input_fiber_id
-                        else _fiber_budget_payload(splitter.input_splitter_port.output_fiber)
-                        if splitter.input_splitter_port_id and splitter.input_splitter_port.output_fiber_id
+                        else _splitter_port_budget_payload(splitter.input_splitter_port)
+                        if splitter.input_splitter_port_id
                         else None
                     ),
                     "ports": [

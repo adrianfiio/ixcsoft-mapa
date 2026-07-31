@@ -2152,4 +2152,9 @@
         }),
     ]).then(() => { updateTools(); notify(canEdit ? "Selecione ou crie um projeto." : "Visualização ativa. Entre como administrador para editar."); })
       .catch((error) => notify(error.message, true));
+
+    // Usado pelo assistente de importação KMZ para desenhar a prévia
+    // temporária no Leaflet sem gravar nada, e para recarregar a estrutura
+    // depois de uma importação definitiva.
+    window.networkMap = { map, loadStructure };
 })();
