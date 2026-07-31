@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.50.3] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.50.2`.
+
+### Corrigido
+
+- Excluir projeto travava com `ProtectedError` ao apagar cabos que têm fusão registrada: `FiberSplice.input_fiber`/`output_fiber` usam `on_delete=PROTECT` sobre `FiberStrand`, então apagar o cabo (que cascadeia até a fibra) falhava enquanto a fusão ainda existisse apontando para ela. `wipe_project_structure` agora apaga as fusões do projeto antes dos cabos.
+- Pelo mesmo motivo, `olt_integration.OLT.cpd` protege o POP — apagar o POP de um projeto com OLT cadastrada nele quebraria do mesmo jeito. Agora essas OLTs são apagadas antes do POP. A tela de confirmação também passou a mostrar as contagens de fusões e de OLTs do CPD/POP.
+
 ## [0.50.2] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.50.1`.

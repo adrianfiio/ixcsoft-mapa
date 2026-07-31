@@ -6,9 +6,11 @@ from apps.network_map.services import project_structure_counts, wipe_project_str
 
 LABELS = {
     "kmz_batches": "Lotes de importação KMZ",
+    "splices": "Fusões (fundidas entre cabos deste projeto)",
     "cables": "Cabos (tubos, fibras, reservas e passagens ligados a eles)",
     "elements": "Elementos (postes, CTOs, CEOs/CDOs, racks, DIOs, OLTs, splitters, fusões...)",
     "routes": "Rotas",
+    "cpd_olts": "OLTs cadastradas no CPD/POP deste projeto",
     "pop": "POP",
 }
 

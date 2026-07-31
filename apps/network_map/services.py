@@ -1,9 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 
 from .models import (
     FiberCable,
     FiberColor,
+    FiberSplice,
     FiberStrand,
     FiberTube,
     KMZImportBatch,
@@ -198,13 +200,33 @@ def generate_cable_fibers(cable, force=False):
     }
 
 
+def _project_splices(project):
+    """FiberSplice protege (`on_delete=PROTECT`) as fibras que funde, então
+    precisa ser apagado antes do cabo — senão a exclusão do cabo trava
+    tentando apagar os `FiberStrand` ainda referenciados pela fusão."""
+    return FiberSplice.objects.filter(
+        Q(input_fiber__cable__project=project) | Q(output_fiber__cable__project=project)
+    )
+
+
+def _project_cpd_olts(project):
+    """`olt_integration.OLT.cpd` protege (`on_delete=PROTECT`) o POP — sem
+    apagar essas OLTs antes, apagar o POP do projeto travaria do mesmo jeito
+    que as fusões travavam a exclusão do cabo."""
+    from apps.olt_integration.models import OLT
+
+    return OLT.objects.filter(cpd__project=project)
+
+
 def project_structure_counts(project):
     """Conta, por categoria, tudo que `wipe_project_structure` apagaria."""
     return {
         "kmz_batches": KMZImportBatch.objects.filter(project=project).count(),
+        "splices": _project_splices(project).count(),
         "cables": FiberCable.objects.filter(project=project).count(),
         "elements": NetworkElement.objects.filter(project=project).count(),
         "routes": NetworkRoute.objects.filter(project=project).count(),
+        "cpd_olts": _project_cpd_olts(project).count(),
         "pop": POP.objects.filter(project=project).count(),
     }
 
@@ -215,9 +237,11 @@ def wipe_project_structure(project):
     POP), preservando o projeto em si (nome, código, empresa)."""
     targets = [
         KMZImportBatch.objects.filter(project=project),
+        _project_splices(project),
         FiberCable.objects.filter(project=project),
         NetworkElement.objects.filter(project=project),
         NetworkRoute.objects.filter(project=project),
+        _project_cpd_olts(project),
         POP.objects.filter(project=project),
     ]
     with transaction.atomic():

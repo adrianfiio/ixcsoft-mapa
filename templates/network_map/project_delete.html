@@ -18,9 +18,11 @@
             <div class="panel-header"><h2 class="panel-title">O que será perdido</h2></div>
             <div class="account-items">
                 <div><span><strong>Elementos</strong><small>postes, CTOs, CEOs/CDOs, racks, DIOs, OLTs, splitters, fusões...</small></span><b>{{ structure_counts.elements }}</b></div>
+                <div><span><strong>Fusões</strong><small>fundidas entre cabos deste projeto</small></span><b>{{ structure_counts.splices }}</b></div>
                 <div><span><strong>Cabos</strong><small>com tubos, fibras, reservas e passagens ligados a eles</small></span><b>{{ structure_counts.cables }}</b></div>
                 <div><span><strong>Rotas</strong></span><b>{{ structure_counts.routes }}</b></div>
                 <div><span><strong>Lotes de importação KMZ</strong></span><b>{{ structure_counts.kmz_batches }}</b></div>
+                <div><span><strong>OLTs do CPD/POP</strong></span><b>{{ structure_counts.cpd_olts }}</b></div>
                 <div><span><strong>POP</strong></span><b>{{ structure_counts.pop }}</b></div>
             </div>
         </article>
