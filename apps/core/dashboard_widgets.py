@@ -81,3 +81,14 @@ def widget_meta(widgets, layout):
 
 def widget_meta_for(company, layout):
     return widget_meta(widgets_for(company), layout)
+
+
+def clean_layout_payload(widgets, payload):
+    """Valida o corpo JSON enviado pelo editor visual (`dashboard-layout-editor.js`)
+    contra as chaves conhecidas de `widgets`, descartando qualquer coisa que
+    não bata. Retorna ``(order, hidden, banner_text)``."""
+    valid_keys = {key for key, _label in widgets}
+    order = [key for key in payload.get("widget_order") or [] if key in valid_keys]
+    hidden = [key for key in payload.get("hidden_widgets") or [] if key in valid_keys]
+    banner_text = str(payload.get("banner_text") or "")[:280]
+    return order, hidden, banner_text

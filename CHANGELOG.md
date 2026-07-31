@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.55.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.54.0`.
+
+### Adicionado
+
+- **`/` redireciona para "Visão da plataforma" quando o usuário é superusuário** — a "Visão geral" antiga não mostrava nada de útil pra quem administra a plataforma inteira (números agregados sem separar por empresa, alertas de clientes que o superadmin não acompanha). Empresas continuam vendo a própria "Visão geral" normalmente; nada muda pra elas.
+- **Cliente edita o próprio dashboard**: qualquer usuário com permissão EDIT na própria empresa agora vê um botão "Editar dashboard →" direto na "Visão geral", sem depender do superusuário. Mesmo arrastar-e-soltar, esconder cartões/painéis e mensagem no topo da v0.52.0/v0.53.1 — só mudou quem pode ligar o modo de edição (antes só o superusuário via `/painel/dashboards/<empresa>/`, agora também a própria empresa, sempre restrito à empresa do usuário logado, nunca a de outra). O fluxo do superadmin (`/painel/dashboards/`, "Editor de dashboards →") continua existindo, útil pra editar em nome de uma empresa como suporte.
+- **Whitelabel: logo e cor por empresa** — nova página "Marca (whitelabel)" em "Minha administração" (usuários EDIT): upload de logo (até 2MB) e escolha de uma cor de destaque. Aplicado automaticamente na barra lateral (logo) e no tema (`--primary`) pra todos os usuários daquela empresa; sem configurar, continua a marca padrão da AFService. Primeiro upload de arquivo do projeto — adiciona `Pillow` como dependência e passa a servir `/media/` (antes não existia rota nenhuma pra isso, mesmo com o volume `media_data` já montado no `docker-compose.yml`).
+
 ## [0.54.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.53.1`.

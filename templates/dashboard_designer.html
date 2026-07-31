@@ -8,8 +8,13 @@
 {% if edit_mode %}
 {% csrf_token %}
 <div class="dashboard-editor-toolbar">
+    {% if editor_company %}
     <a href="{% url 'dashboard-layouts' %}" class="cancel-link">← Empresas</a>
     <strong>Editando: {{ editor_company.trade_name|default:editor_company.name }}</strong>
+    {% else %}
+    <a href="{% url 'dashboard' %}" class="cancel-link">← Sair da edição</a>
+    <strong>Editando seu dashboard</strong>
+    {% endif %}
     <input type="text" id="editor-banner-text" placeholder="Mensagem no topo do dashboard (opcional)" value="{{ dashboard_banner }}" maxlength="280">
     <button type="button" id="editor-save">Salvar layout</button>
     <span class="editor-status" id="editor-status"></span>
@@ -22,7 +27,10 @@
         <h1>{{ company.trade_name|default:company.name }}</h1>
         <p>Acompanhe a infraestrutura desenhada nos seus projetos de rede.</p>
     </div>
-    <a class="primary-action" href="{% url 'map' %}">⌖ Abrir mapa</a>
+    <div class="page-heading-actions">
+        {% if can_edit_dashboard and not edit_mode %}<a class="primary-action" href="?edit=1">Editar dashboard →</a>{% endif %}
+        <a class="primary-action" href="{% url 'map' %}">⌖ Abrir mapa</a>
+    </div>
 </section>
 
 {% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}

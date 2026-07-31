@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Marca (whitelabel) | AFService Map{% endblock %}
+{% block topbar_title %}Marca (whitelabel){% endblock %}
+
+{% block content %}
+<section class="onboarding-shell">
+    <div class="onboarding-intro">
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>Marca da sua empresa</h1>
+        <p>Troque a logo e a cor de destaque que aparecem para os usuários da sua empresa neste sistema.</p>
+    </div>
+    {% if company.logo %}
+    <div class="branding-preview">
+        <img src="{{ company.logo.url }}" alt="Logo atual">
+        <small>Logo atual</small>
+    </div>
+    {% endif %}
+    <form class="platform-form onboarding-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="platform-form-grid">
+            {% for field in form %}
+            <label>
+                <strong>{{ field.label }}</strong>{{ field }}
+                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            {% endfor %}
+        </div>
+        <div class="platform-form-actions">
+            <button type="submit">Salvar →</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

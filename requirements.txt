@@ -12,3 +12,4 @@ pysnmp>=6.1,<8
 django-celery-beat>=2.6,<3
 drf-spectacular>=0.27,<1
 cryptography>=42,<46
+Pillow>=10,<12

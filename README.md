@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.54.0 — Visão da plataforma: dashboard detalhado e editável para o superadmin**
+**v0.55.0 — Cliente edita o próprio dashboard e whitelabel (logo e cor da empresa)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

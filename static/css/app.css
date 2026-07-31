@@ -213,6 +213,9 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .platform-form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; }
 .platform-form-actions button { padding: 12px 18px; color: #05201d; background: var(--primary); border: 0; border-radius: 8px; font-weight: 850; }
 .form-error { color: #fda4af; }
+.branding-preview { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.branding-preview img { width: 150px; height: 50px; object-fit: contain; object-position: left center; padding: 8px; background: #0b1727; border: 1px solid var(--border); border-radius: 10px; }
+.branding-preview small { color: #9fb2c6; }
 .panel-danger { border: 1px solid rgba(243,93,109,.4); }
 .panel-danger .panel-title { color: var(--danger); }
 .cancel-link { color: var(--muted); font-size: 13px; font-weight: 700; }

@@ -264,3 +264,24 @@ class CompanyEmailConfigurationForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class CompanyBrandingForm(forms.ModelForm):
+    MAX_LOGO_SIZE = 2 * 1024 * 1024
+
+    class Meta:
+        model = Company
+        fields = ("logo", "brand_color")
+        labels = {
+            "logo": "Logo",
+            "brand_color": "Cor de destaque",
+        }
+        widgets = {
+            "brand_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
+    def clean_logo(self):
+        logo = self.cleaned_data.get("logo")
+        if logo and hasattr(logo, "size") and logo.size > self.MAX_LOGO_SIZE:
+            raise forms.ValidationError("A logo deve ter no máximo 2MB.")
+        return logo

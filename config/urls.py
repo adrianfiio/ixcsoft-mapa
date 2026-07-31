@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
@@ -10,6 +12,7 @@ from apps.core.views import (
     DashboardView,
     PlatformOverviewView,
     company_alerts,
+    company_branding,
     company_email_settings,
     company_onboarding,
     company_provider_mode,
@@ -37,6 +40,7 @@ urlpatterns = [
     path("painel/modo-operacao/", company_provider_mode, name="company-provider-mode"),
     path("painel/equipe/", company_team, name="company-team"),
     path("painel/email/", company_email_settings, name="company-email-settings"),
+    path("painel/marca/", company_branding, name="company-branding"),
     path("painel/buscar/", company_search, name="company-search"),
     path("painel/alertas/", company_alerts, name="company-alerts"),
     path("painel/novo/<str:asset_type>/", create_company_asset, name="company-asset-create"),
@@ -60,3 +64,9 @@ urlpatterns = [
         name="swagger-ui",
     ),
 ]
+
+# Sem nginx/CDN dedicado pra mídia neste deploy (container único atrás de um
+# proxy simples) — servir MEDIA_ROOT pelo próprio processo é suficiente pro
+# volume esperado (logos de empresa), mesmo raciocínio já usado com o
+# WhiteNoise para estáticos.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

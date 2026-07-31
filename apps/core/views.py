@@ -23,7 +23,13 @@ from apps.ixc_integration.models import IXCCustomer, IXCLogin, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
-from apps.core.dashboard_widgets import PLATFORM_WIDGETS, widget_meta, widget_meta_for, widgets_for
+from apps.core.dashboard_widgets import (
+    PLATFORM_WIDGETS,
+    clean_layout_payload,
+    widget_meta,
+    widget_meta_for,
+    widgets_for,
+)
 from apps.core.models import (
     Company,
     CompanyDashboardLayout,
@@ -41,6 +47,7 @@ from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
 from apps.core.access import editable_company_ids
 from apps.core.forms import (
+    CompanyBrandingForm,
     CompanyEmailConfigurationForm,
     CompanyOnboardingForm,
     CompanyProviderModeForm,
@@ -65,6 +72,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         redirect_name = onboarding_redirect_name(request.user)
         if redirect_name:
             return redirect(redirect_name)
+        if self.template_name == "dashboard.html" and request.user.is_superuser:
+            return redirect("platform-overview")
         return super().dispatch(request, *args, **kwargs)
 
     def _primary_company(self):
@@ -111,14 +120,32 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             "cable_km": round((cable_length or 0) / 1000, 2),
         }
 
+    def _can_edit_dashboard(self, company):
+        """Mesmo critério de `company_email_settings`/`company_team`: só um
+        membro EDIT ativo da PRÓPRIA empresa (nunca superusuário genérico,
+        nunca outra empresa) pode reordenar/esconder os widgets dela."""
+        if not company:
+            return False
+        return CompanyMembership.objects.filter(
+            user=self.request.user,
+            company=company,
+            active=True,
+            role=CompanyMembership.Role.EDIT,
+        ).exists()
+
     def _dashboard_layout_context(self, company):
         """Ordem/visibilidade dos widgets e mensagem no topo do dashboard,
-        conforme salvo (admin-only) em `CompanyDashboardLayout` — sem nada
-        salvo, cai no padrão do template (nada some, ordem de sempre)."""
+        conforme salvo em `CompanyDashboardLayout` — sem nada salvo, cai no
+        padrão do template (nada some, ordem de sempre). `can_edit_dashboard`
+        só é considerado na própria "Visão geral" (`dashboard.html`), não no
+        mapa, que reaproveita esse mesmo método de contexto."""
         layout = getattr(company, "dashboard_layout", None)
+        can_edit_dashboard = self.template_name == "dashboard.html" and self._can_edit_dashboard(company)
         return {
             "widget_meta": widget_meta_for(company, layout),
             "dashboard_banner": layout.banner_text if layout else "",
+            "can_edit_dashboard": can_edit_dashboard,
+            "edit_mode": can_edit_dashboard and self.request.GET.get("edit") == "1",
         }
 
     def _provider_context(self, company_ids):
@@ -241,11 +268,40 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             }
         return context
 
+    def post(self, request, *args, **kwargs):
+        """Autoatendimento: um membro EDIT salva a ordem/visibilidade dos
+        widgets da PRÓPRIA "Visão geral" (`?edit=1`). O JS do editor
+        (`dashboard-layout-editor.js`) sempre envia pra
+        `window.location.pathname`, então em `/` isso cai aqui."""
+        company = self._primary_company()
+        if not self._can_edit_dashboard(company):
+            return JsonResponse(
+                {"success": False, "error": "Sem permissão para editar este dashboard."},
+                status=403,
+            )
+        try:
+            payload = json.loads(request.body or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
+
+        order, hidden, banner_text = clean_layout_payload(widgets_for(company), payload)
+        CompanyDashboardLayout.objects.update_or_create(
+            company=company,
+            defaults={
+                "widget_order": order,
+                "hidden_widgets": hidden,
+                "banner_text": banner_text,
+                "updated_by": request.user,
+            },
+        )
+        return JsonResponse({"success": True})
+
 
 class DashboardLayoutListView(LoginRequiredMixin, TemplateView):
-    """Lista de empresas pra escolher qual dashboard editar. Só a
-    plataforma (superusuário) tem acesso — nenhuma empresa cliente edita
-    o próprio layout."""
+    """Lista de empresas pra escolher qual dashboard editar (uso do
+    superusuário pra entrar como suporte). Empresas também podem editar o
+    próprio layout diretamente na "Visão geral" (ver `DashboardView.post`),
+    sem passar por aqui."""
 
     template_name = "dashboard_layout_list.html"
 
@@ -292,11 +348,7 @@ class DashboardLayoutEditorView(DashboardView):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
 
-        valid_keys = {key for key, _label in widgets_for(self.company)}
-        order = [key for key in payload.get("widget_order") or [] if key in valid_keys]
-        hidden = [key for key in payload.get("hidden_widgets") or [] if key in valid_keys]
-        banner_text = str(payload.get("banner_text") or "")[:280]
-
+        order, hidden, banner_text = clean_layout_payload(widgets_for(self.company), payload)
         CompanyDashboardLayout.objects.update_or_create(
             company=self.company,
             defaults={
@@ -341,11 +393,7 @@ class PlatformOverviewView(LoginRequiredMixin, TemplateView):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
 
-        valid_keys = {key for key, _label in PLATFORM_WIDGETS}
-        order = [key for key in payload.get("widget_order") or [] if key in valid_keys]
-        hidden = [key for key in payload.get("hidden_widgets") or [] if key in valid_keys]
-        banner_text = str(payload.get("banner_text") or "")[:280]
-
+        order, hidden, banner_text = clean_layout_payload(PLATFORM_WIDGETS, payload)
         layout = self._layout()
         if layout is None:
             layout = PlatformDashboardLayout()
@@ -590,6 +638,32 @@ def company_email_settings(request):
         "company_email_settings.html",
         {"form": form, "company": company, "configuration": configuration},
     )
+
+
+@login_required
+def company_branding(request):
+    membership = (
+        CompanyMembership.objects.filter(
+            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+        )
+        .select_related("company")
+        .first()
+    )
+    if request.user.is_superuser or membership is None:
+        messages.info(
+            request,
+            "Somente um usuário com permissão de edição pode configurar a marca da empresa.",
+        )
+        return redirect("account-panel")
+    company = membership.company
+    form = CompanyBrandingForm(request.POST or None, request.FILES or None, instance=company)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Marca da empresa atualizada com sucesso.")
+        return redirect("company-branding")
+
+    return render(request, "company_branding.html", {"form": form, "company": company})
 
 
 @login_required

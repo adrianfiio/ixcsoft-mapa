@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 
 
@@ -68,6 +69,21 @@ class Company(TimeStampedModel):
     onboarding_completed = models.BooleanField(default=False)
     slug = models.SlugField(max_length=180, unique=True)
     active = models.BooleanField(default=True)
+    logo = models.ImageField(
+        upload_to="company_logos/",
+        blank=True,
+        null=True,
+        verbose_name="Logo (whitelabel)",
+        help_text="Substitui a logo padrão na barra lateral para os usuários desta empresa.",
+    )
+    brand_color = models.CharField(
+        max_length=7,
+        blank=True,
+        default="",
+        verbose_name="Cor de destaque (whitelabel)",
+        validators=[RegexValidator(r"^#[0-9A-Fa-f]{6}$", "Use o formato #RRGGBB.")],
+        help_text="Substitui a cor de destaque padrão para os usuários desta empresa.",
+    )
 
     class Meta:
         verbose_name = "Empresa"
