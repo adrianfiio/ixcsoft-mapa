@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.54.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.53.1`.
+
+### Adicionado
+
+- **"Visão da plataforma"** — novo item na barra lateral, só pra superusuário: um dashboard detalhado com o resumo de cada empresa ativa (clientes, km de cabo, elementos de rede, alertas ativos, tamanho da equipe e status da sincronização com o ERP), totais somados da plataforma inteira, e um painel "Precisa de atenção" (onboarding incompleto, nunca sincronizou, sincronização atrasada ou com falha). Editável do mesmo jeito que o dashboard de empresa (`?edit=1`): arrastar pra reordenar, esconder cartões/painéis, mensagem no topo — reaproveitando a mesma infraestrutura da v0.52.0/v0.53.1 (`CompanyDashboardLayout`, `dashboard-layout-editor.js`, `widget_edit_bar.html`), agora generalizada para um layout único da plataforma (`PlatformDashboardLayout`, sem empresa dona).
+- Não muda o que a "Visão geral" (`/`) mostra hoje pra superusuário — a visão da plataforma fica em URL própria (`/painel/plataforma/`).
+
 ## [0.53.1] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.53.0`.

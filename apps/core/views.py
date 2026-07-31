@@ -23,8 +23,15 @@ from apps.ixc_integration.models import IXCCustomer, IXCLogin, IXCSyncExecution
 from apps.network_map.models import CTO, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
-from apps.core.dashboard_widgets import widget_meta_for, widgets_for
-from apps.core.models import Company, CompanyDashboardLayout, CompanyEmailConfiguration, MapBaseConfiguration
+from apps.core.dashboard_widgets import PLATFORM_WIDGETS, widget_meta, widget_meta_for, widgets_for
+from apps.core.models import (
+    Company,
+    CompanyDashboardLayout,
+    CompanyEmailConfiguration,
+    MapBaseConfiguration,
+    PlatformDashboardLayout,
+)
+from apps.core.platform_overview import platform_overview_summary
 from apps.core.access import accessible_company_ids, has_any_edit_access, onboarding_redirect_name
 from apps.core.models import CompanyMembership
 from apps.core.services.email import send_company_email
@@ -299,6 +306,54 @@ class DashboardLayoutEditorView(DashboardView):
                 "updated_by": request.user,
             },
         )
+        return JsonResponse({"success": True})
+
+
+class PlatformOverviewView(LoginRequiredMixin, TemplateView):
+    """"Visão da plataforma": resumo detalhado de todas as empresas ativas,
+    só pra superusuário. Reaproveita o mesmo mecanismo de widgets
+    editáveis do dashboard de empresa (`CompanyDashboardLayout`/
+    `dashboard-layout-editor.js`), só que sobre um layout único da
+    plataforma (`PlatformDashboardLayout`, sem empresa dona)."""
+
+    template_name = "platform_overview.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def _layout(self):
+        return PlatformDashboardLayout.objects.first()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(platform_overview_summary())
+        layout = self._layout()
+        context["widget_meta"] = widget_meta(PLATFORM_WIDGETS, layout)
+        context["dashboard_banner"] = layout.banner_text if layout else ""
+        context["edit_mode"] = self.request.GET.get("edit") == "1"
+        return context
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json.loads(request.body or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
+
+        valid_keys = {key for key, _label in PLATFORM_WIDGETS}
+        order = [key for key in payload.get("widget_order") or [] if key in valid_keys]
+        hidden = [key for key in payload.get("hidden_widgets") or [] if key in valid_keys]
+        banner_text = str(payload.get("banner_text") or "")[:280]
+
+        layout = self._layout()
+        if layout is None:
+            layout = PlatformDashboardLayout()
+        layout.widget_order = order
+        layout.hidden_widgets = hidden
+        layout.banner_text = banner_text
+        layout.updated_by = request.user
+        layout.save()
         return JsonResponse({"success": True})
 
 

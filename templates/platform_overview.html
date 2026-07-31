@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Visão da plataforma | AFService Map{% endblock %}
+{% block topbar_title %}Visão da plataforma{% endblock %}
+{% block main_class %}page-content{% if edit_mode %} dashboard-edit-mode{% endif %}{% endblock %}
+
+{% block content %}
+{% if edit_mode %}
+{% csrf_token %}
+<div class="dashboard-editor-toolbar">
+    <a href="{% url 'platform-overview' %}" class="cancel-link">← Sair da edição</a>
+    <strong>Editando a visão da plataforma</strong>
+    <input type="text" id="editor-banner-text" placeholder="Mensagem no topo (opcional)" value="{{ dashboard_banner }}" maxlength="280">
+    <button type="button" id="editor-save">Salvar layout</button>
+    <span class="editor-status" id="editor-status"></span>
+</div>
+{% endif %}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Ferramenta da plataforma</p>
+        <h1>Visão da plataforma</h1>
+        <p>Resumo de todas as empresas ativas: clientes, rede, alertas e sincronização com ERP.</p>
+    </div>
+    {% if not edit_mode %}<a class="primary-action" href="?edit=1">Editar este painel →</a>{% endif %}
+</section>
+
+{% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}
+
+<section class="metric-grid" aria-label="Indicadores da plataforma" id="widget-zone-metrics">
+    {% if edit_mode or not widget_meta.metric_companies.hidden %}
+    <article class="metric-card{% if widget_meta.metric_companies.hidden %} widget-hidden{% endif %}" data-widget="metric_companies" style="--accent: var(--primary); --order: {{ widget_meta.metric_companies.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_companies" hidden=widget_meta.metric_companies.hidden %}
+        <div class="metric-head"><span>Empresas ativas</span><span class="metric-icon">◇</span></div>
+        <div class="metric-value">{{ metric_companies|default:0 }}</div>
+    </article>
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_new_companies.hidden %}
+    <article class="metric-card{% if widget_meta.metric_new_companies.hidden %} widget-hidden{% endif %}" data-widget="metric_new_companies" style="--accent: var(--success); --order: {{ widget_meta.metric_new_companies.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_new_companies" hidden=widget_meta.metric_new_companies.hidden %}
+        <div class="metric-head"><span>Novas empresas</span><span class="metric-icon">＋</span></div>
+        <div class="metric-value">{{ metric_new_companies|default:0 }}</div>
+        <div class="metric-note">Últimos 30 dias</div>
+    </article>
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_platform_clients.hidden %}
+    <article class="metric-card{% if widget_meta.metric_platform_clients.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_clients" style="--accent: var(--blue); --order: {{ widget_meta.metric_platform_clients.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_clients" hidden=widget_meta.metric_platform_clients.hidden %}
+        <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
+        <div class="metric-value">{{ metric_platform_clients|default:0 }}</div>
+        <div class="metric-note">Somado em todas as empresas</div>
+    </article>
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_platform_cables.hidden %}
+    <article class="metric-card{% if widget_meta.metric_platform_cables.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_cables" style="--accent: var(--success); --order: {{ widget_meta.metric_platform_cables.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_cables" hidden=widget_meta.metric_platform_cables.hidden %}
+        <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
+        <div class="metric-value">{{ metric_platform_cables|default:0 }} km</div>
+        <div class="metric-note">Somado em todas as empresas</div>
+    </article>
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_platform_elements.hidden %}
+    <article class="metric-card{% if widget_meta.metric_platform_elements.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_elements" style="--accent: var(--blue); --order: {{ widget_meta.metric_platform_elements.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_elements" hidden=widget_meta.metric_platform_elements.hidden %}
+        <div class="metric-head"><span>Elementos de rede</span><span class="metric-icon">◇</span></div>
+        <div class="metric-value">{{ metric_platform_elements|default:0 }}</div>
+    </article>
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_platform_alerts.hidden %}
+    <article class="metric-card{% if widget_meta.metric_platform_alerts.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_alerts" style="--accent: var(--warning); --order: {{ widget_meta.metric_platform_alerts.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_alerts" hidden=widget_meta.metric_platform_alerts.hidden %}
+        <div class="metric-head"><span>Alertas ativos</span><span class="metric-icon">!</span></div>
+        <div class="metric-value">{{ metric_platform_alerts|default:0 }}</div>
+    </article>
+    {% endif %}
+    {% if edit_mode or not widget_meta.metric_sync_issues.hidden %}
+    <article class="metric-card{% if widget_meta.metric_sync_issues.hidden %} widget-hidden{% endif %}" data-widget="metric_sync_issues" style="--accent: var(--danger); --order: {{ widget_meta.metric_sync_issues.order|default:0 }};">
+        {% include "includes/widget_edit_bar.html" with widget_key="metric_sync_issues" hidden=widget_meta.metric_sync_issues.hidden %}
+        <div class="metric-head"><span>Sincronização atrasada</span><span class="metric-icon">⏱</span></div>
+        <div class="metric-value">{{ metric_sync_issues|default:0 }}</div>
+        <div class="metric-note">Empresas com ERP sem sincronizar</div>
+    </article>
+    {% endif %}
+</section>
+
+<section class="dashboard-grid">
+    <div class="dashboard-column" id="widget-zone-col-1">
+        {% if edit_mode or not widget_meta.panel_companies_table.hidden %}
+        <article class="panel{% if widget_meta.panel_companies_table.hidden %} widget-hidden{% endif %}" data-widget="panel_companies_table" style="--order: {{ widget_meta.panel_companies_table.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_companies_table" hidden=widget_meta.panel_companies_table.hidden %}
+            <div class="panel-header"><h2 class="panel-title">Empresas</h2></div>
+            <div class="overview-table-wrap">
+                <table class="overview-table">
+                    <thead><tr><th>Empresa</th><th>Tipo</th><th>Clientes</th><th>Cabo</th><th>Elementos</th><th>Alertas</th><th>Equipe</th><th>Sincronização</th></tr></thead>
+                    <tbody>
+                        {% for row in companies_summary %}
+                        <tr class="{% if row.needs_attention %}overview-row-attention{% endif %}">
+                            <td><strong>{{ row.company.trade_name|default:row.company.name }}</strong></td>
+                            <td>{{ row.company.get_company_type_display|default:"—" }}</td>
+                            <td>{{ row.client_count }}</td>
+                            <td>{{ row.cable_km }} km</td>
+                            <td>{{ row.element_count }}</td>
+                            <td>{{ row.alert_count }}</td>
+                            <td>{{ row.team_count }}</td>
+                            <td>
+                                {% if row.sync_state == "ok" %}<span class="sync-pill sync-ok">Em dia{% if row.provider_name %} · {{ row.provider_name }}{% endif %}</span>
+                                {% elif row.sync_state == "sem_erp" %}<span class="sync-pill sync-muted">Sem ERP</span>
+                                {% elif row.sync_state == "nunca_sincronizou" %}<span class="sync-pill sync-warning">Nunca sincronizou</span>
+                                {% elif row.sync_state == "atrasada" %}<span class="sync-pill sync-warning">Atrasada</span>
+                                {% elif row.sync_state == "falhou" %}<span class="sync-pill sync-danger">Falhou</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="empty-state">Nenhuma empresa ativa.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-column" id="widget-zone-col-2">
+        {% if edit_mode or not widget_meta.panel_attention.hidden %}
+        <article class="panel{% if widget_meta.panel_attention.hidden %} widget-hidden{% endif %}" data-widget="panel_attention" style="--order: {{ widget_meta.panel_attention.order|default:0 }};">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_attention" hidden=widget_meta.panel_attention.hidden %}
+            <div class="panel-header"><h2 class="panel-title">Precisa de atenção</h2></div>
+            <div class="account-items">
+                {% for row in attention_rows %}
+                <div>
+                    <span>
+                        <strong>{{ row.company.trade_name|default:row.company.name }}</strong>
+                        <small>
+                            {% if not row.company.onboarding_completed %}Onboarding incompleto{% endif %}
+                            {% if row.sync_state == "nunca_sincronizou" %} · Nunca sincronizou com o ERP{% endif %}
+                            {% if row.sync_state == "atrasada" %} · Sincronização atrasada{% endif %}
+                            {% if row.sync_state == "falhou" %} · Última sincronização falhou{% endif %}
+                        </small>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="empty-state">Nenhuma empresa precisa de atenção agora.</p>
+                {% endfor %}
+            </div>
+        </article>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if edit_mode %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="{% static 'js/dashboard-layout-editor.js' %}?v={{ app_version }}"></script>
+{% endif %}
+{% endblock %}

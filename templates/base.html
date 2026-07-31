@@ -36,6 +36,11 @@
                 <a class="{% if request.resolver_match.url_name == 'account-panel' %}active{% endif %}" href="{% url 'account-panel' %}">
                     <span class="nav-icon">⚙</span> Minha administração
                 </a>
+                {% if request.user.is_superuser %}
+                <a class="{% if request.resolver_match.url_name == 'platform-overview' %}active{% endif %}" href="{% url 'platform-overview' %}">
+                    <span class="nav-icon">◈</span> Visão da plataforma
+                </a>
+                {% endif %}
             </nav>
 
             <div class="sidebar-footer">

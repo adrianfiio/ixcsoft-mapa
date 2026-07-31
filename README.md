@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.53.1 — Corrige arrastar no editor de dashboard e generaliza rótulo de sincronização ERP**
+**v0.54.0 — Visão da plataforma: dashboard detalhado e editável para o superadmin**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

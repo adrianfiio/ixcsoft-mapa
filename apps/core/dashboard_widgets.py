@@ -1,9 +1,11 @@
 """Registro dos widgets (cartões/painéis) de cada variante do dashboard,
 usado tanto pra montar o editor visual admin-only quanto pra aplicar a
-ordem/visibilidade salva em `CompanyDashboardLayout` na renderização normal.
+ordem/visibilidade salva (`CompanyDashboardLayout`/`PlatformDashboardLayout`)
+na renderização normal.
 
 As chaves aqui precisam bater com o `data-widget="..."` de cada
-`<article>` em `templates/dashboard.html` e `templates/dashboard_designer.html`.
+`<article>` em `templates/dashboard.html`, `templates/dashboard_designer.html`
+e `templates/platform_overview.html`.
 """
 
 PROVIDER_WIDGETS = [
@@ -30,18 +32,34 @@ DESIGNER_WIDGETS = [
     ("panel_shortcuts", "Painel · Atalhos"),
 ]
 
-WIDGET_REGISTRY = {"provider": PROVIDER_WIDGETS, "designer": DESIGNER_WIDGETS}
+PLATFORM_WIDGETS = [
+    ("metric_companies", "Cartão · Empresas ativas"),
+    ("metric_new_companies", "Cartão · Novas empresas (30 dias)"),
+    ("metric_platform_clients", "Cartão · Clientes (total)"),
+    ("metric_platform_cables", "Cartão · Cabos (km, total)"),
+    ("metric_platform_elements", "Cartão · Elementos de rede (total)"),
+    ("metric_platform_alerts", "Cartão · Alertas ativos (total)"),
+    ("metric_sync_issues", "Cartão · Empresas com sincronização atrasada"),
+    ("panel_companies_table", "Painel · Empresas"),
+    ("panel_attention", "Painel · Precisa de atenção"),
+]
+
+WIDGET_REGISTRY = {
+    "provider": PROVIDER_WIDGETS,
+    "designer": DESIGNER_WIDGETS,
+    "platform": PLATFORM_WIDGETS,
+}
 
 
 def widgets_for(company):
     return DESIGNER_WIDGETS if company and company.is_designer else PROVIDER_WIDGETS
 
 
-def widget_meta_for(company, layout):
+def widget_meta(widgets, layout):
     """Monta ``{chave: {"order": N, "hidden": bool}}`` pro template a partir
-    do `CompanyDashboardLayout` salvo. Sem layout (ou pra widgets novos que
-    ainda não foram salvos), cai na ordem padrão do registro e fica visível."""
-    widgets = widgets_for(company)
+    de um layout salvo (`CompanyDashboardLayout` ou `PlatformDashboardLayout`).
+    Sem layout (ou pra widgets novos que ainda não foram salvos), cai na
+    ordem padrão do registro e fica visível."""
     if not layout:
         return {key: {"order": index, "hidden": False} for index, (key, _label) in enumerate(widgets)}
 
@@ -59,3 +77,7 @@ def widget_meta_for(company, layout):
             next_index += 1
         result[key] = {"order": order, "hidden": key in hidden}
     return result
+
+
+def widget_meta_for(company, layout):
+    return widget_meta(widgets_for(company), layout)
