@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.50.1] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.50.0`.
+
+### Corrigido
+
+- Erro 500 sem nenhum rastro nos logs: com `DEBUG=false` (produção), o Django só registrava erro 500 por e-mail (`mail_admins`) — sem `ADMINS` configurado, o traceback simplesmente desaparecia, sem aparecer em `docker compose logs`. Adicionado um `LOGGING` explícito que sempre imprime o traceback completo do erro no console, independente de `DEBUG`. Isso não corrige nenhum bug funcional específico — é o que faltava pra conseguir enxergar o erro 500 ao excluir um projeto (em investigação).
+
 ## [0.50.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.49.0`.

@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.50.0")
+APP_VERSION = os.getenv("APP_VERSION", "0.50.1")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -164,3 +164,25 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-repl
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# Com DEBUG=false (produção), o logging padrão do Django só manda erro 500
+# por e-mail (mail_admins) — sem ADMINS configurado, o traceback simplesmente
+# some, sem aparecer em lugar nenhum. Isso sempre imprime no console (logs do
+# container), independente de DEBUG, para dar pra investigar erro em produção.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "ERROR",
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
