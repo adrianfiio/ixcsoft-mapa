@@ -1,16 +1,23 @@
 <dialog id="kmz-import-dialog" class="editor-dialog kmz-import-dialog">
-  <form id="kmz-import-form">
+  <form id="kmz-import-form" method="dialog">
     <header>
-      <div><h2>Assistente de importação KML/KMZ</h2><p class="help-text">Analise, revise, visualize no mapa e só então grave.</p></div>
-      <button class="dialog-close" type="button">×</button>
+      <div>
+        <h2>Assistente inteligente de importação KML/KMZ</h2>
+        <p class="help-text">Classifique, monte as ligações, visualize a topologia e somente depois grave.</p>
+      </div>
+      <button class="dialog-close" type="button" aria-label="Fechar">×</button>
     </header>
     <div class="dialog-body">
-      <nav class="kmz-steps" aria-label="Etapas">
-        <button type="button" data-step="1">1. Arquivo</button><button type="button" data-step="2">2. Cabos</button>
-        <button type="button" data-step="3">3. Pontos</button><button type="button" data-step="4">4. Rotas</button>
-        <button type="button" data-step="5">5. Prévia</button><button type="button" data-step="6">6. Importar</button>
+      <nav class="kmz-steps" aria-label="Etapas da importação">
+        <button type="button" data-step="1">1. Arquivo</button>
+        <button type="button" data-step="2">2. Cabos</button>
+        <button type="button" data-step="3">3. Pontos</button>
+        <button type="button" data-step="4">4. Rotas</button>
+        <button type="button" data-step="5">5. Ligações</button>
+        <button type="button" data-step="6">6. Prévia</button>
+        <button type="button" data-step="7">7. Importar</button>
       </nav>
-      <div id="kmz-import-status" class="editor-message"></div>
+      <div id="kmz-import-status" class="editor-message" role="status"></div>
       <section id="kmz-import-content"></section>
       <footer class="kmz-actions">
         <button id="kmz-back" class="secondary-button" type="button">Voltar</button>
@@ -20,3 +27,4 @@
     </div>
   </form>
 </dialog>
+<button id="kmz-preview-return" class="kmz-preview-return" type="button" hidden>Voltar ao assistente KMZ</button>

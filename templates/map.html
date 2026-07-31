@@ -417,10 +417,12 @@
     </dialog>
 
     {% include "includes/kmz_import_dialog.html" %}
+    {% include "includes/kmz_element_cables_dialog.html" %}
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>
 </html>

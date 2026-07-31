@@ -1,1 +1,71 @@
-.kmz-import-dialog{width:min(1180px,96vw);max-height:94vh}.kmz-import-dialog .dialog-body{overflow:auto;max-height:80vh}.kmz-steps{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}.kmz-steps button{padding:10px;border:1px solid #28425e;background:#0c1b2d;color:#9fb0c5;border-radius:8px}.kmz-steps button.active{background:#123752;color:#fff;border-color:#2dd4bf}.kmz-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kmz-summary-grid article{padding:18px;border:1px solid #28425e;border-radius:12px}.kmz-summary-grid strong{display:block;font-size:1.6rem}.kmz-table-wrap{overflow:auto}.kmz-table{width:100%;border-collapse:collapse}.kmz-table th,.kmz-table td{padding:12px;border-bottom:1px solid #28425e;text-align:left;vertical-align:top}.kmz-color-chip{display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:8px;background:var(--kmz-color);border:1px solid #fff}.kmz-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.kmz-preview-help{padding:12px;border:1px solid #0f7186;border-radius:10px;background:#0a2b39}.kmz-warning{padding:12px;border:1px solid #9b6a00;color:#ffc928;border-radius:10px;margin:12px 0}.kmz-samples{font-size:.88rem;color:#9fb0c5}.kmz-badge{display:inline-block;padding:3px 7px;border:1px solid #36516e;border-radius:999px;margin:2px}.kmz-review{border-color:#d59b00!important}.kmz-import-dialog select,.kmz-import-dialog input[type=number]{min-width:150px}.kmz-checkbox{transform:scale(1.35)}@media(max-width:900px){.kmz-steps{grid-template-columns:repeat(2,1fr)}.kmz-summary-grid{grid-template-columns:repeat(2,1fr)}}
+.kmz-import-dialog {
+    width: min(1500px, 98vw);
+    max-width: 1500px;
+    height: min(920px, 96vh);
+    max-height: 96vh;
+    padding: 0;
+    border: 1px solid #28445e;
+    border-radius: 16px;
+    background: #0b1b2d;
+    color: #e5eef8;
+}
+.kmz-import-dialog::backdrop { background: rgba(2, 8, 23, .78); }
+.kmz-import-dialog form { height: 100%; display: flex; flex-direction: column; }
+.kmz-import-dialog > form > header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 22px 26px 14px; border-bottom: 1px solid #21384d;
+}
+.kmz-import-dialog h2, .kmz-import-dialog h3 { margin: 0 0 8px; color: #f8fafc; }
+.kmz-import-dialog .dialog-body { min-height: 0; flex: 1; display: flex; flex-direction: column; padding: 0 18px 18px; }
+.kmz-steps { display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 8px; padding: 14px 0; overflow-x: auto; }
+.kmz-steps button {
+    min-height: 42px; border: 1px solid #274762; border-radius: 10px; background: #0d2136; color: #9fb2c7; white-space: nowrap;
+}
+.kmz-steps button.active { border-color: #25d4c6; background: #14506a; color: #ffffff; box-shadow: inset 0 0 0 1px rgba(37,212,198,.25); }
+#kmz-import-content { min-height: 0; flex: 1; overflow: auto; padding: 18px 0 8px; }
+.kmz-actions { display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #21384d; padding-top: 14px; }
+.kmz-actions #kmz-back { margin-right: auto; }
+.kmz-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 12px 0 20px; }
+.kmz-summary-grid.compact { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.kmz-summary-grid article { border: 1px solid #27445c; border-radius: 14px; background: #0d2136; padding: 18px; }
+.kmz-summary-grid article strong { display: block; font-size: 1.65rem; color: #f8fafc; }
+.kmz-summary-grid article span { color: #9fb2c7; }
+.kmz-upload-row, .kmz-management, .kmz-inline-fields, .kmz-settings-grid { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.kmz-upload-row input[type=file] { flex: 1; min-width: 260px; padding: 12px; border: 1px solid #27445c; border-radius: 10px; background: #0d2136; color: #e5eef8; }
+.kmz-management { margin: 18px 0; }
+.kmz-settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 16px 0; }
+.kmz-settings-grid label, .kmz-inline-fields label { display: grid; gap: 6px; color: #b7c5d5; }
+.kmz-table-wrap { width: 100%; overflow: auto; border: 1px solid #254159; border-radius: 12px; margin: 12px 0; }
+.kmz-table { width: 100%; border-collapse: collapse; min-width: 980px; }
+.kmz-table th, .kmz-table td { padding: 13px 14px; border-bottom: 1px solid #233d53; text-align: left; vertical-align: top; }
+.kmz-table th { position: sticky; top: 0; z-index: 1; background: #0b1b2d; color: #f8fafc; }
+.kmz-table tr:last-child td { border-bottom: 0; }
+.kmz-table tr.kmz-review { background: rgba(245, 158, 11, .08); }
+.kmz-table select, .kmz-table input, .kmz-settings-grid select, .kmz-settings-grid input, .kmz-inline-fields select, .kmz-inline-fields input {
+    width: 100%; min-height: 40px; border: 1px solid #2b4b65; border-radius: 9px; background: #0a1a2b; color: #f8fafc; padding: 8px 10px;
+}
+.kmz-color-chip { display: inline-block; width: 16px; height: 16px; margin-right: 8px; border: 1px solid #dbeafe; border-radius: 50%; vertical-align: -2px; background: var(--kmz-color); }
+.kmz-samples, .kmz-muted { margin-top: 5px; color: #91a4b9; font-size: .86rem; line-height: 1.35; }
+.kmz-badge { display: inline-block; margin: 2px 5px 2px 0; padding: 3px 7px; border: 1px solid #31516b; border-radius: 999px; background: #10283d; color: #c5d6e5; font-size: .78rem; }
+.kmz-badge.success { border-color: #168b70; color: #6ee7c8; }
+.kmz-warning, .kmz-success, .kmz-code-example { margin: 14px 0; padding: 14px 16px; border-radius: 12px; line-height: 1.5; }
+.kmz-warning { border: 1px solid #9a6a09; background: rgba(245, 158, 11, .1); color: #fbbf24; }
+.kmz-success { border: 1px solid #157e75; background: rgba(20, 184, 166, .1); color: #8ff4e9; }
+.kmz-code-example { border: 1px solid #1c6f83; background: rgba(6, 182, 212, .08); color: #c5edf4; }
+.kmz-subtable { max-height: 420px; overflow: auto; margin-top: 8px; border: 1px solid #29465f; border-radius: 8px; }
+.kmz-subtable table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.kmz-subtable th, .kmz-subtable td { padding: 10px; border-bottom: 1px solid #263f54; }
+.kmz-junction-table { max-height: 470px; }
+.kmz-preview-return { position: fixed; z-index: 5000; right: 22px; top: 80px; padding: 12px 16px; border: 1px solid #67e8f9; border-radius: 12px; background: #0e7490; color: white; font-weight: 700; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+.kmz-preview-return[hidden] { display: none; }
+.danger-button { border: 1px solid #b91c1c; border-radius: 9px; background: #7f1d1d; color: #fff; padding: 9px 13px; }
+.danger-button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 900px) {
+    .kmz-import-dialog { width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
+    .kmz-steps { grid-template-columns: repeat(7, 130px); }
+    .kmz-import-dialog .dialog-body { padding-inline: 10px; }
+}
+.kmz-element-cables-dialog { width: min(980px, 94vw); max-height: 90vh; background: #0b1b2d; color: #e5eef8; border: 1px solid #28445e; border-radius: 14px; }
+.kmz-element-cables-dialog > header { display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #21384d; }
+.kmz-element-cables-dialog .dialog-body { max-height: 72vh; overflow: auto; padding: 18px; }
+.kmz-connection-section + .kmz-connection-section { margin-top: 22px; }

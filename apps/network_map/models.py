@@ -1265,4 +1265,11 @@ class FiberSplice(TimeStampedModel):
         return f"{self.input_fiber} → {self.output_fiber}"
 
 
+from apps.network_map.kmz_import_models import (  # noqa: E402,F401
+    CableElementPassage,
+    KMZImportBatch,
+    KMZImportObject,
+)
+
+
 

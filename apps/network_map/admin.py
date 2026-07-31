@@ -2,6 +2,7 @@ from django.contrib import admin
 from apps.core.admin_gis import AFServiceGISAdmin, GeoPointAdminForm
 
 from .models import (
+    CableElementPassage,
     CableModel,
     CableReserve,
     CTO,
@@ -13,6 +14,8 @@ from .models import (
     FiberColorStandardItem,
     FiberStrand,
     FiberSplice,
+    KMZImportBatch,
+    KMZImportObject,
     SpliceTray,
     SpliceTraySplitter,
     SpliceTraySplitterPort,
@@ -514,3 +517,24 @@ class FiberSpliceAdmin(admin.ModelAdmin):
         "input_fiber",
         "output_fiber",
     )
+
+
+@admin.register(KMZImportBatch)
+class KMZImportBatchAdmin(admin.ModelAdmin):
+    list_display = ("id", "filename", "project", "status", "user", "created_at")
+    list_filter = ("status", "project")
+    search_fields = ("filename", "file_sha256")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(KMZImportObject)
+class KMZImportObjectAdmin(admin.ModelAdmin):
+    list_display = ("batch", "object_type", "object_id", "source_name")
+    list_filter = ("object_type",)
+    search_fields = ("source_id", "source_name", "source_folder")
+
+
+@admin.register(CableElementPassage)
+class CableElementPassageAdmin(admin.ModelAdmin):
+    list_display = ("cable", "element", "action", "sequence", "distance_m")
+    list_filter = ("action",)

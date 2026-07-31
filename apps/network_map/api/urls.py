@@ -28,7 +28,16 @@ from apps.network_map.api.views import (
     update_network_element_position,
     update_cable_geometry,
 )
-from apps.network_map.kmz_import_api import analyze_kmz_import, execute_kmz_import
+from apps.network_map.kmz_import_api import (
+    analyze_kmz_import,
+    cleanup_legacy_kmz_import,
+    element_cable_topology,
+    execute_kmz_import,
+    kmz_import_batches,
+    preview_kmz_import,
+    topology_kmz_import,
+    undo_kmz_import,
+)
 from apps.network_map.project_api import (
     project_detail,
     project_routes_geojson,
@@ -62,9 +71,34 @@ urlpatterns = [
         name="project-import-analyze",
     ),
     path(
+        "projects/<int:project_id>/import/topology/",
+        topology_kmz_import,
+        name="kmz-import-topology",
+    ),
+    path(
+        "projects/<int:project_id>/import/preview/",
+        preview_kmz_import,
+        name="kmz-import-preview",
+    ),
+    path(
         "projects/<int:project_id>/import/execute/",
         execute_kmz_import,
         name="project-import-execute",
+    ),
+    path(
+        "projects/<int:project_id>/import/batches/",
+        kmz_import_batches,
+        name="kmz-import-batches",
+    ),
+    path(
+        "projects/<int:project_id>/import/batches/<int:batch_id>/undo/",
+        undo_kmz_import,
+        name="kmz-import-undo",
+    ),
+    path(
+        "projects/<int:project_id>/import/cleanup-legacy/",
+        cleanup_legacy_kmz_import,
+        name="kmz-import-cleanup-legacy",
     ),
     path(
         "access-points/",
@@ -90,6 +124,11 @@ urlpatterns = [
         "elements/<int:element_id>/position/",
         update_network_element_position,
         name="update-network-element-position",
+    ),
+    path(
+        "elements/<int:element_id>/cable-topology/",
+        element_cable_topology,
+        name="element-cable-topology",
     ),
     path(
         "cables/",

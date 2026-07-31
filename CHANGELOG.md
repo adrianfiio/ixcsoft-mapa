@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.48.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.47.0`.
+
+### Corrigido
+
+- Limpeza do importador legado (`cleanup-legacy`): a busca de reservas técnicas por texto na anotação (`notes__icontains="Importado do KMZ"`) não estava restrita ao projeto atual — em tese podia listar/apagar reservas de cabos de outro projeto se o texto coincidisse. Agora a busca fica sempre restrita aos cabos do projeto em questão.
+- Índice do modelo `KMZImportBatch` sem nome explícito, o que exigiria rodar `makemigrations` no servidor para descobrir o nome gerado pelo Django antes de aplicar; agora o índice já tem nome fixo e a migration foi escrita à mão, testada campo a campo contra os modelos reais.
+
+### Adicionado
+
+- **Assistente de importação KML/KMZ — nova versão com topologia física**: agora com sete etapas (arquivo, cabos, pontos, rotas, ligações, prévia, importar).
+  - Linhas pretas com nome "Drop 01 FO" são reconhecidas automaticamente como cabo Drop de 1 fibra, separadas do restante das linhas pretas/sem estilo (que continuam em "Revisar").
+  - Uma linha ou cor "CABO RESERVA" fica separada como reserva desenhada, não misturada com cabo comum.
+  - A coluna de dados extras agora muda conforme o tipo do ponto: CTO pede portas, RT pede metragem, DIO pede capacidade de portas, CEO/CDO pede subtipo (CEO/CDO/genérica) — nunca mais aparece "portas" para um ponto que não é CTO.
+  - **Bloqueio real de pendências**: enquanto existir qualquer linha ou ponto em "Revisar", ou um cabo sem fibra/tipo, ou uma CTO sem portas, etc., a importação fica bloqueada tanto na tela quanto no backend (HTTP 409 com a lista exata do que falta).
+  - **Prévia obrigatória antes de gravar**: existe uma prévia "bruta" (arquivo cru, sem decisão nenhuma aplicada) disponível desde a etapa de classificação, e uma prévia "topológica final" que já mostra os cabos segmentados, códigos propostos, origem/destino e cortes — ambas desenham no mapa sem gravar nada. A prévia final gera um token (hash do arquivo + decisões); qualquer alteração invalida o token e exige gerar de novo.
+  - **Cabos passando por caixas**: o importador detecta quando um cabo passa perto de uma CTO/CEO/CDO e sugere Conectar na ponta, Cortar (vira dois `FiberCable` com origem/destino preenchidos), Passar sem cortar (fica registrado como passagem física, sem dividir o cabo) ou Criar derivação — cada relação pode ser revisada individualmente antes de confirmar.
+  - **Nomenclatura padronizada**: cabos e equipamentos importados recebem código no padrão `CAB-PREFIXO-ROTA-NNN`, `DROP-...`, `CTO-...`, `CEO-...`/`CDO-...`; o nome original do KMZ, a pasta e o arquivo ficam preservados nos metadados do lote (o nome visível do equipamento pode continuar sendo o original, por escolha).
+  - **Lote de importação com desfazer**: cada importação vira um lote (arquivo, usuário, data, resumo); a tela mostra o histórico de lotes do projeto com botão "Desfazer", que remove só os objetos daquele lote (cabos, rotas, CTOs, elementos, reservas, passagens) sem tocar no que já existia antes.
+  - **Limpar teste antigo**: para quem já testou a importação de versões anteriores (sem lote), uma ação separada localiza só os objetos com o padrão de código/metadata dos importadores antigos (`KMZ-*`, `IMP-*`, `KML-*`) e exige digitar `LIMPAR <CÓDIGO DO PROJETO>` para confirmar.
+  - Nova tela "Cabos e ligações" no popup de qualquer elemento do mapa (CTO, CEO/CDO, poste, etc.), mostrando cabo de entrada, cabo de saída e as passagens/cortes/derivações registradas.
+
 ## [0.47.0] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.46.0`.
