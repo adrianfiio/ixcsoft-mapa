@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.49.0] - 2026-07-30
+
+Backup/ponto de rollback desta rodada: tag `v0.48.1`.
+
+### Corrigido
+
+- Botões "Editar"/"×" dos splitters no diagrama de fusões da CEO/CTO estavam sem nenhum estilo (botão padrão do navegador). Agora seguem o tema escuro do editor, com destaque vermelho no excluir.
+- "Informações de rota" no diagrama de fusões abria um `alert()` nativo do navegador com o texto cru. Agora abre um painel próprio, com o trajeto desenhado em cadeia (OLT → D.I.O → CEO/CDO → splitter...), a perda acumulada e a potência estimada, com botões para **Imprimir** (usa a caixa de impressão do navegador, dá pra salvar como PDF) e **Exportar (Excel/CSV)**.
+
 ## [0.48.1] - 2026-07-30
 
 Backup/ponto de rollback desta rodada: tag `v0.48.0`.

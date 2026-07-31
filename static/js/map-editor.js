@@ -214,6 +214,53 @@
             : "Potência não calculada (informe a potência de saída da OLT).";
         return `${route}\nPerda acumulada: ${budget.loss_db} dB\n${power}`;
     }
+    const ROUTE_NODE_LABELS = { olt: "OLT", dio: "D.I.O", splice_box: "Caixa", splitter: "Splitter" };
+    const routeInfoDialog = document.createElement("dialog");
+    routeInfoDialog.className = "editor-dialog route-info-dialog";
+    routeInfoDialog.innerHTML = `<section>
+        <header><div><h2>Informações de rota</h2><p class="help-text">Caminho calculado da OLT até esta ligação.</p></div><button class="dialog-close" type="button">×</button></header>
+        <div class="route-diagram"></div>
+        <div class="route-summary"></div>
+        <footer>
+            <button class="secondary-button" type="button" data-route-export>Exportar (Excel/CSV)</button>
+            <button class="primary-button" type="button" data-route-print>Imprimir</button>
+        </footer>
+    </section>`;
+    document.body.appendChild(routeInfoDialog);
+    routeInfoDialog.querySelector(".dialog-close").onclick = () => routeInfoDialog.close();
+    let currentRouteBudget = null;
+    function openRouteInfoDialog(budget) {
+        currentRouteBudget = budget;
+        const diagram = routeInfoDialog.querySelector(".route-diagram");
+        const summary = routeInfoDialog.querySelector(".route-summary");
+        const path = budget?.path || [];
+        diagram.innerHTML = path.length
+            ? path.map((node, index) => `${index > 0 ? '<span class="route-arrow">→</span>' : ""}<div class="route-chip"><small>${escapeHtml(ROUTE_NODE_LABELS[node.type] || node.type || "")}</small><strong>${escapeHtml(node.name)}</strong></div>`).join("")
+            : '<p class="help-text">Sem trajeto calculado para esta ligação (falta OLT/fusão anterior cadastrada).</p>';
+        const hasPower = budget && budget.budget_dbm !== null && budget.budget_dbm !== undefined;
+        summary.classList.toggle("route-summary-warning", !hasPower);
+        summary.innerHTML = budget
+            ? `<div>Perda acumulada: <strong>${budget.loss_db} dB</strong></div><div>${hasPower ? `Potência estimada: <strong>${budget.budget_dbm} dBm</strong>` : "Potência não calculada — informe a potência de saída da OLT."}</div>`
+            : '<div>Sem informações de rota calculadas para esta ligação.</div>';
+        routeInfoDialog.showModal();
+    }
+    routeInfoDialog.querySelector("[data-route-print]").onclick = () => window.print();
+    routeInfoDialog.querySelector("[data-route-export]").onclick = () => {
+        const path = currentRouteBudget?.path || [];
+        const rows = [["Ordem", "Tipo", "Nome"]];
+        path.forEach((node, index) => rows.push([String(index + 1), ROUTE_NODE_LABELS[node.type] || node.type || "", node.name]));
+        rows.push([]);
+        rows.push(["Perda acumulada (dB)", String(currentRouteBudget?.loss_db ?? "")]);
+        rows.push(["Potência estimada (dBm)", currentRouteBudget?.budget_dbm != null ? String(currentRouteBudget.budget_dbm) : "Não calculada"]);
+        const csv = "﻿" + rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `rota-${Date.now()}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
     function normalizeSearch(value) {
         return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
@@ -855,7 +902,9 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
                 };
             });
+            const budgetByLink = new Map();
             const redrawOpticalLinks = () => {
+                budgetByLink.clear();
                 const graphNodesEl = content.querySelector(".graph-nodes");
                 const svg = content.querySelector(".optical-links");
                 if (!graphNodesEl || !svg) return;
@@ -882,6 +931,7 @@
                     }
                     const actionData = action ? `data-link-type="${action.type}" data-link-id="${action.id}"` : "";
                     const tooltip = budget ? formatBudgetTooltip(budget) : "";
+                    if (action) budgetByLink.set(`${action.type}:${action.id}`, budget || null);
                     svg.insertAdjacentHTML("beforeend", `<path d="${path}" stroke="${stroke}" ${actionData}>${tooltip ? `<title>${escapeHtml(tooltip)}</title>` : ""}</path>`);
                 };
                 optical.splices.forEach((splice) => drawLink(
@@ -945,8 +995,8 @@
             };
             linkActionMenu.querySelector('[data-link-action="info"]').onclick = () => {
                 linkActionMenu.hidden = true;
-                const tooltip = activeLinkPath?.querySelector("title")?.textContent;
-                alert(tooltip || "Sem informações de rota calculadas para esta ligação.");
+                const key = activeLinkPath ? `${activeLinkPath.dataset.linkType}:${activeLinkPath.dataset.linkId}` : "";
+                openRouteInfoDialog(budgetByLink.get(key) || null);
             };
             linkActionMenu.querySelector('[data-link-action="delete"]').onclick = async () => {
                 linkActionMenu.hidden = true;
