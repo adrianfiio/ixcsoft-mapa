@@ -155,6 +155,20 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             AlertEvent.State.RECOVERING,
         ]
 
+        cable_queryset = FiberCable.objects.filter(geometry__isnull=False)
+        if company_ids is not None:
+            cable_queryset = cable_queryset.filter(company_id__in=company_ids)
+        try:
+            cable_length = (
+                cable_queryset
+                # Transformado para Web Mercator (metros) só para uma estimativa de
+                # km de cabo no dashboard — não precisa da precisão de uma geography.
+                .annotate(length=Length(Transform("geometry", 3857), output_field=FloatField()))
+                .aggregate(total=Sum("length"))["total"]
+            )
+        except Exception:
+            cable_length = None
+
         context.update(
             {
                 "access": access_summary,
@@ -163,6 +177,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 "olt_count": olt_queryset.count(),
                 "element_count": element_queryset.count(),
                 "cto_count": cto_queryset.count(),
+                "cable_km": round((cable_length or 0) / 1000, 2),
                 "active_alert_count": alert_queryset.filter(
                     state__in=active_alert_states
                 ).count(),

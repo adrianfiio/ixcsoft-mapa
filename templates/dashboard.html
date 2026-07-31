@@ -33,6 +33,16 @@
         <div class="metric-value">{{ active_alert_count|default:0 }}</div>
         <div class="metric-note">Ocorrências que exigem atenção</div>
     </article>
+    <article class="metric-card" style="--accent: var(--primary)">
+        <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
+        <div class="metric-value">{{ customer_count|default:0 }}</div>
+        <div class="metric-note"><strong>{{ onus.total|default:0 }}</strong> ONUs vinculadas</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--success)">
+        <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
+        <div class="metric-value">{{ cable_km|default:0 }} km</div>
+        <div class="metric-note"><strong>{{ olt_count|default:0 }}</strong> OLTs cadastradas</div>
+    </article>
 </section>
 
 <section class="dashboard-grid">

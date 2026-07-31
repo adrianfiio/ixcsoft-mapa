@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.51.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.50.3`.
+
+### Adicionado
+
+- A visão geral (dashboard) de empresas provedoras (com clientes) ganhou dois cartões de destaque que só existiam na visão de projetista: **Clientes** (total de clientes sincronizados do IXC, com total de ONUs vinculadas) e **Cabos** (km de cabo desenhado no mapa, com total de OLTs cadastradas). Antes, `cable_km` nem era calculado para empresas provedoras — só entrava no contexto do template de projetista.
+
 ## [0.50.3] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.50.2`.
