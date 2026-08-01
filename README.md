@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.67.8 — .gitignore para mais um script solto do projeto de monitoramento**
+**v0.68.0 — Backend do monitoramento SNMP: modelo, Celery e integração com Telegraf/InfluxDB**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

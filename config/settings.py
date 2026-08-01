@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.67.8")
+APP_VERSION = os.getenv("APP_VERSION", "0.68.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.optical",
     "apps.network_map",
     "apps.alerts",
+    "apps.snmp_monitoring",
 ]
 
 MIDDLEWARE = [
@@ -147,9 +148,23 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.ixc_integration.tasks.synchronize_ixc_pppoe_statuses",
         "schedule": 300.0,
     },
+    "poll-snmp-status": {
+        "task": "apps.snmp_monitoring.tasks.poll_snmp_status",
+        "schedule": 120.0,
+    },
 }
 
 FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
+
+# Monitoramento SNMP (Telegraf/InfluxDB) — infraestrutura mantida fora
+# deste repositório, ver docs/releases/. Nunca commitar o token de verdade
+# aqui nem em nenhum arquivo: só via variável de ambiente no servidor.
+INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://monitor-influxdb:8086")
+INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN", "")
+INFLUXDB_ORG = os.getenv("INFLUXDB_ORG", "AFService")
+INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "mapa_metrics")
+SNMP_TELEGRAF_CONTAINER = os.getenv("SNMP_TELEGRAF_CONTAINER", "monitor-telegraf")
+SNMP_CONF_DIR = os.getenv("SNMP_CONF_DIR", "") or (BASE_DIR / "equipamentos_ativos_snmp")
 
 # SMTP padrão da plataforma (uso interno/administrativo). Empresas configuram
 # o próprio SMTP em "Minha administração" — este aqui não é usado como

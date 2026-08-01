@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.68.0] - 2026-08-01
+
+Nova app `apps/snmp_monitoring` — backend do monitoramento de portas por
+SNMP (Telegraf/InfluxDB) preparado com a infraestrutura já em produção.
+Sem UI ainda (fica pra depois do ChatGPT terminar a rodada atual do
+mapa); ver `docs/releases/v0.68.0.md` pra configuração necessária no
+servidor antes de ativar.
+
+### Adicionado
+
+- **Modelo `SNMPMonitoringProfile`**: liga um elemento do mapa a um alvo SNMP (IP, porta, community — criptografada com o mesmo mecanismo já usado nos tokens do IXCSoft), com company preenchida automaticamente a partir do elemento.
+- **Geração segura do `.conf` do Telegraf**: template versionado (`apps/snmp_monitoring/conf_templates/`), com validação de IP e community antes de gravar o arquivo (evita injeção de configuração), escrita atômica, e recarga do Telegraf por `SIGHUP` (não `restart` — não derruba a coleta de outras empresas).
+- **Task periódica `poll_snmp_status`** (Celery Beat, a cada 2 minutos): consulta o InfluxDB por equipamento monitorado e atualiza `NetworkElement.status` (é o campo que já pinta o marcador no mapa) quando alguma porta cai.
+- **`influxdb-client` e `docker` (SDK) nas dependências.**
+
 ## [0.67.8] - 2026-08-01
 
 ### Corrigido

@@ -4,7 +4,7 @@
 x-common-environment: &common-environment
   APP_NAME: ${APP_NAME:-AFService Map}
   APP_ENV: ${APP_ENV:-production}
-  APP_VERSION: ${APP_VERSION:-0.67.8}
+  APP_VERSION: ${APP_VERSION:-0.68.0}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
   TZ: ${TZ:-America/Sao_Paulo}
@@ -38,6 +38,14 @@ x-common-environment: &common-environment
 
   CELERY_LOG_LEVEL: ${CELERY_LOG_LEVEL:-INFO}
   CELERY_WORKER_CONCURRENCY: ${CELERY_WORKER_CONCURRENCY:-2}
+
+  # Monitoramento SNMP (Telegraf/InfluxDB, stack separada deste
+  # docker-compose) — só o worker realmente usa isso.
+  INFLUXDB_URL: ${INFLUXDB_URL:-http://monitor-influxdb:8086}
+  INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-}
+  INFLUXDB_ORG: ${INFLUXDB_ORG:-AFService}
+  INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-mapa_metrics}
+  SNMP_TELEGRAF_CONTAINER: ${SNMP_TELEGRAF_CONTAINER:-monitor-telegraf}
 
 services:
   web:
@@ -79,6 +87,17 @@ services:
       RUN_MIGRATIONS: "false"
       COLLECT_STATIC: "false"
       WAIT_FOR_POSTGRES: "true"
+    # Único container com acesso ao socket do Docker do host — necessário
+    # pra recarregar o Telegraf (SIGHUP) quando um equipamento SNMP é
+    # cadastrado/editado. NUNCA monte isso no `web` (fica exposto a
+    # requisições HTTP direto da internet). Isso dá ao worker controle
+    # sobre o Docker do host; se o GID do socket no servidor não for 999,
+    # ajuste `group_add` para o GID real (rode `stat -c '%g' /var/run/docker.sock`).
+    group_add:
+      - "999"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./equipamentos_ativos_snmp:/app/equipamentos_ativos_snmp
     networks:
       - default
 
