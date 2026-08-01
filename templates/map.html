@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="{% static 'css/map-v08-polish.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v09-polish.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v092.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-optical-editor-v2.css' %}?v={{ app_version }}">
 </head>
 <body data-can-edit="{{ can_edit_map|yesno:'true,false' }}">
     <form id="map-csrf-token" hidden aria-hidden="true">{% csrf_token %}</form>
@@ -488,6 +489,7 @@
     <script src="{% static 'js/container-device-type.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/container-structure-v09.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-v092.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/map-optical-editor-v2.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>

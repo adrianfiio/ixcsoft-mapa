@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.65.0] - 2026-08-01
+
+Backup/ponto de rollback: tag `v0.64.0` (também disponível como branch
+`backup/mapa-pre-v0100-20260801`). Pacote "Editor Óptico v2" preparado
+pelo ChatGPT para a área do mapa ("v0.10.0" na numeração dele), aplicado
+via `apply_v0100.py`.
+
+### Adicionado
+
+- **Inserir caixa direto no cabo**: ao clicar num cabo, a opção agora é "Inserir caixa" — abre uma janela compacta pra criar uma CTO/CDO/CEO nova ou conectar uma já existente, escolher entre cortar (dois segmentos) ou registrar passagem sem cortar, definir a capacidade da CTO e arrastar a prévia da caixa sobre o cabo antes de confirmar. Pra ligar dois ou mais cabos na mesma caixa, basta repetir a inserção em cada cabo escolhendo "Conectar caixa existente" e selecionando a mesma CTO/CDO/CEO. O corte continua usando a rotina segura já existente (bloqueia cabo com fusões ou terminações); se a caixa for criada mas o corte falhar, o sistema desfaz a caixa automaticamente, sem deixar ponto abandonado.
+- **Passagem sem corte**: novo endpoint autenticado pra registrar que um cabo passa por uma CEO/CDO/CTO sem cortar — o cabo passa a aparecer na caixa e pode ser cortado depois, direto na tela de fusões.
+- **Linhas de fusão editáveis**: modo "Editar linhas" — clique pra selecionar, arraste os pontos de dobra, duplo clique adiciona ponto, botão direito num ponto remove, "Ortogonal" reorganiza a ligação, "Automático" remove o desenho manual. O caminho fica salvo (no mesmo layout JSON já existente, sem migration) e continua lá ao fechar e abrir de novo.
+- **Cores por tipo de ligação**: fibra óptica em ciano, cobre/RJ45 em laranja, wireless em roxo tracejado (fibras mantêm suas cores reais); linha selecionada ganha destaque visual.
+
+### Corrigido
+
+- **Editor de fusões menor e móvel**: ocupa menos espaço, pode ser arrastado pela barra do título, mantém o mapa visível atrás, cabeçalho mais compacto e mais área útil pro diagrama — continua com tela cheia, desmaximizar e zoom com Ctrl + rolagem.
+
 ## [0.64.0] - 2026-08-01
 
 Backup/ponto de rollback: tag `v0.63.0` (também disponível como branch

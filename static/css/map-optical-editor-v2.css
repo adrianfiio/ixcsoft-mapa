@@ -1,0 +1,248 @@
+/* IXCSoft MAPA v0.10.0 · Editor Óptico v2 */
+
+#cable-box-insert-v2 {
+    position: fixed;
+    z-index: 14000;
+    top: 82px;
+    right: 28px;
+    width: min(390px, calc(100vw - 32px));
+    max-height: calc(100vh - 110px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #e5edf8;
+    background: #0b1c30;
+    border: 1px solid #2d4c68;
+    border-radius: 16px;
+    box-shadow: 0 24px 70px rgb(0 0 0 / 55%);
+}
+
+#cable-box-insert-v2 > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    cursor: move;
+    background: #102740;
+    border-bottom: 1px solid #29465f;
+    user-select: none;
+}
+
+#cable-box-insert-v2 > header div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+#cable-box-insert-v2 > header strong { font-size: 15px; }
+#cable-box-insert-v2 > header small {
+    overflow: hidden;
+    color: #8fa7bd;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#cable-box-insert-v2 button,
+#cable-box-insert-v2 input,
+#cable-box-insert-v2 select {
+    font: inherit;
+}
+
+#cable-box-insert-v2 header button {
+    width: 34px;
+    height: 34px;
+    color: #a9bed1;
+    background: transparent;
+    border: 0;
+    border-radius: 9px;
+    font-size: 23px;
+}
+
+#cable-box-insert-v2 header button:hover { background: #18334f; color: white; }
+
+.box-insert-body-v2 {
+    display: grid;
+    gap: 12px;
+    padding: 15px 16px;
+    overflow: auto;
+}
+
+.box-insert-body-v2 label,
+.box-insert-body-v2 [data-new-box-fields],
+.box-insert-body-v2 [data-existing-box-fields] {
+    display: grid;
+    gap: 6px;
+    color: #c5d5e5;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.box-insert-body-v2 [data-new-box-fields],
+.box-insert-body-v2 [data-existing-box-fields] { gap: 10px; }
+
+.box-insert-body-v2 input,
+.box-insert-body-v2 select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    color: #eff7ff;
+    background: #071729;
+    border: 1px solid #294863;
+    border-radius: 9px;
+    outline: none;
+}
+
+.box-insert-body-v2 input:focus,
+.box-insert-body-v2 select:focus { border-color: #2dd4bf; box-shadow: 0 0 0 3px rgb(45 212 191 / 12%); }
+
+.box-insert-grid-v2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.box-help-v2 { margin: 0; color: #7894ad; font-size: 11px; line-height: 1.45; }
+.box-status-v2 {
+    min-height: 38px;
+    padding: 10px 12px;
+    color: #b7f7ee;
+    background: #0b3540;
+    border-left: 3px solid #2dd4bf;
+    border-radius: 7px;
+    font-size: 12px;
+}
+.box-status-v2.error { color: #ffc7cd; background: #431b27; border-left-color: #fb7185; }
+
+#cable-box-insert-v2 > footer {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 10px;
+    padding: 12px 16px 15px;
+    border-top: 1px solid #29465f;
+}
+
+#cable-box-insert-v2 > footer button {
+    min-height: 42px;
+    color: #d5e4f1;
+    background: #132b44;
+    border: 1px solid #31506b;
+    border-radius: 9px;
+    font-weight: 800;
+}
+#cable-box-insert-v2 > footer button.primary { color: #04211f; background: #2dd4bf; border-color: #2dd4bf; }
+#cable-box-insert-v2 > footer button:disabled { opacity: .55; cursor: wait; }
+
+.box-preview-marker {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    color: white;
+    background: #1670b9;
+    border: 3px solid white;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 45%), 0 0 0 5px rgb(45 212 191 / 28%);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .04em;
+}
+.box-preview-marker.cdo { background: #7c3fb2; }
+.box-preview-marker.ceo { background: #8d31a5; }
+.box-preview-marker::after {
+    content: "";
+    position: absolute;
+    bottom: -7px;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border-right: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(45deg);
+}
+
+/* Janela de fusões compacta e móvel */
+#unifilar-dialog.fusion-window-v2:not(.is-fullscreen) {
+    width: min(1220px, 94vw);
+    height: min(820px, 86vh);
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    border-radius: 15px;
+}
+
+#unifilar-dialog.fusion-window-v2.fusion-window-moved-v2:not(.is-fullscreen) { transform: none; }
+#unifilar-dialog.fusion-window-v2 > section { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+#unifilar-dialog.fusion-window-v2 > section > header {
+    min-height: 56px;
+    padding: 10px 18px;
+    cursor: move;
+}
+#unifilar-dialog.fusion-window-v2 > section > header h2 { margin: 0; font-size: 18px; line-height: 1.2; }
+#unifilar-dialog.fusion-window-v2 > section > header p { margin: 3px 0 0; font-size: 10px; }
+#unifilar-dialog.fusion-window-v2 #unifilar-content { min-height: 0; padding: 10px 14px 14px; overflow: hidden; }
+#unifilar-dialog.fusion-window-v2 .ceo-instructions {
+    min-height: 0;
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    gap: 8px;
+    font-size: 10px;
+}
+#unifilar-dialog.fusion-window-v2 .ceo-instructions-compact-v2 > label { margin-left: auto; }
+#unifilar-dialog.fusion-window-v2 .fusion-toolbar {
+    min-width: 0;
+    gap: 6px;
+    padding: 4px;
+}
+#unifilar-dialog.fusion-window-v2 .fusion-toolbar input[type="range"] { width: min(220px, 18vw); }
+#unifilar-dialog.fusion-window-v2 .fusion-toolbar button { min-height: 32px; padding: 0 10px; }
+#unifilar-dialog.fusion-window-v2 .optical-graph { height: calc(100% - 2px); min-height: 0; }
+
+.manual-route-toolbar-v2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding-left: 7px;
+    margin-left: 2px;
+    border-left: 1px solid #31546e;
+}
+.manual-route-toolbar-v2 > span {
+    max-width: 135px;
+    overflow: hidden;
+    color: #85a0b9;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9px;
+}
+.manual-route-toolbar-v2.active [data-route-edit-toggle] {
+    color: #04211f;
+    background: #2dd4bf;
+    border-color: #2dd4bf;
+}
+.manual-route-toolbar-v2 button:disabled { opacity: .35; }
+
+.optical-links path.route-editable-v2 { pointer-events: stroke !important; cursor: crosshair; }
+.optical-links path.route-selected-v2 {
+    filter: drop-shadow(0 0 5px rgb(45 212 191 / 95%));
+    stroke-width: 5px !important;
+}
+.manual-route-handle-v2 {
+    pointer-events: all;
+    cursor: grab;
+    fill: #071729;
+    stroke: #2dd4bf;
+    stroke-width: 3px;
+    vector-effect: non-scaling-stroke;
+}
+.manual-route-handle-v2:active { cursor: grabbing; fill: #2dd4bf; }
+
+/* Paleta funcional para ligações internas. */
+.container-link-line.fiber { stroke: #21c7dc; }
+.container-link-line.copper { stroke: #f59e0b; }
+.container-link-line.wireless { stroke: #a78bfa; stroke-dasharray: 8 7; }
+
+@media (max-width: 900px) {
+    #cable-box-insert-v2 { top: auto; right: 12px; bottom: 12px; left: 12px; width: auto; max-height: 75vh; }
+    .box-insert-grid-v2 { grid-template-columns: 1fr; }
+    #unifilar-dialog.fusion-window-v2:not(.is-fullscreen) { width: 98vw; height: 92vh; }
+    .manual-route-toolbar-v2 > span { display: none; }
+}
