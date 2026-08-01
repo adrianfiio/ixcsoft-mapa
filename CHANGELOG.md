@@ -2,11 +2,9 @@
 
 ## [0.64.0] - 2026-08-01
 
-Branch `feat/mapa-v092-rotas-cpd-topologia` (ainda não mesclada na `main` —
-aguardando teste do usuário). Backup/ponto de rollback: tag `v0.63.0`
-(também disponível como branch `backup/mapa-pre-v092-20260801`). Pacote
-preparado pelo ChatGPT para a área do mapa ("v0.9.2" na numeração dele),
-aplicado via `apply_v092.py`.
+Backup/ponto de rollback: tag `v0.63.0` (também disponível como branch
+`backup/mapa-pre-v092-20260801`). Pacote preparado pelo ChatGPT para a
+área do mapa ("v0.9.2" na numeração dele), aplicado via `apply_v092.py`.
 
 ### Adicionado
 
