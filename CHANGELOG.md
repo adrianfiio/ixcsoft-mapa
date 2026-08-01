@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.64.0] - 2026-08-01
+
+Branch `feat/mapa-v092-rotas-cpd-topologia` (ainda não mesclada na `main` —
+aguardando teste do usuário). Backup/ponto de rollback: tag `v0.63.0`
+(também disponível como branch `backup/mapa-pre-v092-20260801`). Pacote
+preparado pelo ChatGPT para a área do mapa ("v0.9.2" na numeração dele),
+aplicado via `apply_v092.py`.
+
+### Adicionado
+
+- **CPD/POP pela barra lateral, barra recolhida e clique direito**, com edição de CPDs importados anteriormente. Ao criar/editar, é possível escolher o funcionamento físico: somente ponto CPD/POP, Rack/sala técnica ou Torre/site externo — o ponto continua identificado visualmente como CPD/POP mesmo funcionando como Rack ou Torre.
+- **OLT dentro da Torre** (cadastro manual e importação YAML), além de switch, DIO, rádio PTP, access point e ONU/ONT já suportados.
+- **CDO em todos os pontos de criação do mapa**: barra lateral, barra recolhida, clique direito, criação manual, inserção no meio do cabo e conversão de reserva — com marcador e popup próprios. Internamente continua sendo uma caixa de emenda, preservando o subtipo `cdo`.
+- **Painel de filtro por rota**: Todas, Nenhuma, botão "Só" por rota, seleção de várias rotas, mostrar/ocultar reservas e mostrar/ocultar traçados. Ao filtrar por uma rota, mostra só os cabos, CTOs e CEO/CDO relacionados, reservas dos cabos visíveis e o CPD/POP conectado — combinável com os filtros gerais já existentes (CTO, CEO/CDO, cabos, nomes). CTO usa a relação direta com a rota; CEO/CDO e CPD recuperam a rota pelos metadados do KMZ e pelas passagens; rotas sem geometria própria também aparecem no seletor.
+- **Equipamentos da torre/rack agrupados por categoria** (OLTs, DIOs, switches, rádios PTP, access points, ONUs/ONTs, outros) em vez de despejar todas as portas na tela — as portas continuam disponíveis no diagrama interno e nas terminações.
+
+### Corrigido
+
+- **Diagrama interno da torre/rack reorganizado** em três áreas (OLT/DIO → switches/equipamentos centrais → ONU/rádio/AP), com linhas saindo e chegando na porta correta, traçado ortogonal, sem atravessar o centro dos cards, e cores diferentes por tipo de ligação (fibra, cobre, wireless).
+- **Seletor de importação YAML modernizado**: área de upload com clique ou arrastar-e-soltar, nome/tamanho do arquivo, botão Limpar e botão Procurar arquivo, no lugar do seletor antigo.
+
 ## [0.63.0] - 2026-08-01
 
 ### Adicionado

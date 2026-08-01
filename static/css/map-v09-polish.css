@@ -523,3 +523,118 @@
     }
     .container-diagram-nodes-v09 { min-width: 620px; padding-inline: 76px; }
 }
+
+/* v0.9.2 — equipamentos agrupados e topologia por colunas */
+.container-equipment-group-v092 {
+    border: 1px solid #2a4962;
+    border-radius: 14px;
+    background: #091a2b;
+    overflow: clip;
+}
+.container-equipment-group-v092 + .container-equipment-group-v092 { margin-top: 12px; }
+.container-equipment-group-v092 > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 50px;
+    padding: 0 16px;
+    cursor: pointer;
+    font-weight: 800;
+    color: #d9f7f2;
+    background: #0d243a;
+    list-style: none;
+}
+.container-equipment-group-v092 > summary::-webkit-details-marker { display: none; }
+.container-equipment-group-v092 > summary::before {
+    content: "›";
+    margin-right: 8px;
+    color: #35d3c5;
+    transform: rotate(0deg);
+    transition: transform .18s ease;
+}
+.container-equipment-group-v092[open] > summary::before { transform: rotate(90deg); }
+.container-equipment-group-v092 > summary span { flex: 1; }
+.container-equipment-group-v092 > summary b {
+    display: inline-grid;
+    place-items: center;
+    min-width: 30px;
+    height: 26px;
+    padding-inline: 8px;
+    border: 1px solid #37627f;
+    border-radius: 999px;
+    background: #102d47;
+}
+.container-equipment-group-list-v092 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 12px;
+    padding: 12px;
+}
+.container-equipment-compact-v092 .equipment-port-grid,
+.container-equipment-compact-v092 .equipment-card-list { display: none !important; }
+.container-equipment-compact-v092 .equipment-head { align-items: center; }
+.container-equipment-compact-v092 .equipment-actions { margin-top: 10px; }
+
+.container-diagram-nodes-v09 {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(320px, 1fr)) !important;
+    align-items: start !important;
+    justify-items: stretch !important;
+    gap: 42px 84px !important;
+    width: max-content !important;
+    min-width: 1320px !important;
+    min-height: 100% !important;
+    padding: 42px 90px !important;
+}
+.container-diagram-node-v09 {
+    grid-column: var(--node-column, 2);
+    width: 100% !important;
+    max-width: 520px !important;
+    min-width: 320px;
+    justify-self: stretch;
+    position: relative;
+    z-index: 3;
+}
+.container-diagram-port-v09 {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 12px;
+    align-items: center;
+    gap: 7px;
+    text-align: left;
+}
+.container-diagram-port-v09 > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.container-diagram-port-v09 > i {
+    width: 9px;
+    height: 9px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    background: #071423;
+    box-shadow: 0 0 0 2px #071423;
+}
+.container-diagram-links-v09 { z-index: 2 !important; pointer-events: none; }
+.container-diagram-link-v09 {
+    fill: none;
+    stroke-width: 3.2 !important;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 3px rgba(0,0,0,.65));
+}
+.container-diagram-link-end-v092.fiber { fill: #22d3ee; }
+.container-diagram-link-end-v092.copper { fill: #f59e0b; }
+.container-diagram-link-end-v092.wireless { fill: #a78bfa; }
+
+@media (max-width: 1180px) {
+    .container-diagram-nodes-v09 {
+        grid-template-columns: repeat(2, minmax(320px, 1fr)) !important;
+        min-width: 900px !important;
+        padding-inline: 70px !important;
+    }
+    .container-diagram-node-v09 { grid-column: auto; }
+}

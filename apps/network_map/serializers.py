@@ -132,6 +132,12 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False,
     )
+    element_subtype = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        max_length=40,
+    )
 
     latitude = serializers.FloatField(
         write_only=True,
@@ -165,6 +171,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             "splitter_input_cable_id",
             "splitter_input_fiber_id",
             "internal_equipment",
+            "element_subtype",
         ]
 
 
@@ -178,6 +185,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         validated_data.pop("splitter_input_cable_id", None)
         validated_data.pop("splitter_input_fiber_id", None)
         internal_equipment = validated_data.pop("internal_equipment", [])
+        element_subtype = validated_data.pop("element_subtype", "")
 
         latitude = validated_data.pop(
             "latitude",
@@ -217,6 +225,8 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             sync_splice_box(cto, 1, 1, splitter_ratio)
             return cto
 
+        if element_subtype:
+            validated_data["metadata"] = {**validated_data.get("metadata", {}), "import_subtype": element_subtype}
         element = NetworkElement.objects.create(**validated_data)
         if internal_equipment:
             element.metadata = {**element.metadata, "internal_equipment": internal_equipment}
@@ -235,6 +245,7 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         input_cable_id = validated_data.pop("splitter_input_cable_id", None)
         input_fiber_id = validated_data.pop("splitter_input_fiber_id", None)
         internal_equipment = validated_data.pop("internal_equipment", None)
+        element_subtype = validated_data.pop("element_subtype", None)
 
         latitude = validated_data.pop(
             "latitude",
@@ -263,6 +274,8 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             )
 
 
+        if element_subtype is not None:
+            instance.metadata = {**instance.metadata, "import_subtype": element_subtype}
         instance.save()
         if internal_equipment is not None:
             instance.metadata = {**instance.metadata, "internal_equipment": internal_equipment}

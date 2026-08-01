@@ -167,7 +167,7 @@ def project_detail(request, project_id):
 @permission_classes([AllowAny])
 def project_routes_geojson(request):
     project_id = request.GET.get("project_id")
-    queryset = NetworkRoute.objects.filter(geometry__isnull=False)
+    queryset = NetworkRoute.objects.all()
     if project_id:
         queryset = queryset.filter(project_id=project_id)
     queryset = scope_company_queryset(queryset, request.user)
@@ -178,10 +178,14 @@ def project_routes_geojson(request):
             {
                 "type": "Feature",
                 "id": route.id,
-                "geometry": {
-                    "type": "MultiLineString",
-                    "coordinates": route.geometry.coords,
-                },
+                "geometry": (
+                    {
+                        "type": "MultiLineString",
+                        "coordinates": route.geometry.coords,
+                    }
+                    if route.geometry
+                    else None
+                ),
                 "properties": {
                     "id": route.id,
                     "nome": route.name,

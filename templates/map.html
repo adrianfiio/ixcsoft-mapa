@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{% static 'css/map-fusion-polish.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v08-polish.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v09-polish.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-v092.css' %}?v={{ app_version }}">
 </head>
 <body data-can-edit="{{ can_edit_map|yesno:'true,false' }}">
     <form id="map-csrf-token" hidden aria-hidden="true">{% csrf_token %}</form>
@@ -29,6 +30,8 @@
                 <button type="button" data-quick-tool="pole" title="Adicionar poste"><svg viewBox="0 0 24 24"><path d="M4 7h16M12 3v18M7 21h10M8 7l4 5 4-5"></path></svg></button>
                 <button type="button" data-quick-tool="cto" title="Adicionar CTO"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg></button>
                 <button type="button" data-quick-tool="splice_box" title="Adicionar CEO"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg></button>
+                <button type="button" data-quick-tool="cdo" title="Adicionar CDO"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg></button>
+                <button type="button" data-quick-tool="cpd" title="Adicionar CPD/POP"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h6"></path></svg></button>
                 <button type="button" data-quick-tool="rack" title="Adicionar rack"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M8 6h8M8 11h8M8 16h8"></path></svg></button>
                 <button type="button" data-quick-tool="tower" title="Adicionar torre"><svg viewBox="0 0 24 24"><path d="M12 2 6 22m6-20 6 20M8 15h8M9 10h6M5 22h14"></path></svg></button>
                 <button type="button" data-quick-action="labels" title="Mostrar ou ocultar nomes"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button>
@@ -93,6 +96,8 @@
                         <button class="tool-button" data-tool="pole" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16M12 3v18M7 21h10M8 7l4 5 4-5"></path></svg><span>Poste</span></button>
                         <button class="tool-button" data-tool="cto" type="button"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg><span>CTO</span></button>
                         <button class="tool-button" data-tool="splice_box" type="button"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg><span>CEO</span></button>
+                        <button class="tool-button" data-tool="cdo" type="button"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg><span>CDO</span></button>
+                        <button class="tool-button" data-tool="cpd" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h6"></path></svg><span>CPD/POP</span></button>
                         <button class="tool-button" data-tool="cable" type="button"><svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg><span>Cabo</span></button>
                         <button class="tool-button" data-tool="rack" type="button"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M8 6h8M8 11h8M8 16h8"></path></svg><span>Rack</span></button>
                         <button class="tool-button" data-tool="tower" type="button"><svg viewBox="0 0 24 24"><path d="M12 2 6 22m6-20 6 20M8 15h8M9 10h6M5 22h14"></path></svg><span>Torre</span></button>
@@ -192,6 +197,7 @@
         <form id="element-form">
             <header><h2 id="element-dialog-title">Novo elemento</h2><button class="dialog-close" type="button">×</button></header>
             <input name="element_type" type="hidden">
+            <input name="element_subtype" type="hidden">
             <input name="latitude" type="hidden">
             <input name="longitude" type="hidden">
             <label>Nome<input name="name" required maxlength="180" placeholder="Nome do elemento"></label>
@@ -205,6 +211,17 @@
                     <option value="offline">Offline</option>
                 </select>
             </label>
+            <fieldset id="cpd-structure-fields-v092" class="cto-fields" hidden>
+                <legend>Estrutura física do CPD/POP</legend>
+                <label>Usar este ponto como
+                    <select name="structure_profile">
+                        <option value="">Somente ponto CPD/POP</option>
+                        <option value="rack">Rack / sala técnica</option>
+                        <option value="tower">Torre / site externo</option>
+                    </select>
+                </label>
+                <p>Ao escolher Rack ou Torre, o ponto passa a aceitar OLT, DIO, switch, rádio, ONU e diagramas internos.</p>
+            </fieldset>
             <fieldset id="cto-fields" class="cto-fields" hidden>
                 <legend>Atendimento óptico da CTO</legend>
                 <label>Capacidade total da caixa<input name="cto_capacity" type="number" min="1" max="128" value="8"></label>
@@ -300,6 +317,7 @@
                         <div class="dialog-grid">
                             <label>Tipo no mapa<select name="equipment_type">
                                 <option value="auto">Detectar automaticamente</option>
+                                <option value="olt">OLT</option>
                                 <option value="switch">Switch</option>
                                 <option value="access_point">Access point</option>
                                 <option value="ptp">Rádio PTP</option>
@@ -469,6 +487,7 @@
     <script src="{% static 'js/map-fusion-polish.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/container-device-type.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/container-structure-v09.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/map-v092.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>

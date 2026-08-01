@@ -393,20 +393,25 @@
         refreshClientLayers();
         document.getElementById("client-count").textContent = data.count || data.features.length;
     }
-    function networkIcon(type) {
-        const labels = { cto: "CTO", splice_box: "CEO", olt: "OLT", dio: "DIO", rack: "RACK", tower: "TORRE" };
+    function networkIcon(type, subtype = "") {
+        const normalizedSubtype = String(subtype || "").toLowerCase();
+        const displayType = ["cpd", "pop"].includes(normalizedSubtype)
+            ? "cpd" : type === "splice_box" && normalizedSubtype === "cdo" ? "cdo" : type;
+        const labels = { cto: "CTO", splice_box: "CEO", cdo: "CDO", cpd: "CPD", olt: "OLT", dio: "DIO", rack: "RACK", tower: "TORRE" };
         const symbols = {
             pole: '<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 7h18M12 2v23M6 25h12M7 7l5 6 5-6M8 17h8"></path></svg>',
             cto: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="12" rx="2"></rect><path d="M7 6h10M7 10h10M7 14v3m5-3v3m5-3v3"></path></svg><small>CTO</small>',
             splice_box: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CEO</small>',
+            cdo: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CDO</small>',
+            cpd: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>CPD</small>',
             olt: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>OLT</small>',
             rack: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M8 6h8M8 11h8M8 16h8"></path></svg><small>RACK</small>',
             tower: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 6 22m6-20 6 20M8 15h8M9 10h6M5 22h14"></path></svg><small>TORRE</small>',
         };
-        const large = ["cto", "splice_box", "olt", "rack", "tower"].includes(type);
+        const large = ["cto", "splice_box", "cdo", "cpd", "olt", "rack", "tower"].includes(displayType);
         return L.divIcon({
             className: "",
-            html: `<div class="network-marker ${type}">${symbols[type] || labels[type] || "•"}</div>`,
+            html: `<div class="network-marker ${type} ${displayType}">${symbols[displayType] || labels[displayType] || "•"}</div>`,
             iconSize: large ? [40, 44] : [31, 31],
             iconAnchor: large ? [20, 22] : [15, 15],
         });
@@ -518,6 +523,14 @@
         ["element_type", "latitude", "longitude", "name", "code", "description", "status"].forEach((name) => {
             elementForm.elements[name].value = element[name] ?? "";
         });
+        const subtype = element.element_subtype || element.metadata?.import_subtype || "";
+        elementForm.elements.element_subtype.value = subtype;
+        const isCpd = ["cpd", "pop"].includes(String(subtype).toLowerCase())
+            || /^(CPD|POP)\b/i.test(element.name || "");
+        const cpdFields = document.getElementById("cpd-structure-fields-v092");
+        cpdFields.hidden = !isCpd;
+        elementForm.elements.structure_profile.value = isCpd && ["rack", "tower"].includes(element.element_type)
+            ? element.element_type : "";
         const isCto = element.element_type === "cto";
         const isContainer = ["rack", "tower"].includes(element.element_type);
         document.getElementById("cto-fields").hidden = !isCto;
@@ -559,10 +572,10 @@
         document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
         document.getElementById("container-dialog-subtitle").textContent = data.container.type === "rack"
             ? "OLT e DIO instalados neste rack"
-            : "Switches, APs e rádios PTP instalados nesta torre";
+            : "OLT, switches, APs, DIOs, ONUs e rádios PTP instalados nesta torre";
         const types = data.container.type === "rack"
             ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["onu", "ONU / ONT"]]
-            : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["onu", "ONU / ONT"]];
+            : [["olt", "OLT"], ["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["onu", "ONU / ONT"]];
         containerEquipmentForm.reset();
         state.editingContainerEquipmentId = null;
         containerEquipmentForm.elements.equipment_type.disabled = false;
@@ -1515,24 +1528,24 @@
         notify("Reserva excluída.");
     }
     async function convertReserve(cableId, reserveId) {
-        const choice = await askValue({ title: "Transformar reserva", label: "Novo equipamento", value: "CEO", options: [{ value: "CEO", label: "CEO" }, { value: "CTO", label: "CTO" }] });
+        const choice = await askValue({ title: "Transformar reserva", label: "Novo equipamento", value: "CEO", options: [{ value: "CEO", label: "CEO" }, { value: "CDO", label: "CDO" }, { value: "CTO", label: "CTO" }] });
         if (!choice) return;
         const normalized = choice.trim().toUpperCase();
-        if (!["CTO", "CEO"].includes(normalized)) return notify("Escolha CTO ou CEO.", true);
+        if (!["CTO", "CEO", "CDO"].includes(normalized)) return notify("Escolha CTO, CEO ou CDO.", true);
         const name = await askValue({ title: `Nova ${normalized}`, label: "Nome do equipamento", value: `${normalized}-${reserveId}` });
         if (!name) return;
         await api(`/api/map/cables/${cableId}/reserves/${reserveId}/convert/`, {
             method: "POST",
-            body: JSON.stringify({ element_type: normalized === "CTO" ? "cto" : "splice_box", name, code: name }),
+            body: JSON.stringify({ element_type: normalized === "CTO" ? "cto" : "splice_box", element_subtype: normalized.toLowerCase(), name, code: name }),
         });
         await loadStructure();
         notify(`${normalized} inserida e cabo dividido em dois trechos.`);
     }
     async function insertElementAt(cableId, latlng) {
-        const choice = await askValue({ title: "Inserir no cabo", label: "Equipamento", value: "CEO", options: [{ value: "CEO", label: "CEO" }, { value: "CTO", label: "CTO" }] });
+        const choice = await askValue({ title: "Inserir no cabo", label: "Equipamento", value: "CEO", options: [{ value: "CEO", label: "CEO" }, { value: "CDO", label: "CDO" }, { value: "CTO", label: "CTO" }] });
         if (!choice) return;
         const normalized = choice.trim().toUpperCase();
-        if (!["CTO", "CEO"].includes(normalized)) return notify("Escolha CTO ou CEO.", true);
+        if (!["CTO", "CEO", "CDO"].includes(normalized)) return notify("Escolha CTO, CEO ou CDO.", true);
         const name = await askValue({ title: `Nova ${normalized}`, label: "Nome do equipamento", value: `${normalized}-NOVO` });
         if (!name) return;
         const created = await api(`/api/map/cables/${cableId}/reserves/`, {
@@ -1541,7 +1554,7 @@
         });
         await api(`/api/map/cables/${cableId}/reserves/${created.reserve.id}/convert/`, {
             method: "POST",
-            body: JSON.stringify({ element_type: normalized === "CTO" ? "cto" : "splice_box", name, code: name }),
+            body: JSON.stringify({ element_type: normalized === "CTO" ? "cto" : "splice_box", element_subtype: normalized.toLowerCase(), name, code: name }),
         });
         clearTool();
         await loadStructure();
@@ -1673,6 +1686,12 @@
         const [elements, cables, routes] = await Promise.all([api(`/api/map/elements/${query}`), api(`/api/map/cables/${query}`), api(`/api/map/routes/${query}`)]);
         state.elements = elements.features;
         state.cables = cables.features;
+        window.mapV092?.setData?.({
+            routes: routes.features,
+            elements: elements.features,
+            cables: cables.features,
+            projectId: state.projectId,
+        });
         const lightSelect = document.getElementById("light-source-select");
         const currentLight = state.lightSourceId || lightSelect.value;
         lightSelect.innerHTML = '<option value="">Selecione a OLT de origem</option>';
@@ -1695,13 +1714,16 @@
         const bounds = [];
         const showLabels = document.getElementById("layer-labels").checked;
         elements.features.forEach((feature) => {
+            if (window.mapV092 && !window.mapV092.isElementVisible(feature)) return;
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
             const editing = canEdit && state.mapMode === "edit";
             const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box", "rack"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Fusões</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
-                const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo), draggable: editing });
-                marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(p.tipo.toUpperCase())}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
+                const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo, p.subtype), draggable: editing });
+                const typeLabel = ["cpd", "pop"].includes(String(p.subtype || "").toLowerCase())
+                    ? "CPD/POP" : p.tipo === "splice_box" && p.subtype === "cdo" ? "CDO" : p.tipo.toUpperCase();
+                marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
                 if (showLabels) marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
                 marker.on("click", (event) => {
                     if (state.tool !== "cable") return;
@@ -1778,6 +1800,7 @@
             }
         }
         cables.features.forEach((feature) => {
+            if (window.mapV092 && !window.mapV092.isCableVisible(feature)) return;
             const p = feature.properties;
             const illuminated = illuminatedCables.has(p.id);
             const line = L.geoJSON(feature, { style: {
@@ -1819,7 +1842,7 @@
                 light.eachLayer((part) => part.getElement()?.classList.add("optical-light-path"));
                 animateLightDirection(feature, lightGeneration);
             }
-            (p.reservas || []).forEach((reserve) => {
+            if (!window.mapV092 || window.mapV092.areReservesVisible()) (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
                     draggable: editing,
                     icon: L.divIcon({ className: "", html: '<div class="reserve-marker">↻</div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
@@ -1842,6 +1865,8 @@
             line.getLayers().forEach((part) => part.getLatLngs().flat(Infinity).forEach((point) => bounds.push([point.lat, point.lng])));
         });
         routes.features.forEach((feature) => {
+            if (!feature.geometry) return;
+            if (window.mapV092 && !window.mapV092.isRouteVisible(feature)) return;
             const p = feature.properties;
             const line = L.geoJSON(feature, { style: { color: "#f7b731", weight: 4, opacity: .86 } });
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Rota importada`);
@@ -1890,15 +1915,18 @@
     function openElementDialogAt(tool, latlng) {
         state.editingElementId = null;
         elementForm.reset();
-        elementForm.elements.element_type.value = tool;
+        const actualTool = tool === "cdo" ? "splice_box" : tool === "cpd" ? "other" : tool;
+        elementForm.elements.element_type.value = actualTool;
+        elementForm.elements.element_subtype.value = tool === "cdo" ? "cdo" : tool === "splice_box" ? "ceo" : tool === "cpd" ? "pop" : "";
+        document.getElementById("cpd-structure-fields-v092").hidden = tool !== "cpd";
         elementForm.elements.latitude.value = latlng.lat;
         elementForm.elements.longitude.value = latlng.lng;
-        document.getElementById("cto-fields").hidden = tool !== "cto";
-        document.getElementById("container-fields").hidden = !["rack", "tower"].includes(tool);
-        document.getElementById("container-fields-title").textContent = tool === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
+        document.getElementById("cto-fields").hidden = actualTool !== "cto";
+        document.getElementById("container-fields").hidden = !["rack", "tower"].includes(actualTool);
+        document.getElementById("container-fields-title").textContent = actualTool === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
         populateSplitterCables(null);
         loadSplitterFibers("");
-        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", rack: "Novo rack", tower: "Nova torre" };
+        const titles = { pole: "Novo poste", cto: "Nova CTO", splice_box: "Nova CEO", cdo: "Nova CDO", cpd: "Novo CPD/POP", rack: "Novo rack", tower: "Nova torre" };
         document.getElementById("element-dialog-title").textContent = titles[tool] || "Novo elemento";
         elementDialog.showModal();
     }
@@ -1929,7 +1957,7 @@
     mapContextMenu.className = "map-context-menu";
     mapContextMenu.hidden = true;
     mapContextMenu.innerHTML = [
-        ["cto", "CTO"], ["splice_box", "CEO"], ["rack", "Rack"], ["tower", "Torre"],
+        ["cto", "CTO"], ["splice_box", "CEO"], ["cdo", "CDO"], ["cpd", "CPD/POP"], ["rack", "Rack"], ["tower", "Torre"],
     ].map(([value, label]) => `<button type="button" data-add-at="${value}">${label}</button>`).join("");
     document.getElementById("map").appendChild(mapContextMenu);
     L.DomEvent.disableClickPropagation(mapContextMenu);
@@ -2040,6 +2068,11 @@
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
         const payload = Object.fromEntries(new FormData(event.target));
+        const cpdFields = document.getElementById("cpd-structure-fields-v092");
+        if (cpdFields && !cpdFields.hidden) payload.element_type = payload.structure_profile || "other";
+        else if (payload.structure_profile) payload.element_type = payload.structure_profile;
+        delete payload.structure_profile;
+        if (!payload.element_subtype) delete payload.element_subtype;
         if (!payload.splitter_input_cable_id) delete payload.splitter_input_cable_id;
         if (!payload.splitter_input_fiber_id) delete payload.splitter_input_fiber_id;
         payload.project = state.projectId; payload.enabled = true;

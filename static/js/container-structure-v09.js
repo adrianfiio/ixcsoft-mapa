@@ -207,7 +207,13 @@
 
         const list = document.getElementById("container-equipment-list");
         if (list) {
-            const listObserver = new MutationObserver(() => scheduleRefresh(60));
+            const listObserver = new MutationObserver(() => {
+                // manageContainer() recria artigos diretos. O agrupamento v0.9.2
+                // move esses artigos para <details>; não deve disparar novo fetch.
+                if ([...list.children].some((node) => node.tagName === "ARTICLE")) {
+                    scheduleRefresh(60);
+                }
+            });
             listObserver.observe(list, { childList: true, subtree: true });
         }
     }
@@ -238,6 +244,48 @@
             </div>`;
     }
 
+    const equipmentGroupOrder = ["olt", "dio", "switch", "ptp", "access_point", "onu", "other"];
+    const equipmentGroupLabels = {
+        olt: "OLTs",
+        dio: "DIOs",
+        switch: "Switches",
+        ptp: "Rádios PTP",
+        access_point: "Access points",
+        onu: "ONUs / ONTs",
+        other: "Outros equipamentos",
+    };
+
+    function organizeEquipmentList() {
+        const list = document.getElementById("container-equipment-list");
+        if (!list || !currentData) return;
+        const directArticles = [...list.children].filter((node) => node.tagName === "ARTICLE");
+        if (!directArticles.length) return;
+        const groups = new Map();
+        directArticles.forEach((article, index) => {
+            const item = (currentData.equipment || [])[index];
+            const type = item?.type || "other";
+            if (!groups.has(type)) groups.set(type, []);
+            groups.get(type).push(article);
+            article.classList.add("container-equipment-compact-v092");
+            article.querySelectorAll(".equipment-port-grid, .equipment-card-list").forEach((node) => {
+                node.classList.add("container-equipment-details-v092");
+            });
+        });
+        list.innerHTML = "";
+        equipmentGroupOrder.forEach((type, order) => {
+            const items = groups.get(type) || [];
+            if (!items.length) return;
+            const details = document.createElement("details");
+            details.className = "container-equipment-group-v092";
+            details.dataset.equipmentGroup = type;
+            if (order === 0) details.open = true;
+            details.innerHTML = `<summary><span>${escapeHtml(equipmentGroupLabels[type] || type)}</span><b>${items.length}</b></summary><div class="container-equipment-group-list-v092"></div>`;
+            const body = details.querySelector(".container-equipment-group-list-v092");
+            items.forEach((article) => body.appendChild(article));
+            list.appendChild(details);
+        });
+    }
+
     function portClass(port) {
         const optical = ["dio", "pon", "sfp_1g", "sfp_plus_10g"].includes(port.type);
         return `${optical ? "optical" : port.type === "wireless" ? "wireless" : "copper"} ${port.used ? "used" : ""} ${port.fusion_used ? "fusion-used" : ""}`;
@@ -247,23 +295,32 @@
         const nodes = document.getElementById("container-diagram-nodes-v09");
         if (!nodes || !currentData) return;
         const equipmentPriority = {
-            dio: 10,
-            olt: 20,
-            onu: 30,
-            switch: 40,
-            access_point: 50,
-            ptp: 60,
+            olt: 10,
+            dio: 20,
+            switch: 30,
+            onu: 40,
+            ptp: 50,
+            access_point: 60,
             other: 70,
+        };
+        const equipmentColumn = {
+            olt: 1,
+            dio: 1,
+            switch: 2,
+            other: 2,
+            onu: 3,
+            ptp: 3,
+            access_point: 3,
         };
         const equipment = [...(currentData.equipment || [])].sort((a, b) => (
             (equipmentPriority[a.type] || 99) - (equipmentPriority[b.type] || 99)
             || String(a.name).localeCompare(String(b.name), "pt-BR")
         ));
         nodes.innerHTML = equipment.length ? equipment.map((item, index) => `
-            <article class="container-diagram-node-v09" data-equipment-id="${item.id}" style="--node-order:${index}">
+            <article class="container-diagram-node-v09" data-equipment-id="${item.id}" data-equipment-type="${item.type}" style="--node-order:${index};--node-column:${equipmentColumn[item.type] || 2}">
                 <header><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.type_label)}</span></div><small>${(item.ports || []).length} porta(s)</small></header>
                 <div class="container-diagram-ports-v09">
-                    ${(item.ports || []).map((port) => `<button type="button" class="container-diagram-port-v09 ${portClass(port)}" data-diagram-port="${port.id}" data-equipment="${item.id}" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.label)}">${escapeHtml(port.label)}</button>`).join("") || '<span class="container-empty-v09">Sem portas. Use + Portas na aba Equipamentos.</span>'}
+                    ${(item.ports || []).map((port) => `<button type="button" class="container-diagram-port-v09 ${portClass(port)}" data-diagram-port="${port.id}" data-equipment="${item.id}" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i aria-hidden="true"></i></button>`).join("") || '<span class="container-empty-v09">Sem portas. Use + Portas na aba Equipamentos.</span>'}
                 </div>
             </article>`).join("") : '<p class="container-empty-v09">Cadastre equipamentos na aba Equipamentos.</p>';
         nodes.querySelectorAll("[data-diagram-port]").forEach((button) => button.addEventListener("click", () => selectDiagramPort(button)));
@@ -360,35 +417,44 @@
         svg.setAttribute("height", height);
         svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
         svg.innerHTML = "";
-        (currentData.links || []).forEach((link) => {
+        (currentData.links || []).forEach((link, index) => {
             const source = nodes.querySelector(`[data-diagram-port="${link.source_port_id}"]`);
             const destination = nodes.querySelector(`[data-diagram-port="${link.destination_port_id}"]`);
             if (!source || !destination) return;
             const a = source.getBoundingClientRect();
             const b = destination.getBoundingClientRect();
-            const x1 = a.left - box.left + scroll.scrollLeft + a.width / 2;
-            const y1 = a.top - box.top + scroll.scrollTop + a.height / 2;
-            const x2 = b.left - box.left + scroll.scrollLeft + b.width / 2;
-            const y2 = b.top - box.top + scroll.scrollTop + b.height / 2;
             const sourceCard = source.closest(".container-diagram-node-v09")?.getBoundingClientRect();
             const destinationCard = destination.closest(".container-diagram-node-v09")?.getBoundingClientRect();
-            const sourceAbove = !sourceCard || !destinationCard || sourceCard.top <= destinationCard.top;
-            const edgeY1 = sourceCard
-                ? (sourceAbove ? sourceCard.bottom : sourceCard.top) - box.top + scroll.scrollTop
-                : y1;
-            const edgeY2 = destinationCard
-                ? (sourceAbove ? destinationCard.top : destinationCard.bottom) - box.top + scroll.scrollTop
-                : y2;
-            const linkIndex = [...(currentData.links || [])].indexOf(link);
-            const middleY = (edgeY1 + edgeY2) / 2 + ((linkIndex % 5) - 2) * 8;
+            if (!sourceCard || !destinationCard) return;
+            const destinationAtRight = destinationCard.left >= sourceCard.left;
+            const sameColumn = Math.abs(destinationCard.left - sourceCard.left) < Math.min(sourceCard.width, destinationCard.width) * 0.55;
+            const x1 = (destinationAtRight ? a.right : a.left) - box.left + scroll.scrollLeft;
+            const y1 = a.top - box.top + scroll.scrollTop + a.height / 2;
+            const x2 = (destinationAtRight ? b.left : b.right) - box.left + scroll.scrollLeft;
+            const y2 = b.top - box.top + scroll.scrollTop + b.height / 2;
+            let d;
+            if (sameColumn) {
+                const outside = Math.max(sourceCard.right, destinationCard.right) - box.left + scroll.scrollLeft + 34 + (index % 5) * 10;
+                const sx = sourceCard.right - box.left + scroll.scrollLeft;
+                const dx = destinationCard.right - box.left + scroll.scrollLeft;
+                d = `M${x1},${y1} H${sx + 12} H${outside} V${y2} H${dx + 12} H${x2}`;
+            } else {
+                const middleX = (x1 + x2) / 2 + ((index % 5) - 2) * 10;
+                d = `M${x1},${y1} H${middleX} V${y2} H${x2}`;
+            }
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute(
-                "d",
-                `M${x1},${y1} V${edgeY1} `
-                + `C${x1},${middleY} ${x2},${middleY} ${x2},${edgeY2} V${y2}`
-            );
+            path.setAttribute("d", d);
             path.setAttribute("class", `container-diagram-link-v09 ${link.link_type || "fiber"}`);
+            path.setAttribute("data-link-id", link.id || "");
             svg.appendChild(path);
+            [ [x1, y1], [x2, y2] ].forEach(([cx, cy]) => {
+                const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                dot.setAttribute("cx", cx);
+                dot.setAttribute("cy", cy);
+                dot.setAttribute("r", 4);
+                dot.setAttribute("class", `container-diagram-link-end-v092 ${link.link_type || "fiber"}`);
+                svg.appendChild(dot);
+            });
         });
     }
 
@@ -451,6 +517,7 @@
         try {
             currentData = await request(`/api/map/elements/${id}/equipment/`);
             renderSummary();
+            organizeEquipmentList();
             if (currentTab === "diagram") renderDiagram();
         } catch (error) {
             message(error.message, true);
@@ -484,5 +551,5 @@
     resizeObserver.observe(dialog);
 
     ensureShell();
-    window.containerStructureV09 = { refresh, setTab };
+    window.containerStructureV09 = { refresh, setTab, organizeEquipmentList };
 }());

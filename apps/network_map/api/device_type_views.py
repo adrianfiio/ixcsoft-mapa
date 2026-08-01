@@ -23,6 +23,7 @@ ALLOWED_BY_CONTAINER = {
         ContainerEquipment.EquipmentType.OTHER,
     },
     NetworkElement.ElementType.TOWER: {
+        ContainerEquipment.EquipmentType.OLT,
         ContainerEquipment.EquipmentType.SWITCH,
         ContainerEquipment.EquipmentType.ACCESS_POINT,
         ContainerEquipment.EquipmentType.PTP,

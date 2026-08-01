@@ -584,6 +584,7 @@ def execute_kmz_import(request, project_id):
                     "kmz_folder": point.get("folder") or "",
                     "kmz_original_name": point["name"],
                     "kmz_standard_code": code,
+                    "route_path": point.get("route_path") or "",
                     "import_subtype": subtype or target,
                 }
                 geo_point = Point(*point["coordinates"], srid=4326)

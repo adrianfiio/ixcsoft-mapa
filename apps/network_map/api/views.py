@@ -40,6 +40,7 @@ from apps.network_map.models import (
     SpliceTraySplitterPort,
 )
 from apps.network_map.serializers import NetworkElementSerializer, sync_splice_box
+from apps.network_map.route_metadata import element_route_payload
 from apps.network_map.cto_defaults import ensure_cto_default_splitters
 from apps.network_map.services import (
     FiberStructureError,
@@ -567,6 +568,8 @@ def network_elements_geojson(request):
         if not element.point:
             continue
 
+        route_payload = element_route_payload(element)
+        subtype = str(element.metadata.get("import_subtype") or "").lower()
         features.append(
             {
                 "type": "Feature",
@@ -585,6 +588,8 @@ def network_elements_geojson(request):
                     "tipo": element.element_type,
                     "status": element.status,
                     "project_id": element.project_id,
+                    "subtype": subtype,
+                    **route_payload,
                 },
             }
         )
@@ -682,6 +687,12 @@ def fiber_cables_geojson(request):
                     "fibras_usadas": cable.used_fibers,
                     "status": cable.status,
                     "project_id": cable.project_id,
+                    "route_id": cable.route_id,
+                    "route_name": cable.route.name if cable.route_id else "",
+                    "route_code": cable.route.code if cable.route_id else "",
+                    "route_ids": [cable.route_id] if cable.route_id else [],
+                    "route_names": [cable.route.name] if cable.route_id else [],
+                    "route_codes": [cable.route.code] if cable.route_id else [],
                     "origem": (
                         cable.origin.name
                         if cable.origin
@@ -749,6 +760,8 @@ def element_detail_payload(element):
         "status": element.status,
         "enabled": element.enabled,
         "internal_equipment": element.metadata.get("internal_equipment", []),
+        "metadata": element.metadata,
+        "element_subtype": element.metadata.get("import_subtype", ""),
         "latitude": element.point.y if element.point else None,
         "longitude": element.point.x if element.point else None,
         "cto": None,
@@ -907,6 +920,7 @@ def container_equipment(request, element_id):
             }
             if container.element_type == NetworkElement.ElementType.RACK
             else {
+                ContainerEquipment.EquipmentType.OLT,
                 ContainerEquipment.EquipmentType.SWITCH,
                 ContainerEquipment.EquipmentType.ACCESS_POINT,
                 ContainerEquipment.EquipmentType.PTP,
@@ -2273,6 +2287,7 @@ def reserve_to_element(request, cable_id, reserve_id):
     cable = get_object_or_404(FiberCable, pk=cable_id)
     reserve = get_object_or_404(CableReserve, pk=reserve_id, cable=cable)
     element_type = str(request.data.get("element_type", "")).strip()
+    element_subtype = str(request.data.get("element_subtype", "")).strip().lower()
     if element_type not in {
         NetworkElement.ElementType.CTO,
         NetworkElement.ElementType.SPLICE_BOX,
@@ -2306,6 +2321,8 @@ def reserve_to_element(request, cable_id, reserve_id):
         "status": "no_data",
         "enabled": True,
     }
+    if element_subtype:
+        element_data["metadata"] = {"import_subtype": element_subtype}
     if element_type == NetworkElement.ElementType.CTO:
         element = CTO.objects.create(capacity=8, splitter_ratio="1:8", **element_data)
         from apps.network_map.models import CTOSplitter
