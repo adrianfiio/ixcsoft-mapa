@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.8] - 2026-08-01
+
+### Corrigido
+
+- **`apply` cancelava a atualização de novo**, agora por causa de `consultar_status.py`, mais um script solto do projeto de monitoramento criado direto em `/opt/ixcsoft-mapa`. Adicionado ao `.gitignore`, mesmo tratamento das v0.67.1/v0.67.5.
+
 ## [0.67.7] - 2026-08-01
 
 ### Alterado

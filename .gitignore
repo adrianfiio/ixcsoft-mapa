@@ -226,6 +226,7 @@ telegraf.conf
 /equipamentos_ativos_snmp/
 /gerar_equipamento.py
 /templates/equipamentos_snmp/
+/consultar_status.py
 
 # Backups temporários
 *.bak
