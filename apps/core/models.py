@@ -221,24 +221,24 @@ class MapBaseConfiguration(TimeStampedModel):
 
 
 class CompanyDashboardLayout(TimeStampedModel):
-    """Personalização admin-only da visão geral de uma empresa: ordem e
-    visibilidade dos cartões/painéis, e uma mensagem opcional no topo. A
-    empresa em si nunca edita isso — só reflete o que foi salvo aqui."""
+    """Personalização da visão geral de uma empresa: posição, tamanho e
+    visibilidade dos cartões/painéis (grid livre, tipo Zabbix/Grafana), e
+    uma mensagem opcional no topo. Editável tanto por um membro EDIT da
+    própria empresa (autoatendimento) quanto pelo superusuário via
+    `/painel/dashboards/<empresa>/`."""
 
     company = models.OneToOneField(
         Company,
         on_delete=models.CASCADE,
         related_name="dashboard_layout",
     )
-    widget_order = models.JSONField(
-        default=list,
+    widget_layout = models.JSONField(
+        default=dict,
         blank=True,
-        help_text="Lista ordenada das chaves de widget do dashboard dessa empresa.",
-    )
-    hidden_widgets = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Chaves de widget ocultas nesse dashboard.",
+        help_text=(
+            "Posição/tamanho/visibilidade de cada widget do dashboard dessa "
+            'empresa: {"chave": {"x": 0, "y": 0, "w": 3, "h": 2, "hidden": false}}.'
+        ),
     )
     banner_text = models.CharField(
         max_length=280,
@@ -263,15 +263,13 @@ class PlatformDashboardLayout(TimeStampedModel):
     `CompanyDashboardLayout`, mas sem empresa dona: é o layout da própria
     plataforma. Sempre existe no máximo uma linha (singleton)."""
 
-    widget_order = models.JSONField(
-        default=list,
+    widget_layout = models.JSONField(
+        default=dict,
         blank=True,
-        help_text="Lista ordenada das chaves de widget da visão da plataforma.",
-    )
-    hidden_widgets = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Chaves de widget ocultas na visão da plataforma.",
+        help_text=(
+            "Posição/tamanho/visibilidade de cada widget da visão da "
+            'plataforma: {"chave": {"x": 0, "y": 0, "w": 3, "h": 2, "hidden": false}}.'
+        ),
     )
     banner_text = models.CharField(
         max_length=280,

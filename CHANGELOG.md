@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.59.0] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.58.1`.
+
+### Adicionado
+
+- **Dashboard redimensionável (arrastar a borda, tipo Zabbix/Grafana).** O editor de widgets (dashboard de empresa, do projetista e "Visão da plataforma") deixa de só reordenar dentro de zonas fixas — agora é um grid livre de 12 colunas: arrasta pra qualquer posição e redimensiona pelo canto, como um dashboard builder de verdade. Reaproveita a mesma infraestrutura de esconder/mostrar e mensagem no topo já existente.
+  - **Só no modo de edição** carrega uma biblioteca nova (Gridstack.js, via CDN — mesmo padrão do SortableJS que ela substitui). A visualização normal do dashboard **não carrega nenhuma dependência nova**: o servidor já sabe a posição/tamanho de cada widget e renderiza com CSS Grid puro, sem JavaScript de layout.
+  - Modelo de dados trocado: `widget_order`/`hidden_widgets` (duas listas) viram um campo só, `widget_layout` (posição x/y, tamanho w/h e visibilidade por widget). Layouts já customizados antes desta versão são convertidos automaticamente (migration com conversão de dados), preservando ordem relativa e o que estava escondido.
+  - Widget sem posição salva ainda (board novo, ou widget que apareceu depois da última edição) cai em auto-flow — mesmo espírito da ordem padrão de antes, só que em duas dimensões.
+
 ## [0.58.1] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.58.0`.

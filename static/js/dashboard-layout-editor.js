@@ -6,48 +6,29 @@
     const status = document.getElementById("editor-status");
     if (!saveButton) return;
 
-    const zones = ["widget-zone-metrics", "widget-zone-col-1", "widget-zone-col-2"]
-        .map((id) => document.getElementById(id))
-        .filter(Boolean);
+    const gridEl = document.getElementById("widget-zone-grid");
 
-    // O CSS "order" fica desligado em modo de edição (ver .dashboard-edit-mode
-    // em app.css) porque ele brigaria com o SortableJS: o Sortable move nós de
-    // verdade no DOM ao arrastar, mas se "order" continuasse fixo por CSS o
-    // item voltaria pra posição antiga visualmente ao soltar. Por isso a ordem
-    // salva (guardada em --order) precisa ser aplicada aqui, reordenando o DOM
-    // de verdade antes de inicializar o arrastar.
-    zones.forEach((zone) => {
-        const items = Array.from(zone.querySelectorAll(":scope > [data-widget]"));
-        items
-            .sort((a, b) => {
-                const orderA = parseInt(a.style.getPropertyValue("--order"), 10) || 0;
-                const orderB = parseInt(b.style.getPropertyValue("--order"), 10) || 0;
-                return orderA - orderB;
-            })
-            .forEach((item) => zone.appendChild(item));
-    });
-
-    if (window.Sortable) {
-        zones.forEach((zone) => {
-            Sortable.create(zone, {
-                animation: 150,
-                handle: ".widget-drag-handle",
-                ghostClass: "sortable-ghost",
-                // O drag nativo do navegador (HTML5 DnD) às vezes deixa o
-                // "ghost" preso na tela em vez de limpar ao soltar. O modo
-                // fallback (emulado por mouse/touch) evita essa falha.
-                forceFallback: true,
-            });
-        });
+    // Cada item já sai do servidor com gs-x/gs-y/gs-w/gs-h (posição/tamanho
+    // salvos, ou padrão calculado por auto-flow) e um gs-id igual ao
+    // data-widget — o Gridstack lê esses atributos sozinho ao inicializar.
+    let grid = null;
+    if (gridEl && window.GridStack) {
+        grid = GridStack.init({
+            column: 12,
+            cellHeight: 90,
+            margin: 8,
+            handle: ".widget-drag-handle",
+            resizable: { handles: "se" },
+        }, gridEl);
     } else if (status) {
-        status.textContent = "Não foi possível carregar a biblioteca de arrastar (SortableJS). Mostrar/esconder e salvar continuam funcionando.";
+        status.textContent = "Não foi possível carregar a biblioteca de arrastar/redimensionar (Gridstack). Mostrar/esconder e salvar continuam funcionando.";
         status.classList.add("error");
     }
 
     document.querySelectorAll(".widget-visibility-toggle").forEach((toggle) => {
         toggle.addEventListener("change", () => {
-            const article = toggle.closest("[data-widget]");
-            if (article) article.classList.toggle("widget-hidden", !toggle.checked);
+            const content = toggle.closest(".grid-stack-item-content");
+            if (content) content.classList.toggle("widget-hidden", !toggle.checked);
         });
     });
 
@@ -56,20 +37,39 @@
         return item ? decodeURIComponent(item.split("=")[1]) : "";
     }
 
-    function collectLayout() {
-        const widgetOrder = [];
-        const hiddenWidgets = [];
-        zones.forEach((zone) => {
-            zone.querySelectorAll("[data-widget]").forEach((article) => {
-                const key = article.dataset.widget;
-                widgetOrder.push(key);
-                const toggle = article.querySelector(".widget-visibility-toggle");
-                if (toggle && !toggle.checked) hiddenWidgets.push(key);
+    // Sem Gridstack carregado (falha de CDN), não dá pra ler posição/tamanho
+    // em tempo real — preserva o que já veio do servidor pra não perder o
+    // layout salvo só porque a lib de arrastar não carregou.
+    function currentNodesFallback() {
+        const result = [];
+        if (!gridEl) return result;
+        gridEl.querySelectorAll(":scope > .grid-stack-item").forEach((item) => {
+            result.push({
+                id: item.dataset.widget,
+                x: parseInt(item.getAttribute("gs-x"), 10) || 0,
+                y: parseInt(item.getAttribute("gs-y"), 10) || 0,
+                w: parseInt(item.getAttribute("gs-w"), 10) || 1,
+                h: parseInt(item.getAttribute("gs-h"), 10) || 1,
             });
         });
+        return result;
+    }
+
+    function collectLayout() {
+        const widgetLayout = {};
+        const nodes = grid ? grid.save(false) : currentNodesFallback();
+        nodes.forEach((node) => {
+            const key = node.id;
+            if (!key) return;
+            widgetLayout[key] = { x: node.x, y: node.y, w: node.w, h: node.h, hidden: false };
+        });
+        document.querySelectorAll(".widget-visibility-toggle").forEach((toggle) => {
+            const item = toggle.closest(".grid-stack-item");
+            const key = item?.dataset.widget;
+            if (key && widgetLayout[key]) widgetLayout[key].hidden = !toggle.checked;
+        });
         return {
-            widget_order: widgetOrder,
-            hidden_widgets: hiddenWidgets,
+            widget_layout: widgetLayout,
             banner_text: (bannerInput?.value || "").trim(),
         };
     }

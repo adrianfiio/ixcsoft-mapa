@@ -35,61 +35,70 @@
 
 {% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}
 
-<section class="metric-grid" aria-label="Indicadores principais" id="widget-zone-metrics">
+<section class="widget-grid" aria-label="Painéis do dashboard" id="widget-zone-grid">
     {% if edit_mode or not widget_meta.metric_access_online.hidden %}
-    <article class="metric-card{% if widget_meta.metric_access_online.hidden %} widget-hidden{% endif %}" data-widget="metric_access_online" style="--accent: var(--success); --order: {{ widget_meta.metric_access_online.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_access_online" hidden=widget_meta.metric_access_online.hidden %}
-        <div class="metric-head"><span>Acessos online</span><span class="metric-icon">↗</span></div>
-        <div class="metric-value">{{ access.online|default:0 }}</div>
-        <div class="metric-note"><strong>{{ access.total|default:0 }}</strong> acessos sincronizados</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_access_online" gs-id="metric_access_online" gs-x="{{ widget_meta.metric_access_online.x }}" gs-y="{{ widget_meta.metric_access_online.y }}" gs-w="{{ widget_meta.metric_access_online.w }}" gs-h="{{ widget_meta.metric_access_online.h }}" style="grid-column: {{ widget_meta.metric_access_online.x1 }} / span {{ widget_meta.metric_access_online.w }}; grid-row: {{ widget_meta.metric_access_online.y1 }} / span {{ widget_meta.metric_access_online.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_access_online.hidden %} widget-hidden{% endif %}" style="--accent: var(--success);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_access_online" hidden=widget_meta.metric_access_online.hidden %}
+            <div class="metric-head"><span>Acessos online</span><span class="metric-icon">↗</span></div>
+            <div class="metric-value">{{ access.online|default:0 }}</div>
+            <div class="metric-note"><strong>{{ access.total|default:0 }}</strong> acessos sincronizados</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_access_offline.hidden %}
-    <article class="metric-card{% if widget_meta.metric_access_offline.hidden %} widget-hidden{% endif %}" data-widget="metric_access_offline" style="--accent: var(--danger); --order: {{ widget_meta.metric_access_offline.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_access_offline" hidden=widget_meta.metric_access_offline.hidden %}
-        <div class="metric-head"><span>Acessos offline</span><span class="metric-icon">↘</span></div>
-        <div class="metric-value">{{ access.offline|default:0 }}</div>
-        <div class="metric-note">{{ access.unknown|default:0 }} com estado desconhecido</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_access_offline" gs-id="metric_access_offline" gs-x="{{ widget_meta.metric_access_offline.x }}" gs-y="{{ widget_meta.metric_access_offline.y }}" gs-w="{{ widget_meta.metric_access_offline.w }}" gs-h="{{ widget_meta.metric_access_offline.h }}" style="grid-column: {{ widget_meta.metric_access_offline.x1 }} / span {{ widget_meta.metric_access_offline.w }}; grid-row: {{ widget_meta.metric_access_offline.y1 }} / span {{ widget_meta.metric_access_offline.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_access_offline.hidden %} widget-hidden{% endif %}" style="--accent: var(--danger);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_access_offline" hidden=widget_meta.metric_access_offline.hidden %}
+            <div class="metric-head"><span>Acessos offline</span><span class="metric-icon">↘</span></div>
+            <div class="metric-value">{{ access.offline|default:0 }}</div>
+            <div class="metric-note">{{ access.unknown|default:0 }} com estado desconhecido</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_infra.hidden %}
-    <article class="metric-card{% if widget_meta.metric_infra.hidden %} widget-hidden{% endif %}" data-widget="metric_infra" style="--accent: var(--blue); --order: {{ widget_meta.metric_infra.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_infra" hidden=widget_meta.metric_infra.hidden %}
-        <div class="metric-head"><span>Infraestrutura</span><span class="metric-icon">◇</span></div>
-        <div class="metric-value">{{ element_count|default:0 }}</div>
-        <div class="metric-note"><strong>{{ cto_count|default:0 }}</strong> CTOs cadastradas</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_infra" gs-id="metric_infra" gs-x="{{ widget_meta.metric_infra.x }}" gs-y="{{ widget_meta.metric_infra.y }}" gs-w="{{ widget_meta.metric_infra.w }}" gs-h="{{ widget_meta.metric_infra.h }}" style="grid-column: {{ widget_meta.metric_infra.x1 }} / span {{ widget_meta.metric_infra.w }}; grid-row: {{ widget_meta.metric_infra.y1 }} / span {{ widget_meta.metric_infra.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_infra.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_infra" hidden=widget_meta.metric_infra.hidden %}
+            <div class="metric-head"><span>Infraestrutura</span><span class="metric-icon">◇</span></div>
+            <div class="metric-value">{{ element_count|default:0 }}</div>
+            <div class="metric-note"><strong>{{ cto_count|default:0 }}</strong> CTOs cadastradas</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_alerts.hidden %}
-    <article class="metric-card{% if widget_meta.metric_alerts.hidden %} widget-hidden{% endif %}" data-widget="metric_alerts" style="--accent: var(--warning); --order: {{ widget_meta.metric_alerts.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_alerts" hidden=widget_meta.metric_alerts.hidden %}
-        <div class="metric-head"><span>Alertas ativos</span><span class="metric-icon">!</span></div>
-        <div class="metric-value">{{ active_alert_count|default:0 }}</div>
-        <div class="metric-note">Ocorrências que exigem atenção</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_alerts" gs-id="metric_alerts" gs-x="{{ widget_meta.metric_alerts.x }}" gs-y="{{ widget_meta.metric_alerts.y }}" gs-w="{{ widget_meta.metric_alerts.w }}" gs-h="{{ widget_meta.metric_alerts.h }}" style="grid-column: {{ widget_meta.metric_alerts.x1 }} / span {{ widget_meta.metric_alerts.w }}; grid-row: {{ widget_meta.metric_alerts.y1 }} / span {{ widget_meta.metric_alerts.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_alerts.hidden %} widget-hidden{% endif %}" style="--accent: var(--warning);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_alerts" hidden=widget_meta.metric_alerts.hidden %}
+            <div class="metric-head"><span>Alertas ativos</span><span class="metric-icon">!</span></div>
+            <div class="metric-value">{{ active_alert_count|default:0 }}</div>
+            <div class="metric-note">Ocorrências que exigem atenção</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_clients.hidden %}
-    <article class="metric-card{% if widget_meta.metric_clients.hidden %} widget-hidden{% endif %}" data-widget="metric_clients" style="--accent: var(--primary); --order: {{ widget_meta.metric_clients.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_clients" hidden=widget_meta.metric_clients.hidden %}
-        <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
-        <div class="metric-value">{{ customer_count|default:0 }}</div>
-        <div class="metric-note"><strong>{{ onus.total|default:0 }}</strong> ONUs vinculadas</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_clients" gs-id="metric_clients" gs-x="{{ widget_meta.metric_clients.x }}" gs-y="{{ widget_meta.metric_clients.y }}" gs-w="{{ widget_meta.metric_clients.w }}" gs-h="{{ widget_meta.metric_clients.h }}" style="grid-column: {{ widget_meta.metric_clients.x1 }} / span {{ widget_meta.metric_clients.w }}; grid-row: {{ widget_meta.metric_clients.y1 }} / span {{ widget_meta.metric_clients.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_clients.hidden %} widget-hidden{% endif %}" style="--accent: var(--primary);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_clients" hidden=widget_meta.metric_clients.hidden %}
+            <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
+            <div class="metric-value">{{ customer_count|default:0 }}</div>
+            <div class="metric-note"><strong>{{ onus.total|default:0 }}</strong> ONUs vinculadas</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_cables.hidden %}
-    <article class="metric-card{% if widget_meta.metric_cables.hidden %} widget-hidden{% endif %}" data-widget="metric_cables" style="--accent: var(--success); --order: {{ widget_meta.metric_cables.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_cables" hidden=widget_meta.metric_cables.hidden %}
-        <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
-        <div class="metric-value">{{ cable_km|default:0 }} km</div>
-        <div class="metric-note"><strong>{{ olt_count|default:0 }}</strong> OLTs cadastradas</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_cables" gs-id="metric_cables" gs-x="{{ widget_meta.metric_cables.x }}" gs-y="{{ widget_meta.metric_cables.y }}" gs-w="{{ widget_meta.metric_cables.w }}" gs-h="{{ widget_meta.metric_cables.h }}" style="grid-column: {{ widget_meta.metric_cables.x1 }} / span {{ widget_meta.metric_cables.w }}; grid-row: {{ widget_meta.metric_cables.y1 }} / span {{ widget_meta.metric_cables.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_cables.hidden %} widget-hidden{% endif %}" style="--accent: var(--success);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_cables" hidden=widget_meta.metric_cables.hidden %}
+            <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
+            <div class="metric-value">{{ cable_km|default:0 }} km</div>
+            <div class="metric-note"><strong>{{ olt_count|default:0 }}</strong> OLTs cadastradas</div>
+        </article>
+    </div>
     {% endif %}
-</section>
-
-<section class="dashboard-grid">
-    <div class="dashboard-column" id="widget-zone-col-1">
-        {% if edit_mode or not widget_meta.panel_access_status.hidden %}
-        <article class="panel{% if widget_meta.panel_access_status.hidden %} widget-hidden{% endif %}" data-widget="panel_access_status" style="--order: {{ widget_meta.panel_access_status.order|default:0 }};">
+    {% if edit_mode or not widget_meta.panel_access_status.hidden %}
+    <div class="grid-stack-item" data-widget="panel_access_status" gs-id="panel_access_status" gs-x="{{ widget_meta.panel_access_status.x }}" gs-y="{{ widget_meta.panel_access_status.y }}" gs-w="{{ widget_meta.panel_access_status.w }}" gs-h="{{ widget_meta.panel_access_status.h }}" style="grid-column: {{ widget_meta.panel_access_status.x1 }} / span {{ widget_meta.panel_access_status.w }}; grid-row: {{ widget_meta.panel_access_status.y1 }} / span {{ widget_meta.panel_access_status.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_access_status.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_access_status" hidden=widget_meta.panel_access_status.hidden %}
             <div class="panel-header">
                 <h2 class="panel-title">Estado dos acessos</h2>
@@ -108,10 +117,11 @@
                 </div>
             </div>
         </article>
-        {% endif %}
-
-        {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
-        <article class="panel{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}" data-widget="panel_shortcuts" style="--order: {{ widget_meta.panel_shortcuts.order|default:0 }};">
+    </div>
+    {% endif %}
+    {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
+    <div class="grid-stack-item" data-widget="panel_shortcuts" gs-id="panel_shortcuts" gs-x="{{ widget_meta.panel_shortcuts.x }}" gs-y="{{ widget_meta.panel_shortcuts.y }}" gs-w="{{ widget_meta.panel_shortcuts.w }}" gs-h="{{ widget_meta.panel_shortcuts.h }}" style="grid-column: {{ widget_meta.panel_shortcuts.x1 }} / span {{ widget_meta.panel_shortcuts.w }}; grid-row: {{ widget_meta.panel_shortcuts.y1 }} / span {{ widget_meta.panel_shortcuts.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_shortcuts" hidden=widget_meta.panel_shortcuts.hidden %}
             <div class="panel-header"><h2 class="panel-title">Atalhos operacionais</h2></div>
             <div class="quick-grid">
@@ -122,12 +132,11 @@
                 {% if can_edit_company_assets %}<a class="quick-link" href="{% url 'company-team' %}"><strong>Minha equipe</strong><small>Gerenciar acessos VIEW/EDIT</small></a>{% endif %}
             </div>
         </article>
-        {% endif %}
     </div>
-
-    <div class="dashboard-column" id="widget-zone-col-2">
-        {% if edit_mode or not widget_meta.panel_recent_alerts.hidden %}
-        <article class="panel{% if widget_meta.panel_recent_alerts.hidden %} widget-hidden{% endif %}" data-widget="panel_recent_alerts" style="--order: {{ widget_meta.panel_recent_alerts.order|default:0 }};">
+    {% endif %}
+    {% if edit_mode or not widget_meta.panel_recent_alerts.hidden %}
+    <div class="grid-stack-item" data-widget="panel_recent_alerts" gs-id="panel_recent_alerts" gs-x="{{ widget_meta.panel_recent_alerts.x }}" gs-y="{{ widget_meta.panel_recent_alerts.y }}" gs-w="{{ widget_meta.panel_recent_alerts.w }}" gs-h="{{ widget_meta.panel_recent_alerts.h }}" style="grid-column: {{ widget_meta.panel_recent_alerts.x1 }} / span {{ widget_meta.panel_recent_alerts.w }}; grid-row: {{ widget_meta.panel_recent_alerts.y1 }} / span {{ widget_meta.panel_recent_alerts.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_recent_alerts.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_recent_alerts" hidden=widget_meta.panel_recent_alerts.hidden %}
             <div class="panel-header"><h2 class="panel-title">Alertas recentes</h2><a class="panel-link" href="{% url 'company-alerts' %}">Ver todos</a></div>
             <div class="alert-list">
@@ -142,10 +151,11 @@
                 {% endfor %}
             </div>
         </article>
-        {% endif %}
-
-        {% if edit_mode or not widget_meta.panel_sync.hidden %}
-        <article class="panel sync-card{% if widget_meta.panel_sync.hidden %} widget-hidden{% endif %}" data-widget="panel_sync" style="--order: {{ widget_meta.panel_sync.order|default:0 }};">
+    </div>
+    {% endif %}
+    {% if edit_mode or not widget_meta.panel_sync.hidden %}
+    <div class="grid-stack-item" data-widget="panel_sync" gs-id="panel_sync" gs-x="{{ widget_meta.panel_sync.x }}" gs-y="{{ widget_meta.panel_sync.y }}" gs-w="{{ widget_meta.panel_sync.w }}" gs-h="{{ widget_meta.panel_sync.h }}" style="grid-column: {{ widget_meta.panel_sync.x1 }} / span {{ widget_meta.panel_sync.w }}; grid-row: {{ widget_meta.panel_sync.y1 }} / span {{ widget_meta.panel_sync.h }};">
+        <article class="panel sync-card grid-stack-item-content{% if widget_meta.panel_sync.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_sync" hidden=widget_meta.panel_sync.hidden %}
             <div class="sync-info">
                 <strong>Sincronização com ERP</strong>
@@ -153,10 +163,11 @@
             </div>
             <span class="sync-badge">{% if latest_sync %}{{ latest_sync.status }}{% else %}Aguardando{% endif %}</span>
         </article>
-        {% endif %}
-
-        {% if edit_mode or not widget_meta.panel_gpon.hidden %}
-        <article class="panel{% if widget_meta.panel_gpon.hidden %} widget-hidden{% endif %}" data-widget="panel_gpon" style="--order: {{ widget_meta.panel_gpon.order|default:0 }};">
+    </div>
+    {% endif %}
+    {% if edit_mode or not widget_meta.panel_gpon.hidden %}
+    <div class="grid-stack-item" data-widget="panel_gpon" gs-id="panel_gpon" gs-x="{{ widget_meta.panel_gpon.x }}" gs-y="{{ widget_meta.panel_gpon.y }}" gs-w="{{ widget_meta.panel_gpon.w }}" gs-h="{{ widget_meta.panel_gpon.h }}" style="grid-column: {{ widget_meta.panel_gpon.x1 }} / span {{ widget_meta.panel_gpon.w }}; grid-row: {{ widget_meta.panel_gpon.y1 }} / span {{ widget_meta.panel_gpon.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_gpon.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_gpon" hidden=widget_meta.panel_gpon.hidden %}
             <div class="panel-header"><h2 class="panel-title">Resumo GPON</h2></div>
             <div class="status-list">
@@ -165,14 +176,15 @@
                 <div class="status-row"><span class="legend-dot" style="background: var(--warning)"></span><span>ONUs com LOS</span><strong>{{ onus.los|default:0 }}</strong></div>
             </div>
         </article>
-        {% endif %}
     </div>
+    {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
 {% if edit_mode %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
 <script src="{% static 'js/dashboard-layout-editor.js' %}?v={{ app_version }}"></script>
 {% endif %}
 {% endblock %}

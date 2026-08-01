@@ -134,11 +134,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         ).exists()
 
     def _dashboard_layout_context(self, company):
-        """Ordem/visibilidade dos widgets e mensagem no topo do dashboard,
-        conforme salvo em `CompanyDashboardLayout` — sem nada salvo, cai no
-        padrão do template (nada some, ordem de sempre). `can_edit_dashboard`
-        só é considerado na própria "Visão geral" (`dashboard.html`), não no
-        mapa, que reaproveita esse mesmo método de contexto."""
+        """Posição/tamanho/visibilidade dos widgets (grid livre) e mensagem
+        no topo do dashboard, conforme salvo em `CompanyDashboardLayout` —
+        sem nada salvo, cai no auto-flow padrão (nada some, ordem de
+        sempre). `can_edit_dashboard` só é considerado na própria "Visão
+        geral" (`dashboard.html`), não no mapa, que reaproveita esse mesmo
+        método de contexto."""
         layout = getattr(company, "dashboard_layout", None)
         can_edit_dashboard = self.template_name == "dashboard.html" and self._can_edit_dashboard(company)
         return {
@@ -284,12 +285,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
 
-        order, hidden, banner_text = clean_layout_payload(widgets_for(company), payload)
+        widget_layout, banner_text = clean_layout_payload(widgets_for(company), payload)
         CompanyDashboardLayout.objects.update_or_create(
             company=company,
             defaults={
-                "widget_order": order,
-                "hidden_widgets": hidden,
+                "widget_layout": widget_layout,
                 "banner_text": banner_text,
                 "updated_by": request.user,
             },
@@ -348,12 +348,11 @@ class DashboardLayoutEditorView(DashboardView):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
 
-        order, hidden, banner_text = clean_layout_payload(widgets_for(self.company), payload)
+        widget_layout, banner_text = clean_layout_payload(widgets_for(self.company), payload)
         CompanyDashboardLayout.objects.update_or_create(
             company=self.company,
             defaults={
-                "widget_order": order,
-                "hidden_widgets": hidden,
+                "widget_layout": widget_layout,
                 "banner_text": banner_text,
                 "updated_by": request.user,
             },
@@ -397,12 +396,11 @@ class PlatformOverviewView(LoginRequiredMixin, TemplateView):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "JSON inválido."}, status=400)
 
-        order, hidden, banner_text = clean_layout_payload(PLATFORM_WIDGETS, payload)
+        widget_layout, banner_text = clean_layout_payload(PLATFORM_WIDGETS, payload)
         layout = self._layout()
         if layout is None:
             layout = PlatformDashboardLayout()
-        layout.widget_order = order
-        layout.hidden_widgets = hidden
+        layout.widget_layout = widget_layout
         layout.banner_text = banner_text
         layout.updated_by = request.user
         layout.save()

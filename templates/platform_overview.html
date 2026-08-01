@@ -31,66 +31,77 @@
 
 {% if dashboard_banner %}<div class="dashboard-banner">{{ dashboard_banner }}</div>{% endif %}
 
-<section class="metric-grid" aria-label="Indicadores da plataforma" id="widget-zone-metrics">
+<section class="widget-grid" aria-label="Painéis da plataforma" id="widget-zone-grid">
     {% if edit_mode or not widget_meta.metric_companies.hidden %}
-    <article class="metric-card{% if widget_meta.metric_companies.hidden %} widget-hidden{% endif %}" data-widget="metric_companies" style="--accent: var(--primary); --order: {{ widget_meta.metric_companies.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_companies" hidden=widget_meta.metric_companies.hidden %}
-        <div class="metric-head"><span>Empresas ativas</span><span class="metric-icon">◇</span></div>
-        <div class="metric-value">{{ metric_companies|default:0 }}</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_companies" gs-id="metric_companies" gs-x="{{ widget_meta.metric_companies.x }}" gs-y="{{ widget_meta.metric_companies.y }}" gs-w="{{ widget_meta.metric_companies.w }}" gs-h="{{ widget_meta.metric_companies.h }}" style="grid-column: {{ widget_meta.metric_companies.x1 }} / span {{ widget_meta.metric_companies.w }}; grid-row: {{ widget_meta.metric_companies.y1 }} / span {{ widget_meta.metric_companies.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_companies.hidden %} widget-hidden{% endif %}" style="--accent: var(--primary);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_companies" hidden=widget_meta.metric_companies.hidden %}
+            <div class="metric-head"><span>Empresas ativas</span><span class="metric-icon">◇</span></div>
+            <div class="metric-value">{{ metric_companies|default:0 }}</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_new_companies.hidden %}
-    <article class="metric-card{% if widget_meta.metric_new_companies.hidden %} widget-hidden{% endif %}" data-widget="metric_new_companies" style="--accent: var(--success); --order: {{ widget_meta.metric_new_companies.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_new_companies" hidden=widget_meta.metric_new_companies.hidden %}
-        <div class="metric-head"><span>Novas empresas</span><span class="metric-icon">＋</span></div>
-        <div class="metric-value">{{ metric_new_companies|default:0 }}</div>
-        <div class="metric-note">Últimos 30 dias</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_new_companies" gs-id="metric_new_companies" gs-x="{{ widget_meta.metric_new_companies.x }}" gs-y="{{ widget_meta.metric_new_companies.y }}" gs-w="{{ widget_meta.metric_new_companies.w }}" gs-h="{{ widget_meta.metric_new_companies.h }}" style="grid-column: {{ widget_meta.metric_new_companies.x1 }} / span {{ widget_meta.metric_new_companies.w }}; grid-row: {{ widget_meta.metric_new_companies.y1 }} / span {{ widget_meta.metric_new_companies.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_new_companies.hidden %} widget-hidden{% endif %}" style="--accent: var(--success);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_new_companies" hidden=widget_meta.metric_new_companies.hidden %}
+            <div class="metric-head"><span>Novas empresas</span><span class="metric-icon">＋</span></div>
+            <div class="metric-value">{{ metric_new_companies|default:0 }}</div>
+            <div class="metric-note">Últimos 30 dias</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_platform_clients.hidden %}
-    <article class="metric-card{% if widget_meta.metric_platform_clients.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_clients" style="--accent: var(--blue); --order: {{ widget_meta.metric_platform_clients.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_clients" hidden=widget_meta.metric_platform_clients.hidden %}
-        <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
-        <div class="metric-value">{{ metric_platform_clients|default:0 }}</div>
-        <div class="metric-note">Somado em todas as empresas</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_platform_clients" gs-id="metric_platform_clients" gs-x="{{ widget_meta.metric_platform_clients.x }}" gs-y="{{ widget_meta.metric_platform_clients.y }}" gs-w="{{ widget_meta.metric_platform_clients.w }}" gs-h="{{ widget_meta.metric_platform_clients.h }}" style="grid-column: {{ widget_meta.metric_platform_clients.x1 }} / span {{ widget_meta.metric_platform_clients.w }}; grid-row: {{ widget_meta.metric_platform_clients.y1 }} / span {{ widget_meta.metric_platform_clients.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_platform_clients.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_clients" hidden=widget_meta.metric_platform_clients.hidden %}
+            <div class="metric-head"><span>Clientes</span><span class="metric-icon">☺</span></div>
+            <div class="metric-value">{{ metric_platform_clients|default:0 }}</div>
+            <div class="metric-note">Somado em todas as empresas</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_platform_cables.hidden %}
-    <article class="metric-card{% if widget_meta.metric_platform_cables.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_cables" style="--accent: var(--success); --order: {{ widget_meta.metric_platform_cables.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_cables" hidden=widget_meta.metric_platform_cables.hidden %}
-        <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
-        <div class="metric-value">{{ metric_platform_cables|default:0 }} km</div>
-        <div class="metric-note">Somado em todas as empresas</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_platform_cables" gs-id="metric_platform_cables" gs-x="{{ widget_meta.metric_platform_cables.x }}" gs-y="{{ widget_meta.metric_platform_cables.y }}" gs-w="{{ widget_meta.metric_platform_cables.w }}" gs-h="{{ widget_meta.metric_platform_cables.h }}" style="grid-column: {{ widget_meta.metric_platform_cables.x1 }} / span {{ widget_meta.metric_platform_cables.w }}; grid-row: {{ widget_meta.metric_platform_cables.y1 }} / span {{ widget_meta.metric_platform_cables.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_platform_cables.hidden %} widget-hidden{% endif %}" style="--accent: var(--success);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_cables" hidden=widget_meta.metric_platform_cables.hidden %}
+            <div class="metric-head"><span>Cabos</span><span class="metric-icon">⟿</span></div>
+            <div class="metric-value">{{ metric_platform_cables|default:0 }} km</div>
+            <div class="metric-note">Somado em todas as empresas</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_platform_elements.hidden %}
-    <article class="metric-card{% if widget_meta.metric_platform_elements.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_elements" style="--accent: var(--blue); --order: {{ widget_meta.metric_platform_elements.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_elements" hidden=widget_meta.metric_platform_elements.hidden %}
-        <div class="metric-head"><span>Elementos de rede</span><span class="metric-icon">◇</span></div>
-        <div class="metric-value">{{ metric_platform_elements|default:0 }}</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_platform_elements" gs-id="metric_platform_elements" gs-x="{{ widget_meta.metric_platform_elements.x }}" gs-y="{{ widget_meta.metric_platform_elements.y }}" gs-w="{{ widget_meta.metric_platform_elements.w }}" gs-h="{{ widget_meta.metric_platform_elements.h }}" style="grid-column: {{ widget_meta.metric_platform_elements.x1 }} / span {{ widget_meta.metric_platform_elements.w }}; grid-row: {{ widget_meta.metric_platform_elements.y1 }} / span {{ widget_meta.metric_platform_elements.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_platform_elements.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_elements" hidden=widget_meta.metric_platform_elements.hidden %}
+            <div class="metric-head"><span>Elementos de rede</span><span class="metric-icon">◇</span></div>
+            <div class="metric-value">{{ metric_platform_elements|default:0 }}</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_platform_alerts.hidden %}
-    <article class="metric-card{% if widget_meta.metric_platform_alerts.hidden %} widget-hidden{% endif %}" data-widget="metric_platform_alerts" style="--accent: var(--warning); --order: {{ widget_meta.metric_platform_alerts.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_alerts" hidden=widget_meta.metric_platform_alerts.hidden %}
-        <div class="metric-head"><span>Alertas ativos</span><span class="metric-icon">!</span></div>
-        <div class="metric-value">{{ metric_platform_alerts|default:0 }}</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_platform_alerts" gs-id="metric_platform_alerts" gs-x="{{ widget_meta.metric_platform_alerts.x }}" gs-y="{{ widget_meta.metric_platform_alerts.y }}" gs-w="{{ widget_meta.metric_platform_alerts.w }}" gs-h="{{ widget_meta.metric_platform_alerts.h }}" style="grid-column: {{ widget_meta.metric_platform_alerts.x1 }} / span {{ widget_meta.metric_platform_alerts.w }}; grid-row: {{ widget_meta.metric_platform_alerts.y1 }} / span {{ widget_meta.metric_platform_alerts.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_platform_alerts.hidden %} widget-hidden{% endif %}" style="--accent: var(--warning);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_alerts" hidden=widget_meta.metric_platform_alerts.hidden %}
+            <div class="metric-head"><span>Alertas ativos</span><span class="metric-icon">!</span></div>
+            <div class="metric-value">{{ metric_platform_alerts|default:0 }}</div>
+        </article>
+    </div>
     {% endif %}
     {% if edit_mode or not widget_meta.metric_sync_issues.hidden %}
-    <article class="metric-card{% if widget_meta.metric_sync_issues.hidden %} widget-hidden{% endif %}" data-widget="metric_sync_issues" style="--accent: var(--danger); --order: {{ widget_meta.metric_sync_issues.order|default:0 }};">
-        {% include "includes/widget_edit_bar.html" with widget_key="metric_sync_issues" hidden=widget_meta.metric_sync_issues.hidden %}
-        <div class="metric-head"><span>Sincronização atrasada</span><span class="metric-icon">⏱</span></div>
-        <div class="metric-value">{{ metric_sync_issues|default:0 }}</div>
-        <div class="metric-note">Empresas com ERP sem sincronizar</div>
-    </article>
+    <div class="grid-stack-item" data-widget="metric_sync_issues" gs-id="metric_sync_issues" gs-x="{{ widget_meta.metric_sync_issues.x }}" gs-y="{{ widget_meta.metric_sync_issues.y }}" gs-w="{{ widget_meta.metric_sync_issues.w }}" gs-h="{{ widget_meta.metric_sync_issues.h }}" style="grid-column: {{ widget_meta.metric_sync_issues.x1 }} / span {{ widget_meta.metric_sync_issues.w }}; grid-row: {{ widget_meta.metric_sync_issues.y1 }} / span {{ widget_meta.metric_sync_issues.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_sync_issues.hidden %} widget-hidden{% endif %}" style="--accent: var(--danger);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_sync_issues" hidden=widget_meta.metric_sync_issues.hidden %}
+            <div class="metric-head"><span>Sincronização atrasada</span><span class="metric-icon">⏱</span></div>
+            <div class="metric-value">{{ metric_sync_issues|default:0 }}</div>
+            <div class="metric-note">Empresas com ERP sem sincronizar</div>
+        </article>
+    </div>
     {% endif %}
-</section>
-
-<section class="dashboard-grid">
-    <div class="dashboard-column" id="widget-zone-col-1">
-        {% if edit_mode or not widget_meta.panel_companies_table.hidden %}
-        <article class="panel{% if widget_meta.panel_companies_table.hidden %} widget-hidden{% endif %}" data-widget="panel_companies_table" style="--order: {{ widget_meta.panel_companies_table.order|default:0 }};">
+    {% if edit_mode or not widget_meta.panel_companies_table.hidden %}
+    <div class="grid-stack-item" data-widget="panel_companies_table" gs-id="panel_companies_table" gs-x="{{ widget_meta.panel_companies_table.x }}" gs-y="{{ widget_meta.panel_companies_table.y }}" gs-w="{{ widget_meta.panel_companies_table.w }}" gs-h="{{ widget_meta.panel_companies_table.h }}" style="grid-column: {{ widget_meta.panel_companies_table.x1 }} / span {{ widget_meta.panel_companies_table.w }}; grid-row: {{ widget_meta.panel_companies_table.y1 }} / span {{ widget_meta.panel_companies_table.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_companies_table.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_companies_table" hidden=widget_meta.panel_companies_table.hidden %}
             <div class="panel-header"><h2 class="panel-title">Empresas</h2></div>
             <div class="overview-table-wrap">
@@ -122,12 +133,11 @@
                 </table>
             </div>
         </article>
-        {% endif %}
     </div>
-
-    <div class="dashboard-column" id="widget-zone-col-2">
-        {% if edit_mode or not widget_meta.panel_attention.hidden %}
-        <article class="panel{% if widget_meta.panel_attention.hidden %} widget-hidden{% endif %}" data-widget="panel_attention" style="--order: {{ widget_meta.panel_attention.order|default:0 }};">
+    {% endif %}
+    {% if edit_mode or not widget_meta.panel_attention.hidden %}
+    <div class="grid-stack-item" data-widget="panel_attention" gs-id="panel_attention" gs-x="{{ widget_meta.panel_attention.x }}" gs-y="{{ widget_meta.panel_attention.y }}" gs-w="{{ widget_meta.panel_attention.w }}" gs-h="{{ widget_meta.panel_attention.h }}" style="grid-column: {{ widget_meta.panel_attention.x1 }} / span {{ widget_meta.panel_attention.w }}; grid-row: {{ widget_meta.panel_attention.y1 }} / span {{ widget_meta.panel_attention.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_attention.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_attention" hidden=widget_meta.panel_attention.hidden %}
             <div class="panel-header"><h2 class="panel-title">Precisa de atenção</h2></div>
             <div class="account-items">
@@ -148,14 +158,15 @@
                 {% endfor %}
             </div>
         </article>
-        {% endif %}
     </div>
+    {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
 {% if edit_mode %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
 <script src="{% static 'js/dashboard-layout-editor.js' %}?v={{ app_version }}"></script>
 {% endif %}
 {% endblock %}

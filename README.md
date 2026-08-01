@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.58.1 — Whitelabel: cor de destaque agora reflete em todos os realces (nav ativo, banner do dashboard)**
+**v0.59.0 — Dashboard redimensionável: arrastar e redimensionar widgets livremente (tipo Zabbix/Grafana)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
