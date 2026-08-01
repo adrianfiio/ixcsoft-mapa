@@ -70,6 +70,11 @@ _WIDGET_SIZE_OVERRIDES = {
     "panel_companies_table": (12, 6),
 }
 
+# Widget que existe no registro (aparece na lista do editor, pronto pra
+# ligar) mas não entra sozinho no layout de quem nunca mexeu nele — só
+# passa a aparecer se a empresa marcar "Visível" e salvar.
+_DEFAULT_HIDDEN_WIDGETS = {"panel_infra_breakdown"}
+
 
 def default_widget_size(key):
     if key in _WIDGET_SIZE_OVERRIDES:
@@ -138,7 +143,11 @@ def widget_meta(widgets, layout):
 
     if unpositioned:
         for key, pos in _auto_flow(unpositioned, start_y=max_y).items():
-            hidden = bool((saved.get(key) or {}).get("hidden"))
+            saved_entry = saved.get(key)
+            if saved_entry is not None:
+                hidden = bool(saved_entry.get("hidden"))
+            else:
+                hidden = key in _DEFAULT_HIDDEN_WIDGETS
             result[key] = {**pos, "hidden": hidden, "x1": pos["x"] + 1, "y1": pos["y"] + 1}
     return result
 

@@ -29,7 +29,7 @@
     </div>
     <div class="page-heading-actions">
         {% if can_edit_dashboard and not edit_mode %}<a class="primary-action" href="?edit=1">Editar dashboard →</a>{% endif %}
-        <a class="primary-action" href="{% url 'map' %}">⌖ Abrir mapa operacional</a>
+        <a class="primary-action" href="{% url 'map' %}"><span class="nav-svg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg></span> Abrir mapa operacional</a>
     </div>
 </section>
 
@@ -60,7 +60,7 @@
     <div class="grid-stack-item" data-widget="metric_infra" gs-id="metric_infra" gs-x="{{ widget_meta.metric_infra.x }}" gs-y="{{ widget_meta.metric_infra.y }}" gs-w="{{ widget_meta.metric_infra.w }}" gs-h="{{ widget_meta.metric_infra.h }}" style="grid-column: {{ widget_meta.metric_infra.x1 }} / span {{ widget_meta.metric_infra.w }}; grid-row: {{ widget_meta.metric_infra.y1 }} / span {{ widget_meta.metric_infra.h }};">
         <article class="metric-card grid-stack-item-content{% if widget_meta.metric_infra.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
             {% include "includes/widget_edit_bar.html" with widget_key="metric_infra" hidden=widget_meta.metric_infra.hidden %}
-            <div class="metric-head"><span>Infraestrutura</span><span class="metric-icon">◇</span></div>
+            <div class="metric-head"><span>Infraestrutura</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span></div>
             <div class="metric-value">{{ element_count|default:0 }}</div>
             <div class="metric-note"><strong>{{ cto_count|default:0 }}</strong> CTOs cadastradas</div>
         </article>

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.63.0] - 2026-08-01
+
+### Adicionado
+
+- **Sino de alertas no topo da tela**, ao lado do nome do usuário, para empresas provedoras com integração ERP ativa: mostra um indicador quando há alerta ativo, um clique abre uma lista com os últimos alertas e um atalho para a Central de alertas completa.
+- **Painel "Infraestrutura por tipo" agora existe pronto pra usar, mas não aparece sozinho**: fica disponível no editor de dashboard (aparece esmaecido com a caixa "Visível" desmarcada) pra quem quiser ligar; quem não mexer não vê nada de novo.
+
+### Corrigido
+
+- **Ícone da "Infraestrutura"** (cartão do dashboard e item "Equipamentos" do menu lateral, que agora usam o mesmo ícone) trocado pelo símbolo antigo de losango por um ícone de servidor/rack.
+- **Botão "Abrir mapa"** (Visão geral, dashboard do projetista e Visão da plataforma) ganhou o mesmo ícone de mapa usado na tela de equipamentos, no lugar do caractere de texto que não lembrava nada.
+- **Espaçamento em "Minha administração"**: a barra "Adicionar à rede" estava colada no painel "Configurações da empresa" acima dela, parecendo que um elemento subia por cima do outro.
+
 ## [0.62.0] - 2026-08-01
 
 ### Adicionado

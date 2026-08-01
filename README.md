@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.62.0 — Painel de infraestrutura por tipo no dashboard, barra de rolagem discreta, ícones modernos e Alertas restrito a provedoras**
+**v0.63.0 — Sino de alertas no topo para provedoras com ERP, painel de infraestrutura opcional e ícones consistentes**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

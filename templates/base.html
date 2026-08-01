@@ -34,7 +34,7 @@
                 </a>
                 <a class="{% if 'equipment' in request.resolver_match.url_name %}active{% endif %}"
                    href="{% url 'equipment-list' %}">
-                    <span class="nav-icon">◇</span> Equipamentos
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> Equipamentos
                 </a>
                 {% if not current_company.is_designer %}
                 <a class="{% if request.resolver_match.url_name == 'company-alerts' %}active{% endif %}" href="{% url 'company-alerts' %}">
@@ -72,6 +72,28 @@
                     <span class="topbar-subtitle">{% now "d \d\e F, H:i" %}</span>
                 </div>
                 <div class="topbar-actions">
+                    {% if topbar_alerts.enabled %}
+                    <div class="topbar-alerts" id="topbar-alerts">
+                        <button type="button" class="topbar-alert-bell" id="topbar-alert-bell" aria-haspopup="true" aria-expanded="false" aria-label="Alertas">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            {% if topbar_alerts.count %}<span class="topbar-alert-badge">!</span>{% endif %}
+                        </button>
+                        <div class="topbar-alert-dropdown" id="topbar-alert-dropdown" hidden>
+                            <div class="topbar-alert-dropdown-header"><strong>Alertas ativos</strong><span>{{ topbar_alerts.count }}</span></div>
+                            <div class="topbar-alert-dropdown-list">
+                                {% for alert in topbar_alerts.items %}
+                                <div class="topbar-alert-row">
+                                    <span class="legend-dot severity-{{ alert.severity }}"></span>
+                                    <span><strong>{{ alert.title }}</strong><small>{{ alert.get_scope_display }} · {{ alert.opened_at|timesince }} atrás</small></span>
+                                </div>
+                                {% empty %}
+                                <p class="empty-state">Nenhum alerta ativo.</p>
+                                {% endfor %}
+                            </div>
+                            <a class="topbar-alert-dropdown-footer" href="{% url 'company-alerts' %}">Ver todos os alertas →</a>
+                        </div>
+                    </div>
+                    {% endif %}
                     <a class="topbar-user" href="{% if request.user.is_superuser %}/admin/{% else %}{% url 'account-panel' %}{% endif %}" title="Minha administração">{{ request.user.get_full_name|default:request.user.username }}</a>
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
@@ -110,6 +132,24 @@
                 const collapsed = sidebar.classList.toggle("desktop-collapsed");
                 appMain.classList.toggle("sidebar-collapsed", collapsed);
                 localStorage.setItem("sidebarCollapsed", collapsed ? "1" : "0");
+            });
+        }
+
+        const alertBell = document.getElementById("topbar-alert-bell");
+        const alertDropdown = document.getElementById("topbar-alert-dropdown");
+        const alertWrap = document.getElementById("topbar-alerts");
+        if (alertBell && alertDropdown && alertWrap) {
+            alertBell.addEventListener("click", (event) => {
+                event.stopPropagation();
+                const open = alertDropdown.hidden;
+                alertDropdown.hidden = !open;
+                alertBell.setAttribute("aria-expanded", open ? "true" : "false");
+            });
+            document.addEventListener("click", (event) => {
+                if (!alertDropdown.hidden && !alertWrap.contains(event.target)) {
+                    alertDropdown.hidden = true;
+                    alertBell.setAttribute("aria-expanded", "false");
+                }
             });
         }
     </script>
