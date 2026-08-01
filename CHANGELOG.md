@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.66.0] - 2026-08-01
+
+### Alterado
+
+- **Tela de login redesenhada**: painel de formulário claro (campos com ícone, foco destacado) ao lado de um painel escuro com a proposta da plataforma e um card de destaque — layout inspirado em telas modernas de login SaaS. Cor de destaque (botão, foco dos campos) trocada de ciano para vermelho, alinhada com a identidade da empresa. Sem alteração de fluxo: continua só usuário/senha, sem cadastro público e sem alternância claro/escuro no resto do sistema.
+
 ## [0.65.0] - 2026-08-01
 
 Backup/ponto de rollback: tag `v0.64.0` (também disponível como branch

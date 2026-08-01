@@ -160,26 +160,44 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 .af-recent a { display: block; padding: 9px 0; color: #dce9f5; border-bottom: 1px solid #21364f; text-decoration: none; }
 .af-recent small { display: block; margin-top: 3px; color: #8194aa; }
 .deletelink, .deletelink-box a { background: #b42342 !important; border-radius: 7px !important; }
-.af-platform-login { display: grid; min-height: 100vh; place-items: center; margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: radial-gradient(circle at 15% 15%, #0e4450, transparent 38%), linear-gradient(135deg, #06101d, #091a2b); }
-.af-login-card { display: grid; grid-template-columns: 1.05fr 1fr; width: min(880px, calc(100% - 40px)); min-height: 510px; overflow: hidden; background: #0d1b2d; border: 1px solid #29435e; border-radius: 22px; box-shadow: 0 35px 100px rgba(0,0,0,.48); }
-.af-login-card header { display: flex; flex-direction: column; justify-content: center; gap: 48px; padding: 48px; background: linear-gradient(155deg, #113b4b, #0b2538 65%, #071727); border-right: 1px solid #29435e; }
-.af-login-card header img { width: 245px; max-height: 105px; margin-inline:auto; object-fit: contain; object-position: center; }
-.af-login-card header span { color: #5eead4; font-size: 10px; font-weight: 850; letter-spacing: .14em; }
-.af-login-card header h2 { max-width: 330px; margin: 10px 0; color: #f8fafc; font-size: 32px; line-height: 1.08; }
-.af-login-card header p { max-width: 330px; margin: 0; color: #aac0d4; line-height: 1.55; }
-.af-login-card form { display: grid; align-content: center; gap: 10px; padding: 48px; }
-.af-login-card h1 { margin: 0; color: #f8fafc; font-family: inherit; font-size: 27px; }
-.af-login-card p { margin: 0 0 14px; color: #9fb0c3; }
-.af-login-card label { margin-top: 6px; color: #dce9f5; font-weight: 750; }
-.af-login-card input { width: 100%; box-sizing: border-box; }
-.af-login-card button { margin-top: 14px; padding: 13px; color: #03201c; background: #2dd4bf; border: 0; border-radius: 9px; font-weight: 850; cursor: pointer; }
-.af-login-error { padding: 11px 13px; color: #fecdd3; background: #3a1830; border: 1px solid #8b3451; border-radius: 8px; }
-@media (max-width: 720px) {
-    .af-login-card { grid-template-columns: 1fr; }
-    .af-login-card header { min-height: 130px; padding: 25px 30px; border-right: 0; border-bottom: 1px solid #29435e; }
-    .af-login-card header img { width: 190px; }
-    .af-login-card header div { display: none; }
-    .af-login-card form { padding: 30px; }
+.af-platform-login {
+    --login-accent: #e5484d;
+    --login-accent-dark: #c93a3e;
+    --login-accent-soft: rgba(229, 72, 77, .12);
+    display: grid; min-height: 100vh; place-items: center; margin: 0; padding: 24px; box-sizing: border-box;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(circle at 15% 15%, #0e4450, transparent 38%), linear-gradient(135deg, #06101d, #091a2b);
+}
+.af-login-card { display: grid; grid-template-columns: 1fr 1.05fr; width: min(920px, 100%); min-height: 540px; overflow: hidden; background: #fff; border-radius: 24px; box-shadow: 0 40px 110px rgba(0,0,0,.5); }
+.af-login-form-panel { display: grid; align-content: center; gap: 4px; padding: 56px 52px; background: #fff; color: #111827; }
+.af-login-mark { width: 168px; max-height: 60px; margin-bottom: 28px; object-fit: contain; object-position: left; }
+.af-login-form-panel h1 { margin: 0 0 6px; color: #0f172a; font-family: inherit; font-size: 26px; font-weight: 800; }
+.af-login-form-panel > p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.af-login-error { margin-bottom: 16px; padding: 11px 14px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font-size: 13px; }
+.af-login-form-panel form { display: grid; gap: 16px; }
+.af-login-form-panel label { display: block; margin-bottom: 6px; color: #334155; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.af-input-icon { position: relative; }
+.af-input-icon svg { position: absolute; top: 50%; left: 14px; width: 18px; height: 18px; color: #94a3b8; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform: translateY(-50%); pointer-events: none; }
+.af-input-icon input { width: 100%; box-sizing: border-box; padding: 13px 14px 13px 42px; color: #0f172a; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 11px; font-size: 14px; transition: border-color .15s ease, box-shadow .15s ease; }
+.af-input-icon input:focus { outline: none; border-color: var(--login-accent); background: #fff; box-shadow: 0 0 0 3px var(--login-accent-soft); }
+.af-login-form-panel button { margin-top: 8px; padding: 14px; color: #fff; background: var(--login-accent); border: 0; border-radius: 11px; font-size: 14px; font-weight: 800; cursor: pointer; transition: background .15s ease; }
+.af-login-form-panel button:hover { background: var(--login-accent-dark); }
+.af-login-hero { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 28px; overflow: hidden; padding: 56px 48px; color: #f8fafc; background: linear-gradient(155deg, #113b4b, #0b2538 65%, #071727); }
+.af-login-hero::after { content: ""; position: absolute; right: -60px; bottom: -60px; width: 220px; height: 220px; background: var(--login-accent); border-radius: 50%; opacity: .12; }
+.af-login-hero-eyebrow { color: #5eead4; font-size: 10px; font-weight: 850; letter-spacing: .14em; }
+.af-login-hero h2 { max-width: 320px; margin: 10px 0; color: #f8fafc; font-size: 30px; line-height: 1.1; }
+.af-login-hero > p { max-width: 320px; margin: 0; color: #aac0d4; line-height: 1.55; font-size: 14px; }
+.af-login-highlight { position: relative; display: flex; align-items: center; gap: 14px; margin-top: 8px; padding: 14px 16px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; backdrop-filter: blur(6px); }
+.af-login-highlight-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; color: var(--login-accent); background: var(--login-accent-soft); border-radius: 10px; }
+.af-login-highlight-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.af-login-highlight strong { display: block; color: var(--login-accent); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.af-login-highlight span:last-child { display: block; margin-top: 2px; color: #e2e8f0; font-size: 13px; }
+@media (max-width: 760px) {
+    .af-login-card { grid-template-columns: 1fr; min-height: 0; }
+    .af-login-hero { order: -1; padding: 30px 28px; gap: 16px; }
+    .af-login-hero h2 { font-size: 22px; }
+    .af-login-highlight { display: none; }
+    .af-login-form-panel { padding: 34px 28px; }
 }
 
 @media (max-width: 1100px) {

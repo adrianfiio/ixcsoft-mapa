@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.65.0 — Editor Óptico v2: inserir caixa direto no cabo, passagem sem corte e linhas de fusão editáveis**
+**v0.66.0 — Tela de login redesenhada (visual moderno, cor da marca em destaque)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
