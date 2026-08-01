@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.67.1 — .gitignore para a stack de monitoramento, para não bloquear o `apply` no servidor**
+**v0.67.2 — Painel de login com leve gradiente no lugar de branco puro**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

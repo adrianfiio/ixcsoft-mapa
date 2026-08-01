@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.2] - 2026-08-01
+
+### Alterado
+
+- **Painel do formulário de login**: fundo branco puro trocado por um leve gradiente (branco para um tom rosado bem suave) — a logo (que já é um PNG transparente) ficava "boiando" sobre um branco muito seco.
+
 ## [0.67.1] - 2026-08-01
 
 ### Corrigido
