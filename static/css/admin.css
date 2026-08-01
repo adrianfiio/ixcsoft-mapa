@@ -168,18 +168,18 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     background: radial-gradient(circle at 15% 15%, #0e4450, transparent 38%), linear-gradient(135deg, #06101d, #091a2b);
 }
-.af-login-card { display: grid; grid-template-columns: 1fr 1.05fr; width: min(920px, 100%); min-height: 540px; overflow: hidden; background: #fff; border-radius: 24px; box-shadow: 0 40px 110px rgba(0,0,0,.5); }
-.af-login-form-panel { display: grid; align-content: center; gap: 4px; padding: 56px 52px; background: linear-gradient(160deg, #fff, #fdf3f3 140%); color: #111827; }
-.af-login-mark { width: 168px; max-height: 60px; margin-bottom: 28px; object-fit: contain; object-position: left; }
-.af-login-form-panel h1 { margin: 0 0 6px; color: #0f172a; font-family: inherit; font-size: 26px; font-weight: 800; }
-.af-login-form-panel > p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
-.af-login-error { margin-bottom: 16px; padding: 11px 14px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font-size: 13px; }
-.af-login-form-panel form { display: grid; gap: 16px; }
-.af-login-form-panel label { display: block; margin-bottom: 6px; color: #334155; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.af-login-card { display: grid; grid-template-columns: 1fr 1.05fr; width: min(920px, 100%); min-height: 540px; overflow: hidden; background: #0b0c0f; border-radius: 24px; box-shadow: 0 40px 110px rgba(0,0,0,.5); }
+.af-login-form-panel { display: grid; align-content: center; justify-items: center; gap: 4px; padding: 56px 52px; background: linear-gradient(165deg, #2a2c31, #0c0d10 140%); color: #f1f5f9; text-align: center; }
+.af-login-mark { width: 96px; margin-bottom: 24px; object-fit: contain; }
+.af-login-form-panel h1 { margin: 0 0 6px; color: #f8fafc; font-family: inherit; font-size: 26px; font-weight: 800; }
+.af-login-form-panel > p { margin: 0 0 24px; color: #9aa5b1; font-size: 14px; }
+.af-login-error { width: 100%; box-sizing: border-box; margin-bottom: 16px; padding: 11px 14px; color: #fca5a5; background: rgba(239, 68, 68, .12); border: 1px solid rgba(239, 68, 68, .35); border-radius: 10px; font-size: 13px; }
+.af-login-form-panel form { display: grid; width: 100%; gap: 16px; text-align: left; }
+.af-login-form-panel label { display: block; margin-bottom: 6px; color: #cbd5e1; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .af-input-icon { position: relative; }
-.af-input-icon svg { position: absolute; top: 50%; left: 14px; width: 18px; height: 18px; color: #94a3b8; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform: translateY(-50%); pointer-events: none; }
-.af-input-icon input { width: 100%; box-sizing: border-box; padding: 13px 14px 13px 42px; color: #0f172a; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 11px; font-size: 14px; transition: border-color .15s ease, box-shadow .15s ease; }
-.af-input-icon input:focus { outline: none; border-color: var(--login-accent); background: #fff; box-shadow: 0 0 0 3px var(--login-accent-soft); }
+.af-input-icon svg { position: absolute; top: 50%; left: 14px; width: 18px; height: 18px; color: #7c8794; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform: translateY(-50%); pointer-events: none; }
+.af-input-icon input { width: 100%; box-sizing: border-box; padding: 13px 14px 13px 42px; color: #f1f5f9; background: #1a1c20; border: 1px solid #33363c; border-radius: 11px; font-size: 14px; transition: border-color .15s ease, box-shadow .15s ease; }
+.af-input-icon input:focus { outline: none; border-color: var(--login-accent); background: #202226; box-shadow: 0 0 0 3px var(--login-accent-soft); }
 .af-login-form-panel button { margin-top: 8px; padding: 14px; color: #fff; background: var(--login-accent); border: 0; border-radius: 11px; font-size: 14px; font-weight: 800; cursor: pointer; transition: background .15s ease; }
 .af-login-form-panel button:hover { background: var(--login-accent-dark); }
 .af-login-hero { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 28px; overflow: hidden; padding: 56px 48px; color: #f8fafc; background: linear-gradient(155deg, #113b4b, #0b2538 65%, #071727); }

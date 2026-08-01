@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.4] - 2026-08-01
+
+### Alterado
+
+- **Painel do formulário de login**: fundo trocado de claro para um gradiente escuro (cinza grafite para preto), mais moderno e alinhado ao resto da plataforma. Logo agora centralizada (antes ficava alinhada à esquerda, sem destaque). Textos, campos e a mensagem de erro ajustados pro novo fundo escuro.
+
 ## [0.67.3] - 2026-08-01
 
 Backup/ponto de rollback: tag `v0.67.2`. Hotfix da área do mapa preparado
