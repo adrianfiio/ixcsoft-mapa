@@ -69,7 +69,12 @@
             point_groups: {},
             point_items: {},
             routes: [],
-            topology: { proximity_m: 30, endpoint_tolerance_m: 40 },
+            topology: {
+                proximity_m: 30,
+                endpoint_tolerance_m: 40,
+                splice_box_proximity_m: 45,
+                priority_radius_m: 18,
+            },
             topology_defaults: {
                 cto: "cut",
                 splice_box: "cut",
@@ -560,7 +565,7 @@
             const selected = state.decisions.junctions[junction.junction_id]?.action || junction.action;
             return `<tr>
                 <td>${escapeHtml(junction.line_name)}</td>
-                <td>${escapeHtml(junction.point_name)}<div class="kmz-samples">${escapeHtml(junction.point_type)}</div></td>
+                <td>${escapeHtml(junction.point_name)}<div class="kmz-samples">${escapeHtml(junction.point_type)} · ${escapeHtml(junction.cable_role || "cabo")}</div>${junction.priority_reason ? `<span class="kmz-topology-priority-v09 ${junction.priority_suppressed ? "" : "success"}">${escapeHtml(junction.priority_reason)}</span>` : ""}</td>
                 <td>${formatMeters(junction.distance_m)} m</td>
                 <td>${junction.is_endpoint ? '<span class="kmz-badge success">Ponta</span>' : '<span class="kmz-badge">Meio</span>'}</td>
                 <td><select data-junction="${escapeHtml(junction.junction_id)}">${optionList(JUNCTION_ACTIONS, selected)}</select></td>
@@ -573,6 +578,11 @@
                 ${numberControl({ label: "Tolerância de ponta", attributes: 'id="kmz-endpoint-distance"', value: topology.endpoint_tolerance_m, min: 1, max: 100, step: 1, suffix: "m" })}
                 <label>CTO no meio <select id="kmz-default-cto">${optionList(JUNCTION_ACTIONS, defaults.cto)}</select></label>
                 <label>CEO/CDO no meio <select id="kmz-default-splice">${optionList(JUNCTION_ACTIONS, defaults.splice_box)}</select></label>
+            </div>
+            <div class="kmz-priority-settings-v09">
+                ${numberControl({ label: "Alcance próprio de CEO/CDO", attributes: 'id="kmz-splice-distance"', value: topology.splice_box_proximity_m || 45, min: 1, max: 150, step: 1, suffix: "m" })}
+                ${numberControl({ label: "Raio de prioridade sobre CTO", attributes: 'id="kmz-priority-radius"', value: topology.priority_radius_m || 18, min: 1, max: 100, step: 1, suffix: "m" })}
+                <p><strong>Regra:</strong> em cabo tronco, CEO/CDO recebe primeiro todos os cabos próximos. DROP continua preferindo CTO. Toda sugestão pode ser alterada individualmente.</p>
             </div>
             <button id="kmz-detect-topology" class="primary-button" type="button">${state.topologyJunctions.length ? "Recalcular ligações" : "Detectar ligações"}</button>
             ${state.topologySummary ? `<div class="kmz-summary-grid compact"><article><strong>${state.topologySummary.junctions}</strong><span>relações</span></article><article><strong>${state.topologySummary.cuts}</strong><span>cortes</span></article><article><strong>${state.topologySummary.branches}</strong><span>derivações</span></article><article><strong>${state.topologySummary.passes}</strong><span>passagens</span></article></div>` : ""}
@@ -804,8 +814,16 @@
         const pending = unresolvedItems();
         const ready = !pending.length && Boolean(state.decisions.preview_token);
         const completed = state.completedImport;
+        if (completed) {
+            return `<div class="kmz-complete-v09">
+                <h3>Importação concluída</h3>
+                <div class="kmz-success"><strong>Lote #${escapeHtml(completed.batch_id)} criado com sucesso.</strong><br>${importSummaryHtml(completed.imported)}</div>
+                <p>Os dados já foram gravados e recarregados no mapa.</p>
+                <div class="kmz-complete-actions-v09"><button id="kmz-close-completed" class="primary-button" type="button">Fechar</button></div>
+            </div>`;
+        }
         return `<h3>Importação definitiva e histórico</h3>
-            ${completed ? `<div class="kmz-success"><strong>Importação concluída no lote #${escapeHtml(completed.batch_id)}.</strong><br>${importSummaryHtml(completed.imported)}</div>` : (ready ? '<div class="kmz-success">Tudo pronto. A operação será atômica e registrada em um lote que pode ser desfeito.</div>' : `<div class="kmz-warning"><strong>Importação bloqueada.</strong><br>${pending.length ? `${pending.length} classificações pendentes.<br>` : ""}${state.decisions.preview_token ? "" : "Gere novamente a prévia final."}</div>`)}
+            ${ready ? '<div class="kmz-success">Tudo pronto. A operação será atômica e registrada em um lote que pode ser desfeito.</div>' : `<div class="kmz-warning"><strong>Importação bloqueada.</strong><br>${pending.length ? `${pending.length} classificações pendentes.<br>` : ""}${state.decisions.preview_token ? "" : "Gere novamente a prévia final."}</div>`}
             <div class="kmz-management"><button id="kmz-refresh-batches" class="secondary-button" type="button">Atualizar histórico</button><button id="kmz-check-cleanup-final" class="danger-button" type="button">Revisar limpeza do teste antigo</button></div>
             ${cleanupHtml()}
             ${batchesHtml()}`;
@@ -815,6 +833,7 @@
         if (!state.analysis && state.step > 1) state.step = 1;
         const steps = [null, step1, step2, step3, step4, step5, step6, step7];
         content.innerHTML = steps[state.step]();
+        dialog.classList.toggle("kmz-import-complete", Boolean(state.completedImport));
         executeButton.disabled = state.step === 7 && (Boolean(state.completedImport) || unresolvedItems().length > 0 || !state.decisions.preview_token);
         bindCurrentStep();
     }
@@ -982,6 +1001,8 @@
 
         document.getElementById("kmz-topology-distance")?.addEventListener("change", (event) => { state.decisions.topology.proximity_m = event.target.value; invalidateTopology(); render(); });
         document.getElementById("kmz-endpoint-distance")?.addEventListener("change", (event) => { state.decisions.topology.endpoint_tolerance_m = event.target.value; invalidateTopology(); render(); });
+        document.getElementById("kmz-splice-distance")?.addEventListener("change", (event) => { state.decisions.topology.splice_box_proximity_m = event.target.value; invalidateTopology(); render(); });
+        document.getElementById("kmz-priority-radius")?.addEventListener("change", (event) => { state.decisions.topology.priority_radius_m = event.target.value; invalidateTopology(); render(); });
         document.getElementById("kmz-default-cto")?.addEventListener("change", (event) => { state.decisions.topology_defaults.cto = event.target.value; invalidateTopology(); render(); });
         document.getElementById("kmz-default-splice")?.addEventListener("change", (event) => { state.decisions.topology_defaults.splice_box = event.target.value; invalidateTopology(); render(); });
         document.getElementById("kmz-detect-topology")?.addEventListener("click", () => detectTopology().catch((error) => setStatus(error.message, true)));
@@ -1015,6 +1036,10 @@
         document.getElementById("kmz-refresh-batches")?.addEventListener("click", () => loadBatches().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-check-cleanup-final")?.addEventListener("click", () => checkLegacyCleanup().catch((error) => setStatus(error.message, true)));
         document.getElementById("kmz-run-cleanup")?.addEventListener("click", () => executeLegacyCleanup().catch((error) => setStatus(error.message, true)));
+        document.getElementById("kmz-close-completed")?.addEventListener("click", () => {
+            clearPreview();
+            dialog.close();
+        });
         document.querySelectorAll("[data-repair-batch]").forEach((button) => {
             button.addEventListener("click", () => repairBatchFibers(button.dataset.repairBatch).catch((error) => setStatus(error.message, true)));
         });

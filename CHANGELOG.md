@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.61.0] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.60.2` (também disponível como branch `backup/mapa-pre-v09-20260801`). Pacote preparado e aplicado pelo ChatGPT (área do mapa/KMZ) via `apply_v09.py` — todos os patches bateram exato, sem incompatibilidade pra resolver.
+
+### Adicionado
+
+- **CEO/CDO tem prioridade sobre CTO em cabo tronco.** Cabos de distribuição, alimentador e backbone agora preferem uma CEO/CDO próxima (alcance próprio, 45m por padrão, configurável na etapa Ligações) em vez de uma CTO — DROP continua preferindo CTO normalmente. Uma decisão individual no assistente sempre pode sobrescrever a sugestão automática.
+- **CEO/CDO passa a mostrar todos os cabos próximos**, não só os que já têm origem/destino nela — inclui cabos registrados como passagem e cabos de lotes antigos a até 45m, resolvendo o caso em que um cabo só "passava perto" e nunca aparecia no diagrama de fusões. CTO continua restrita às relações explícitas (pra não competir pelo cabo tronco da caixa de emenda vizinha).
+- **Cortar cabo de passagem direto nas fusões**: um cabo que só passa pela CEO/CDO aparece com aviso e botão "Cortar na caixa" — o corte divide o cabo em dois segmentos no ponto real da caixa, atualiza origem/destino, gera as fibras do novo trecho, move reservas e entra no mesmo lote KMZ (Desfazer lote continua removendo tudo). Fibras de um cabo de passagem ficam bloqueadas até o corte; o corte é bloqueado se o cabo já tiver fusões ou terminações.
+- **ONU/ONT com portas LAN configuráveis** (1, 2, 4 ou 8 Gigabit) — cria automaticamente PON 1 (SC/APC) + as portas LAN numeradas.
+- **Diagrama interno de torre/rack**: liga porta por porta (óptica↔óptica vira fibra, RJ45↔RJ45 vira cobre, wireless↔wireless vira enlace), com zoom, organizar, ajustar e tela cheia.
+- **Fusões ganham botão de tela cheia**, mantendo zoom/organizar/ajustar/automático já existentes.
+- **Assistente KMZ**: painel de prioridade CEO/CDO na etapa Ligações (alcance próprio + raio de prioridade configuráveis), indicação do papel do cabo (tronco ou DROP) nas ligações detectadas, e a tela final após importar com sucesso mostra só "Importação concluída" + botão Fechar (sem mais Voltar/Continuar/Importar novamente, que não faziam sentido ali).
+
 ## [0.60.2] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.60.1`.

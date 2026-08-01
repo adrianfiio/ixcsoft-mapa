@@ -29,6 +29,7 @@ from apps.network_map.api.views import (
     update_cable_geometry,
 )
 from apps.network_map.api.device_type_views import import_container_device_type_yaml
+from apps.network_map.api.topology_actions import cut_cable_at_element
 from apps.network_map.kmz_import_api import (
     analyze_kmz_import,
     cleanup_legacy_kmz_import,
@@ -60,6 +61,7 @@ urlpatterns = [
     path("projects/", projects, name="projects"),
     path("elements/<int:element_id>/pole/", pole_infrastructure, name="pole-infrastructure"),
     path("elements/<int:element_id>/equipment/", container_equipment, name="container-equipment"),
+    path("elements/<int:element_id>/cables/<int:cable_id>/cut/", cut_cable_at_element, name="cut-cable-at-element"),
     path("elements/<int:element_id>/equipment/import-yaml/", import_container_device_type_yaml, name="container-equipment-import-yaml"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/", container_equipment_detail, name="container-equipment-detail"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/cards/", container_equipment_cards, name="container-equipment-cards"),

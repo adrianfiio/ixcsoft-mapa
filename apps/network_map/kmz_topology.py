@@ -188,12 +188,117 @@ def _junction_id(line_source_id: str, point_source_id: str) -> str:
     return hashlib.sha1(f"{line_source_id}:{point_source_id}".encode("utf-8")).hexdigest()[:16]
 
 
+def _point_priority(point_type: str) -> int:
+    """Prioridade física quando dois equipamentos disputam o mesmo cabo.
+
+    CEO/CDO representam caixas de passagem/emenda e, portanto, devem receber
+    primeiro os cabos tronco. A CTO continua prioritária para cabos DROP.
+    """
+    return {
+        "splice_box": 100,
+        "dio": 80,
+        "olt": 80,
+        "pop": 75,
+        "cto": 60,
+        "other": 20,
+    }.get(point_type, 10)
+
+
+def _point_limit_m(
+    point_type: str,
+    proximity_m: float,
+    splice_box_proximity_m: float,
+) -> float:
+    if point_type == "splice_box":
+        return max(proximity_m, splice_box_proximity_m)
+    return proximity_m
+
+
+def _has_manual_override(overrides: dict, junction_id: str) -> bool:
+    rule = overrides.get(junction_id) or {}
+    return bool(rule.get("action"))
+
+
+def _same_cable_conflict(
+    cto: dict,
+    splice_box: dict,
+    priority_radius_m: float,
+) -> bool:
+    """Retorna True quando CTO e CEO/CDO estão disputando o mesmo trecho.
+
+    Usa a distância entre os equipamentos e também a diferença entre as
+    projeções ao longo do cabo. Isso cobre pontos ligeiramente deslocados no
+    Google Earth sem associar caixas que estejam em partes distantes da rota.
+    """
+    point_distance = distance_m(tuple(cto["point_coordinates"]), tuple(splice_box["point_coordinates"]))
+    projected_distance = abs(float(cto["position_m"]) - float(splice_box["position_m"]))
+    return point_distance <= priority_radius_m or projected_distance <= priority_radius_m
+
+
+def _apply_splice_box_priority(
+    candidates: list[dict],
+    cable_type: str,
+    overrides: dict,
+    priority_radius_m: float,
+) -> None:
+    """CEO/CDO vence CTO em cabo tronco, mantendo DROP ligado à CTO.
+
+    A decisão só é automática. Qualquer escolha individual salva em
+    ``decisions.junctions`` continua prevalecendo.
+    """
+    splice_boxes = [item for item in candidates if item["point_type"] == "splice_box"]
+    if not splice_boxes:
+        return
+
+    for cto in [item for item in candidates if item["point_type"] == "cto"]:
+        if cable_type == "drop" or _has_manual_override(overrides, cto["junction_id"]):
+            continue
+        nearby = [
+            box for box in splice_boxes
+            if _same_cable_conflict(cto, box, priority_radius_m)
+        ]
+        if not nearby:
+            continue
+        winner = min(
+            nearby,
+            key=lambda item: (
+                distance_m(tuple(cto["point_coordinates"]), tuple(item["point_coordinates"])),
+                item["distance_m"],
+            ),
+        )
+        cto["suggested_action"] = "ignore"
+        cto["action"] = "ignore"
+        cto["priority_suppressed"] = True
+        cto["priority_winner_id"] = winner["point_source_id"]
+        cto["priority_winner_name"] = winner["point_name"]
+        cto["priority_reason"] = (
+            f"CEO/CDO {winner['point_name']} tem prioridade neste cabo tronco. "
+            "Mude manualmente caso a CTO realmente deva receber o cabo."
+        )
+        winner["priority_applied"] = True
+        winner.setdefault("priority_reason", "")
+        if not winner["priority_reason"]:
+            winner["priority_reason"] = "CEO/CDO priorizada sobre CTO próxima no mesmo cabo."
+
+
 def detect_junctions(
     analysis: dict,
     decisions: dict,
     proximity_m: float = 12.0,
     endpoint_tolerance_m: float = 18.0,
+    splice_box_proximity_m: float | None = None,
+    priority_radius_m: float | None = None,
 ) -> list[dict]:
+    """Detecta todas as relações físicas cabo/equipamento.
+
+    Diferenças importantes:
+    * CEO/CDO usa alcance próprio e pode receber todos os cabos próximos;
+    * em cabos tronco, CEO/CDO tem prioridade sobre CTO próxima;
+    * em cabos DROP, a CTO continua sendo o destino preferencial;
+    * escolhas individuais do usuário nunca são sobrescritas.
+    """
+    splice_box_proximity_m = float(splice_box_proximity_m or max(40.0, proximity_m * 1.35))
+    priority_radius_m = float(priority_radius_m or max(12.0, proximity_m * 0.75))
     points = [
         point
         for point in resolved_points(analysis, decisions)
@@ -210,10 +315,17 @@ def detect_junctions(
         "other": "pass",
     }
     result: list[dict] = []
+
     for line in lines:
+        coords = [tuple(value) for value in line["coordinates"]]
+        cable_type = line["rule"].get("cable_type") or line.get("cable_type_hint") or "distribution"
+        line_candidates: list[dict] = []
         for point in points:
-            nearest = _nearest_projection(tuple(point["coordinates"]), [tuple(value) for value in line["coordinates"]])
-            if nearest is None or nearest["distance_m"] > proximity_m:
+            nearest = _nearest_projection(tuple(point["coordinates"]), coords)
+            limit_m = _point_limit_m(
+                point["target_type"], proximity_m, splice_box_proximity_m
+            )
+            if nearest is None or nearest["distance_m"] > limit_m:
                 continue
             endpoint = (
                 nearest["position_m"] <= endpoint_tolerance_m
@@ -221,20 +333,26 @@ def detect_junctions(
             )
             suggested = "connect" if endpoint else defaults.get(point["target_type"], "pass")
             junction_id = _junction_id(line["source_id"], point["source_id"])
-            selected = (overrides.get(junction_id) or {}).get("action") or suggested
+            override = overrides.get(junction_id) or {}
+            selected = override.get("action") or suggested
             if selected not in JUNCTION_ACTIONS:
                 selected = suggested
-            result.append(
+            line_candidates.append(
                 {
                     "junction_id": junction_id,
                     "line_source_id": line["source_id"],
                     "line_name": line["name"],
                     "line_group_key": line["group_key"],
+                    "cable_type": cable_type,
+                    "cable_role": "drop" if cable_type == "drop" else "trunk",
                     "point_source_id": point["source_id"],
                     "point_name": point["name"],
                     "point_type": point["target_type"],
+                    "point_subtype": point.get("rule", {}).get("subtype"),
                     "point_route_path": point.get("route_path"),
+                    "point_coordinates": point["coordinates"],
                     "distance_m": round(nearest["distance_m"], 2),
+                    "detection_limit_m": round(limit_m, 2),
                     "position_m": round(nearest["position_m"], 2),
                     "total_length_m": round(nearest["total_length_m"], 2),
                     "segment": nearest["segment"],
@@ -243,10 +361,30 @@ def detect_junctions(
                     "is_endpoint": endpoint,
                     "suggested_action": suggested,
                     "action": selected,
+                    "manual_override": bool(override.get("action")),
+                    "priority": _point_priority(point["target_type"]),
+                    "priority_suppressed": False,
+                    "priority_reason": "",
                 }
             )
-    return sorted(result, key=lambda item: (item["line_source_id"], item["position_m"], item["point_name"]))
 
+        _apply_splice_box_priority(
+            line_candidates,
+            cable_type=cable_type,
+            overrides=overrides,
+            priority_radius_m=priority_radius_m,
+        )
+        result.extend(line_candidates)
+
+    return sorted(
+        result,
+        key=lambda item: (
+            item["line_source_id"],
+            item["position_m"],
+            -item.get("priority", 0),
+            item["point_name"],
+        ),
+    )
 
 def _deduplicate_cuts(junctions: list[dict], minimum_spacing_m: float = 1.0) -> list[dict]:
     output: list[dict] = []
@@ -318,9 +456,23 @@ def infer_line_route(line: dict, junctions: list[dict], selected_routes: set[str
 
 
 def build_topology_plan(analysis: dict, decisions: dict) -> dict:
-    proximity = float((decisions.get("topology") or {}).get("proximity_m") or 12)
-    endpoint_tolerance = float((decisions.get("topology") or {}).get("endpoint_tolerance_m") or 18)
-    junctions = detect_junctions(analysis, decisions, proximity, endpoint_tolerance)
+    topology_settings = decisions.get("topology") or {}
+    proximity = float(topology_settings.get("proximity_m") or 12)
+    endpoint_tolerance = float(topology_settings.get("endpoint_tolerance_m") or 18)
+    splice_box_proximity = float(
+        topology_settings.get("splice_box_proximity_m") or max(40, proximity * 1.35)
+    )
+    priority_radius = float(
+        topology_settings.get("priority_radius_m") or max(12, proximity * 0.75)
+    )
+    junctions = detect_junctions(
+        analysis,
+        decisions,
+        proximity,
+        endpoint_tolerance,
+        splice_box_proximity,
+        priority_radius,
+    )
     selected_routes = set(decisions.get("routes") or [])
     points = resolved_points(analysis, decisions)
     lines = resolved_lines(analysis, decisions)

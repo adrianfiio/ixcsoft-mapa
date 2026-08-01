@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.60.2 — Corrige upload de logo (whitelabel), scrollbar do editor de dashboard e atalhos de equipamento**
+**v0.61.0 — Prioridade CEO/CDO sobre CTO, corte de cabo de passagem nas fusões e ONU com portas LAN configuráveis**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

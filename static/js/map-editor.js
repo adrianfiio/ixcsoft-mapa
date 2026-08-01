@@ -549,7 +549,7 @@
             : type === "dio" ? "Ex.: DIO 36 portas"
             : type === "switch" ? "Ex.: Switch principal da torre"
             : type === "access_point" ? "Ex.: AP setor norte"
-            : type === "other" ? "Ex.: ONU interna da torre"
+            : type === "onu" ? "Ex.: ONU interna da torre"
             : "Ex.: Enlace PTP prefeitura";
     }
     async function manageContainer(id) {
@@ -561,8 +561,8 @@
             ? "OLT e DIO instalados neste rack"
             : "Switches, APs e rádios PTP instalados nesta torre";
         const types = data.container.type === "rack"
-            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["other", "ONU / ONT / Outro"]]
-            : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["other", "ONU / ONT / Outro"]];
+            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["onu", "ONU / ONT"]]
+            : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["onu", "ONU / ONT"]];
         containerEquipmentForm.reset();
         state.editingContainerEquipmentId = null;
         containerEquipmentForm.elements.equipment_type.disabled = false;
@@ -586,7 +586,7 @@
                     : '<p class="field-help">Nenhuma porta cadastrada.</p>';
                 const configure = item.type === "olt"
                     ? `<button class="secondary-button" type="button" data-add-equipment-card="${item.id}">+ Placa</button>`
-                    : ["switch", "access_point", "ptp", "other"].includes(item.type)
+                    : ["switch", "access_point", "ptp", "onu", "other"].includes(item.type)
                         ? `<button class="secondary-button" type="button" data-add-equipment-ports="${item.id}">+ Portas</button>`
                         : "";
                 return `<article><div class="equipment-head"><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><div class="equipment-head-actions"><button class="secondary-button" type="button" data-edit-container-equipment="${item.id}">Editar</button><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></div></div>${cards}${ports}<div class="equipment-actions">${configure}</div></article>`;
@@ -676,6 +676,7 @@
                     containerEquipmentForm.elements.tx_power_dbm.value = item.tx_power_dbm ?? "";
                 }
                 updateContainerEquipmentFields();
+                containerEquipmentForm.elements.equipment_type.dispatchEvent(new Event("change"));
                 containerEquipmentForm.querySelector("button[type='submit']").textContent = "Salvar alterações";
                 containerEquipmentForm.scrollIntoView({ behavior: "smooth", block: "center" });
             };
@@ -801,8 +802,14 @@
                 const toggleButton = `<button class="expand-fibers" type="button" data-expand-cable="${cable.id}" title="Expandir ou recolher todas as fibras">${isExpanded ? "−" : "+"}</button>`;
                 const summary = !isExpanded && hasUsedFiber ? `<small>${usedCount}/${cable.fibers.length} em uso</small>` : "";
                 const visibleFibers = isExpanded ? cable.fibers : cable.fibers.filter((fiber) => !usedFiberIds.has(fiber.id));
-                return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}${summary}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
-                <div class="fiber-port-list">${visibleFibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "" : 'draggable="true"'} data-used="${usedFiberIds.has(fiber.id)}" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || `<span>${isExpanded ? "Sem fibras geradas" : "Todas as fibras em uso"}</span>`}</div></section>`;
+                const cutControl = cable.requires_cut
+                    ? `<button type="button" class="fusion-cut-passing-cable" data-cut-passing-cable="${cable.id}">Cortar na caixa</button>`
+                    : "";
+                const passNote = cable.requires_cut
+                    ? '<span class="fusion-pass-note">Este cabo apenas passa pela caixa. Corte-o aqui antes de criar fusões.</span>'
+                    : "";
+                return `<section class="fiber-cable-node graph-node ${isExpanded ? "expanded" : ""}" data-node-key="cable-${cable.id}" data-cable-node-id="${cable.id}" data-requires-cut="${cable.requires_cut ? "true" : "false"}" style="left:${position.x}px;top:${position.y}px"><header>${escapeHtml(cable.name)}${summary}${cutControl}<span>${toggleButton}<span class="drag-grip">⋮⋮</span></span></header>
+                ${passNote}<div class="fiber-port-list">${visibleFibers.map((fiber) => `<button type="button" class="fiber-port ${usedFiberIds.has(fiber.id) ? "used" : ""}" ${usedFiberIds.has(fiber.id) ? "" : 'draggable="true"'} data-used="${usedFiberIds.has(fiber.id)}" data-fiber-id="${fiber.id}" data-cable-id="${cable.id}" style="--fiber-color:${escapeHtml(fiber.color_hex)}"><i></i>F${fiber.number} · ${escapeHtml(fiber.color_name)}${usedFiberIds.has(fiber.id) ? " · Em uso" : ""}</button>`).join("") || `<span>${isExpanded ? "Sem fibras geradas" : "Todas as fibras em uso"}</span>`}</div></section>`;
             }).join("");
             const splitterNodes = allSplitters.map((splitter, index) => {
                 const position = layout[`splitter-${splitter.id}`] || { x: 470 + (index % 2) * 260, y: 40 + Math.floor(index / 2) * 220 };

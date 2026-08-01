@@ -84,7 +84,7 @@
 .unifilar-zoom.fusion-toolbar {
     flex: 1 1 520px;
     display: grid;
-    grid-template-columns: 38px minmax(130px, 1fr) 58px 38px auto auto auto auto;
+    grid-template-columns: 38px minmax(130px, 1fr) 58px 38px auto auto auto auto auto;
     align-items: center;
     gap: 7px;
     margin-left: auto;
@@ -225,3 +225,61 @@
     animation: fusion-spin .75s linear infinite;
 }
 @keyframes fusion-spin { to { transform: rotate(360deg); } }
+
+
+/* v0.9 — tela cheia e cabo de passagem */
+#unifilar-dialog.is-fullscreen,
+#unifilar-dialog:fullscreen {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+}
+#unifilar-dialog.is-fullscreen #unifilar-content,
+#unifilar-dialog:fullscreen #unifilar-content {
+    padding: 16px;
+}
+#unifilar-dialog.is-fullscreen .optical-graph,
+#unifilar-dialog:fullscreen .optical-graph {
+    height: calc(100dvh - 245px);
+    min-height: 520px;
+}
+.unifilar-zoom.fusion-toolbar [data-fusion-fullscreen] {
+    white-space: nowrap;
+}
+.fiber-cable-node[data-requires-cut="true"] {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, .25);
+}
+.fiber-cable-node[data-requires-cut="true"] .fiber-port {
+    opacity: .5;
+    pointer-events: none;
+}
+.fusion-cut-passing-cable {
+    margin-left: auto;
+    padding: 5px 8px;
+    border: 1px solid #f59e0b;
+    border-radius: 7px;
+    background: rgba(245, 158, 11, .12);
+    color: #fde68a;
+    font-size: .74rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+.fusion-cut-passing-cable:hover { background: rgba(245, 158, 11, .24); }
+.fusion-pass-note {
+    display: block;
+    padding: 7px 9px;
+    border-bottom: 1px solid #31405c;
+    background: rgba(245, 158, 11, .09);
+    color: #fde68a;
+    font-size: .78rem;
+}
+@media (max-width: 1180px) {
+    .unifilar-zoom.fusion-toolbar {
+        grid-template-columns: 38px minmax(100px, 1fr) 54px 38px repeat(3, minmax(82px, 1fr));
+    }
+}

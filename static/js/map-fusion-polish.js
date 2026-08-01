@@ -10,6 +10,7 @@
     let autoFit = false;
     let resizeObserver = null;
     let saveTimer = null;
+    let fullscreenFallback = false;
 
     function csrfToken() {
         const item = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="));
@@ -32,6 +33,45 @@
 
     function clamp(value, minimum, maximum) {
         return Math.min(maximum, Math.max(minimum, Number(value)));
+    }
+
+    async function toggleFullscreen() {
+        const button = content.querySelector("[data-fusion-fullscreen]");
+        try {
+            if (document.fullscreenElement === dialog) {
+                await document.exitFullscreen();
+                return;
+            }
+            if (dialog.requestFullscreen) {
+                await dialog.requestFullscreen();
+                return;
+            }
+        } catch (_error) {
+            // O fallback CSS abaixo mantém a função disponível mesmo quando o
+            // navegador bloqueia a Fullscreen API.
+        }
+        fullscreenFallback = !fullscreenFallback;
+        dialog.classList.toggle("is-fullscreen", fullscreenFallback);
+        if (button) button.setAttribute("aria-pressed", String(fullscreenFallback));
+        window.setTimeout(() => {
+            if (autoFit) fitGraph(false);
+            else refreshLinks();
+        }, 80);
+    }
+
+    function syncFullscreenButton() {
+        const active = document.fullscreenElement === dialog || fullscreenFallback;
+        dialog.classList.toggle("is-fullscreen", active);
+        const button = content.querySelector("[data-fusion-fullscreen]");
+        if (button) {
+            button.setAttribute("aria-pressed", String(active));
+            button.classList.toggle("active", active);
+            button.textContent = active ? "Sair da tela cheia" : "Tela cheia";
+        }
+        window.setTimeout(() => {
+            if (autoFit) fitGraph(false);
+            else refreshLinks();
+        }, 60);
     }
 
     function parseScale(node) {
@@ -177,7 +217,8 @@
             <button type="button" data-fusion-zoom="70">70%</button>
             <button type="button" data-fusion-organize>Organizar</button>
             <button type="button" data-fusion-fit>Ajustar</button>
-            <button type="button" data-fusion-auto aria-pressed="false">Auto</button>`;
+            <button type="button" data-fusion-auto aria-pressed="false">Auto</button>
+            <button type="button" data-fusion-fullscreen aria-pressed="false">Tela cheia</button>`;
 
         old.querySelector('[data-fusion-zoom="out"]').onclick = () => applyZoom(currentZoom - 0.1, true);
         old.querySelector('[data-fusion-zoom="in"]').onclick = () => applyZoom(currentZoom + 0.1, true);
@@ -192,6 +233,36 @@
             event.currentTarget.classList.toggle("active", autoFit);
             if (autoFit) fitGraph(true);
         };
+        old.querySelector("[data-fusion-fullscreen]").onclick = () => toggleFullscreen();
+        syncFullscreenButton();
+    }
+
+    function bindPassingCableCuts() {
+        content.querySelectorAll("[data-cut-passing-cable]").forEach((button) => {
+            if (button.dataset.bound === "true") return;
+            button.dataset.bound = "true";
+            button.addEventListener("click", async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const cableId = button.dataset.cutPassingCable;
+                if (!cableId || !elementId()) return;
+                if (!confirm("Cortar este cabo nesta caixa e criar dois segmentos? Faça isso antes de criar fusões.")) return;
+                button.disabled = true;
+                button.textContent = "Cortando...";
+                try {
+                    await api(`/api/map/elements/${elementId()}/cables/${cableId}/cut/`, {
+                        method: "POST",
+                        body: JSON.stringify({ max_distance_m: 60 }),
+                    });
+                    await window.networkMap?.loadStructure?.(false);
+                    await window.networkMap?.showUnifilar?.(elementId());
+                } catch (error) {
+                    alert(error.message);
+                    button.disabled = false;
+                    button.textContent = "Cortar na caixa";
+                }
+            });
+        });
     }
 
     function enhance() {
@@ -200,6 +271,7 @@
         if (!graph || !nodes || nodes === enhancedGraph) return;
         enhancedGraph = nodes;
         modernToolbar();
+        bindPassingCableCuts();
         const existing = parseScale(nodes);
         currentZoom = existing >= 0.65 ? existing : 0.7;
         applyZoom(currentZoom, false);
@@ -215,9 +287,13 @@
 
     const observer = new MutationObserver(() => requestAnimationFrame(enhance));
     observer.observe(content, { childList: true, subtree: true });
+    document.addEventListener("fullscreenchange", syncFullscreenButton);
     dialog.addEventListener("close", () => {
         enhancedGraph = null;
         resizeObserver?.disconnect();
+        fullscreenFallback = false;
+        dialog.classList.remove("is-fullscreen");
+        if (document.fullscreenElement === dialog) document.exitFullscreen().catch(() => {});
     });
     dialog.addEventListener("toggle", enhance);
 }());

@@ -895,7 +895,11 @@ def container_equipment(request, element_id):
     if request.method == "POST":
         if not can_edit_company(request.user, container.company_id):
             return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-        equipment_type = str(request.data.get("equipment_type", "")).strip()
+        requested_equipment_type = str(request.data.get("equipment_type", "")).strip()
+        is_onu = requested_equipment_type == "onu"
+        equipment_type = (
+            ContainerEquipment.EquipmentType.OTHER if is_onu else requested_equipment_type
+        )
         allowed = (
             {
                 ContainerEquipment.EquipmentType.OLT,
@@ -921,8 +925,11 @@ def container_equipment(request, element_id):
             dio_capacity = int(request.data.get("dio_port_capacity") or 0)
             card_count = int(request.data.get("card_count") or 0)
             pons_per_card = int(request.data.get("pons_per_card") or 0)
+            onu_lan_count = int(request.data.get("onu_lan_count") or 4)
         except (TypeError, ValueError):
             return JsonResponse({"detail": "Capacidades informadas são inválidas."}, status=400)
+        if is_onu and not 1 <= onu_lan_count <= 16:
+            return JsonResponse({"detail": "A ONU deve possuir de 1 a 16 portas LAN."}, status=400)
         if equipment_type == ContainerEquipment.EquipmentType.DIO and dio_capacity not in {
             12, 24, 36, 48, 72, 96, 144, 192, 244,
         }:
@@ -945,8 +952,14 @@ def container_equipment(request, element_id):
             except (InvalidOperation, ValueError):
                 return JsonResponse({"detail": "Potência de saída inválida."}, status=400)
         metadata = {}
-        if equipment_type == ContainerEquipment.EquipmentType.OTHER:
-            metadata["equipment_subtype"] = str(request.data.get("equipment_subtype") or "onu").strip() or "onu"
+        if is_onu:
+            metadata.update({
+                "equipment_subtype": "onu",
+                "onu_lan_count": onu_lan_count,
+                "pon_connector": "SC/APC",
+            })
+        elif equipment_type == ContainerEquipment.EquipmentType.OTHER:
+            metadata["equipment_subtype"] = str(request.data.get("equipment_subtype") or "other").strip() or "other"
         snmp_community = str(request.data.get("snmp_community", "")).strip()
         if snmp_community:
             metadata["snmp_community_encrypted"] = SecretCipher().encrypt(snmp_community)
@@ -958,7 +971,11 @@ def container_equipment(request, element_id):
                 description=str(request.data.get("description", "")).strip(),
                 equipment_type=equipment_type,
                 management_ip=management_ip if equipment_type != ContainerEquipment.EquipmentType.DIO else None,
-                connector_type=connector_type if equipment_type == ContainerEquipment.EquipmentType.DIO else "",
+                connector_type=(
+                    ContainerEquipment.ConnectorType.SC_APC
+                    if is_onu
+                    else connector_type if equipment_type == ContainerEquipment.EquipmentType.DIO else ""
+                ),
                 tx_power_dbm=tx_power_dbm,
                 provisioning_mode=provisioning_mode,
                 vendor=str(request.data.get("vendor", "")).strip(),
@@ -1252,7 +1269,12 @@ def _container_equipment_payload(item):
     return {
         "id": item.id,
         "name": item.name,
-        "type": item.equipment_type,
+        "type": (
+            "onu"
+            if item.equipment_type == ContainerEquipment.EquipmentType.OTHER
+            and item.metadata.get("equipment_subtype") == "onu"
+            else item.equipment_type
+        ),
         "type_label": (
             "ONU / ONT"
             if item.equipment_type == ContainerEquipment.EquipmentType.OTHER
@@ -1328,6 +1350,30 @@ def _generate_container_equipment_ports(equipment):
                     port_number=pon,
                     label=f"Placa {card} / PON {pon}",
                 ))
+    elif (
+        equipment.equipment_type == ContainerEquipment.EquipmentType.OTHER
+        and equipment.metadata.get("equipment_subtype") == "onu"
+    ):
+        lan_count = max(1, min(int(equipment.metadata.get("onu_lan_count") or 4), 16))
+        ports = [
+            ContainerEquipmentPort(
+                equipment=equipment,
+                port_type=ContainerEquipmentPort.PortType.PON,
+                number=1,
+                port_number=1,
+                label="PON 1 · SC/APC",
+            )
+        ]
+        ports.extend(
+            ContainerEquipmentPort(
+                equipment=equipment,
+                port_type=ContainerEquipmentPort.PortType.RJ45_1G,
+                number=number + 1,
+                port_number=number,
+                label=f"LAN {number}",
+            )
+            for number in range(1, lan_count + 1)
+        )
     elif equipment.equipment_type == ContainerEquipment.EquipmentType.DIO:
         ports = [
             ContainerEquipmentPort(
@@ -1508,12 +1554,31 @@ def container_port_links(request, element_id):
                 status=400,
             )
         link_type = ContainerPortLink.LinkType.FIBER
-    elif container.element_type == NetworkElement.ElementType.RACK:
-        if source.port_type != ContainerEquipmentPort.PortType.PON or destination.port_type != ContainerEquipmentPort.PortType.DIO:
-            return JsonResponse({"detail": "No rack, ligue uma PON da OLT a uma porta do DIO."}, status=400)
-        link_type = ContainerPortLink.LinkType.FIBER
-    elif link_type not in dict(ContainerPortLink.LinkType.choices):
-        return JsonResponse({"detail": "Tipo de ligação inválido."}, status=400)
+    else:
+        optical_ports = {
+            ContainerEquipmentPort.PortType.DIO,
+            ContainerEquipmentPort.PortType.PON,
+            ContainerEquipmentPort.PortType.SFP_1G,
+            ContainerEquipmentPort.PortType.SFP_PLUS_10G,
+        }
+        copper_ports = {
+            ContainerEquipmentPort.PortType.RJ45_100M,
+            ContainerEquipmentPort.PortType.RJ45_1G,
+        }
+        if source.port_type in optical_ports and destination.port_type in optical_ports:
+            link_type = ContainerPortLink.LinkType.FIBER
+        elif source.port_type in copper_ports and destination.port_type in copper_ports:
+            link_type = ContainerPortLink.LinkType.COPPER
+        elif (
+            source.port_type == ContainerEquipmentPort.PortType.WIRELESS
+            and destination.port_type == ContainerEquipmentPort.PortType.WIRELESS
+        ):
+            link_type = ContainerPortLink.LinkType.WIRELESS
+        else:
+            return JsonResponse(
+                {"detail": "Portas incompatíveis. Ligue óptica com óptica, RJ45 com RJ45 ou wireless com wireless."},
+                status=400,
+            )
     default_loss = 0.1 if source is None else 0.5
     if request.data.get("loss_db"):
         try:
@@ -2294,9 +2359,33 @@ def splice_box_fibers(request, element_id, splice_id=None):
             )
             fiber.save(update_fields=["status", "updated_at"])
         return JsonResponse({"success": True})
+    # CEO/CDO mostra todos os cabos que realmente passam perto da caixa,
+    # inclusive lotes antigos que ainda não possuíam CableElementPassage.
+    # CTO continua restrita às relações explícitas para não “roubar” cabo
+    # tronco de uma caixa de emenda próxima.
+    nearby_cable_ids = []
+    if element.element_type == NetworkElement.ElementType.SPLICE_BOX and element.point:
+        try:
+            element_metric = element.point.transform(3857, clone=True)
+            for candidate in FiberCable.objects.filter(
+                project=element.project,
+                company=element.company,
+                geometry__isnull=False,
+            ).only("id", "geometry"):
+                if candidate.geometry.transform(3857, clone=True).distance(element_metric) <= 45:
+                    nearby_cable_ids.append(candidate.id)
+        except Exception:
+            nearby_cable_ids = []
     connected = FiberCable.objects.filter(
-        Q(origin=element) | Q(destination=element)
-    ).prefetch_related("fibers__color")
+        Q(origin=element)
+        | Q(destination=element)
+        | Q(element_passages__element=element)
+        | Q(pk__in=nearby_cable_ids)
+    ).distinct().prefetch_related("fibers__color", "element_passages")
+    passage_by_cable = {
+        passage.cable_id: passage.action
+        for passage in element.cable_passages.select_related("cable").all()
+    }
 
     def fiber_is_connected(fiber, exclude_splitter=None, exclude_port=None):
         if FiberSplice.objects.filter(
@@ -2329,6 +2418,12 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "name": cable.name,
                     "origin_id": cable.origin_id,
                     "destination_id": cable.destination_id,
+                    "relation_action": passage_by_cable.get(cable.id) or (
+                        "connect" if cable.origin_id == element.id or cable.destination_id == element.id else "pass"
+                    ),
+                    "requires_cut": (
+                        cable.origin_id != element.id and cable.destination_id != element.id
+                    ),
                     "fibers": [
                         {
                             "id": fiber.id,
@@ -2400,7 +2495,12 @@ def splice_box_fibers(request, element_id, splice_id=None):
             ],
         })
     connection_type = str(request.data.get("connection_type", "splice"))
-    connected_ids = set(connected.values_list("id", flat=True))
+    # Cabos apenas em passagem aparecem para revisão, mas suas fibras
+    # só podem ser usadas depois do corte explícito na caixa.
+    connected_ids = set(
+        FiberCable.objects.filter(Q(origin=element) | Q(destination=element))
+        .values_list("id", flat=True)
+    )
     if connection_type == "splitter_input":
         splitter = get_object_or_404(
             SpliceTraySplitter,
