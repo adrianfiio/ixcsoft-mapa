@@ -218,6 +218,12 @@ __marimo__/
 .streamlit/secrets.toml
 docker-compose.override.yml
 
+# Stack de monitoramento (fora do docker-compose.yml deste projeto,
+# mantido solto no /opt/ixcsoft-mapa do servidor) — não pode bloquear o
+# `apply`, que exige a árvore de trabalho limpa antes de atualizar.
+docker-compose-monitor.yml
+telegraf.conf
+
 # Backups temporários
 *.bak
 *.bak-*

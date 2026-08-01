@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.67.0 — Fusões cumulativas: cabos gerenciáveis por caixa, rota manual, ícones compactos e detalhes de equipamento**
+**v0.67.1 — .gitignore para a stack de monitoramento, para não bloquear o `apply` no servidor**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

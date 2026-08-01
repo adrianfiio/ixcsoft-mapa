@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.1] - 2026-08-01
+
+### Corrigido
+
+- **`apply` cancelava a atualização no servidor** por causa de `docker-compose-monitor.yml` e `telegraf.conf` — arquivos da stack de monitoramento (fora deste repositório, mantidos soltos em `/opt/ixcsoft-mapa`) que apareciam como alteração local não commitada, e o `apply` para de propósito nesse caso pra não sobrescrever nada. Adicionados ao `.gitignore` — o `apply` deixa de enxergá-los como pendência.
+
 ## [0.67.0] - 2026-08-01
 
 Backup/ponto de rollback: tag `v0.66.0` (também disponível como branch
