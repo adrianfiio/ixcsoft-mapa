@@ -65,6 +65,20 @@ from apps.ixc_integration.tasks import synchronize_ixc_configuration
 from apps.olt_integration.models import OLT, ONU
 
 
+class LoadingView(LoginRequiredMixin, TemplateView):
+    """Tela de transição exibida logo após o login (ver
+    `LOGIN_REDIRECT_URL`), antes de cair no dashboard de verdade — só
+    estética, não carrega nada além do próprio HTML/CSS/SVG."""
+
+    template_name = "loading.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        next_url = self.request.GET.get("next", "").strip()
+        context["next_url"] = next_url if next_url.startswith("/") else reverse("dashboard")
+        return context
+
+
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
 

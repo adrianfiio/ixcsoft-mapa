@@ -1,0 +1,234 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carregando | AFService Map</title>
+    <link rel="icon" type="image/png" href="{% static 'img/afservice-map-favicon.png' %}">
+    <style>
+        body, html {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            background-color: #03050a;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Container principal */
+        .loading-container {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(6, 182, 212, 0.08) 0%, transparent 65%);
+            transition: transform 1.8s cubic-bezier(0.87, 0, 0.13, 1), opacity 1.5s ease-in-out;
+            transform-origin: center center;
+            z-index: 1;
+        }
+
+        /* CAMADA 1 DO FUNDO: Pontos estáticos pulsando */
+        .loading-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: radial-gradient(#16203a 1.5px, transparent 1.5px);
+            background-size: 35px 35px;
+            z-index: -2;
+            animation: pulseDots 4s ease-in-out infinite alternate;
+        }
+
+        /* CAMADA 2 DO FUNDO: Luzes caminhando (Data Stream / Fluxo de Rede) */
+        .loading-container::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200vw; height: 200vw;
+            background-image: radial-gradient(rgba(6, 182, 212, 0.25) 2px, transparent 2px);
+            background-size: 80px 80px;
+            z-index: -1;
+            /* Faz as luzes do fundo caminharem suavemente na diagonal */
+            animation: streamLights 20s linear infinite;
+        }
+
+        .zoom-out-fade { transform: scale(4); opacity: 0; pointer-events: none; }
+
+        /* A Sua Logo - Canto Inferior Esquerdo */
+        .brand-logo {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            height: 50px;
+            object-fit: contain;
+            z-index: 20;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.4));
+        }
+
+        /* Wrapper do SVG */
+        .svg-wrapper {
+            width: 90%;
+            max-width: 900px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Estilos base SVG */
+        .icon-base { fill: none; stroke: #475569; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .cable-dark { fill: none; stroke: #1e293b; stroke-width: 4; stroke-linecap: round; }
+        .house-base { fill: #0b1120; stroke: #475569; stroke-width: 3; stroke-linejoin: round; transition: all 0.5s; }
+
+        /* Cores Neon */
+        .neon-cyan { stroke: #06b6d4; filter: drop-shadow(0 0 10px #06b6d4); }
+        .neon-green { stroke: #10b981; filter: drop-shadow(0 0 10px #10b981); }
+        .neon-red { fill: #ef4444; filter: drop-shadow(0 0 8px #ef4444); }
+        .neon-fill-cyan { fill: #06b6d4; filter: drop-shadow(0 0 12px #06b6d4); }
+
+        /* LEDs Vermelhos */
+        .red-led-fast { animation: blink-led-continuous 0.5s infinite alternate; }
+        .red-led-slow { animation: blink-led-continuous 1.5s infinite alternate; }
+
+        /* TIMING DA ANIMAÇÃO */
+        .fiber-1 { stroke-dasharray: 300; stroke-dashoffset: 300; animation: run-fiber 1.5s ease-in-out forwards; }
+        .cto-led { opacity: 0; animation: blink-led 0.3s ease-in-out 3 1.5s forwards; }
+        .fiber-2 { stroke-dasharray: 300; stroke-dashoffset: 300; opacity: 0; animation: run-fiber-2 1.5s ease-in-out 2s forwards; }
+        .house-1-online { animation: turn-on-house-cyan 0.5s ease forwards 3.3s; }
+
+        .ptp-beam { stroke-dasharray: 15 20; stroke-dashoffset: 200; opacity: 0; animation: shoot-beam 1.5s linear 3.5s forwards; }
+        .tower-led { opacity: 0; animation: blink-led 0.3s ease-in-out 3 5.0s forwards; }
+        .ptmp-wave { opacity: 0; }
+        .wave-1 { animation: pulse-wave 2s infinite 5.3s; }
+        .wave-2 { animation: pulse-wave 2s infinite 5.7s; }
+        .wave-3 { animation: pulse-wave 2s infinite 6.1s; }
+        .house-2-online { animation: turn-on-house-green 0.5s ease forwards 6.8s; }
+
+        /* KEYFRAMES */
+        @keyframes pulseDots { 0% { opacity: 0.2; } 100% { opacity: 0.7; } }
+        @keyframes streamLights { 0% { transform: translate(0, 0); } 100% { transform: translate(80px, 80px); } }
+
+        @keyframes run-fiber { 0% { stroke-dashoffset: 300; } 100% { stroke-dashoffset: 0; } }
+        @keyframes run-fiber-2 { 0% { opacity: 1; stroke-dashoffset: 300; } 100% { opacity: 1; stroke-dashoffset: 0; } }
+        @keyframes blink-led { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+        @keyframes blink-led-continuous { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+        @keyframes shoot-beam { 0% { opacity: 0; stroke-dashoffset: 200; } 10% { opacity: 1; } 100% { opacity: 1; stroke-dashoffset: 0; } }
+        @keyframes pulse-wave { 0% { opacity: 0; transform: scale(0.8) translate(0, 0); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5) translate(30px, 15px); } }
+
+        @keyframes turn-on-house-cyan { 100% { fill: #082f49; stroke: #0ea5e9; filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.6)); } }
+        @keyframes turn-on-house-green { 100% { fill: #064e3b; stroke: #10b981; filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.6)); } }
+
+        /* Textos */
+        .loading-text {
+            margin-top: 50px; text-align: center;
+            color: #64748b; font-size: 16px; letter-spacing: 4px; font-weight: 600; transition: color 0.3s;
+            z-index: 10;
+        }
+        .text-pulse { animation: blink-text 1.5s infinite; }
+        @keyframes blink-text { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+        .text-ready { color: #ef4444; filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.9)); font-weight: 800; }
+
+    </style>
+</head>
+<body>
+
+    <div class="loading-container" id="loader">
+
+        <img src="{% static 'img/afservice-logo.png' %}" alt="AF Service" class="brand-logo" />
+
+        <div class="svg-wrapper">
+            <svg viewBox="90 40 720 340" width="100%" height="100%" style="overflow: visible;">
+
+                <!-- CONEXÃO DE CORE: Linha mestre unindo o Rack Superior à Torre Inferior -->
+                <path d="M 140 170 L 140 240" class="cable-dark neon-cyan" stroke-dasharray="4 4" opacity="0.4" />
+
+                <!-- PARTE SUPERIOR: REDE FIBRA ÓPTICA -->
+                <g id="cena-fibra">
+                    <path d="M 170 120 Q 330 60 470 100" class="cable-dark" />
+                    <path d="M 470 100 Q 610 140 730 120" class="cable-dark" />
+
+                    <path d="M 170 120 Q 330 60 470 100" class="cable-dark neon-cyan fiber-1" />
+                    <path d="M 470 100 Q 610 140 730 120" class="cable-dark neon-cyan fiber-2" />
+
+                    <!-- OLT / Rack -->
+                    <g transform="translate(110, 80)">
+                        <rect x="0" y="0" width="60" height="90" rx="5" class="icon-base" fill="#03050a" />
+                        <line x1="15" y1="20" x2="45" y2="20" class="icon-base" />
+                        <line x1="15" y1="45" x2="45" y2="45" class="icon-base" />
+                        <line x1="15" y1="70" x2="45" y2="70" class="icon-base" />
+                        <circle cx="20" cy="32" r="3" class="neon-fill-cyan" />
+                        <circle cx="40" cy="80" r="2" class="neon-red red-led-slow" />
+                    </g>
+
+                    <!-- Poste / CTO -->
+                    <g transform="translate(465, 90)">
+                        <line x1="5" y1="-30" x2="5" y2="90" stroke="#1e293b" stroke-width="4" />
+                        <rect x="-10" y="0" width="30" height="40" rx="3" class="icon-base" fill="#03050a" />
+                        <circle cx="5" cy="20" r="4" fill="#06b6d4" class="cto-led neon-cyan" />
+                        <circle cx="12" cy="32" r="1.5" class="neon-red red-led-fast" />
+                    </g>
+
+                    <!-- Casa 1 -->
+                    <g transform="translate(690, 90)">
+                        <polygon points="10,40 10,80 70,80 70,40" class="house-base house-1-online" />
+                        <polygon points="0,40 40,0 80,40" class="house-base house-1-online" />
+                        <rect x="30" y="55" width="20" height="25" fill="#03050a" stroke="#475569" stroke-width="2" />
+                    </g>
+                </g>
+
+                <!-- PARTE INFERIOR: REDE WIRELESS -->
+                <g id="cena-wireless">
+                    <line x1="150" y1="240" x2="450" y2="260" class="neon-green ptp-beam" stroke-width="4" />
+
+                    <g transform="translate(470, 240)">
+                        <path d="M 20 20 Q 80 50 240 70" class="icon-base neon-green ptmp-wave wave-1" />
+                        <path d="M 40 10 Q 100 40 250 60" class="icon-base neon-green ptmp-wave wave-2" />
+                        <path d="M 60 0 Q 120 30 260 50" class="icon-base neon-green ptmp-wave wave-3" />
+                    </g>
+
+                    <!-- Torre 1 -->
+                    <g transform="translate(120, 240)">
+                        <path d="M 30 0 L 15 120 L 45 120 Z" class="icon-base" fill="#03050a" />
+                        <line x1="22" y1="40" x2="38" y2="40" class="icon-base" />
+                        <line x1="18" y1="80" x2="42" y2="80" class="icon-base" />
+                        <circle cx="30" cy="-5" r="8" class="icon-base neon-green" />
+                        <circle cx="30" cy="50" r="2" class="neon-red red-led-slow" />
+                    </g>
+
+                    <!-- Torre 2 -->
+                    <g transform="translate(435, 260)">
+                        <path d="M 20 0 L 5 110 L 35 110 Z" class="icon-base" fill="#03050a" />
+                        <line x1="13" y1="50" x2="27" y2="50" class="icon-base" />
+                        <circle cx="20" cy="-5" r="6" class="icon-base" />
+                        <circle cx="20" cy="-5" r="3" fill="#10b981" class="tower-led neon-green" />
+                        <circle cx="20" cy="40" r="1.5" class="neon-red red-led-fast" />
+                    </g>
+
+                    <!-- Casa 2 -->
+                    <g transform="translate(690, 270)">
+                        <polygon points="10,40 10,80 70,80 70,40" class="house-base house-2-online" />
+                        <polygon points="0,40 40,0 80,40" class="house-base house-2-online" />
+                        <rect x="30" y="55" width="20" height="25" fill="#03050a" stroke="#475569" stroke-width="2" />
+                    </g>
+                </g>
+
+            </svg>
+        </div>
+
+        <div class="loading-text text-pulse" id="loadingText">SINCRONIZANDO NODOS...</div>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const txt = document.getElementById('loadingText');
+            txt.innerText = "ABRINDO MAPA...";
+            txt.classList.remove('text-pulse');
+            txt.classList.add('text-ready');
+        }, 7500);
+
+        setTimeout(() => {
+            document.getElementById('loader').classList.add('zoom-out-fade');
+        }, 9500);
+
+        setTimeout(() => {
+            window.location.href = "{{ next_url|default:'/' }}";
+        }, 11300);
+    </script>
+</body>
+</html>

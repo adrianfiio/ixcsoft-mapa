@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.69.0] - 2026-08-01
+
+### Adicionado
+
+- **Tela de carregamento animada logo após o login** (`/carregando/`): mapa de fibra acendendo (OLT → CTO → casa) e rede wireless conectando (torre → torre → casa) em SVG animado, com o fluxo real de login passando por ela antes de cair no dashboard (`LOGIN_REDIRECT_URL`). Logo usa o mesmo PNG já usado no resto do app, em vez de uma URL externa.
+
+### Alterado
+
+- **Fundo da tela de login** ganhou a mesma grade de pontos pulsando e luzes correndo em diagonal da tela de carregamento — a troca entre as duas telas fica contínua, sem "salto" visual.
+
 ## [0.68.0] - 2026-08-01
 
 Nova app `apps/snmp_monitoring` — backend do monitoramento de portas por

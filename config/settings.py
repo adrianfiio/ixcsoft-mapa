@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.68.0")
+APP_VERSION = os.getenv("APP_VERSION", "0.69.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -68,7 +68,7 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/carregando/"
 LOGOUT_REDIRECT_URL = "/login/"
 
 TEMPLATES = [{

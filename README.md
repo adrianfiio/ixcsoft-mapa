@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.68.0 — Backend do monitoramento SNMP: modelo, Celery e integração com Telegraf/InfluxDB**
+**v0.69.0 — Tela de carregamento animada pós-login, com o mesmo fundo da tela de login**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
