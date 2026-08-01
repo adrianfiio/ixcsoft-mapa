@@ -178,6 +178,23 @@
         </article>
     </div>
     {% endif %}
+    {% if edit_mode or not widget_meta.panel_infra_breakdown.hidden %}
+    <div class="grid-stack-item" data-widget="panel_infra_breakdown" gs-id="panel_infra_breakdown" gs-x="{{ widget_meta.panel_infra_breakdown.x }}" gs-y="{{ widget_meta.panel_infra_breakdown.y }}" gs-w="{{ widget_meta.panel_infra_breakdown.w }}" gs-h="{{ widget_meta.panel_infra_breakdown.h }}" style="grid-column: {{ widget_meta.panel_infra_breakdown.x1 }} / span {{ widget_meta.panel_infra_breakdown.w }}; grid-row: {{ widget_meta.panel_infra_breakdown.y1 }} / span {{ widget_meta.panel_infra_breakdown.h }};">
+        <article class="panel grid-stack-item-content{% if widget_meta.panel_infra_breakdown.hidden %} widget-hidden{% endif %}">
+            {% include "includes/widget_edit_bar.html" with widget_key="panel_infra_breakdown" hidden=widget_meta.panel_infra_breakdown.hidden %}
+            <div class="panel-header"><h2 class="panel-title">Infraestrutura por tipo</h2><a class="panel-link" href="{% url 'equipment-list' %}">Ver equipamentos →</a></div>
+            <div class="status-list">
+                <a class="status-row" href="{% url 'equipment-list' %}?type=tower"><span class="legend-dot" style="background: var(--blue)"></span><span>Torres</span><strong>{{ tower_count|default:0 }}</strong></a>
+                <a class="status-row" href="{% url 'equipment-list' %}?type=rack"><span class="legend-dot" style="background: var(--blue)"></span><span>Racks</span><strong>{{ rack_count|default:0 }}</strong></a>
+                <a class="status-row" href="{% url 'account-panel' %}#infraestrutura"><span class="legend-dot" style="background: var(--primary)"></span><span>ONUs cadastradas</span><strong>{{ onu_count|default:0 }}</strong></a>
+                <a class="status-row" href="{% url 'equipment-list' %}?type=cto"><span class="legend-dot" style="background: var(--success)"></span><span>CTOs</span><strong>{{ cto_count|default:0 }}</strong></a>
+                <a class="status-row" href="{% url 'equipment-list' %}?type=splice_box"><span class="legend-dot" style="background: var(--success)"></span><span>CEOs / caixas de emenda</span><strong>{{ ceo_count|default:0 }}</strong></a>
+                <div class="status-row"><span class="legend-dot" style="background: #556477"></span><span>Equipamentos nas torres</span><strong>{{ tower_equipment_count|default:0 }}</strong></div>
+                <div class="status-row"><span class="legend-dot" style="background: #556477"></span><span>Equipamentos nos racks</span><strong>{{ rack_equipment_count|default:0 }}</strong></div>
+            </div>
+        </article>
+    </div>
+    {% endif %}
 </section>
 {% endblock %}
 

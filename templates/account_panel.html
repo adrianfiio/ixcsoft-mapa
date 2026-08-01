@@ -40,7 +40,7 @@
         {% if show_erp_navigation %}<a class="quick-link" href="{% url 'erp-onboarding' %}"><strong>Integração ERP</strong><small>IXCSoft e sincronização</small></a>{% endif %}
         <a class="quick-link" href="{% url 'company-email-settings' %}"><strong>E-mail (SMTP)</strong><small>Servidor de e-mail da empresa</small></a>
         <a class="quick-link" href="{% url 'company-branding' %}"><strong>Marca (whitelabel)</strong><small>Logo e cor da sua empresa</small></a>
-        <a class="quick-link" href="{% url 'company-alerts' %}"><strong>Central de alertas</strong><small>Ocorrências da empresa</small></a>
+        {% if not current_company.is_designer %}<a class="quick-link" href="{% url 'company-alerts' %}"><strong>Central de alertas</strong><small>Ocorrências da empresa</small></a>{% endif %}
     </div>
 </section>
 

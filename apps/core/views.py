@@ -20,7 +20,7 @@ from redis import Redis
 from apps.access.models import AccessPoint
 from apps.alerts.models import AlertEvent
 from apps.ixc_integration.models import IXCCustomer, IXCLogin, IXCSyncExecution
-from apps.network_map.models import CTO, NetworkElement
+from apps.network_map.models import CTO, ContainerEquipment, NetworkElement
 from apps.core.enums import OperationalStatus
 from apps.core.crypto import SecretCipher
 from apps.core.dashboard_widgets import (
@@ -211,13 +211,35 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         except Exception:
             cable_length = None
 
+        tower_equipment_queryset = ContainerEquipment.objects.filter(
+            container__element_type=NetworkElement.ElementType.TOWER
+        )
+        rack_equipment_queryset = ContainerEquipment.objects.filter(
+            container__element_type=NetworkElement.ElementType.RACK
+        )
+        if company_ids is not None:
+            tower_equipment_queryset = tower_equipment_queryset.filter(company_id__in=company_ids)
+            rack_equipment_queryset = rack_equipment_queryset.filter(company_id__in=company_ids)
+
         return {
             "access": access_summary,
             "onus": onu_summary,
+            "onu_count": onu_queryset.count(),
             "customer_count": customer_queryset.count(),
             "olt_count": olt_queryset.count(),
             "element_count": element_queryset.count(),
             "cto_count": cto_queryset.count(),
+            "ceo_count": element_queryset.filter(
+                element_type=NetworkElement.ElementType.SPLICE_BOX
+            ).count(),
+            "tower_count": element_queryset.filter(
+                element_type=NetworkElement.ElementType.TOWER
+            ).count(),
+            "rack_count": element_queryset.filter(
+                element_type=NetworkElement.ElementType.RACK
+            ).count(),
+            "tower_equipment_count": tower_equipment_queryset.count(),
+            "rack_equipment_count": rack_equipment_queryset.count(),
             "cable_km": round((cable_length or 0) / 1000, 2),
             "active_alert_count": alert_queryset.filter(
                 state__in=active_alert_states
@@ -816,6 +838,12 @@ def company_search(request):
 
 @login_required
 def company_alerts(request):
+    membership = CompanyMembership.objects.filter(
+        user=request.user,
+        active=True,
+    ).select_related("company").first()
+    if not request.user.is_superuser and membership and membership.company.is_designer:
+        raise PermissionDenied
     company_ids = accessible_company_ids(request.user)
     alerts = AlertEvent.objects.select_related("rule", "olt", "cto")
     if company_ids is not None:

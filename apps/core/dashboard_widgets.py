@@ -27,6 +27,7 @@ PROVIDER_WIDGETS = [
     ("panel_recent_alerts", "Painel · Alertas recentes"),
     ("panel_sync", "Painel · Sincronização com ERP"),
     ("panel_gpon", "Painel · Resumo GPON"),
+    ("panel_infra_breakdown", "Painel · Infraestrutura por tipo"),
 ]
 
 DESIGNER_WIDGETS = [
@@ -65,6 +66,7 @@ _DEFAULT_PANEL_SIZE = (6, 4)
 _WIDGET_SIZE_OVERRIDES = {
     "panel_sync": (6, 3),
     "panel_gpon": (6, 3),
+    "panel_infra_breakdown": (6, 5),
     "panel_companies_table": (12, 6),
 }
 

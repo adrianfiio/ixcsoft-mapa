@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.62.0] - 2026-08-01
+
+### Adicionado
+
+- **Novo painel "Infraestrutura por tipo" no dashboard das empresas provedoras**: torres, racks, ONUs cadastradas, CTOs, CEOs/caixas de emenda e total de equipamentos internos (nas torres e nos racks), cada linha levando direto pra lista de equipamentos filtrada por tipo — reaproveita o mesmo padrão de atalho já usado no dashboard do projetista.
+
+### Corrigido
+
+- **Barra de rolagem feia nos painéis do dashboard editável**: agora usa a mesma barra fina e discreta já usada no mapa/editor (cor de destaque, sem o padrão cinza grosso do navegador).
+- **Ícones de "Visão geral" e "Mapa"** (menu lateral e topo da tela de equipamentos) trocados de caractere de texto por SVG — o antigo não lembrava nada (não era nem um mapa nem um globo).
+- **"Central de alertas" não aparece mais em "Minha administração" para empresa projetista** — projetista não tem cliente pra monitorar, então a central de alertas não se aplica.
+- **Empresa projetista não consegue mais abrir a página de alertas direto pela URL** (antes só o menu escondia o link; agora o acesso é bloqueado também no servidor).
+
 ## [0.61.2] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.61.1` (também disponível como branch `backup/mapa-pre-v091-20260801`). Pacote de correções preparado pelo ChatGPT para a área do mapa (v0.9.1) — aplicado via `apply_v091.py`, todos os patches bateram exato.
