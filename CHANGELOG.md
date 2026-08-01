@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.7] - 2026-08-01
+
+### Alterado
+
+- **Logo da tela de login aumentada** (96px → 168px de largura), ficava pequena demais no painel escuro novo.
+
 ## [0.67.6] - 2026-08-01
 
 ### Adicionado

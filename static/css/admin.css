@@ -170,7 +170,7 @@ input:focus, textarea:focus, select:focus { border-color: #2dd4bf; box-shadow: 0
 }
 .af-login-card { display: grid; grid-template-columns: 1fr 1.05fr; width: min(920px, 100%); min-height: 540px; overflow: hidden; background: #0b0c0f; border-radius: 24px; box-shadow: 0 40px 110px rgba(0,0,0,.5); }
 .af-login-form-panel { display: grid; align-content: center; justify-items: center; gap: 4px; padding: 56px 52px; background: linear-gradient(165deg, #2a2c31, #0c0d10 140%); color: #f1f5f9; text-align: center; }
-.af-login-mark { width: 96px; margin-bottom: 24px; object-fit: contain; }
+.af-login-mark { width: 168px; margin-bottom: 24px; object-fit: contain; }
 .af-login-form-panel h1 { margin: 0 0 6px; color: #f8fafc; font-family: inherit; font-size: 26px; font-weight: 800; }
 .af-login-form-panel > p { margin: 0 0 24px; color: #9aa5b1; font-size: 14px; }
 .af-login-error { width: 100%; box-sizing: border-box; margin-bottom: 16px; padding: 11px 14px; color: #fca5a5; background: rgba(239, 68, 68, .12); border: 1px solid rgba(239, 68, 68, .35); border-radius: 10px; font-size: 13px; }
