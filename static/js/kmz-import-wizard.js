@@ -584,7 +584,7 @@
                 ${numberControl({ label: "Raio de prioridade sobre CTO", attributes: 'id="kmz-priority-radius"', value: topology.priority_radius_m || 18, min: 1, max: 100, step: 1, suffix: "m" })}
                 <p><strong>Regra:</strong> em cabo tronco, CEO/CDO recebe primeiro todos os cabos próximos. DROP continua preferindo CTO. Toda sugestão pode ser alterada individualmente.</p>
             </div>
-            <button id="kmz-detect-topology" class="primary-button" type="button">${state.topologyJunctions.length ? "Recalcular ligações" : "Detectar ligações"}</button>
+            <div class="kmz-topology-actions-v091"><button id="kmz-detect-topology" class="primary-button" type="button">${state.topologyJunctions.length ? "Recalcular ligações" : "Detectar ligações"}</button></div>
             ${state.topologySummary ? `<div class="kmz-summary-grid compact"><article><strong>${state.topologySummary.junctions}</strong><span>relações</span></article><article><strong>${state.topologySummary.cuts}</strong><span>cortes</span></article><article><strong>${state.topologySummary.branches}</strong><span>derivações</span></article><article><strong>${state.topologySummary.passes}</strong><span>passagens</span></article></div>` : ""}
             ${state.topologyCalculated && rows ? `<div class="kmz-bulk-actions kmz-junction-bulk">
                 <strong>Aplicar para todos</strong>
@@ -793,6 +793,7 @@
             reserves: "reservas", fibers: "fibras", fiber_tubes: "tubos",
             cable_relations: "ligações", ignored_points: "pontos ignorados",
             cable_models_created: "modelos criados", cables_without_fibers: "cabos sem fibras",
+            cto_splitters: "splitters de CTO",
         };
         const entries = Object.entries(summary || {}).filter(([, value]) => Number(value || 0) > 0);
         if (!entries.length) return '<span class="kmz-muted">Sem resumo</span>';

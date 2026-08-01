@@ -40,6 +40,7 @@ from apps.network_map.models import (
     SpliceTraySplitterPort,
 )
 from apps.network_map.serializers import NetworkElementSerializer, sync_splice_box
+from apps.network_map.cto_defaults import ensure_cto_default_splitters
 from apps.network_map.services import (
     FiberStructureError,
     generate_cable_fibers,
@@ -758,14 +759,11 @@ def element_detail_payload(element):
     except CTO.DoesNotExist:
         cto = None
     if cto is not None:
-        if not element.splice_trays.exists():
-            first_splitter = cto.splitters.order_by("position").first()
-            sync_splice_box(
-                element,
-                1,
-                1,
-                first_splitter.ratio if first_splitter else cto.splitter_ratio,
-            )
+        # CTOs importadas por versões antigas podiam chegar sem ratio e sem
+        # bandeja. Isso fazia sync_splice_box receber uma string vazia e
+        # derrubar /api/map/elements/<id>/ com HTTP 500.
+        if not cto.splitters.exists() or not element.splice_trays.exists():
+            ensure_cto_default_splitters(cto, cto.capacity)
         legacy_splitter = cto.splitters.order_by("position").first()
         optical_splitter = SpliceTraySplitter.objects.filter(
             tray__splice_box=element
@@ -1001,6 +999,8 @@ def container_equipment(request, element_id):
                 "id": cable.id,
                 "name": cable.name,
                 "fiber_count": cable.fiber_count,
+                "cable_type": cable.cable_type,
+                "cable_type_label": cable.get_cable_type_display(),
                 "fibers": [_fiber_payload(fiber) for fiber in cable.fibers.select_related("color").all()],
             }
             for cable in FiberCable.objects.filter(company=container.company)
@@ -1539,18 +1539,36 @@ def container_port_links(request, element_id):
     if ContainerPortLink.objects.filter(in_use_query).exists():
         return JsonResponse({"detail": "Uma das portas já está em uso."}, status=409)
     link_type = str(request.data.get("link_type", "fiber"))
+    link_notes = ""
     if source is None:
-        # Fusão direta: um cabo externo (que chega no rack/torre) ligado numa
-        # porta do DIO, sem uma porta de OLT do outro lado.
-        optical_destinations = {
-            ContainerEquipmentPort.PortType.DIO,
-            ContainerEquipmentPort.PortType.PON,
+        # Cabo comum termina somente em DIO. Cabo DROP também pode terminar
+        # em SFP/SFP+, desde que o operador informe PTO ou conector direto.
+        sfp_destinations = {
             ContainerEquipmentPort.PortType.SFP_1G,
             ContainerEquipmentPort.PortType.SFP_PLUS_10G,
         }
-        if destination.port_type not in optical_destinations:
+        if destination.port_type == ContainerEquipmentPort.PortType.DIO:
+            link_notes = "Terminação óptica no DIO"
+        elif cable and cable.cable_type == FiberCable.CableType.DROP and destination.port_type in sfp_destinations:
+            termination_method = str(request.data.get("termination_method") or "").strip()
+            method_labels = {
+                "pto": "DROP via PTO",
+                "direct_connector": "DROP com conector direto no transceiver",
+            }
+            if termination_method not in method_labels:
+                return JsonResponse(
+                    {"detail": "Para ligar um DROP em SFP/SFP+, escolha PTO ou conector direto."},
+                    status=400,
+                )
+            link_notes = method_labels[termination_method]
+        else:
             return JsonResponse(
-                {"detail": "A fibra pode terminar em DIO, PON de ONU ou porta SFP/SFP+."},
+                {
+                    "detail": (
+                        "Cabos alimentadores/distribuição terminam somente em DIO. "
+                        "Somente cabo DROP pode seguir para SFP/SFP+, usando PTO ou conector direto."
+                    )
+                },
                 status=400,
             )
         link_type = ContainerPortLink.LinkType.FIBER
@@ -1582,7 +1600,7 @@ def container_port_links(request, element_id):
     default_loss = 0.1 if source is None else 0.5
     if request.data.get("loss_db"):
         try:
-            loss_db = Decimal(str(request.data["loss_db"]))
+            loss_db = Decimal(str(request.data["loss_db"]).replace(",", "."))
         except (InvalidOperation, ValueError):
             return JsonResponse({"detail": "Perda óptica inválida."}, status=400)
     else:
@@ -1594,6 +1612,7 @@ def container_port_links(request, element_id):
         cable=cable,
         cable_fiber=cable_fiber,
         link_type=link_type,
+        notes=link_notes,
         loss_db=loss_db,
     )
     return JsonResponse({"link": {"id": link.id}}, status=201)
@@ -2340,6 +2359,15 @@ def splice_box_fibers(request, element_id, splice_id=None):
             NetworkElement.ElementType.CTO,
         ],
     )
+    if (
+        request.method == "GET"
+        and element.element_type == NetworkElement.ElementType.CTO
+        and can_edit_company(request.user, element.company_id)
+    ):
+        cto = CTO.objects.filter(pk=element.pk).first()
+        if cto and not cto.splice_trays.filter(splitters__isnull=False).exists():
+            ensure_cto_default_splitters(cto, cto.capacity)
+
     if request.method == "DELETE":
         splice = get_object_or_404(FiberSplice, pk=splice_id, splice_box=element)
         fibers = [splice.input_fiber, splice.output_fiber]

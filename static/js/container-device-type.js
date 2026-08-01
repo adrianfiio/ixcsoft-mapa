@@ -11,7 +11,10 @@
 
     function csrfToken() {
         const item = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="));
-        return item ? decodeURIComponent(item.split("=")[1]) : "";
+        if (item) return decodeURIComponent(item.split("=")[1]);
+        return document.querySelector("[name='csrfmiddlewaretoken']")?.value
+            || document.querySelector("meta[name='csrf-token']")?.content
+            || "";
     }
 
     function escapeHtml(value) {
@@ -21,10 +24,16 @@
     }
 
     async function request(path, options = {}) {
+        // ordem-v091-csrf
+        const headers = {
+            "X-CSRFToken": csrfToken(),
+            Accept: "application/json",
+            ...(options.headers || {}),
+        };
         const response = await fetch(path, {
             credentials: "same-origin",
-            headers: { "X-CSRFToken": csrfToken(), Accept: "application/json", ...(options.headers || {}) },
             ...options,
+            headers,
         });
         const data = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
         if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
@@ -79,36 +88,99 @@
         }
     }
 
-    function opticalDestinationPorts(data) {
-        const supported = new Set(["dio", "pon", "sfp_1g", "sfp_plus_10g"]);
+    function ensureDropTerminationFields() {
+        if (terminationForm.querySelector("[data-drop-termination-v091]")) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "container-drop-termination-v091";
+        wrapper.dataset.dropTerminationV091 = "true";
+        wrapper.hidden = true;
+        wrapper.innerHTML = `
+            <label>Forma de entrada do DROP
+                <select name="termination_method">
+                    <option value="">Selecione</option>
+                    <option value="pto">PTO + cordão até o transceiver</option>
+                    <option value="direct_connector">Conector direto no transceiver</option>
+                </select>
+            </label>
+            <p>Este campo aparece somente quando um cabo DROP será ligado diretamente em SFP/SFP+.</p>`;
+        const submit = terminationForm.querySelector("button[type='submit']");
+        const anchor = submit?.closest("footer") || submit;
+        if (anchor?.parentNode) anchor.parentNode.insertBefore(wrapper, anchor);
+        wrapper.querySelector("select")?.addEventListener("change", syncDropTerminationFields);
+    }
+
+    function selectedCable(cableId = terminationForm.elements.cable_id.value) {
+        return (containerData?.cables || []).find((item) => String(item.id) === String(cableId));
+    }
+
+    function selectedDestinationPort(portId = terminationForm.elements.destination_port_id.value) {
+        return (containerData?.equipment || []).flatMap((equipment) =>
+            (equipment.ports || []).map((port) => ({ ...port, equipment_name: equipment.name }))
+        ).find((port) => String(port.id) === String(portId));
+    }
+
+    function opticalDestinationPorts(data, cable) {
+        const allowed = new Set(["dio"]);
+        if (cable?.cable_type === "drop") {
+            allowed.add("sfp_1g");
+            allowed.add("sfp_plus_10g");
+        }
         return (data.equipment || []).flatMap((equipment) =>
             (equipment.ports || [])
-                .filter((port) => supported.has(port.type) && !port.fusion_used)
+                .filter((port) => allowed.has(port.type) && !port.fusion_used)
                 .map((port) => ({ ...port, equipment_name: equipment.name }))
         );
     }
 
+    function syncDropTerminationFields() {
+        ensureDropTerminationFields();
+        const wrapper = terminationForm.querySelector("[data-drop-termination-v091]");
+        const method = terminationForm.elements.termination_method;
+        const cable = selectedCable();
+        const port = selectedDestinationPort();
+        const needsMethod = cable?.cable_type === "drop" && ["sfp_1g", "sfp_plus_10g"].includes(port?.type);
+        if (wrapper) wrapper.hidden = !needsMethod;
+        if (method) {
+            method.required = needsMethod;
+            if (!needsMethod) method.value = "";
+        }
+    }
+
+    function populateDestinationPorts(cableId) {
+        const portSelect = terminationForm.elements.destination_port_id;
+        const cable = selectedCable(cableId);
+        const ports = cable ? opticalDestinationPorts(containerData, cable) : [];
+        portSelect.innerHTML = cable
+            ? '<option value="">Selecione a porta óptica de destino</option>'
+                + ports.map((port) => `<option value="${port.id}">${escapeHtml(port.equipment_name)} · ${escapeHtml(port.label)}</option>`).join("")
+            : '<option value="">Selecione primeiro o cabo</option>';
+        const submit = terminationForm.querySelector("button[type='submit']");
+        if (submit) submit.disabled = !cable || !ports.length;
+        syncDropTerminationFields();
+    }
+
     function populateTermination(data) {
         containerData = data;
+        ensureDropTerminationFields();
         const cableSelect = terminationForm.elements.cable_id;
         const fiberSelect = terminationForm.elements.cable_fiber_id;
         const portSelect = terminationForm.elements.destination_port_id;
         cableSelect.innerHTML = '<option value="">Selecione o cabo que chega à estrutura</option>'
-            + (data.cables || []).map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F</option>`).join("");
+            + (data.cables || []).map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count}F · ${escapeHtml(cable.cable_type_label || cable.cable_type || "")}</option>`).join("");
         fiberSelect.innerHTML = '<option value="">Selecione primeiro o cabo</option>';
-        const ports = opticalDestinationPorts(data);
-        portSelect.innerHTML = '<option value="">Selecione a porta óptica de destino</option>'
-            + ports.map((port) => `<option value="${port.id}">${escapeHtml(port.equipment_name)} · ${escapeHtml(port.label)}</option>`).join("");
-        terminationForm.querySelector("button[type='submit']").disabled = !data.cables?.length || !ports.length;
+        portSelect.innerHTML = '<option value="">Selecione primeiro o cabo</option>';
+        terminationForm.querySelector("button[type='submit']").disabled = true;
+        syncDropTerminationFields();
     }
 
     function populateFibers(cableId) {
         const fiberSelect = terminationForm.elements.cable_fiber_id;
-        const cable = (containerData?.cables || []).find((item) => String(item.id) === String(cableId));
+        const cable = selectedCable(cableId);
         const fibers = (cable?.fibers || []).filter((fiber) => !fiber.used);
         fiberSelect.innerHTML = fibers.length
             ? '<option value="">Selecione a fibra</option>' + fibers.map((fiber) => `<option value="${fiber.id}">F${fiber.number} · ${escapeHtml(fiber.color_name)}</option>`).join("")
             : '<option value="">Cabo sem fibras livres/geradas</option>';
+        populateDestinationPorts(cableId);
     }
 
     async function refreshExtensions() {
@@ -170,11 +242,18 @@
         submitYaml("import").catch((error) => setMessage(error.message, true));
     });
     terminationForm.elements.cable_id.addEventListener("change", (event) => populateFibers(event.target.value));
+    terminationForm.elements.destination_port_id.addEventListener("change", syncDropTerminationFields);
     terminationForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const id = containerId();
         const payload = Object.fromEntries(new FormData(terminationForm));
         try {
+            const cable = selectedCable(payload.cable_id);
+            const port = selectedDestinationPort(payload.destination_port_id);
+            const needsMethod = cable?.cable_type === "drop" && ["sfp_1g", "sfp_plus_10g"].includes(port?.type);
+            if (needsMethod && !payload.termination_method) {
+                throw new Error("Escolha PTO ou conector direto para terminar o DROP em SFP/SFP+.");
+            }
             setMessage("Criando terminação óptica...");
             await request(`/api/map/elements/${id}/equipment-links/`, {
                 method: "POST",
@@ -183,7 +262,8 @@
                     cable_fiber_id: payload.cable_fiber_id,
                     destination_port_id: payload.destination_port_id,
                     link_type: "fiber",
-                    loss_db: payload.loss_db || "0.1",
+                    termination_method: payload.termination_method || "",
+                    loss_db: String(payload.loss_db || "0.1").replace(",", "."),
                 }),
             });
             setMessage("Fibra terminada na porta selecionada.");

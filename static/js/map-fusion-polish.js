@@ -14,7 +14,10 @@
 
     function csrfToken() {
         const item = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="));
-        return item ? decodeURIComponent(item.split("=")[1]) : "";
+        if (item) return decodeURIComponent(item.split("=")[1]);
+        return document.querySelector("[name='csrfmiddlewaretoken']")?.value
+            || document.querySelector("meta[name='csrf-token']")?.content
+            || "";
     }
 
     async function api(url, options = {}) {
@@ -53,10 +56,7 @@
         fullscreenFallback = !fullscreenFallback;
         dialog.classList.toggle("is-fullscreen", fullscreenFallback);
         if (button) button.setAttribute("aria-pressed", String(fullscreenFallback));
-        window.setTimeout(() => {
-            if (autoFit) fitGraph(false);
-            else refreshLinks();
-        }, 80);
+        syncFullscreenButton();
     }
 
     function syncFullscreenButton() {
@@ -66,7 +66,7 @@
         if (button) {
             button.setAttribute("aria-pressed", String(active));
             button.classList.toggle("active", active);
-            button.textContent = active ? "Sair da tela cheia" : "Tela cheia";
+            button.textContent = active ? "Desmaximizar" : "Tela cheia";
         }
         window.setTimeout(() => {
             if (autoFit) fitGraph(false);
@@ -265,6 +265,24 @@
         });
     }
 
+    function bindCtrlWheelZoom(graph) {
+        if (!graph || graph.dataset.ctrlWheelZoom === "true") return;
+        graph.dataset.ctrlWheelZoom = "true";
+        graph.addEventListener("wheel", (event) => {
+            if (!event.ctrlKey && !event.metaKey) return;
+            event.preventDefault();
+            autoFit = false;
+            const autoButton = content.querySelector("[data-fusion-auto]");
+            if (autoButton) {
+                autoButton.classList.remove("active");
+                autoButton.setAttribute("aria-pressed", "false");
+            }
+            const direction = event.deltaY < 0 ? 1 : -1;
+            applyZoom(currentZoom + direction * 0.08, false);
+            scheduleSave({ zoom: currentZoom });
+        }, { passive: false });
+    }
+
     function enhance() {
         if (!dialog.open) return;
         const { graph, nodes } = graphParts();
@@ -276,6 +294,7 @@
         currentZoom = existing >= 0.65 ? existing : 0.7;
         applyZoom(currentZoom, false);
         graph.classList.add("fusion-v06");
+        bindCtrlWheelZoom(graph);
 
         resizeObserver?.disconnect();
         resizeObserver = new ResizeObserver(() => {

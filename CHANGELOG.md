@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.61.2] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.61.1` (também disponível como branch `backup/mapa-pre-v091-20260801`). Pacote de correções preparado pelo ChatGPT para a área do mapa (v0.9.1) — aplicado via `apply_v091.py`, todos os patches bateram exato.
+
+### Corrigido
+
+- **Erro CSRF ao salvar na estrutura de torre/rack**: o JavaScript colocava `X-CSRFToken` nos headers, mas a mesclagem de `options` sobrescrevia o objeto inteiro quando a requisição também definia `Content-Type`, apagando o token e causando 403 "CSRF token missing". Corrigida a ordem de mesclagem; token também fica disponível via campo oculto no HTML como alternativa ao cookie.
+- **HTTP 500 ao abrir CTOs importadas antigas**: CTO sem splitter/bandeja cadastrado ainda podia existir com `splitter_ratio` vazio, e a API quebrava tentando montar a estrutura com esse valor vazio. Agora essas CTOs são reparadas automaticamente (splitters recriados por capacidade) ao serem abertas.
+- **Terminação óptica direto em SFP/SFP+**: cabo alimentador/distribuição/backbone só pode terminar em DIO; só cabo DROP pode ir direto pra SFP/SFP+, e agora exige escolher PTO+cordão ou conector direto no transceiver. Porta PON de ONU não aparece mais como destino nesse formulário (ela é destino de DROP, não de terminação genérica). Perda óptica aceita vírgula ou ponto decimal.
+- **Alinhamento do assistente KMZ e da tela de fusões**: campos de Rotas e Ligações ficam com proporções/larguras iguais, botão Detectar/Recalcular ligações ganhou linha própria; fusões mais compactas, tela cheia ocupando a janela inteira (com botão "Desmaximizar"), zoom com Ctrl+scroll.
+- **Estrutura de torre/rack usa a largura toda** da janela (antes sobrava espaço vazio à direita); linhas do diagrama passam por trás dos cards, não por cima das portas.
+
+### Adicionado
+
+- **CTO importada cria splitter automaticamente pela capacidade** (8→1:8, 16→1:16, 24→1:16+1:8, 36→1:32+1:4, 48→1:32+1:16, 128→dois 1:64), com portas comerciais e visuais já prontas para o diagrama de fusões.
+
 ## [0.61.1] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.61.0`.

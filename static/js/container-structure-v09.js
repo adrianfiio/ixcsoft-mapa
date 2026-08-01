@@ -14,7 +14,10 @@
 
     function csrfToken() {
         const item = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="));
-        return item ? decodeURIComponent(item.split("=")[1]) : "";
+        if (item) return decodeURIComponent(item.split("=")[1]);
+        return document.querySelector("[name='csrfmiddlewaretoken']")?.value
+            || document.querySelector("meta[name='csrf-token']")?.content
+            || "";
     }
 
     function escapeHtml(value) {
@@ -243,7 +246,19 @@
     function renderDiagram() {
         const nodes = document.getElementById("container-diagram-nodes-v09");
         if (!nodes || !currentData) return;
-        const equipment = currentData.equipment || [];
+        const equipmentPriority = {
+            dio: 10,
+            olt: 20,
+            onu: 30,
+            switch: 40,
+            access_point: 50,
+            ptp: 60,
+            other: 70,
+        };
+        const equipment = [...(currentData.equipment || [])].sort((a, b) => (
+            (equipmentPriority[a.type] || 99) - (equipmentPriority[b.type] || 99)
+            || String(a.name).localeCompare(String(b.name), "pt-BR")
+        ));
         nodes.innerHTML = equipment.length ? equipment.map((item, index) => `
             <article class="container-diagram-node-v09" data-equipment-id="${item.id}" style="--node-order:${index}">
                 <header><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.type_label)}</span></div><small>${(item.ports || []).length} porta(s)</small></header>
@@ -355,9 +370,23 @@
             const y1 = a.top - box.top + scroll.scrollTop + a.height / 2;
             const x2 = b.left - box.left + scroll.scrollLeft + b.width / 2;
             const y2 = b.top - box.top + scroll.scrollTop + b.height / 2;
-            const middle = (x1 + x2) / 2;
+            const sourceCard = source.closest(".container-diagram-node-v09")?.getBoundingClientRect();
+            const destinationCard = destination.closest(".container-diagram-node-v09")?.getBoundingClientRect();
+            const sourceAbove = !sourceCard || !destinationCard || sourceCard.top <= destinationCard.top;
+            const edgeY1 = sourceCard
+                ? (sourceAbove ? sourceCard.bottom : sourceCard.top) - box.top + scroll.scrollTop
+                : y1;
+            const edgeY2 = destinationCard
+                ? (sourceAbove ? destinationCard.top : destinationCard.bottom) - box.top + scroll.scrollTop
+                : y2;
+            const linkIndex = [...(currentData.links || [])].indexOf(link);
+            const middleY = (edgeY1 + edgeY2) / 2 + ((linkIndex % 5) - 2) * 8;
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", `M${x1},${y1} C${middle},${y1} ${middle},${y2} ${x2},${y2}`);
+            path.setAttribute(
+                "d",
+                `M${x1},${y1} V${edgeY1} `
+                + `C${x1},${middleY} ${x2},${middleY} ${x2},${edgeY2} V${y2}`
+            );
             path.setAttribute("class", `container-diagram-link-v09 ${link.link_type || "fiber"}`);
             svg.appendChild(path);
         });
@@ -385,17 +414,35 @@
         setDiagramZoom(Math.min(1, widthRatio, heightRatio));
     }
 
+    function syncDiagramFullscreenButton() {
+        const panelEl = panel("diagram");
+        const button = panelEl?.querySelector("[data-diagram-fullscreen]");
+        const active = document.fullscreenElement === panelEl || panelEl?.classList.contains("is-fullscreen");
+        if (button) {
+            button.textContent = active ? "Desmaximizar" : "Tela cheia";
+            button.setAttribute("aria-pressed", String(Boolean(active)));
+        }
+        window.setTimeout(() => {
+            fitDiagram();
+            drawDiagramLinks();
+        }, 80);
+    }
+
     async function toggleDiagramFullscreen() {
         const panelEl = panel("diagram");
         if (!panelEl) return;
         try {
-            if (document.fullscreenElement === panelEl) await document.exitFullscreen();
-            else if (panelEl.requestFullscreen) await panelEl.requestFullscreen();
-            else panelEl.classList.toggle("is-fullscreen");
+            if (document.fullscreenElement === panelEl) {
+                await document.exitFullscreen();
+            } else if (panelEl.requestFullscreen) {
+                await panelEl.requestFullscreen();
+            } else {
+                panelEl.classList.toggle("is-fullscreen");
+            }
         } catch (_error) {
             panelEl.classList.toggle("is-fullscreen");
         }
-        window.setTimeout(fitDiagram, 100);
+        syncDiagramFullscreenButton();
     }
 
     async function refresh() {
@@ -428,7 +475,7 @@
         currentData = null;
         currentTab = "summary";
     });
-    document.addEventListener("fullscreenchange", () => window.setTimeout(drawDiagramLinks, 80));
+    document.addEventListener("fullscreenchange", syncDiagramFullscreenButton);
     window.addEventListener("resize", () => window.setTimeout(drawDiagramLinks, 80));
 
     resizeObserver = new ResizeObserver(() => {

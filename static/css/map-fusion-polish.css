@@ -283,3 +283,103 @@
         grid-template-columns: 38px minmax(100px, 1fr) 54px 38px repeat(3, minmax(82px, 1fr));
     }
 }
+
+/* v0.9.1 — barra compacta, melhor aproveitamento vertical e zoom Ctrl+scroll */
+#unifilar-dialog > section > header {
+    padding: 10px 14px 8px;
+    gap: 10px;
+}
+#unifilar-title {
+    margin: 0 0 2px;
+    font-size: clamp(.98rem, 1.35vw, 1.18rem);
+    line-height: 1.15;
+}
+#unifilar-subtitle {
+    font-size: .74rem;
+    line-height: 1.25;
+}
+#unifilar-content { padding: 8px 10px 10px; }
+.ceo-instructions {
+    gap: 6px 10px;
+    padding: 8px 10px;
+    font-size: .76rem;
+    line-height: 1.28;
+}
+.ceo-instructions > label {
+    gap: 5px;
+    font-size: .74rem;
+}
+.ceo-instructions select {
+    min-width: 112px;
+    padding: 5px 28px 5px 8px;
+    font-size: .74rem;
+}
+.unifilar-zoom.fusion-toolbar {
+    flex: 1 1 610px;
+    grid-template-columns: 32px minmax(90px, 1fr) 46px 32px auto auto auto auto auto;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 9px;
+}
+.unifilar-zoom.fusion-toolbar button {
+    min-width: 32px;
+    min-height: 30px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-size: .72rem;
+}
+.unifilar-zoom.fusion-toolbar output {
+    min-width: 42px;
+    font-size: .72rem;
+}
+.unifilar-zoom.fusion-toolbar input[type="range"] { height: 5px; }
+.unifilar-zoom.fusion-toolbar input[type="range"]::-webkit-slider-thumb {
+    width: 15px;
+    height: 15px;
+}
+#unifilar-feedback {
+    min-height: 0;
+    padding: 5px 8px;
+    font-size: .72rem;
+    line-height: 1.25;
+}
+.optical-graph.fusion-v06,
+.optical-graph {
+    height: calc(100dvh - 205px);
+    min-height: 380px;
+    padding: 14px;
+}
+#unifilar-dialog.is-fullscreen,
+#unifilar-dialog:fullscreen {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+}
+#unifilar-dialog.is-fullscreen .optical-graph,
+#unifilar-dialog:fullscreen .optical-graph {
+    height: calc(100dvh - 162px);
+    min-height: 0;
+}
+#unifilar-dialog.is-fullscreen .ceo-instructions,
+#unifilar-dialog:fullscreen .ceo-instructions { position: sticky; }
+@media (max-width: 1100px) {
+    .unifilar-zoom.fusion-toolbar {
+        flex-basis: 100%;
+        grid-template-columns: 32px minmax(100px, 1fr) 46px 32px repeat(5, auto);
+    }
+}
+@media (max-width: 620px) {
+    .unifilar-zoom.fusion-toolbar {
+        grid-template-columns: 32px minmax(80px, 1fr) 44px 32px;
+    }
+    .unifilar-zoom.fusion-toolbar button[data-fusion-organize],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-fit],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-auto],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-fullscreen],
+    .unifilar-zoom.fusion-toolbar button[data-fusion-zoom="70"] {
+        grid-column: span 2;
+        display: block;
+    }
+}

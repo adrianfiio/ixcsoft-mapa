@@ -360,3 +360,166 @@
     .kmz-topology-panel .kmz-topology-settings,
     .kmz-priority-settings-v09 { grid-template-columns: 1fr !important; max-width: none !important; }
 }
+
+/* v0.9.1 — alinhamento do KMZ, estrutura em largura total e diagrama vertical */
+#container-dialog.container-dialog {
+    width: calc(100vw - 12px);
+    max-width: none;
+    height: calc(100dvh - 12px);
+    max-height: none;
+    margin: auto;
+    padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+#container-dialog.container-dialog > section {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border-radius: 12px;
+    box-sizing: border-box;
+}
+#container-dialog .container-workspace .topology-heading .unifilar-zoom {
+    display: none !important;
+}
+.container-tab-panels-v09 { width: 100%; }
+
+/* Pontos: Tipo e dado complementar sempre ocupam metades iguais. */
+#kmz-import-dialog .kmz-rule-controls--point {
+    width: 100%;
+    max-width: none !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: end !important;
+}
+#kmz-import-dialog .kmz-rule-controls--point > label,
+#kmz-import-dialog .kmz-rule-controls--point .kmz-rule-data,
+#kmz-import-dialog .kmz-rule-controls--point .kmz-rule-data > label,
+#kmz-import-dialog .kmz-rule-controls--point .kmz-number-field,
+#kmz-import-dialog .kmz-rule-controls--point select,
+#kmz-import-dialog .kmz-rule-controls--point .kmz-number-control {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+}
+
+/* Rotas: checkbox compacto e três controles proporcionais. */
+#kmz-import-dialog .kmz-route-settings-panel .kmz-settings-grid {
+    grid-template-columns: minmax(300px, 1.25fr) minmax(260px, .8fr) minmax(300px, 1fr) !important;
+    align-items: end !important;
+    gap: 14px !important;
+}
+#kmz-import-dialog .kmz-route-settings-panel .kmz-check-field {
+    min-height: 48px;
+    height: 48px;
+    align-self: end;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid #31516b;
+    border-radius: 10px;
+    background: #0a1c2e;
+}
+#kmz-import-dialog .kmz-route-settings-panel .kmz-check-field input {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+}
+#kmz-import-dialog .kmz-route-settings-panel .kmz-number-control,
+#kmz-import-dialog .kmz-route-settings-panel input[type="text"],
+#kmz-import-dialog .kmz-route-settings-panel input:not([type]) {
+    width: 100%;
+    max-width: none;
+}
+
+/* Ligações: os quatro campos principais usam a mesma largura e mesma base. */
+#kmz-import-dialog .kmz-topology-panel .kmz-topology-settings {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    align-items: end !important;
+    gap: 14px !important;
+}
+#kmz-import-dialog .kmz-topology-panel .kmz-topology-settings > label,
+#kmz-import-dialog .kmz-topology-panel .kmz-topology-settings .kmz-number-field,
+#kmz-import-dialog .kmz-topology-panel .kmz-topology-settings select,
+#kmz-import-dialog .kmz-topology-panel .kmz-topology-settings .kmz-number-control {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+}
+.kmz-topology-actions-v091 {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 14px;
+}
+.kmz-topology-actions-v091 #kmz-detect-topology { margin: 0; }
+
+/* Diagrama vertical: equipamentos empilhados e faixas laterais para as linhas. */
+.container-diagram-scroll-v09 {
+    min-height: 0;
+    height: calc(100dvh - 285px);
+}
+.container-diagram-nodes-v09 {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 42px;
+    width: 100%;
+    min-width: 980px;
+    min-height: 100%;
+    padding: 34px 145px;
+}
+.container-diagram-node-v09 {
+    width: min(760px, calc(100% - 80px));
+    max-width: 760px;
+    flex: 0 0 auto;
+}
+.container-diagram-links-v09 { z-index: 1; }
+.container-diagram-link-v09 {
+    stroke-width: 3;
+    opacity: .92;
+}
+[data-container-panel="diagram"].is-fullscreen .container-diagram-scroll-v09,
+[data-container-panel="diagram"]:fullscreen .container-diagram-scroll-v09 {
+    height: calc(100dvh - 112px);
+}
+
+/* Forma física da terminação de cabo DROP. */
+.container-drop-termination-v091 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #31516b;
+    border-radius: 10px;
+    background: #0a1c2e;
+}
+.container-drop-termination-v091[hidden] { display: none !important; }
+.container-drop-termination-v091 p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #9db0c3;
+}
+
+@media (max-width: 1180px) {
+    #kmz-import-dialog .kmz-route-settings-panel .kmz-settings-grid,
+    #kmz-import-dialog .kmz-topology-panel .kmz-topology-settings {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .container-diagram-nodes-v09 { min-width: 760px; padding-inline: 100px; }
+}
+@media (max-width: 760px) {
+    #container-dialog.container-dialog { width: 100vw; height: 100dvh; }
+    #container-dialog.container-dialog > section { border-radius: 0; }
+    #kmz-import-dialog .kmz-rule-controls--point,
+    #kmz-import-dialog .kmz-route-settings-panel .kmz-settings-grid,
+    #kmz-import-dialog .kmz-topology-panel .kmz-topology-settings,
+    .container-drop-termination-v091 {
+        grid-template-columns: 1fr !important;
+    }
+    .container-diagram-nodes-v09 { min-width: 620px; padding-inline: 76px; }
+}

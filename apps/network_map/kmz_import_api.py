@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from apps.core.access import can_edit_company, can_view_company
 from apps.network_map.kmz_import import KMZAnalyzer, METERS_RE, normalize
+from apps.network_map.cto_defaults import ensure_cto_default_splitters
 from apps.network_map.kmz_import_models import (
     CableElementPassage,
     KMZImportBatch,
@@ -598,8 +599,12 @@ def execute_kmz_import(request, project_id):
                         route=route,
                         metadata=metadata,
                     )
+                    splitter_plan = ensure_cto_default_splitters(
+                        obj, int(rule.get("capacity") or 16)
+                    )
                     _track(batch, obj, "cto", point)
                     counts["ctos"] += 1
+                    counts["cto_splitters"] += len(splitter_plan)
                 else:
                     type_map = {
                         "splice_box": NetworkElement.ElementType.SPLICE_BOX,
