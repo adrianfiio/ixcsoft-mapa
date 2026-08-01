@@ -36,9 +36,11 @@
                    href="{% url 'equipment-list' %}">
                     <span class="nav-icon">◇</span> Equipamentos
                 </a>
+                {% if not current_company.is_designer %}
                 <a class="{% if request.resolver_match.url_name == 'company-alerts' %}active{% endif %}" href="{% url 'company-alerts' %}">
                     <span class="nav-icon">!</span> Alertas
                 </a>
+                {% endif %}
                 <a class="{% if request.resolver_match.url_name == 'account-panel' %}active{% endif %}" href="{% url 'account-panel' %}">
                     <span class="nav-icon">⚙</span> Minha administração
                 </a>

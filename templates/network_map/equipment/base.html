@@ -24,13 +24,16 @@
             --border-light: #475569;
             --text: #f8fafc;
             --muted: #94a3b8;
-            --primary: #dc2626;
-            --primary-hover: #b91c1c;
+            --primary: #29b6a6;
+            --primary-hover: #22a99b;
             --success: #16a34a;
             --warning: #d97706;
             --danger: #dc2626;
             --info: #0284c7;
         }
+    </style>
+    {% if current_company.brand_color %}<style>:root{--primary:{{ current_company.brand_color }};--primary-hover:{{ current_company.brand_color }};}</style>{% endif %}
+    <style>
 
         * {
             box-sizing: border-box;
@@ -341,16 +344,20 @@
 <body>
     <header class="topbar">
         <a href="{% url 'dashboard' %}" class="brand">
+            {% if current_company.logo %}
+            <img src="{{ current_company.logo.url }}" alt="{{ current_company.trade_name|default:current_company.name }}">
+            {% else %}
             <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
+            {% endif %}
         </a>
 
         <nav class="topbar-links">
             <a class="button button-secondary" href="{% url 'dashboard' %}">
-                Mapa
+                Visão geral
             </a>
 
-            <a class="button button-secondary" href="{% url 'equipment-list' %}">
-                Equipamentos
+            <a class="button button-secondary" href="{% url 'map' %}">
+                Mapa
             </a>
         </nav>
     </header>

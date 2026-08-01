@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.60.1] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.60.0`.
+
+### Corrigido
+
+- **Editor de dashboard (v0.59.0) renderizava quebrado**: cards estreitos, sobrepostos, com scrollbar. Causa: `.widget-grid` era `display: grid` o tempo todo, inclusive durante a edição — mas o Gridstack.js posiciona os itens com `position: absolute` própria, e ter os dois motores de layout (CSS Grid do navegador e o cálculo do Gridstack) atuando ao mesmo tempo sobre os mesmos elementos quebrava o tamanho/posição de cada card. Agora o `display: grid` só vale fora do modo de edição; durante a edição o Gridstack assume o layout inteiro, sem concorrência.
+- **Tela de Equipamentos** (`/rede/equipamentos/`) tinha um cabeçalho isolado, sem a marca/cor da empresa (usava uma paleta vermelha fixa própria, sem checar `current_company`) e com um bug de link: o botão "Mapa" apontava para a Visão geral em vez do mapa. Agora essa tela também reflete o whitelabel (logo e cor de destaque) da empresa, o botão "Equipamentos" (redundante, já que é a própria página) foi removido, e o nav passa a ser "Visão geral" + "Mapa" (o Mapa agora vai pro lugar certo).
+
+### Alterado
+
+- **"Alertas" sai do menu lateral para empresas do tipo projetista** (sem clientes, então sem alertas de acesso pra acompanhar) — continua visível normalmente para provedores. Volta quando o motor de alertas cobrir monitoramento de equipamentos, que hoje ainda não existe.
+
 ## [0.60.0] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.59.0` (também disponível como branch `backup/mapa-pre-v08-20260801`). Pacote preparado e aplicado pelo ChatGPT (área do mapa/KMZ/estruturas internas) — aplicado via script (`apply_v08.py`, patches exatos com backup automático de cada arquivo tocado), sem reimplementação.

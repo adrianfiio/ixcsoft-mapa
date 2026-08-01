@@ -110,11 +110,20 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .sync-pill.sync-danger { color: var(--danger); background: rgba(243,93,109,.14); }
 /* Grid livre de widgets (arrastar/redimensionar tipo Zabbix/Grafana):
    12 colunas, cada widget ocupa `grid-column`/`grid-row` calculados a
-   partir de x/y/w/h salvos (`apps/core/dashboard_widgets.py`). Mesma
-   malha usada pelo Gridstack.js no modo de edição (`cellHeight: 90`,
-   `column: 12`) — visualização normal não carrega Gridstack nenhum, só
-   CSS Grid estático. */
-.widget-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 90px; gap: 15px; margin-bottom: 22px; }
+   partir de x/y/w/h salvos (`apps/core/dashboard_widgets.py`).
+   IMPORTANTE: o `display: grid` só vale fora do modo de edição.
+   Gridstack.js posiciona os itens com `position: absolute` própria — um
+   pai `display: grid` ao mesmo tempo brigava com essa matemática (dois
+   motores de posicionamento tentando mandar no mesmo elemento) e deixava
+   os cards estreitos, sobrepostos e com scrollbar. Em modo de edição o
+   container vira bloco normal e o Gridstack assume 100% do layout. */
+.widget-grid { margin-bottom: 22px; }
+.page-content:not(.dashboard-edit-mode) .widget-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: 90px;
+    gap: 15px;
+}
 .grid-stack-item-content { height: 100%; min-height: 0; }
 /* Alça de redimensionar do Gridstack (modo de edição) — o pacote já
    inclui a própria CSS funcional; isto só ajusta a cor pro tema escuro. */
@@ -267,9 +276,10 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 
 @media (max-width: 900px) {
     /* Empilha em 1 coluna, ignorando x/y/w/h salvos — mais simples que
-       remapear coordenadas de um grid de 12 colunas pra tela estreita. */
-    .widget-grid { grid-template-columns: 1fr; }
-    .widget-grid > .grid-stack-item { grid-column: 1 / -1 !important; grid-row: auto !important; }
+       remapear coordenadas de um grid de 12 colunas pra tela estreita.
+       Só se aplica fora do modo de edição (ver regra acima). */
+    .page-content:not(.dashboard-edit-mode) .widget-grid { grid-template-columns: 1fr; }
+    .page-content:not(.dashboard-edit-mode) .widget-grid > .grid-stack-item { grid-column: 1 / -1 !important; grid-row: auto !important; }
 }
 @media (max-width: 760px) {
     .app-sidebar { transform: translateX(-100%); transition: transform .2s ease; }
