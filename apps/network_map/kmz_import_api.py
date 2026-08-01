@@ -688,9 +688,15 @@ def execute_kmz_import(request, project_id):
                     }
                 )
                 try:
-                    generated = generate_cable_fibers(cable)
-                    counts["fiber_tubes"] += generated["tube_count"]
-                    counts["fibers"] += generated["fiber_count"]
+                    # O signal pode gerar a estrutura já no FiberCable.objects.create().
+                    # Evita uma segunda tentativa e conta o que realmente foi criado.
+                    if cable.tubes.exists() or cable.fibers.exists():
+                        counts["fiber_tubes"] += cable.tubes.count()
+                        counts["fibers"] += cable.fibers.count()
+                    else:
+                        generated = generate_cable_fibers(cable)
+                        counts["fiber_tubes"] += generated["tube_count"]
+                        counts["fibers"] += generated["fiber_count"]
                 except FiberStructureError as exc:
                     warnings.append(f"{code}: cabo criado, mas a estrutura de fibras falhou: {exc}")
                     counts["cables_without_fibers"] += 1

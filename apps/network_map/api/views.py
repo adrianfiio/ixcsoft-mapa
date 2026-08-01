@@ -897,12 +897,19 @@ def container_equipment(request, element_id):
             return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
         equipment_type = str(request.data.get("equipment_type", "")).strip()
         allowed = (
-            {ContainerEquipment.EquipmentType.OLT, ContainerEquipment.EquipmentType.DIO}
+            {
+                ContainerEquipment.EquipmentType.OLT,
+                ContainerEquipment.EquipmentType.DIO,
+                ContainerEquipment.EquipmentType.SWITCH,
+                ContainerEquipment.EquipmentType.OTHER,
+            }
             if container.element_type == NetworkElement.ElementType.RACK
             else {
                 ContainerEquipment.EquipmentType.SWITCH,
                 ContainerEquipment.EquipmentType.ACCESS_POINT,
                 ContainerEquipment.EquipmentType.PTP,
+                ContainerEquipment.EquipmentType.DIO,
+                ContainerEquipment.EquipmentType.OTHER,
             }
         )
         if equipment_type not in allowed:
@@ -938,6 +945,8 @@ def container_equipment(request, element_id):
             except (InvalidOperation, ValueError):
                 return JsonResponse({"detail": "Potência de saída inválida."}, status=400)
         metadata = {}
+        if equipment_type == ContainerEquipment.EquipmentType.OTHER:
+            metadata["equipment_subtype"] = str(request.data.get("equipment_subtype") or "onu").strip() or "onu"
         snmp_community = str(request.data.get("snmp_community", "")).strip()
         if snmp_community:
             metadata["snmp_community_encrypted"] = SecretCipher().encrypt(snmp_community)
@@ -1244,7 +1253,12 @@ def _container_equipment_payload(item):
         "id": item.id,
         "name": item.name,
         "type": item.equipment_type,
-        "type_label": item.get_equipment_type_display(),
+        "type_label": (
+            "ONU / ONT"
+            if item.equipment_type == ContainerEquipment.EquipmentType.OTHER
+            and item.metadata.get("equipment_subtype") == "onu"
+            else item.get_equipment_type_display()
+        ),
         "management_ip": item.management_ip,
         "provisioning_mode": item.provisioning_mode,
         "tx_power_dbm": float(item.tx_power_dbm) if item.tx_power_dbm is not None else None,
@@ -1391,6 +1405,7 @@ def container_equipment_ports(request, element_id, equipment_id):
         ContainerEquipmentPort.PortType.SFP_1G,
         ContainerEquipmentPort.PortType.SFP_PLUS_10G,
         ContainerEquipmentPort.PortType.WIRELESS,
+        ContainerEquipmentPort.PortType.PON,
     }
     port_type = str(request.data.get("port_type", "")).strip()
     try:
@@ -1481,9 +1496,16 @@ def container_port_links(request, element_id):
     if source is None:
         # Fusão direta: um cabo externo (que chega no rack/torre) ligado numa
         # porta do DIO, sem uma porta de OLT do outro lado.
-        if destination.port_type != ContainerEquipmentPort.PortType.DIO:
+        optical_destinations = {
+            ContainerEquipmentPort.PortType.DIO,
+            ContainerEquipmentPort.PortType.PON,
+            ContainerEquipmentPort.PortType.SFP_1G,
+            ContainerEquipmentPort.PortType.SFP_PLUS_10G,
+        }
+        if destination.port_type not in optical_destinations:
             return JsonResponse(
-                {"detail": "A fusão direta de cabo só pode ligar numa porta do DIO."}, status=400
+                {"detail": "A fibra pode terminar em DIO, PON de ONU ou porta SFP/SFP+."},
+                status=400,
             )
         link_type = ContainerPortLink.LinkType.FIBER
     elif container.element_type == NetworkElement.ElementType.RACK:

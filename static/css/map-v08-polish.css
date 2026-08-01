@@ -1,0 +1,140 @@
+/* v0.8 — alinhamento do assistente KMZ e estrutura interna de rack/torre */
+.kmz-rule-controls--cable {
+    grid-template-columns: repeat(4, minmax(135px, 1fr));
+    align-items: end;
+}
+.kmz-rule-controls--point {
+    grid-template-columns: minmax(180px, .75fr) minmax(230px, 1.25fr);
+    align-items: end;
+    max-width: 720px;
+}
+.kmz-rule-controls--point > label,
+.kmz-rule-controls--point .kmz-rule-data,
+.kmz-rule-controls--point .kmz-number-field { align-self: end; }
+.kmz-rule-controls--point .kmz-number-control { width: min(100%, 360px); }
+.kmz-route-settings-panel,
+.kmz-topology-panel {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #27445c;
+    border-radius: 14px;
+    background: #0d2136;
+}
+.kmz-route-settings-panel .kmz-settings-grid {
+    grid-template-columns: minmax(240px, 1.35fr) minmax(260px, 1fr) minmax(250px, 1fr);
+    align-items: end;
+    margin: 0;
+}
+.kmz-route-settings-panel .kmz-code-example { margin-bottom: 0; }
+.kmz-topology-panel .kmz-topology-settings {
+    grid-template-columns: repeat(4, minmax(190px, 1fr));
+    align-items: end;
+    margin: 0 0 14px;
+}
+.kmz-topology-panel .kmz-warning,
+.kmz-topology-panel .kmz-success { margin-bottom: 0; }
+.kmz-topology-panel .kmz-bulk-actions { margin-top: 14px; }
+@container (max-width: 980px) {
+    .kmz-rule-controls--cable { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+    .kmz-route-settings-panel .kmz-settings-grid,
+    .kmz-topology-panel .kmz-topology-settings { grid-template-columns: repeat(2, minmax(190px, 1fr)); }
+}
+@container (max-width: 620px) {
+    .kmz-rule-controls--cable,
+    .kmz-rule-controls--point,
+    .kmz-route-settings-panel .kmz-settings-grid,
+    .kmz-topology-panel .kmz-topology-settings { grid-template-columns: 1fr; max-width: none; }
+}
+
+/* Estrutura interna */
+.container-dialog > section { width: min(96vw, 1700px); max-height: 94dvh; overflow: auto; }
+.container-workspace { align-items: start; }
+.container-topology-scroll {
+    position: relative;
+    min-height: 240px;
+    max-height: 52vh;
+    overflow: auto;
+    border-radius: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #2d4f6c #081827;
+}
+.container-topology {
+    position: relative;
+    z-index: 2;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+    align-items: start;
+    transform-origin: top left;
+}
+.container-topology > article {
+    min-width: 0;
+    margin: 0 !important;
+    border: 1px solid #27445c;
+    border-radius: 14px;
+    background: #0d2136;
+}
+.container-link-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    overflow: visible;
+}
+.container-link-line {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    opacity: .9;
+}
+.container-link-line.fiber { stroke: #22d3ee; }
+.container-link-line.copper { stroke: #f59e0b; }
+.container-link-line.wireless { stroke: #a78bfa; stroke-dasharray: 7 6; }
+.container-extension-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(300px, 1fr));
+    gap: 16px;
+    margin: 18px 0;
+}
+.container-extension-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #27445c;
+    border-radius: 14px;
+    background: #0d2136;
+}
+.container-extension-card h3 { margin-top: 0; }
+.container-extension-card form { display: grid; gap: 12px; }
+.container-extension-card .dialog-grid { margin: 0; }
+.device-type-preview-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #27445c;
+}
+.device-type-preview-head div { display: grid; gap: 4px; }
+.device-type-preview-head span { color: #91a4b9; }
+.device-type-count { flex: 0 0 auto; }
+.device-type-port-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+.device-type-port-list > span {
+    display: grid;
+    gap: 3px;
+    padding: 9px 10px;
+    border: 1px solid #31516b;
+    border-radius: 9px;
+    background: #09192a;
+}
+.device-type-port-list small { color: #91a4b9; overflow-wrap: anywhere; }
+#container-extension-message { min-height: 24px; color: #8ff4e9; }
+#container-extension-message.error { color: #fca5a5; }
+@media (max-width: 900px) {
+    .container-extension-grid { grid-template-columns: 1fr; }
+    .container-topology { grid-template-columns: 1fr; }
+}

@@ -549,19 +549,20 @@
             : type === "dio" ? "Ex.: DIO 36 portas"
             : type === "switch" ? "Ex.: Switch principal da torre"
             : type === "access_point" ? "Ex.: AP setor norte"
+            : type === "other" ? "Ex.: ONU interna da torre"
             : "Ex.: Enlace PTP prefeitura";
     }
     async function manageContainer(id) {
-        loadStructure().catch(() => {});
         const data = await api(`/api/map/elements/${id}/equipment/`);
         state.containerId = id;
+        containerDialog.dataset.elementId = String(id);
         document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
         document.getElementById("container-dialog-subtitle").textContent = data.container.type === "rack"
             ? "OLT e DIO instalados neste rack"
             : "Switches, APs e rádios PTP instalados nesta torre";
         const types = data.container.type === "rack"
-            ? [["olt", "OLT"], ["dio", "DIO"]]
-            : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"]];
+            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["other", "ONU / ONT / Outro"]]
+            : [["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["other", "ONU / ONT / Outro"]];
         containerEquipmentForm.reset();
         state.editingContainerEquipmentId = null;
         containerEquipmentForm.elements.equipment_type.disabled = false;
@@ -585,7 +586,7 @@
                     : '<p class="field-help">Nenhuma porta cadastrada.</p>';
                 const configure = item.type === "olt"
                     ? `<button class="secondary-button" type="button" data-add-equipment-card="${item.id}">+ Placa</button>`
-                    : ["switch", "access_point", "ptp"].includes(item.type)
+                    : ["switch", "access_point", "ptp", "other"].includes(item.type)
                         ? `<button class="secondary-button" type="button" data-add-equipment-ports="${item.id}">+ Portas</button>`
                         : "";
                 return `<article><div class="equipment-head"><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)} · ${escapeHtml(detail)}${item.management_ip ? ` · ${escapeHtml(item.management_ip)}` : ""}</small></div><div class="equipment-head-actions"><button class="secondary-button" type="button" data-edit-container-equipment="${item.id}">Editar</button><button class="danger" type="button" data-delete-container-equipment="${item.id}">Excluir</button></div></div>${cards}${ports}<div class="equipment-actions">${configure}</div></article>`;
@@ -2241,5 +2242,5 @@
     // Usado pelo assistente de importação KMZ para desenhar a prévia
     // temporária no Leaflet sem gravar nada, e para recarregar a estrutura
     // depois de uma importação definitiva.
-    window.networkMap = { map, loadStructure, showUnifilar };
+    window.networkMap = { map, loadStructure, showUnifilar, manageContainer, notify };
 })();

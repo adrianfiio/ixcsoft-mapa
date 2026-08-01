@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{% static 'css/map-editor.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/kmz-import-wizard.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-fusion-polish.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-v08-polish.css' %}?v={{ app_version }}">
 </head>
 <body data-can-edit="{{ can_edit_map|yesno:'true,false' }}">
     {{ google_maps_config|json_script:"google-maps-config" }}
@@ -288,6 +289,44 @@
                 </form>
                 <div id="container-link-list" class="container-equipment-list"></div>
             </details>
+            <section class="container-extension-grid" aria-label="Importação e terminações internas">
+                <article class="container-extension-card">
+                    <h3>Importar YAML de equipamento</h3>
+                    <p class="field-help">Aceita o subconjunto de Device Type YAML do NetBox: fabricante, modelo e interfaces físicas.</p>
+                    <form id="container-device-type-form" enctype="multipart/form-data">
+                        <label>Arquivo YAML<input name="file" type="file" accept=".yaml,.yml,application/yaml,text/yaml" required></label>
+                        <div class="dialog-grid">
+                            <label>Tipo no mapa<select name="equipment_type">
+                                <option value="auto">Detectar automaticamente</option>
+                                <option value="switch">Switch</option>
+                                <option value="access_point">Access point</option>
+                                <option value="ptp">Rádio PTP</option>
+                                <option value="dio">DIO</option>
+                                <option value="other">ONU / ONT / Outro</option>
+                            </select></label>
+                            <label>Nome opcional<input name="name" placeholder="Usar o modelo do YAML"></label>
+                        </div>
+                        <label>IP de gerência opcional<input name="management_ip" placeholder="192.0.2.10"></label>
+                        <div class="equipment-actions">
+                            <button class="secondary-button" type="button" data-device-type-preview>Pré-visualizar YAML</button>
+                            <button class="primary-button" type="submit">Importar equipamento</button>
+                        </div>
+                    </form>
+                    <div id="container-device-type-preview" hidden></div>
+                </article>
+                <article class="container-extension-card">
+                    <h3>Terminar fibra no equipamento</h3>
+                    <p class="field-help">Use para fundir/terminar uma fibra que chega ao rack ou torre em um DIO, SFP ou porta PON de uma ONU.</p>
+                    <form id="container-fiber-termination-form">
+                        <label>Cabo que chega à estrutura<select name="cable_id" required></select></label>
+                        <label>Fibra livre<select name="cable_fiber_id" required></select></label>
+                        <label>Porta óptica de destino<select name="destination_port_id" required></select></label>
+                        <label>Perda estimada (dB)<input name="loss_db" type="number" min="0" step="0.01" value="0.10"></label>
+                        <footer><button class="primary-button" type="submit">Criar terminação óptica</button></footer>
+                    </form>
+                </article>
+            </section>
+            <p id="container-extension-message" role="status"></p>
             <form id="container-equipment-form">
                 <h3>Adicionar equipamento</h3>
                 <div class="dialog-grid">
@@ -426,6 +465,7 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-fusion-polish.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/container-device-type.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>

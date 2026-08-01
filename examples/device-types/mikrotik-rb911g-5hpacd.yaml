@@ -1,0 +1,18 @@
+manufacturer: MikroTik
+model: RB911G-5HPacD
+slug: mikrotik-rb911g-5hpacd
+u_height: 0
+is_full_depth: false
+comments: >-
+  Exemplo compatível com o importador do IXCSoft MAPA. Confirme sempre o
+  modelo exato do RouterBOARD, pois variantes RB911 podem ter interfaces
+  diferentes.
+interfaces:
+  - name: ether1
+    type: 1000base-t
+    enabled: true
+    description: Ethernet/PoE
+  - name: wlan1
+    type: ieee802.11ac
+    enabled: true
+    description: Rádio 5 GHz integrado

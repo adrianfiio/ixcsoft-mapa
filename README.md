@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.59.0 — Dashboard redimensionável: arrastar e redimensionar widgets livremente (tipo Zabbix/Grafana)**
+**v0.60.0 — Estruturas internas de torre/rack (ONU, switch, YAML de equipamento) e correção definitiva da geração de fibras**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

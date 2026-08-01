@@ -431,7 +431,7 @@
                 </header>
                 <div class="kmz-card-metrics"><span><strong>${formatMeters(group.total_length_m)} m</strong> de cabo</span><span class="kmz-clamp-1" title="${escapeHtml(group.folders.join(" · ") || "Sem pasta")}">${escapeHtml(group.folders.join(" · ") || "Sem pasta")}</span></div>
                 <div class="kmz-card-samples kmz-clamp-2" title="${escapeHtml(group.samples.join(", "))}">${escapeHtml(group.samples.join(", "))}</div>
-                <div class="kmz-rule-controls">
+                <div class="kmz-rule-controls kmz-rule-controls--cable">
                     <label>Ação<select data-line-group-action="${escapeHtml(group.key)}">${optionList(LINE_ACTIONS, rule.action)}</select></label>
                     ${lineFields(rule, group.key, "group")}
                 </div>
@@ -502,7 +502,7 @@
                     <span class="kmz-count-pill">${group.count} ponto${group.count === 1 ? "" : "s"}</span>
                 </header>
                 <div class="kmz-card-samples">${escapeHtml(group.samples.join(", "))}</div>
-                <div class="kmz-rule-controls">
+                <div class="kmz-rule-controls kmz-rule-controls--point">
                     <label>Tipo<select data-point-group-type="${escapeHtml(group.key)}">${optionList(POINT_TYPES, rule.type)}</select></label>
                     <div class="kmz-rule-data">${pointExtra(rule, group.key, "group")}</div>
                 </div>
@@ -527,12 +527,12 @@
                 <button type="button" class="secondary-button" id="kmz-routes-select-with-lines">Marcar somente rotas com linhas</button>
             </div>
             <div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Rota</th><th>Pontos</th><th>Linhas</th><th>Composição</th><th>Criar</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Nenhuma pasta ROTA detectada.</td></tr>'}</tbody></table></div>
-            <div class="kmz-settings-grid">
+            <section class="kmz-route-settings-panel"><div class="kmz-settings-grid">
                 <label>Prefixo do projeto <input id="kmz-project-prefix" maxlength="24" value="${escapeHtml(naming.project_prefix)}" placeholder="Ex.: JDS"></label>
                 <label class="kmz-check-field"><input id="kmz-preserve-names" type="checkbox" ${naming.preserve_source_names ? "checked" : ""}><span>Manter nome original dos equipamentos</span></label>
                 ${numberControl({ label: "Distância máxima da RT ao cabo", attributes: 'id="kmz-reserve-distance"', value: state.decisions.reserve_max_distance_m, min: 1, max: 500, step: 1, suffix: "m" })}
             </div>
-            <div class="kmz-code-example"><strong>Padrão:</strong> CAB-JDS-ROTA-05-001 · DROP-JDS-ROTA-05-001 · CTO-JDS-ROTA-05-001 · CEO/CDO-JDS-ROTA-05-001. O nome e a pasta originais ficam no lote.</div>`;
+            <div class="kmz-code-example"><strong>Padrão:</strong> CAB-JDS-ROTA-05-001 · DROP-JDS-ROTA-05-001 · CTO-JDS-ROTA-05-001 · CEO/CDO-JDS-ROTA-05-001. O nome e a pasta originais ficam no lote.</div></section>`;
     }
 
     async function detectTopology() {
@@ -568,7 +568,7 @@
         }).join("");
         return `<h3>Ligações e cortes automáticos</h3>
             <p>O sistema projeta cada CTO/CEO/CDO sobre o cabo próximo. Você decide se conecta, corta, apenas passa ou cria uma derivação. Cortes e derivações geram novos segmentos com origem/destino.</p>
-            <div class="kmz-settings-grid kmz-topology-settings">
+            <section class="kmz-topology-panel"><div class="kmz-settings-grid kmz-topology-settings">
                 ${numberControl({ label: "Proximidade máxima", attributes: 'id="kmz-topology-distance"', value: topology.proximity_m, min: 1, max: 100, step: 1, suffix: "m" })}
                 ${numberControl({ label: "Tolerância de ponta", attributes: 'id="kmz-endpoint-distance"', value: topology.endpoint_tolerance_m, min: 1, max: 100, step: 1, suffix: "m" })}
                 <label>CTO no meio <select id="kmz-default-cto">${optionList(JUNCTION_ACTIONS, defaults.cto)}</select></label>
@@ -582,7 +582,7 @@
                 <label>CEO/CDO no meio <select id="kmz-bulk-splice">${optionList(JUNCTION_ACTIONS, defaults.splice_box)}</select></label>
                 <button type="button" class="secondary-button" id="kmz-apply-all-junctions">Aplicar a todos</button>
             </div>` : ""}
-            ${state.topologyCalculated ? (rows ? `<div class="kmz-table-wrap kmz-junction-table"><table class="kmz-table"><thead><tr><th>Cabo original</th><th>Equipamento</th><th>Distância</th><th>Posição</th><th>Ação</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="kmz-success">Nenhuma relação por proximidade foi encontrada; a topologia pode seguir sem cortes.</div>') : '<div class="kmz-warning">Calcule as ligações para revisar os cortes.</div>'}`;
+            ${state.topologyCalculated ? (rows ? `<div class="kmz-table-wrap kmz-junction-table"><table class="kmz-table"><thead><tr><th>Cabo original</th><th>Equipamento</th><th>Distância</th><th>Posição</th><th>Ação</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="kmz-success">Nenhuma relação por proximidade foi encontrada; a topologia pode seguir sem cortes.</div>') : '<div class="kmz-warning">Calcule as ligações para revisar os cortes.</div>'}</section>`;
     }
 
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.60.0] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.59.0` (também disponível como branch `backup/mapa-pre-v08-20260801`). Pacote preparado e aplicado pelo ChatGPT (área do mapa/KMZ/estruturas internas) — aplicado via script (`apply_v08.py`, patches exatos com backup automático de cada arquivo tocado), sem reimplementação.
+
+### Corrigido
+
+- **Erro "O modelo do cabo não possui padrão de cores" ainda podia bloquear a importação.** A causa real: um gerador de fibras antigo (`apps/optical/services/fiber_generator.py`), disparado por um signal ao criar o `FiberCable`, interrompia a criação ANTES do importador chegar ao próprio fallback de cores (já corrigido na v0.56.0). Esse gerador antigo agora é um adaptador fino do serviço seguro (`apps.network_map.services.generate_cable_fibers`) — mesmo fallback de sempre (padrão do modelo → paleta `FiberColor` → paleta técnica automática). O importador também passa a checar se o signal já gerou a estrutura antes de tentar gerar de novo, evitando duplicidade.
+
+### Adicionado
+
+- **Torre e rack aceitam mais tipos de equipamento**: torre agora aceita Switch, Access point, Rádio PTP, DIO e ONU/ONT/Outro; rack aceita OLT, DIO, Switch e ONU/ONT/Outro. Sem migration — ONU é um `ContainerEquipment` do tipo `other` com `metadata.equipment_subtype = "onu"`, exibido como "ONU / ONT" na interface.
+- **Importação de Device Type YAML** (subconjunto do formato usado pela biblioteca de tipos de dispositivo do NetBox): tela da torre/rack ganha "Importar YAML de equipamento" — escolhe o arquivo, pré-visualiza fabricante/modelo/interfaces, escolhe o tipo no mapa e importa, criando as portas automaticamente (RJ45 100M/1G, SFP, SFP+, wireless, PON). Exemplo incluído: `examples/device-types/mikrotik-rb911g-5hpacd.yaml`.
+- **Terminação óptica ampliada**: uma fibra já podia ser fundida numa porta de DIO; agora também termina em porta PON (de ONU), SFP e SFP+ — continua não permitindo terminar direto numa porta RJ45 (elétrica), corretamente.
+- Abertura do painel "Gerenciar estrutura" (torre/rack) não recarrega mais a estrutura inteira do mapa ao abrir — mesma lógica já aplicada às Fusões na v0.56.0, evitando concorrência com o popup do Leaflet.
+
 ## [0.59.0] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.58.1`.
