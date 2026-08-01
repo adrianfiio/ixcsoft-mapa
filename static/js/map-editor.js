@@ -2201,6 +2201,19 @@
             checkbox.dispatchEvent(new Event("change"));
         });
     });
+    // Ícone de olho da trilha recolhida — espelha a camada "Geral"
+    // (mesma técnica dos botões [data-layer-toggle] acima).
+    const collapsedEyeToggle = document.getElementById("collapsed-eye-toggle");
+    const structureCheckbox = document.getElementById("layer-structure");
+    if (collapsedEyeToggle && structureCheckbox) {
+        const syncCollapsedEye = () => collapsedEyeToggle.classList.toggle("is-hidden", !structureCheckbox.checked);
+        syncCollapsedEye();
+        structureCheckbox.addEventListener("change", syncCollapsedEye);
+        collapsedEyeToggle.addEventListener("click", () => {
+            structureCheckbox.checked = !structureCheckbox.checked;
+            structureCheckbox.dispatchEvent(new Event("change"));
+        });
+    }
     document.getElementById("light-source-select").onchange = (event) => {
         state.lightSourceId = event.target.value || null;
         loadStructure().catch((error) => notify(error.message, true));

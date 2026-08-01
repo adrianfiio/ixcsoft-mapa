@@ -2,8 +2,8 @@
 .kmz-import-dialog {
     position: fixed;
     inset: 0;
-    width: min(96vw, 1480px);
-    max-width: 1480px;
+    width: min(96vw, 1680px);
+    max-width: 1680px;
     height: min(94dvh, 920px);
     max-height: 94dvh;
     margin: auto;
@@ -22,7 +22,7 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 18px;
-    padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 14px;
+    padding: clamp(16px, 1.6vw, 24px) clamp(14px, 1.6vw, 22px) 14px;
     border-bottom: 1px solid #21384d;
 }
 .kmz-import-dialog h2, .kmz-import-dialog h3 { margin: 0 0 8px; color: #f8fafc; }
@@ -32,7 +32,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0 clamp(12px, 1.8vw, 22px) clamp(12px, 1.8vw, 20px);
+    padding: 0 clamp(10px, 1.2vw, 18px) clamp(10px, 1.2vw, 16px);
     overflow: hidden;
 }
 .kmz-steps {
@@ -68,6 +68,35 @@
     overflow: auto;
     padding: 16px 2px 12px;
     scrollbar-gutter: stable;
+}
+/* Scrollbar fina e discreta — modal, tabelas e listas internas */
+#kmz-import-content,
+.kmz-table-wrap,
+.kmz-subtable,
+.kmz-junction-table,
+#kmz-import-status {
+    scrollbar-width: thin;
+    scrollbar-color: #2d4f6c #0b1b2d;
+}
+#kmz-import-content::-webkit-scrollbar,
+.kmz-table-wrap::-webkit-scrollbar,
+.kmz-subtable::-webkit-scrollbar,
+#kmz-import-status::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+#kmz-import-content::-webkit-scrollbar-track,
+.kmz-table-wrap::-webkit-scrollbar-track,
+.kmz-subtable::-webkit-scrollbar-track,
+#kmz-import-status::-webkit-scrollbar-track {
+    background: #0b1b2d;
+}
+#kmz-import-content::-webkit-scrollbar-thumb,
+.kmz-table-wrap::-webkit-scrollbar-thumb,
+.kmz-subtable::-webkit-scrollbar-thumb,
+#kmz-import-status::-webkit-scrollbar-thumb {
+    background: #2d4f6c;
+    border-radius: 999px;
 }
 .kmz-actions {
     position: sticky;
@@ -117,8 +146,9 @@
 .kmz-section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 14px; }
 .kmz-section-heading > div { min-width: min(100%, 440px); flex: 1; }
 .kmz-section-heading p { margin-bottom: 0; color: #aebed0; }
-.kmz-rule-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 14px; align-items: start; }
-.kmz-rule-card { min-width: 0; display: grid; gap: 14px; padding: 16px; border: 1px solid #27445c; border-radius: 14px; background: #0d2136; }
+.kmz-rule-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 14px; align-items: stretch; }
+.kmz-rule-card { min-width: 0; height: 100%; display: grid; align-content: start; gap: 14px; padding: 16px; border: 1px solid #27445c; border-radius: 14px; background: #0d2136; }
+.kmz-rule-card .kmz-details { margin-top: auto; }
 .kmz-rule-card.kmz-review { border-color: #9a6a09; background: linear-gradient(180deg, rgba(245,158,11,.08), #0d2136 44%); }
 .kmz-rule-card-header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
 .kmz-rule-card-header > div { min-width: 0; }
@@ -232,16 +262,18 @@
 .kmz-rule-list {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 610px), 1fr));
 }
-.kmz-rule-card { align-content: start; }
+/* Grid de 4 colunas (Ação | Tipo | Fibras/Metragem | Modelo) — mesma
+   estrutura em todo card, com placeholders (.kmz-field-empty) quando a
+   ação não usa aquele campo, pra manter a linha de controles alinhada
+   entre cards de ações diferentes. */
 .kmz-rule-controls {
-    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: end;
 }
-.kmz-rule-data,
-.kmz-rule-data > .kmz-inline-fields { display: contents; }
 .kmz-rule-controls > label,
-.kmz-rule-data label { min-width: 0; }
+.kmz-rule-controls > .kmz-field-empty { min-width: 0; }
 .kmz-rule-controls select { text-overflow: ellipsis; }
+.kmz-field-empty { display: flex; align-items: center; align-self: end; min-height: 40px; padding: 0 4px; color: #6b7f93; font-size: .82rem; }
 
 .kmz-number-field { display: grid; gap: 6px; min-width: 0; color: #b7c5d5; }
 .kmz-number-field > span:first-child { font-size: .82rem; font-weight: 700; color: #c9d7e5; }
@@ -337,3 +369,50 @@
     padding: 8px 12px;
     white-space: nowrap;
 }
+
+/* v0.7 — clamp de textos longos, ações em lote e controles modernos */
+.kmz-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.kmz-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.kmz-bulk-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 14px;
+}
+.kmz-bulk-actions .secondary-button { width: auto; min-height: 36px; margin: 0; padding: 8px 12px; white-space: nowrap; }
+.kmz-bulk-actions strong { color: #c9d7e5; font-size: .84rem; }
+.kmz-junction-bulk { padding: 10px 12px; border: 1px solid #27445c; border-radius: 10px; background: #0d2136; }
+.kmz-junction-bulk label { display: flex; align-items: center; gap: 8px; color: #b7c5d5; font-size: .86rem; }
+.kmz-junction-bulk select { min-width: 200px; }
+
+/* Checkbox moderno (arredondado, com transição no estado marcado) —
+   usado nas rotas em lote (etapa Rotas) e reaproveitável em outros
+   lugares que hoje só têm o checkbox nativo. */
+.kmz-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    display: inline-grid;
+    place-content: center;
+    border: 1px solid var(--kmz-field-border);
+    border-radius: 6px;
+    background: var(--kmz-field-bg);
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+.kmz-checkbox::after {
+    content: "";
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid #05201e;
+    border-bottom: 2px solid #05201e;
+    transform: rotate(-45deg) scale(0);
+    transition: transform .15s ease;
+}
+.kmz-checkbox:checked { background: var(--kmz-focus); border-color: var(--kmz-focus); }
+.kmz-checkbox:checked::after { transform: rotate(-45deg) scale(1); }
+.kmz-checkbox:focus-visible { outline: 2px solid var(--kmz-focus); outline-offset: 2px; }

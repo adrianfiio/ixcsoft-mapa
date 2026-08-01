@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.58.0] - 2026-07-31
+
+Backup/ponto de rollback desta rodada: tag `v0.57.0` (também disponível como branch `backup/mapa-pre-v07-20260731`).
+
+Handoff v0.7 do ChatGPT (`IMPORTAR KMZ CHATGPT/IXCSoft_MAPA_v0.7_Handoff.md`) — desta vez só especificação, sem código pronto, então esta rodada foi implementada aqui a partir da descrição, comparando com o que já existia (vários itens já tinham sido resolvidos nas v0.56.0/v0.57.0 e não precisaram de trabalho novo: fallback de cor de fibra, histórico em badges, primeiro clique em Fusões, zoom/organizar/ajustar, reparo de fibras).
+
+### Corrigido
+
+- **Prévia do KMZ podia ficar "grudada" no mapa**: fechar o assistente pelo X, ou trocar o projeto selecionado enquanto uma prévia estava desenhada, não limpava a camada temporária (`state.previewLayer`, `kmz-import-wizard.js`) — agora os dois casos chamam a limpeza, além dos pontos que já existiam (importar com sucesso, reiniciar análise).
+
+### Adicionado
+
+- **Importador KMZ mais largo e com menos espaço vazio**: modal até `min(96vw, 1680px)` (era 1480px), gutters laterais reduzidos.
+- **Scrollbar fina e discreta** no conteúdo do assistente, tabelas e listas de exceções — antes era a barra padrão do navegador.
+- **Etapa Cabos**: cards com grid de 4 colunas (Ação | Tipo | Fibras/Metragem | Modelo), mesma altura entre cards de ações diferentes, nomes/pastas longos com clamp de 1-2 linhas (tooltip com o texto completo).
+- **Etapa Rotas**: botões "Marcar todas", "Desmarcar todas" e "Marcar somente rotas com linhas"; checkbox trocado por um toggle moderno arredondado.
+- **Etapa Ligações**: seção "Aplicar para todos" com 2 selects (CTO no meio / CEO-CDO no meio) + botão — aplica a regra a todas as ligações já detectadas de uma vez, sem precisar editar uma por uma (os selects de padrão já existentes continuam só valendo para novas detecções).
+- **Sidebar do mapa mais compacta**: menos espaçamento vertical entre seções, scrollbar fina.
+- **Trilha lateral recolhida completa**: antes só aparecia com a sidebar em modo de edição (e mesmo assim, sem botão de voltar); agora sempre mostra botão "← Voltar para visão geral" e um ícone de olho (camada "Geral") — as ferramentas de desenho continuam só em modo de edição.
+- **Ícone de olho nas camadas**: os checkboxes de camada (CTO, CEO, cabos, clientes...) na sidebar agora mostram ⊙ (visível) ou ⊘ (oculto) em vez do checkbox nativo — mesmo comportamento por baixo, só a aparência mudou.
+
 ## [0.57.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.56.0`.

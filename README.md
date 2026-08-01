@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.57.0 — Menu lateral retrátil, dashboard do projetista em 2 colunas e visão da plataforma em tela cheia**
+**v0.58.0 — Importador KMZ mais largo e alinhado, ações em lote, sidebar do mapa compacta com olho de visibilidade**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

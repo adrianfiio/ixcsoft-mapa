@@ -377,24 +377,32 @@
 
     function lineFields(rule, key, scope) {
         const prefix = scope === "item" ? "data-line-item" : "data-line-group";
-        if (rule.action === "cable") {
-            return `<div class="kmz-inline-fields">
-                <label>Tipo<select ${prefix}-cable-type="${escapeHtml(key)}">${optionList(CABLE_TYPES, rule.cable_type)}</select></label>
+        const cableFields = () => `<label>Tipo<select ${prefix}-cable-type="${escapeHtml(key)}">${optionList(CABLE_TYPES, rule.cable_type)}</select></label>
                 <label>Fibras<select ${prefix}-fibers="${escapeHtml(key)}"><option value="">Definir</option>${state.analysis.supported_fiber_counts.map((count) => `<option value="${count}" ${String(rule.fiber_count) === String(count) ? "selected" : ""}>${count} fibra${count === 1 ? "" : "s"}</option>`).join("")}</select></label>
-                <label>Modelo<select ${prefix}-model="${escapeHtml(key)}">${cableModelOptions(rule)}</select></label>
-            </div>`;
+                <label>Modelo<select ${prefix}-model="${escapeHtml(key)}">${cableModelOptions(rule)}</select></label>`;
+        const reserveField = () => numberControl({
+            label: "Metragem da reserva",
+            attributes: `${prefix}-length="${escapeHtml(key)}"`,
+            value: rule.length_m || 20,
+            min: 0.1,
+            step: 0.1,
+            suffix: "m",
+        });
+        // Nas exceções individuais (tabela), os campos ficam agrupados numa
+        // célula só. No card do grupo ("group"), retornam soltos — viram
+        // colunas do grid de 4 colunas de `.kmz-rule-controls`, com
+        // placeholders pra manter a mesma altura entre cards de ações
+        // diferentes (ver B2 no handoff v0.7).
+        if (scope === "item") {
+            if (rule.action === "cable") return `<div class="kmz-inline-fields">${cableFields()}</div>`;
+            if (rule.action === "reserve_line") return reserveField();
+            return '<span class="kmz-muted">Sem dados adicionais</span>';
         }
+        if (rule.action === "cable") return cableFields();
         if (rule.action === "reserve_line") {
-            return numberControl({
-                label: "Metragem da reserva",
-                attributes: `${prefix}-length="${escapeHtml(key)}"`,
-                value: rule.length_m || 20,
-                min: 0.1,
-                step: 0.1,
-                suffix: "m",
-            });
+            return `<span class="kmz-field-empty" aria-hidden="true"></span>${reserveField()}<span class="kmz-field-empty" aria-hidden="true"></span>`;
         }
-        return '<span class="kmz-muted">Sem dados adicionais</span>';
+        return '<span class="kmz-field-empty" aria-hidden="true"></span><span class="kmz-muted kmz-field-empty">Sem dados adicionais</span><span class="kmz-field-empty" aria-hidden="true"></span>';
     }
 
     function lineItemRows(group) {
@@ -421,11 +429,11 @@
                     <div><span class="kmz-color-chip" style="--kmz-color:${group.hex || "#64748b"}"></span><strong>${escapeHtml(group.hex || "Sem cor")}</strong><span class="kmz-card-subtitle">${escapeHtml(label)}</span></div>
                     <span class="kmz-count-pill">${group.count} trecho${group.count === 1 ? "" : "s"}</span>
                 </header>
-                <div class="kmz-card-metrics"><span><strong>${formatMeters(group.total_length_m)} m</strong> de cabo</span><span>${escapeHtml(group.folders.join(" · ") || "Sem pasta")}</span></div>
-                <div class="kmz-card-samples">${escapeHtml(group.samples.join(", "))}</div>
+                <div class="kmz-card-metrics"><span><strong>${formatMeters(group.total_length_m)} m</strong> de cabo</span><span class="kmz-clamp-1" title="${escapeHtml(group.folders.join(" · ") || "Sem pasta")}">${escapeHtml(group.folders.join(" · ") || "Sem pasta")}</span></div>
+                <div class="kmz-card-samples kmz-clamp-2" title="${escapeHtml(group.samples.join(", "))}">${escapeHtml(group.samples.join(", "))}</div>
                 <div class="kmz-rule-controls">
                     <label>Ação<select data-line-group-action="${escapeHtml(group.key)}">${optionList(LINE_ACTIONS, rule.action)}</select></label>
-                    <div class="kmz-rule-data">${lineFields(rule, group.key, "group")}</div>
+                    ${lineFields(rule, group.key, "group")}
                 </div>
                 <details class="kmz-details"><summary>Exceções individuais (${group.count})</summary><div class="kmz-subtable"><table><thead><tr><th>Trecho</th><th>Regra</th><th>Dados</th></tr></thead><tbody>${lineItemRows(group)}</tbody></table></div></details>
             </article>`;
@@ -513,6 +521,11 @@
         const naming = state.decisions.naming;
         return `<h3>Rotas e nomenclatura</h3>
             <p>A raiz, CABOS e POP não viram rota. Somente pastas com “ROTA” são candidatas. Cabos fora da pasta da rota recebem a rota pela maioria das CTOs/caixas próximas.</p>
+            <div class="kmz-bulk-actions">
+                <button type="button" class="secondary-button" id="kmz-routes-select-all">Marcar todas</button>
+                <button type="button" class="secondary-button" id="kmz-routes-select-none">Desmarcar todas</button>
+                <button type="button" class="secondary-button" id="kmz-routes-select-with-lines">Marcar somente rotas com linhas</button>
+            </div>
             <div class="kmz-table-wrap"><table class="kmz-table"><thead><tr><th>Rota</th><th>Pontos</th><th>Linhas</th><th>Composição</th><th>Criar</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Nenhuma pasta ROTA detectada.</td></tr>'}</tbody></table></div>
             <div class="kmz-settings-grid">
                 <label>Prefixo do projeto <input id="kmz-project-prefix" maxlength="24" value="${escapeHtml(naming.project_prefix)}" placeholder="Ex.: JDS"></label>
@@ -563,6 +576,12 @@
             </div>
             <button id="kmz-detect-topology" class="primary-button" type="button">${state.topologyJunctions.length ? "Recalcular ligações" : "Detectar ligações"}</button>
             ${state.topologySummary ? `<div class="kmz-summary-grid compact"><article><strong>${state.topologySummary.junctions}</strong><span>relações</span></article><article><strong>${state.topologySummary.cuts}</strong><span>cortes</span></article><article><strong>${state.topologySummary.branches}</strong><span>derivações</span></article><article><strong>${state.topologySummary.passes}</strong><span>passagens</span></article></div>` : ""}
+            ${state.topologyCalculated && rows ? `<div class="kmz-bulk-actions kmz-junction-bulk">
+                <strong>Aplicar para todos</strong>
+                <label>CTO no meio <select id="kmz-bulk-cto">${optionList(JUNCTION_ACTIONS, defaults.cto)}</select></label>
+                <label>CEO/CDO no meio <select id="kmz-bulk-splice">${optionList(JUNCTION_ACTIONS, defaults.splice_box)}</select></label>
+                <button type="button" class="secondary-button" id="kmz-apply-all-junctions">Aplicar a todos</button>
+            </div>` : ""}
             ${state.topologyCalculated ? (rows ? `<div class="kmz-table-wrap kmz-junction-table"><table class="kmz-table"><thead><tr><th>Cabo original</th><th>Equipamento</th><th>Distância</th><th>Posição</th><th>Ação</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="kmz-success">Nenhuma relação por proximidade foi encontrada; a topologia pode seguir sem cortes.</div>') : '<div class="kmz-warning">Calcule as ligações para revisar os cortes.</div>'}`;
     }
 
@@ -941,6 +960,22 @@
                 : state.decisions.routes.filter((item) => item !== path);
             invalidatePreview();
         });
+        const routeCandidates = () => (state.analysis?.folders || []).filter((folder) => folder.route_candidate);
+        document.getElementById("kmz-routes-select-all")?.addEventListener("click", () => {
+            state.decisions.routes = routeCandidates().map((folder) => folder.path);
+            invalidatePreview();
+            render();
+        });
+        document.getElementById("kmz-routes-select-none")?.addEventListener("click", () => {
+            state.decisions.routes = [];
+            invalidatePreview();
+            render();
+        });
+        document.getElementById("kmz-routes-select-with-lines")?.addEventListener("click", () => {
+            state.decisions.routes = routeCandidates().filter((folder) => folder.lines > 0).map((folder) => folder.path);
+            invalidatePreview();
+            render();
+        });
         document.getElementById("kmz-project-prefix")?.addEventListener("change", (event) => { state.decisions.naming.project_prefix = event.target.value; invalidatePreview(); });
         document.getElementById("kmz-preserve-names")?.addEventListener("change", (event) => { state.decisions.naming.preserve_source_names = event.target.checked; invalidatePreview(); });
         document.getElementById("kmz-reserve-distance")?.addEventListener("change", (event) => { state.decisions.reserve_max_distance_m = event.target.value; invalidatePreview(); });
@@ -955,6 +990,21 @@
             const row = state.topologyJunctions.find((item) => item.junction_id === element.dataset.junction);
             if (row) row.action = element.value;
             invalidatePreview();
+        });
+        document.getElementById("kmz-apply-all-junctions")?.addEventListener("click", () => {
+            const ctoAction = document.getElementById("kmz-bulk-cto")?.value;
+            const spliceAction = document.getElementById("kmz-bulk-splice")?.value;
+            state.topologyJunctions.forEach((junction) => {
+                const action = junction.point_type === "cto" ? ctoAction
+                    : junction.point_type === "splice_box" ? spliceAction
+                        : null;
+                if (!action) return;
+                state.decisions.junctions[junction.junction_id] = { action };
+                junction.action = action;
+            });
+            invalidatePreview();
+            setStatus("Regra global aplicada a todas as ligações detectadas.");
+            render();
         });
 
         document.getElementById("kmz-fix-pending")?.addEventListener("click", goToPending);
@@ -1004,7 +1054,11 @@
         dialog.showModal();
         setStep(1);
     };
-    dialog.querySelector(".dialog-close").onclick = () => dialog.close();
+    dialog.querySelector(".dialog-close").onclick = () => {
+        clearPreview();
+        dialog.close();
+    };
+    document.getElementById("project-select")?.addEventListener("change", () => clearPreview());
     returnButton.onclick = () => {
         returnButton.hidden = true;
         dialog.showModal();

@@ -20,6 +20,8 @@
         <aside class="map-sidebar collapsed" id="map-sidebar">
             <button class="collapse-button" id="collapse-sidebar" type="button" title="Recolher menu">‹</button>
             <nav class="collapsed-tools" aria-label="Atalhos do editor">
+                <a class="collapsed-back" href="{% url 'dashboard' %}" title="Voltar para visão geral">←</a>
+                <button type="button" class="collapsed-eye" id="collapsed-eye-toggle" title="Mostrar ou esconder a estrutura"></button>
                 <button type="button" data-quick-tool="cable" title="Desenhar cabo"><svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg></button>
                 <button type="button" data-quick-tool="pole" title="Adicionar poste"><svg viewBox="0 0 24 24"><path d="M4 7h16M12 3v18M7 21h10M8 7l4 5 4-5"></path></svg></button>
                 <button type="button" data-quick-tool="cto" title="Adicionar CTO"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg></button>

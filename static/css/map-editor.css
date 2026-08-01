@@ -17,20 +17,32 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
     position: relative; z-index: 1000; width: 350px; min-width: 300px; max-width: 520px;
     height: 100%; resize: horizontal; overflow: auto; background: #091627; border-right: 1px solid var(--border);
     transition: width .18s ease, min-width .18s ease;
+    scrollbar-width: thin; scrollbar-color: #2d4f6c #091627;
 }
+.map-sidebar::-webkit-scrollbar { width: 9px; }
+.map-sidebar::-webkit-scrollbar-track { background: #091627; }
+.map-sidebar::-webkit-scrollbar-thumb { background: #2d4f6c; border-radius: 999px; }
 .map-sidebar.collapsed { width: 58px !important; min-width: 58px; resize: none; overflow: hidden; }
-.sidebar-content { padding: 20px 18px 28px; }
+.sidebar-content { padding: 16px 16px 22px; }
 .map-sidebar.collapsed .sidebar-content { display: none; }
+/* A trilha recolhida (voltar, olho, ferramentas rápidas) fica sempre
+   visível quando a sidebar está recolhida — só as ferramentas de EDIÇÃO
+   dependem do modo de edição, não o botão de voltar nem o olho. */
 .collapsed-tools { display: none; }
 .map-sidebar.collapsed .collapsed-tools { display: grid; gap: 9px; padding: 8px 9px; margin-top: 5px; }
-.map-sidebar:not(.edit-mode) .collapsed-tools { display: none; }
+.map-sidebar:not(.edit-mode) .collapsed-tools [data-quick-tool],
+.map-sidebar:not(.edit-mode) .collapsed-tools [data-quick-action] { display: none; }
 .map-sidebar:not(.edit-mode) .editor-section:nth-of-type(n+3),
 .map-sidebar:not(.edit-mode) #new-project-button,
 .map-sidebar:not(.edit-mode) .back-link,
 .map-sidebar:not(.edit-mode) .editor-message { display: none; }
-.collapsed-tools button { width: 40px; height: 40px; color: #bffbf3; background: #13263d; border: 1px solid var(--border); border-radius: 9px; font-size: 12px; font-weight: 900; cursor: pointer; }
+.collapsed-tools button, .collapsed-tools a { width: 40px; height: 40px; display: grid; place-items: center; color: #bffbf3; background: #13263d; border: 1px solid var(--border); border-radius: 9px; font-size: 12px; font-weight: 900; text-decoration: none; cursor: pointer; }
 .collapsed-tools svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.collapsed-tools button:hover, .collapsed-tools button.active { color: #031c19; background: var(--primary); }
+.collapsed-tools button:hover, .collapsed-tools button.active, .collapsed-tools a:hover { color: #031c19; background: var(--primary); }
+.collapsed-back { font-size: 18px; font-weight: 900; }
+.collapsed-eye::after { content: "⊙"; font-size: 16px; }
+.collapsed-eye.is-hidden::after { content: "⊘"; }
+.collapsed-eye.is-hidden { color: #6b7f93; }
 .collapse-button {
     position: sticky; z-index: 3; top: 10px; float: right; width: 28px; height: 32px; margin-right: 8px;
     color: var(--text); background: #17304a; border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
@@ -39,17 +51,32 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .map-brand { display: block; width: 180px; margin: 0 auto 13px; }
 .map-brand img { display: block; width: 100%; height: 62px; object-fit: contain; }
 .back-link, .login-notice { display: block; padding: 10px; color: #bffbf3; border: 1px solid #16796f; border-radius: 9px; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; }
-.editor-section { padding: 17px 0; border-bottom: 1px solid rgba(41,67,94,.7); }
-.editor-section.compact { padding-bottom: 12px; }
-.section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; color: #dbeafe; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.editor-section { padding: 13px 0; border-bottom: 1px solid rgba(41,67,94,.7); }
+.editor-section.compact { padding-bottom: 10px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; color: #dbeafe; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
 .mini-button { padding: 5px 8px; color: #04211e; background: var(--primary); border: 0; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer; }
 .editor-control, .editor-dialog input, .editor-dialog textarea, .editor-dialog select {
     width: 100%; min-height: 42px; padding: 9px 11px; color: var(--text); background: #0b192a; border: 1px solid var(--border); border-radius: 8px; outline: none;
 }
 .help-text { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
-.layer-option { display: flex; align-items: center; gap: 9px; min-height: 32px; color: #d2deeb; font-size: 12px; cursor: pointer; }
+.layer-option { display: flex; align-items: center; gap: 9px; min-height: 28px; color: #d2deeb; font-size: 12px; cursor: pointer; }
 .layer-option[hidden] { display: none; }
-.layer-option input { width: 16px; height: 16px; accent-color: var(--primary); }
+/* Checkbox de camada com ícone de olho: visível (⊙) quando marcado,
+   oculto/riscado (⊘) quando desmarcado — em vez do checkbox nativo. */
+.layer-option input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; margin: 0; flex: 0 0 auto;
+    display: grid; place-content: center;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: #0b192a; color: #6b7f93;
+    font-size: 13px; cursor: pointer;
+    transition: color .15s ease, border-color .15s ease;
+}
+.layer-option input[type="checkbox"]::after { content: "⊘"; }
+.layer-option input[type="checkbox"]:checked {
+    border-color: var(--primary); color: var(--primary);
+}
+.layer-option input[type="checkbox"]:checked::after { content: "⊙"; }
 .layer-symbol { width: 9px; height: 9px; border-radius: 50%; }
 .layer-symbol.structure { background: #38bdf8; }.layer-symbol.online { background: #32cf78; }.layer-symbol.offline { background: var(--danger); }.layer-symbol.unknown { background: var(--warning); }
 .layer-symbol.light-flow { background: #facc15; box-shadow: 0 0 8px #facc15; }
