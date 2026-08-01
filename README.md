@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.60.1 — Corrige o dashboard redimensionável (Gridstack) e leva o whitelabel para a tela de Equipamentos**
+**v0.60.2 — Corrige upload de logo (whitelabel), scrollbar do editor de dashboard e atalhos de equipamento**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

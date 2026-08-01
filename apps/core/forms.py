@@ -278,6 +278,11 @@ class CompanyBrandingForm(forms.ModelForm):
         }
         widgets = {
             "brand_color": forms.TextInput(attrs={"type": "color"}),
+            # ClearableFileInput (padrão) mostra "Atual: ...", checkbox
+            # "Limpar" e o input nativo — redundante com o preview que já
+            # existe acima do formulário. FileInput simples é mais limpo;
+            # enviar de novo substitui a logo atual.
+            "logo": forms.FileInput(attrs={"accept": "image/*"}),
         }
 
     def clean_logo(self):

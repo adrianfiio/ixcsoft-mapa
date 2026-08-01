@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.60.2] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.60.1`.
+
+### Corrigido
+
+- **Upload de logo (whitelabel) não funcionava em produção**: o upload salvava normalmente, mas a imagem nunca carregava (ícone quebrado). Causa: a rota de mídia usava `django.conf.urls.static.static()`, um helper do Django que só gera a rota quando `DEBUG=True` — em produção (`DEBUG=false`) ela virava um no-op silencioso, então `/media/...` nunca batia em lugar nenhum. Trocado por `django.views.static.serve` direto, sem essa checagem.
+- **Editor de dashboard (Gridstack) com scrollbar feia nos cards**: mesmo com o tamanho/posição já corrigidos na v0.60.1, o CSS que vem junto do Gridstack.js define `overflow-y: auto` por padrão nos itens, aparecendo como uma barra de rolagem mesmo sem nada pra rolar. Cartões agora não rolam nunca; painéis continuam podendo rolar se ficarem pequenos demais depois de redimensionados.
+
+### Adicionado
+
+- **Botão de escolher arquivo mais moderno** na página de whitelabel (Marca da empresa) — troca o botão cinza padrão do navegador por um no estilo do resto do sistema; a caixa de "arquivo atual"/"limpar" do Django (redundante com o preview que já existia acima) foi removida.
+- **Ícones no topo da tela de Equipamentos** ("Visão geral"/"Mapa"), mesmos ícones já usados no menu lateral.
+- **Cards de CTO/CEO/DIO/OLT no dashboard do projetista** agora usam os mesmos ícones do mapa (em vez de um losango genérico) e viram atalho: clicar num card fora do modo de edição abre a tela de Equipamentos já filtrada por aquele tipo.
+
 ## [0.60.1] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.60.0`.

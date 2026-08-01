@@ -1,8 +1,8 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as serve_media
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.core.views import (
@@ -69,4 +69,12 @@ urlpatterns = [
 # proxy simples) — servir MEDIA_ROOT pelo próprio processo é suficiente pro
 # volume esperado (logos de empresa), mesmo raciocínio já usado com o
 # WhiteNoise para estáticos.
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+#
+# NÃO usar `django.conf.urls.static.static()` aqui: essa função só gera a
+# rota quando `DEBUG=True` (é um no-op silencioso em produção) — foi
+# exatamente por isso que o upload de logo "salvava" mas a imagem nunca
+# carregava (a URL /media/... batia em lugar nenhum). `serve` direto não
+# tem essa checagem.
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve_media, {"document_root": settings.MEDIA_ROOT}),
+]

@@ -40,8 +40,15 @@
     <div class="grid-stack-item" data-widget="metric_cto" gs-id="metric_cto" gs-x="{{ widget_meta.metric_cto.x }}" gs-y="{{ widget_meta.metric_cto.y }}" gs-w="{{ widget_meta.metric_cto.w }}" gs-h="{{ widget_meta.metric_cto.h }}" style="grid-column: {{ widget_meta.metric_cto.x1 }} / span {{ widget_meta.metric_cto.w }}; grid-row: {{ widget_meta.metric_cto.y1 }} / span {{ widget_meta.metric_cto.h }};">
         <article class="metric-card grid-stack-item-content{% if widget_meta.metric_cto.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
             {% include "includes/widget_edit_bar.html" with widget_key="metric_cto" hidden=widget_meta.metric_cto.hidden %}
-            <div class="metric-head"><span>CTOs</span><span class="metric-icon">◇</span></div>
+            {% if edit_mode %}
+            <div class="metric-head"><span>CTOs</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg></span></div>
             <div class="metric-value">{{ cto_count|default:0 }}</div>
+            {% else %}
+            <a class="metric-link" href="{% url 'equipment-list' %}?type=cto">
+                <div class="metric-head"><span>CTOs</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="2"></rect><path d="M8 8h8M8 12h8M8 18v3m8-3v3"></path></svg></span></div>
+                <div class="metric-value">{{ cto_count|default:0 }}</div>
+            </a>
+            {% endif %}
         </article>
     </div>
     {% endif %}
@@ -49,8 +56,15 @@
     <div class="grid-stack-item" data-widget="metric_ceo" gs-id="metric_ceo" gs-x="{{ widget_meta.metric_ceo.x }}" gs-y="{{ widget_meta.metric_ceo.y }}" gs-w="{{ widget_meta.metric_ceo.w }}" gs-h="{{ widget_meta.metric_ceo.h }}" style="grid-column: {{ widget_meta.metric_ceo.x1 }} / span {{ widget_meta.metric_ceo.w }}; grid-row: {{ widget_meta.metric_ceo.y1 }} / span {{ widget_meta.metric_ceo.h }};">
         <article class="metric-card grid-stack-item-content{% if widget_meta.metric_ceo.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
             {% include "includes/widget_edit_bar.html" with widget_key="metric_ceo" hidden=widget_meta.metric_ceo.hidden %}
-            <div class="metric-head"><span>CEOs / caixas de emenda</span><span class="metric-icon">◇</span></div>
+            {% if edit_mode %}
+            <div class="metric-head"><span>CEOs / caixas de emenda</span><span class="metric-icon"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg></span></div>
             <div class="metric-value">{{ ceo_count|default:0 }}</div>
+            {% else %}
+            <a class="metric-link" href="{% url 'equipment-list' %}?type=splice_box">
+                <div class="metric-head"><span>CEOs / caixas de emenda</span><span class="metric-icon"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 5v8l-4 5H7l-4-5V8z"></path><path d="M8 9h8M8 13h8M8 17h8"></path></svg></span></div>
+                <div class="metric-value">{{ ceo_count|default:0 }}</div>
+            </a>
+            {% endif %}
         </article>
     </div>
     {% endif %}
@@ -58,8 +72,15 @@
     <div class="grid-stack-item" data-widget="metric_dio" gs-id="metric_dio" gs-x="{{ widget_meta.metric_dio.x }}" gs-y="{{ widget_meta.metric_dio.y }}" gs-w="{{ widget_meta.metric_dio.w }}" gs-h="{{ widget_meta.metric_dio.h }}" style="grid-column: {{ widget_meta.metric_dio.x1 }} / span {{ widget_meta.metric_dio.w }}; grid-row: {{ widget_meta.metric_dio.y1 }} / span {{ widget_meta.metric_dio.h }};">
         <article class="metric-card grid-stack-item-content{% if widget_meta.metric_dio.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
             {% include "includes/widget_edit_bar.html" with widget_key="metric_dio" hidden=widget_meta.metric_dio.hidden %}
-            <div class="metric-head"><span>DIOs</span><span class="metric-icon">◇</span></div>
+            {% if edit_mode %}
+            <div class="metric-head"><span>DIOs</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"></rect><path d="M7 8v8M11 8v8M15 8v8"></path></svg></span></div>
             <div class="metric-value">{{ dio_count|default:0 }}</div>
+            {% else %}
+            <a class="metric-link" href="{% url 'equipment-list' %}?type=dio">
+                <div class="metric-head"><span>DIOs</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"></rect><path d="M7 8v8M11 8v8M15 8v8"></path></svg></span></div>
+                <div class="metric-value">{{ dio_count|default:0 }}</div>
+            </a>
+            {% endif %}
         </article>
     </div>
     {% endif %}
@@ -67,8 +88,15 @@
     <div class="grid-stack-item" data-widget="metric_olt" gs-id="metric_olt" gs-x="{{ widget_meta.metric_olt.x }}" gs-y="{{ widget_meta.metric_olt.y }}" gs-w="{{ widget_meta.metric_olt.w }}" gs-h="{{ widget_meta.metric_olt.h }}" style="grid-column: {{ widget_meta.metric_olt.x1 }} / span {{ widget_meta.metric_olt.w }}; grid-row: {{ widget_meta.metric_olt.y1 }} / span {{ widget_meta.metric_olt.h }};">
         <article class="metric-card grid-stack-item-content{% if widget_meta.metric_olt.hidden %} widget-hidden{% endif %}" style="--accent: var(--blue);">
             {% include "includes/widget_edit_bar.html" with widget_key="metric_olt" hidden=widget_meta.metric_olt.hidden %}
-            <div class="metric-head"><span>OLTs</span><span class="metric-icon">◇</span></div>
+            {% if edit_mode %}
+            <div class="metric-head"><span>OLTs</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="1"></rect><path d="M7 9V5M12 9V4M17 9V5"></path></svg></span></div>
             <div class="metric-value">{{ olt_count|default:0 }}</div>
+            {% else %}
+            <a class="metric-link" href="{% url 'equipment-list' %}?type=olt">
+                <div class="metric-head"><span>OLTs</span><span class="metric-icon"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="1"></rect><path d="M7 9V5M12 9V4M17 9V5"></path></svg></span></div>
+                <div class="metric-value">{{ olt_count|default:0 }}</div>
+            </a>
+            {% endif %}
         </article>
     </div>
     {% endif %}
