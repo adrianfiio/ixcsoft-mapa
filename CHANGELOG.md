@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.58.1] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.58.0`.
+
+### Corrigido
+
+- **Whitelabel: cor de destaque não alcançava tudo.** Só o `--primary` era trocado pela cor escolhida pela empresa; realces derivados (fundo do item ativo do menu, cor do texto ativo, banner no topo do dashboard) continuavam com o teal padrão, hardcoded separadamente. Agora `--primary-soft`, a cor do texto ativo do menu e o gradiente/borda do banner são calculados a partir de `--primary` (via `color-mix()`), então acompanham automaticamente qualquer cor de whitelabel escolhida.
+
 ## [0.58.0] - 2026-07-31
 
 Backup/ponto de rollback desta rodada: tag `v0.57.0` (também disponível como branch `backup/mapa-pre-v07-20260731`).

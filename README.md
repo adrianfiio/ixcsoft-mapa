@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.58.0 — Importador KMZ mais largo e alinhado, ações em lote, sidebar do mapa compacta com olho de visibilidade**
+**v0.58.1 — Whitelabel: cor de destaque agora reflete em todos os realces (nav ativo, banner do dashboard)**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
