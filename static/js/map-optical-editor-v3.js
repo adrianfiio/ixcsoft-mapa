@@ -225,7 +225,8 @@
     }
 
     function improveMapIcons() {
-        document.querySelectorAll(".network-marker").forEach((marker) => {
+        const scope = document.getElementById("map") || document;
+        scope.querySelectorAll(".network-marker:not(.network-marker-v3)").forEach((marker) => {
             marker.classList.add("network-marker-v3");
             marker.querySelectorAll("small").forEach((small) => { small.hidden = true; });
         });
@@ -286,7 +287,8 @@
     }
 
     function enhanceLeafletPopup() {
-        document.querySelectorAll(".leaflet-popup-content").forEach((content) => {
+        const scope = document.getElementById("map") || document;
+        scope.querySelectorAll(".leaflet-popup-content").forEach((content) => {
             if (content.querySelector("[data-asset-route-v3]")) return;
             const elementButton = content.querySelector("[data-edit-element]");
             const cableButton = content.querySelector("[data-edit-cable]");
@@ -396,7 +398,7 @@
 
     function compactEquipmentList() {
         if (!containerDialog?.open) return;
-        document.querySelectorAll(".container-equipment-group-list-v092 > article").forEach((article) => {
+        containerDialog.querySelectorAll(".container-equipment-group-list-v092 > article").forEach((article) => {
             article.classList.add("equipment-row-v3");
             article.querySelectorAll(".equipment-port-grid, .equipment-card-list").forEach((node) => { node.hidden = true; });
             article.querySelectorAll("[data-add-equipment-ports], [data-add-container-card]").forEach((node) => { node.hidden = true; });
@@ -616,17 +618,73 @@
         };
     }
 
-    const observer = new MutationObserver(() => {
-        installRouteDataGuard();
-        improveMapIcons();
-        relocateRouteFilter();
-        enhanceLeafletPopup();
-        compactEquipmentList();
-        enhanceDropTermination();
-        enhanceFusion().catch(() => {});
-        enhanceContainerDiagram().catch(() => {});
-    });
-    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["open"] });
+    let enhancementTimer = null;
+    let enhancementRunning = false;
+
+    function runEnhancements() {
+        if (enhancementRunning) return;
+        enhancementRunning = true;
+        try {
+            installRouteDataGuard();
+            improveMapIcons();
+            relocateRouteFilter();
+            enhanceLeafletPopup();
+            if (containerDialog?.open) {
+                compactEquipmentList();
+                enhanceDropTermination();
+                enhanceContainerDiagram().catch(() => {});
+            }
+            if (unifilarDialog?.open) enhanceFusion().catch(() => {});
+        } finally {
+            enhancementRunning = false;
+        }
+    }
+
+    function scheduleEnhancements(delay = 40) {
+        window.clearTimeout(enhancementTimer);
+        enhancementTimer = window.setTimeout(runEnhancements, delay);
+    }
+
+    function nodeContainsSelector(node, selector) {
+        return node?.nodeType === Node.ELEMENT_NODE && (
+            node.matches?.(selector) || node.querySelector?.(selector)
+        );
+    }
+
+    const mapRootV3 = document.getElementById("map");
+    if (mapRootV3) {
+        const mapObserver = new MutationObserver((mutations) => {
+            const relevant = mutations.some((mutation) => [...mutation.addedNodes].some((node) =>
+                nodeContainsSelector(node, ".network-marker, .leaflet-popup-content, #route-filter-v092, .route-filter-item-v092")
+            ));
+            if (relevant) scheduleEnhancements(50);
+        });
+        mapObserver.observe(mapRootV3, { childList: true, subtree: true });
+    }
+
+    if (unifilarContent) {
+        const fusionObserver = new MutationObserver((mutations) => {
+            const meaningful = mutations.some((mutation) => {
+                const changed = [...mutation.addedNodes, ...mutation.removedNodes];
+                return changed.some((node) => !nodeContainsSelector(node, ".manual-route-handle-v2, .container-route-handles-v3"));
+            });
+            if (meaningful && unifilarDialog?.open) scheduleEnhancements(35);
+        });
+        fusionObserver.observe(unifilarContent, { childList: true, subtree: true });
+    }
+
+    if (containerDialog) {
+        const containerObserver = new MutationObserver((mutations) => {
+            const openChanged = mutations.some((mutation) => mutation.type === "attributes");
+            if (!containerDialog.open && !openChanged) return;
+            const meaningful = openChanged || mutations.some((mutation) => {
+                const changed = [...mutation.addedNodes, ...mutation.removedNodes];
+                return changed.some((node) => !nodeContainsSelector(node, ".container-route-handles-v3"));
+            });
+            if (meaningful && containerDialog.open) scheduleEnhancements(45);
+        });
+        containerObserver.observe(containerDialog, { childList: true, subtree: true, attributes: true, attributeFilter: ["open"] });
+    }
 
     document.addEventListener("fullscreenchange", () => {
         if (document.fullscreenElement !== unifilarDialog && unifilarDialog?.classList.contains("is-fullscreen")) {
@@ -643,4 +701,5 @@
     improveMapIcons();
     relocateRouteFilter();
     enhanceDropTermination();
+    scheduleEnhancements(0);
 }());

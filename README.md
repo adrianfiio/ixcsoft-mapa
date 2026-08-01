@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.67.2 — Painel de login com leve gradiente no lugar de branco puro**
+**v0.67.3 — Hotfix de performance no mapa: observadores de DOM escopados e agrupados**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

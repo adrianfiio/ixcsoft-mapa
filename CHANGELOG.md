@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.67.3] - 2026-08-01
+
+Backup/ponto de rollback: tag `v0.67.2`. Hotfix da área do mapa preparado
+pelo ChatGPT ("v0.10.2" na numeração dele), aplicado via `apply_v0102.py`.
+Substitui só `map-optical-editor-v2.js` e `map-optical-editor-v3.js` —
+sem banco, migration, dashboard ou configuração de empresa envolvidos.
+
+### Corrigido
+
+- **Performance do Editor Óptico v2/v3 no mapa**: um único `MutationObserver` observava o documento inteiro e reprocessava tudo a cada mudança no DOM, rodando centenas de vezes à toa. Trocado por observadores escopados ao mapa, à tela de fusões e ao diálogo de estrutura, cada um com filtro de relevância e debounce — processa só marcador novo, ignora mudança produzida pelo próprio editor de linhas e não varre o mapa inteiro quando nenhum popup está sendo criado.
+
 ## [0.67.2] - 2026-08-01
 
 ### Alterado

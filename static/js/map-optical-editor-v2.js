@@ -334,8 +334,9 @@
         notify("Arraste a caixa sobre o cabo e confirme para salvar.");
     }
 
-    function renameCableInsertionActions() {
-        document.querySelectorAll("[data-insert-cable]").forEach((button) => {
+    function renameCableInsertionActions(root = document) {
+        root.querySelectorAll("[data-insert-cable]:not([data-optical-v2-renamed])").forEach((button) => {
+            button.dataset.opticalV2Renamed = "true";
             button.textContent = "Inserir caixa";
             button.title = "Criar ou conectar CTO, CDO ou CEO neste cabo";
         });
@@ -343,8 +344,20 @@
 
     const mapRoot = document.getElementById("map");
     if (mapRoot) {
-        new MutationObserver(renameCableInsertionActions).observe(mapRoot, { childList: true, subtree: true });
-        renameCableInsertionActions();
+        let renameTimer = null;
+        const popupObserver = new MutationObserver((mutations) => {
+            const containsInsertionAction = mutations.some((mutation) =>
+                [...mutation.addedNodes].some((node) => node.nodeType === Node.ELEMENT_NODE && (
+                    node.matches?.("[data-insert-cable]")
+                    || node.querySelector?.("[data-insert-cable]")
+                ))
+            );
+            if (!containsInsertionAction) return;
+            window.clearTimeout(renameTimer);
+            renameTimer = window.setTimeout(() => renameCableInsertionActions(mapRoot), 30);
+        });
+        popupObserver.observe(mapRoot, { childList: true, subtree: true });
+        renameCableInsertionActions(mapRoot);
     }
 
     document.addEventListener("click", (event) => {
