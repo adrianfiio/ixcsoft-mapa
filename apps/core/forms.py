@@ -276,6 +276,12 @@ class CompanyBrandingForm(forms.ModelForm):
             "logo": "Logo",
             "brand_color": "Cor de destaque",
         }
+        help_texts = {
+            # A logo aparece numa caixa de 150×50 (proporção 3:1) no menu
+            # lateral — recomendar essa proporção evita que ela fique
+            # pequena/deslocada dentro do espaço reservado.
+            "logo": "Recomendado: proporção retangular (ex.: 300×100px), fundo transparente (PNG). Máximo 2MB.",
+        }
         widgets = {
             "brand_color": forms.TextInput(attrs={"type": "color"}),
             # ClearableFileInput (padrão) mostra "Atual: ...", checkbox

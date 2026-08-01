@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.61.1] - 2026-08-01
+
+Backup/ponto de rollback desta rodada: tag `v0.61.0`.
+
+### Corrigido
+
+- **Logo do whitelabel ficava alinhada à esquerda** dentro da caixa reservada no menu lateral (e no preview da página "Marca da empresa") sempre que a proporção da imagem enviada não batia exatamente com o espaço — agora fica centralizada.
+- **Logo da tela de login** (a padrão da AFService — essa tela não tem como saber a empresa antes do login) ficava colada no topo do painel esquerdo, com um vão grande até o texto. Agora fica centralizada verticalmente no painel.
+
+### Adicionado
+
+- **Recomendação de tamanho no upload da logo** (página "Marca da empresa"): texto de ajuda sugerindo proporção retangular (ex.: 300×100px) e fundo transparente, já que a logo sempre aparece numa caixa de 150×50 no menu.
+
 ## [0.61.0] - 2026-08-01
 
 Backup/ponto de rollback desta rodada: tag `v0.60.2` (também disponível como branch `backup/mapa-pre-v09-20260801`). Pacote preparado e aplicado pelo ChatGPT (área do mapa/KMZ) via `apply_v09.py` — todos os patches bateram exato, sem incompatibilidade pra resolver.

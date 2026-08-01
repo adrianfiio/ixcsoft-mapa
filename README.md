@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.61.0 — Prioridade CEO/CDO sobre CTO, corte de cabo de passagem nas fusões e ONU com portas LAN configuráveis**
+**v0.61.1 — Logo centralizada no menu e na tela de login, recomendação de tamanho no upload de whitelabel**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
