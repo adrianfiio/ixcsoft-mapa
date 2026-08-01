@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.67.0] - 2026-08-01
+
+Backup/ponto de rollback: tag `v0.66.0` (também disponível como branch
+`backup/mapa-pre-v0101-20260801`). Pacote cumulativo de correções da área
+do mapa preparado pelo ChatGPT ("v0.10.1" na numeração dele), aplicado
+via `apply_v0101.py` (validado com `--dry-run` antes).
+
+### Corrigido
+
+- **Alcance automático de cabo em CTO/CEO/CDO reduzido para 45 metros**, e cabo de outra rota deixa de entrar automaticamente numa caixa que já tem rota definida — cabo distante que a API antiga ainda retornasse fica oculto da fusão.
+- **Ícones do mapa refeitos**: CTO com formato de caixa retangular, CEO/CDO com formato de fechamento vertical, Rack como gabinete e Torre sem texto solto dentro do marcador — corrigida a repetição visual "CDO CDO". Nome continua no rótulo acima do marcador.
+- **Editor de fusões mais compacto**: cabeçalho e barra de controles menores, mais área para fibras e splitters; maximização por CSS não sai mais da tela cheia ao abrir menu, splitter ou nota.
+- **Painel de filtro por rota só aparece quando existir cabo ou elemento realmente associado a uma rota** — rota vazia não ocupa mais espaço no painel.
+- **Opções de PTO/conector direto só aparecem quando o cabo selecionado é realmente do tipo DROP.**
+
+### Adicionado
+
+- **Botão "Cabos" dentro da tela de fusões**: remove um cabo só daquela caixa (sem apagar do mapa), com opção de restaurar depois — cabo que termina fisicamente na caixa fica protegido contra remoção indevida.
+- **"Definir rota" nos popups de cabo, CTO, CDO, CEO e demais elementos**, com opção de trocar a rota ou marcar "Sem rota definida".
+- **Botão "Detalhes" nos equipamentos de rack/torre**, abrindo janela com fabricante, modelo, número de série, IP, descrição, observações, foto por URL, portas, placas e módulos instalados por porta (SFP óptico 1G, SFP/RJ45 1G, SFP+ 10G, SFP28 25G, DAC, GBIC, outro).
+- **Diagrama interno da estrutura**: botão "Mover" para posicionar equipamentos livremente (posição persiste), botão "Editar linhas" (duplo clique adiciona ponto de dobra, arrastar move, botão direito remove) e botão "Auto" para voltar ao posicionamento automático.
+- **Terminação de cabo DROP em porta óptica existente, PTO nova ou conector direto** (SC/APC, SC/UPC, LC/UPC, LC/APC) — PTO/conector viram equipamentos passivos da estrutura, já selecionáveis como destino.
+
 ## [0.66.0] - 2026-08-01
 
 ### Alterado

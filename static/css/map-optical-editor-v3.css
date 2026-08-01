@@ -1,0 +1,220 @@
+/* IXCSoft MAPA v0.10.1 · UX óptica, mapa e estruturas */
+
+/* Ícones externos compactos: o nome fica somente no rótulo do mapa. */
+.network-marker.network-marker-v3 {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px;
+    display: grid;
+    place-items: center;
+    border-width: 2px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 5px 14px rgb(0 0 0 / 42%) !important;
+}
+.network-marker.network-marker-v3 svg { width: 19px !important; height: 19px !important; }
+.network-marker.network-marker-v3 small { display: none !important; }
+.network-marker.network-marker-v3.cto svg,
+.network-marker.network-marker-v3.splice_box svg,
+.network-marker.network-marker-v3.rack svg { display: none !important; }
+.network-marker.network-marker-v3.cto::before,
+.network-marker.network-marker-v3.splice_box::before,
+.network-marker.network-marker-v3.rack::before {
+    content: "";
+    display: block;
+    width: 19px;
+    height: 22px;
+    background: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+}
+/* CTO: caixa retangular compacta, semelhante à caixa de atendimento externa. */
+.network-marker.network-marker-v3.cto::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Crect x='3' y='2' width='18' height='23' rx='3' fill='black'/%3E%3Cpath d='M6 7h12M6 11h12M6 15h12M7 20h10' stroke='white' stroke-width='2'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Crect x='3' y='2' width='18' height='23' rx='3' fill='black'/%3E%3Cpath d='M6 7h12M6 11h12M6 15h12M7 20h10' stroke='white' stroke-width='2'/%3E%3C/svg%3E");
+}
+/* CEO/CDO: fechamento vertical de emenda. */
+.network-marker.network-marker-v3.splice_box { border-radius: 12px !important; }
+.network-marker.network-marker-v3.splice_box::before {
+    width: 15px;
+    height: 24px;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'%3E%3Cpath d='M5 1h8c2 0 3 2 3 4v16c0 3-2 5-4 5v3H6v-3c-2 0-4-2-4-5V5c0-2 1-4 3-4Z' fill='black'/%3E%3Cpath d='M4 8h10M4 12h10M4 16h10M4 20h10' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'%3E%3Cpath d='M5 1h8c2 0 3 2 3 4v16c0 3-2 5-4 5v3H6v-3c-2 0-4-2-4-5V5c0-2 1-4 3-4Z' fill='black'/%3E%3Cpath d='M4 8h10M4 12h10M4 16h10M4 20h10' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E");
+}
+/* Rack: gabinete técnico sem texto dentro do marcador. */
+.network-marker.network-marker-v3.rack { border-radius: 6px !important; }
+.network-marker.network-marker-v3.rack::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Crect x='3' y='1' width='16' height='24' rx='2' fill='black'/%3E%3Cpath d='M6 6h10M6 11h10M6 16h10M6 21h10' stroke='white' stroke-width='2'/%3E%3Cpath d='M6 27h3M13 27h3' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Crect x='3' y='1' width='16' height='24' rx='2' fill='black'/%3E%3Cpath d='M6 6h10M6 11h10M6 16h10M6 21h10' stroke='white' stroke-width='2'/%3E%3Cpath d='M6 27h3M13 27h3' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+}
+.network-marker.network-marker-v3.tower { background: #0d6470 !important; }
+.network-marker.splice_box.cdo small::after { content: none !important; }
+
+/* Filtro de rotas só aparece com rotas existentes e fica como gaveta flutuante. */
+#map > .route-filter-floating-v3 {
+    position: absolute;
+    z-index: 1125;
+    right: 14px;
+    bottom: 72px;
+    width: min(310px, calc(100% - 28px));
+    margin: 0;
+    padding: 10px 12px;
+    color: #d9e8f5;
+    background: rgb(7 23 39 / 94%);
+    border: 1px solid #31516b;
+    border-radius: 12px;
+    box-shadow: 0 14px 38px rgb(0 0 0 / 38%);
+    backdrop-filter: blur(10px);
+}
+#map > .route-filter-floating-v3[hidden] { display: none !important; }
+.route-filter-floating-v3 .route-filter-list-v092 { max-height: 180px; }
+.route-filter-floating-v3 .section-heading { margin: 0; }
+
+/* Fusões mais compactas e sem sair do modo maximizado ao abrir ações. */
+#unifilar-dialog.fusion-v3.is-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    z-index: 15000 !important;
+}
+#unifilar-dialog.fusion-v3 > section > header {
+    min-height: 44px !important;
+    padding: 7px 14px !important;
+}
+#unifilar-dialog.fusion-v3 > section > header h2 { font-size: 16px !important; }
+#unifilar-dialog.fusion-v3 > section > header p { margin-top: 1px !important; font-size: 9px !important; }
+#unifilar-dialog.fusion-v3 #unifilar-content { padding: 7px 10px 10px !important; }
+#unifilar-dialog.fusion-v3 .ceo-instructions.fusion-compact-v3 {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 44px !important;
+    max-height: 76px;
+    padding: 5px 7px !important;
+    margin-bottom: 6px !important;
+    overflow: visible !important;
+}
+#unifilar-dialog.fusion-v3 .ceo-instructions.fusion-compact-v3 > :first-child { min-width: 0; }
+#unifilar-dialog.fusion-v3 .fusion-toolbar { flex-wrap: nowrap !important; padding: 2px !important; }
+#unifilar-dialog.fusion-v3 .fusion-toolbar input[type="range"] { width: clamp(90px, 13vw, 180px) !important; }
+#unifilar-dialog.fusion-v3 .fusion-toolbar button { min-height: 28px !important; padding: 0 8px !important; font-size: 10px !important; }
+#unifilar-dialog.fusion-v3 .optical-graph { min-height: 0 !important; }
+.fusion-remove-cable-v3 {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    margin-left: 4px;
+    color: #fecaca !important;
+    background: #4b1722 !important;
+    border: 1px solid #8b3243 !important;
+    border-radius: 6px !important;
+}
+#fusion-cable-panel-v3 {
+    position: absolute;
+    z-index: 40;
+    top: 58px;
+    right: 16px;
+    width: min(420px, calc(100% - 32px));
+    max-height: calc(100% - 78px);
+    overflow: hidden;
+    color: #e5eef7;
+    background: #0a1a2c;
+    border: 1px solid #31516b;
+    border-radius: 12px;
+    box-shadow: 0 18px 55px rgb(0 0 0 / 52%);
+}
+#fusion-cable-panel-v3 > header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #10263d; }
+#fusion-cable-panel-v3 > header div { display: grid; gap: 2px; }
+#fusion-cable-panel-v3 > header small { color: #8fa8bd; }
+#fusion-cable-panel-v3 > header button { color: #d9e8f5; background: transparent; border: 0; font-size: 22px; }
+.fusion-cable-list-v3 { display: grid; gap: 6px; max-height: 65vh; padding: 10px; overflow: auto; }
+.fusion-cable-list-v3 article { display: flex; align-items: center; gap: 10px; padding: 9px; background: #0c2136; border: 1px solid #29465f; border-radius: 9px; }
+.fusion-cable-list-v3 article > div { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.fusion-cable-list-v3 article strong, .fusion-cable-list-v3 article small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fusion-cable-list-v3 article small { color: #8fa8bd; }
+.fusion-cable-list-v3 button, .fusion-cable-list-v3 .fixed { min-height: 30px; padding: 0 9px; border: 1px solid #31516b; border-radius: 7px; background: #14314d; color: #e5eef7; }
+.fusion-cable-list-v3 button.danger { background: #4b1722; border-color: #8b3243; }
+.fusion-cable-list-v3 article.excluded { opacity: .72; }
+
+/* Equipamentos em lista limpa. */
+.container-equipment-group-list-v092 { grid-template-columns: 1fr !important; gap: 6px !important; }
+.container-equipment-group-list-v092 > article.equipment-row-v3 {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    min-height: 56px;
+    padding: 9px 11px !important;
+    overflow: hidden;
+}
+.equipment-row-v3 .equipment-head { flex: 1; min-width: 0; align-items: center; }
+.equipment-row-v3 .equipment-head > div { min-width: 0; display: grid; grid-template-columns: minmax(120px, 1fr) auto; gap: 8px; align-items: center; }
+.equipment-row-v3 .equipment-head strong, .equipment-row-v3 .equipment-head small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipment-row-v3 .equipment-head > button, .equipment-row-v3 button { flex: 0 0 auto; }
+
+/* Janela de detalhes tipo inventário/NetBox. */
+.equipment-details-dialog-v3 { width: min(900px, calc(100vw - 30px)) !important; max-height: 92vh; }
+.equipment-details-dialog-v3 form { max-height: 92vh; overflow: auto; }
+.equipment-detail-grid-v3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.port-modules-v3 { display: grid; gap: 7px; max-height: 320px; overflow: auto; }
+.port-modules-v3 label { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(190px, .8fr); gap: 12px; align-items: center; padding: 8px 10px; background: #091a2b; border: 1px solid #29465f; border-radius: 8px; }
+.port-modules-v3 label > span { display: grid; gap: 2px; }
+.port-modules-v3 small { color: #8fa8bd; }
+
+/* Diagrama interno: movimentação livre e edição de linhas. */
+.container-diagram-tools-v09 button.active { color: #04211f !important; background: #2dd4bf !important; border-color: #2dd4bf !important; }
+.container-diagram-nodes-v09.free-layout-v3 {
+    display: block !important;
+    position: relative !important;
+    min-width: 1300px !important;
+    min-height: 900px !important;
+}
+.container-diagram-nodes-v09.free-layout-v3 .container-diagram-node-v09 {
+    position: absolute !important;
+    width: min(620px, 42vw);
+    margin: 0 !important;
+}
+.container-diagram-nodes-v09.free-layout-v3 .container-diagram-node-v09 > header { cursor: move; }
+.container-diagram-links-v09 { pointer-events: none; }
+.container-diagram-links-v09 path.route-editable-v3 { pointer-events: stroke !important; cursor: crosshair; }
+.container-diagram-links-v09 path.route-selected-v3 { stroke-width: 5px !important; filter: drop-shadow(0 0 5px rgb(45 212 191 / 90%)); }
+.container-route-handles-v3 { pointer-events: all; }
+.container-route-handles-v3 circle { fill: #071729; stroke: #2dd4bf; stroke-width: 3; cursor: grab; }
+.container-route-handles-v3 circle:active { fill: #2dd4bf; cursor: grabbing; }
+
+/* DROP: PTO, DIO ou conector direto. */
+.drop-endpoint-v3 { margin: 10px 0; padding: 12px; border: 1px solid #2f6079; border-radius: 10px; background: #091d30; }
+.drop-endpoint-v3 > div { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.drop-endpoint-v3 button { min-height: 38px; margin-top: 8px; color: #04211f; background: #2dd4bf; border: 0; border-radius: 8px; font-weight: 800; }
+.drop-endpoint-v3 p { color: #8deadd; }
+
+.asset-route-dialog-v3 { width: min(420px, calc(100vw - 30px)) !important; }
+
+@media (max-width: 800px) {
+    #map > .route-filter-floating-v3 { right: 8px; bottom: 60px; left: 8px; width: auto; }
+    #unifilar-dialog.fusion-v3 .ceo-instructions.fusion-compact-v3 { display: grid !important; max-height: none; }
+    #unifilar-dialog.fusion-v3 .fusion-toolbar { flex-wrap: wrap !important; }
+    .equipment-detail-grid-v3, .drop-endpoint-v3 > div { grid-template-columns: 1fr; }
+    .port-modules-v3 label { grid-template-columns: 1fr; }
+    .container-diagram-nodes-v09.free-layout-v3 .container-diagram-node-v09 { width: 560px; }
+}
+.equipment-photo-v3 { display: flex; justify-content: center; margin: 8px 0 12px; }
+.equipment-photo-v3[hidden] { display: none !important; }
+.equipment-photo-v3 img { max-width: 100%; max-height: 220px; object-fit: contain; padding: 8px; background: #061522; border: 1px solid #29465f; border-radius: 10px; }
+.equipment-port-create-v3 { display: grid; gap: 8px; }
+.equipment-port-create-v3 > div { display: grid; grid-template-columns: minmax(180px, 1fr) 100px auto; gap: 8px; }
+.equipment-port-create-v3 [data-add-card-row] { grid-template-columns: 100px 110px minmax(180px, 1fr) auto; }
+.equipment-port-create-v3 button { min-height: 38px; padding: 0 12px; color: #04211f; background: #2dd4bf; border: 0; border-radius: 8px; font-weight: 800; }
+@media (max-width: 800px) {
+    .equipment-port-create-v3 > div,
+    .equipment-port-create-v3 [data-add-card-row] { grid-template-columns: 1fr; }
+}

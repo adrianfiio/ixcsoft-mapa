@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.66.0 — Tela de login redesenhada (visual moderno, cor da marca em destaque)**
+**v0.67.0 — Fusões cumulativas: cabos gerenciáveis por caixa, rota manual, ícones compactos e detalhes de equipamento**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

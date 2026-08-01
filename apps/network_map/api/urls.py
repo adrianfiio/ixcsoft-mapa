@@ -31,6 +31,14 @@ from apps.network_map.api.views import (
 from apps.network_map.api.device_type_views import import_container_device_type_yaml
 from apps.network_map.api.optical_editor_v2 import register_cable_passage
 from apps.network_map.api.topology_actions import cut_cable_at_element
+from apps.network_map.api.optical_editor_v3 import (
+    assign_asset_route_v3,
+    container_equipment_details_v3,
+    container_layout_v3,
+    create_passive_endpoint_v3,
+    fusion_cable_membership,
+    fusion_cable_state,
+)
 from apps.network_map.kmz_import_api import (
     analyze_kmz_import,
     cleanup_legacy_kmz_import,
@@ -63,6 +71,12 @@ urlpatterns = [
     path("elements/<int:element_id>/pole/", pole_infrastructure, name="pole-infrastructure"),
     path("elements/<int:element_id>/equipment/", container_equipment, name="container-equipment"),
     path("elements/<int:element_id>/cables/<int:cable_id>/cut/", cut_cable_at_element, name="cut-cable-at-element"),
+    path("elements/<int:element_id>/fusion-cables/", fusion_cable_state, name="fusion-cable-state-v3"),
+    path("elements/<int:element_id>/fusion-cables/<int:cable_id>/", fusion_cable_membership, name="fusion-cable-membership-v3"),
+    path("elements/<int:element_id>/container-layout-v3/", container_layout_v3, name="container-layout-v3"),
+    path("elements/<int:element_id>/equipment/<int:equipment_id>/details-v3/", container_equipment_details_v3, name="container-equipment-details-v3"),
+    path("elements/<int:element_id>/passive-endpoints-v3/", create_passive_endpoint_v3, name="passive-endpoints-v3"),
+    path("assets/route/", assign_asset_route_v3, name="assign-asset-route-v3"),
     path("elements/<int:element_id>/cables/<int:cable_id>/pass/", register_cable_passage, name="register-cable-passage"),
     path("elements/<int:element_id>/equipment/import-yaml/", import_container_device_type_yaml, name="container-equipment-import-yaml"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/", container_equipment_detail, name="container-equipment-detail"),
