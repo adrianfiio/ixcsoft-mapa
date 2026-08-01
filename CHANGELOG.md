@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.6] - 2026-08-01
+
+### Adicionado
+
+- **`influxdb-client` nas dependências** (`requirements.txt`), pro projeto de monitoramento com InfluxDB que está sendo montado no servidor — estava sendo editado direto em produção, o que bloqueava o `apply` (arquivo rastreado, alteração local pendente); agora entra pelo repositório normalmente.
+
 ## [0.67.5] - 2026-08-01
 
 ### Corrigido
