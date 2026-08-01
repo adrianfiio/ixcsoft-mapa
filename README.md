@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.67.4 — Painel de login escuro (cinza para preto), logo centralizada**
+**v0.67.5 — .gitignore para as pastas novas da instalação do InfluxDB, para não bloquear o `apply`**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

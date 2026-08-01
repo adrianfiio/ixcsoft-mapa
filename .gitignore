@@ -223,6 +223,9 @@ docker-compose.override.yml
 # `apply`, que exige a árvore de trabalho limpa antes de atualizar.
 docker-compose-monitor.yml
 telegraf.conf
+/equipamentos_ativos_snmp/
+/gerar_equipamento.py
+/templates/equipamentos_snmp/
 
 # Backups temporários
 *.bak

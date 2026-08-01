@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.67.5] - 2026-08-01
+
+### Corrigido
+
+- **`apply` cancelava a atualização de novo**, agora por causa de `equipamentos_ativos_snmp/`, `gerar_equipamento.py` e `templates/equipamentos_snmp/` — pastas/arquivos novos da instalação do InfluxDB, criados direto em `/opt/ixcsoft-mapa` no servidor. Adicionados ao `.gitignore`, mesmo tratamento já dado a `docker-compose-monitor.yml`/`telegraf.conf` na v0.67.1.
+
 ## [0.67.4] - 2026-08-01
 
 ### Alterado
