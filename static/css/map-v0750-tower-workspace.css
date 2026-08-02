@@ -10,13 +10,28 @@
 }
 
 .tower-workspace-dialog-v0750:not(.master-container-fullscreen) {
-    width: min(1480px, calc(100vw - 48px)) !important;
-    height: min(860px, calc(100dvh - 72px)) !important;
+    position: fixed !important;
+    inset: 0 0 0 var(--v072-sidebar, 292px) !important;
+    width: auto !important;
+    height: 100dvh !important;
     max-width: none !important;
     max-height: none !important;
-    border: 1px solid rgba(56, 189, 248, .2) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 28px 90px rgba(0, 0, 0, .58) !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-left: 1px solid rgba(56, 189, 248, .2) !important;
+    border-radius: 0 !important;
+    box-shadow: -18px 0 55px rgba(0, 0, 0, .38) !important;
+    z-index: 1800 !important;
+}
+body:has(#map-sidebar.v072-collapsed) .tower-workspace-dialog-v0750:not(.master-container-fullscreen) {
+    left: 72px !important;
+}
+body:has(#map-sidebar.master-minimized) .tower-workspace-dialog-v0750:not(.master-container-fullscreen) {
+    left: 54px !important;
+}
+.tower-workspace-dialog-v0750::backdrop {
+    background: transparent !important;
+    backdrop-filter: none !important;
 }
 .tower-workspace-dialog-v0750 > section {
     display: grid !important;
@@ -512,6 +527,7 @@
     .tower-popover-v0750 button span { display: grid; }
 }
 @media (max-width: 760px) {
+    .tower-workspace-dialog-v0750:not(.master-container-fullscreen) { left: 0 !important; }
     .tower-workspace-toolbar-v0750 { align-items: flex-start; }
     .tower-workspace-title-v0750 { min-width: auto; }
     .tower-workspace-actions-v0750 { flex-wrap: wrap; }

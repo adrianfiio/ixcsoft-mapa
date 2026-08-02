@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/map-ui-v0722.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v074.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v0741.css' %}?v={{ map_version }}">
-    <link rel="stylesheet" href="{% static 'css/map-v0750-tower-workspace.css' %}?v={{ map_version }}-tower-r2">
+    <link rel="stylesheet" href="{% static 'css/map-v0750-tower-workspace.css' %}?v={{ map_version }}-tower-r3">
     {% if current_company.brand_color %}<style>:root{--map-brand-accent:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
 <!-- IXCSOFT_MAP_UI_V072 -->
@@ -189,6 +189,14 @@
                     <svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg>
                 </button>
                 <span class="map-group-divider"></span>
+                <button type="button" class="map-icon-toggle map-label-visibility-toggle active" data-layer-toggle="layer-labels" title="Mostrar nomes dos equipamentos e cabos" aria-label="Mostrar nomes dos equipamentos e cabos" aria-pressed="true">
+                    <svg class="toggle-icon-on" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+                    <svg class="toggle-icon-off" viewBox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a18 18 0 0 1-2.1 2.8M6.1 6.1C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6a9.9 9.9 0 0 0 3.2-.5"></path></svg>
+                </button>
+                <button type="button" class="map-icon-toggle map-client-visibility-toggle active" data-layer-toggle="layer-clients" title="Mostrar clientes no mapa" aria-label="Mostrar clientes no mapa" aria-pressed="true"{% if hide_client_layers %} hidden{% endif %}>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c0-3.7 2.9-6.4 6.5-6.4s6.5 2.7 6.5 6.4"></path><circle class="client-status-light" cx="19" cy="5" r="2.2"></circle></svg>
+                </button>
+                <span class="map-group-divider"></span>
                 <button type="button" class="map-icon-toggle active" data-layer-toggle="group-clients" title="Agrupar PPPoE" aria-label="Agrupar PPPoE"{% if hide_client_layers %} hidden{% endif %}>
                     <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="8" r="3"></circle><path d="M2.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5M12.5 20c0-3 2-5.5 4.5-5.5s5 2.5 5 5.5"></path></svg>
                 </button>
@@ -197,6 +205,7 @@
                 </button>
                 <input id="group-clients" type="checkbox" checked hidden>
                 <input id="group-equipment" type="checkbox" checked hidden>
+                <input id="layer-clients" type="checkbox" checked hidden>
             </div>
         </main>
     </div>
@@ -520,7 +529,7 @@
     <script src="{% static 'js/map-ui-v0722.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-v074-ui.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/map-v0741-ui.js' %}?v={{ map_version }}"></script>
-    <script src="{% static 'js/map-v0750-tower-workspace.js' %}?v={{ map_version }}-tower-r2"></script>
+    <script src="{% static 'js/map-v0750-tower-workspace.js' %}?v={{ map_version }}-tower-r3"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>
