@@ -40,20 +40,8 @@
     function installSidebarEnhancements(nav) {
         if (nav.dataset.v074 === "1") return;
         nav.dataset.v074 = "1";
-        const labels = document.createElement("button");
-        labels.type = "button";
-        labels.dataset.v074Labels = "true";
-        labels.innerHTML = `${icon("labels")}<span>Ocultar nomes</span>`;
-        labels.onclick = () => {
-            const checkbox = qs("#layer-labels");
-            if (!checkbox) return;
-            checkbox.checked = !checkbox.checked;
-            checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-            syncLabelsButton(labels);
-        };
-        nav.appendChild(labels);
-        qs("#layer-labels")?.addEventListener("change", () => syncLabelsButton(labels));
-        syncLabelsButton(labels);
+        // O controle de nomes pertence à barra inferior do mapa.
+        qsa("[data-v074-labels]", nav).forEach((button) => button.remove());
 
         const colors = ["#38bdf8", "#22d3ee", "#a78bfa", "#34d399", "#fb7185", "#fbbf24", "#c084fc", "#2dd4bf"];
         qsa(":scope > a, :scope > button", nav).forEach((item, index) => {
