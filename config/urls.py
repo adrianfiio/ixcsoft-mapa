@@ -21,12 +21,14 @@ from apps.core.views import (
     company_team,
     create_company_asset,
     erp_onboarding,
+    platform_company_create,
 )
 from apps.billing.views import (
     customer_create,
     customer_detail,
     customer_list,
     customer_update,
+    platform_gateway_settings,
     record_payment,
 )
 
@@ -61,6 +63,12 @@ urlpatterns = [
         name="dashboard-layout-editor",
     ),
     path("painel/plataforma/", PlatformOverviewView.as_view(), name="platform-overview"),
+    path("painel/plataforma/empresas/novo/", platform_company_create, name="platform-company-create"),
+    path(
+        "painel/plataforma/empresas/<int:company_id>/gateway/",
+        platform_gateway_settings,
+        name="platform-gateway-settings",
+    ),
     path("painel/financeiro/", customer_list, name="billing-customers"),
     path("painel/financeiro/novo/", customer_create, name="billing-customer-create"),
     path("painel/financeiro/<int:pk>/", customer_detail, name="billing-customer-detail"),

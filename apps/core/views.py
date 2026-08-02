@@ -4,7 +4,8 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db.models.functions import Length, Transform
 from django.core.exceptions import PermissionDenied
-from django.db import connection
+from django.db import connection, transaction
+from django.utils.text import slugify
 from django.db.models import Count, FloatField, Q, Sum
 from django.http import JsonResponse
 from django.urls import reverse
@@ -56,6 +57,7 @@ from apps.core.forms import (
     ERPOnboardingForm,
     OLTPlatformForm,
     POPPlatformForm,
+    SuperadminCompanyForm,
 )
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.fiber_models import IXCFiberAssignment
@@ -442,6 +444,48 @@ class PlatformOverviewView(LoginRequiredMixin, TemplateView):
         layout.updated_by = request.user
         layout.save()
         return JsonResponse({"success": True})
+
+
+def _unique_slug(name):
+    base = slugify(name)[:170] or "empresa"
+    slug = base
+    suffix = 1
+    while Company.objects.filter(slug=slug).exists():
+        suffix += 1
+        slug = f"{base}-{suffix}"
+    return slug
+
+
+@login_required
+def platform_company_create(request):
+    """Cadastro de empresa + primeiro usuário responsável pelo Superadmin,
+    fora do Django Admin — hoje isso só existia via /admin/
+    (`apps/core/admin.py`, `CompanyAdmin`)."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    form = SuperadminCompanyForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            company = form.save(commit=False)
+            company.slug = _unique_slug(form.cleaned_data["name"])
+            if company.is_designer:
+                company.integration_mode = ""
+            company.onboarding_completed = True
+            company.save()
+            user = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                password=form.cleaned_data["password"],
+                first_name=form.cleaned_data["first_name"],
+            )
+            CompanyMembership.objects.create(
+                company=company,
+                user=user,
+                role=form.cleaned_data["role"],
+                active=True,
+            )
+        messages.success(request, f"Empresa {company.trade_name or company.name} cadastrada.")
+        return redirect("platform-overview")
+    return render(request, "platform_company_form.html", {"form": form})
 
 
 class AccountPanelView(LoginRequiredMixin, TemplateView):

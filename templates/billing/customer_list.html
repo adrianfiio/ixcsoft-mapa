@@ -11,7 +11,8 @@
         <p>Controle de mensalidade e pagamento dos seus clientes.</p>
     </div>
     <div class="page-heading-actions">
-        <a class="primary-action" href="{% url 'billing-customer-create' %}">Novo cliente →</a>
+        {% if request.user.is_superuser %}<a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>{% endif %}
+        <a class="primary-action" href="{% url 'billing-customer-create' %}?empresa={{ company.id }}">Novo cliente →</a>
     </div>
 </section>
 
@@ -34,6 +35,7 @@
     <div class="panel-header">
         <h2 class="panel-title">Clientes</h2>
         <form method="get" class="billing-search">
+            {% if request.user.is_superuser %}<input type="hidden" name="empresa" value="{{ company.id }}">{% endif %}
             <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nome...">
             <button type="submit">Buscar</button>
         </form>

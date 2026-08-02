@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}{% if customer %}Editar cliente{% else %}Novo cliente{% endif %} | AFService Map{% endblock %}
-{% block topbar_title %}Financeiro{% endblock %}
+{% block title %}Gateway de pagamento | {{ company.trade_name|default:company.name }}{% endblock %}
+{% block topbar_title %}Visão da plataforma{% endblock %}
 
 {% block content %}
 <section class="page-heading">
     <div>
         <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
-        <h1>{% if customer %}Editar {{ customer.name }}{% else %}Novo cliente{% endif %}</h1>
-        <p>Dados de contato e mensalidade recorrente. O vínculo com um ponto de acesso é opcional.</p>
+        <h1>Gateway de pagamento</h1>
+        <p>Credenciais guardadas de forma criptografada. Nenhuma cobrança é gerada automaticamente por aqui ainda — esta tela só administra o acesso.</p>
     </div>
     <div class="page-heading-actions">
-        <a class="cancel-link" href="{% if customer %}{% url 'billing-customer-detail' customer.pk %}{% else %}{% url 'billing-customers' %}?empresa={{ company.id }}{% endif %}">← Voltar</a>
+        <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
     </div>
 </section>
 
@@ -21,7 +21,7 @@
         <div class="platform-form-grid">
             {% for field in form %}
             <label><strong>{{ field.label }}</strong>{{ field }}
-                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                {% if field.name == "client_secret" or field.name == "access_token" %}<small>Deixe em branco para manter o valor salvo atualmente.</small>{% endif %}
                 {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
             </label>
             {% endfor %}

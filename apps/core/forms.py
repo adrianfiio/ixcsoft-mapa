@@ -229,6 +229,53 @@ class CompanyTeamMemberForm(forms.Form):
         return password
 
 
+class SuperadminCompanyForm(forms.ModelForm):
+    """Cadastro de empresa pelo Superadmin, fora do Django Admin — cria
+    a empresa e o primeiro usuário responsável por ela numa tacada só.
+    Reaproveita os mesmos campos de CompanyOnboardingForm (dados da
+    empresa) e o mesmo padrão de validação de CompanyTeamMemberForm
+    (usuário/senha)."""
+
+    first_name = forms.CharField(label="Nome do responsável", max_length=150)
+    username = forms.CharField(label="Usuário de acesso", max_length=150)
+    password = forms.CharField(label="Senha", widget=forms.PasswordInput)
+    role = forms.ChoiceField(label="Nível de acesso do responsável", choices=CompanyMembership.Role.choices)
+
+    class Meta:
+        model = Company
+        fields = (
+            "name", "trade_name", "document", "contact_name", "contact_phone",
+            "contact_email", "address", "company_type", "integration_mode",
+        )
+        labels = {
+            "name": "Razão social ou nome",
+            "trade_name": "Nome fantasia",
+            "document": "CPF ou CNPJ",
+            "contact_name": "Pessoa de contato",
+            "contact_phone": "Telefone / WhatsApp",
+            "contact_email": "E-mail",
+            "address": "Endereço",
+            "company_type": "Tipo de empresa",
+            "integration_mode": "Modo de operação",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("name", "document", "company_type"):
+            self.fields[name].required = True
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("Já existe um usuário com este nome de acesso.")
+        return username
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        validate_password(password)
+        return password
+
+
 class CompanyEmailConfigurationForm(forms.ModelForm):
     password = forms.CharField(
         label="Senha",

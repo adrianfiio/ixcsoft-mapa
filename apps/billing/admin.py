@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Customer, Invoice, Payment
+from .models import CompanyPaymentGatewayConfiguration, Customer, Invoice, Payment
 
 
 @admin.register(Customer)
@@ -22,3 +22,10 @@ class InvoiceAdmin(admin.ModelAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ("invoice", "amount", "method", "paid_at", "recorded_by")
     list_filter = ("method",)
+
+
+@admin.register(CompanyPaymentGatewayConfiguration)
+class CompanyPaymentGatewayConfigurationAdmin(admin.ModelAdmin):
+    list_display = ("company", "provider", "sandbox_mode", "enabled", "updated_at")
+    list_filter = ("provider", "enabled", "sandbox_mode")
+    readonly_fields = ("credentials_encrypted",)

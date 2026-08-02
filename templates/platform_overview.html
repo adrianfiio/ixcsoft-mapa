@@ -103,10 +103,13 @@
     <div class="grid-stack-item" data-widget="panel_companies_table" gs-id="panel_companies_table" gs-x="{{ widget_meta.panel_companies_table.x }}" gs-y="{{ widget_meta.panel_companies_table.y }}" gs-w="{{ widget_meta.panel_companies_table.w }}" gs-h="{{ widget_meta.panel_companies_table.h }}" style="grid-column: {{ widget_meta.panel_companies_table.x1 }} / span {{ widget_meta.panel_companies_table.w }}; grid-row: {{ widget_meta.panel_companies_table.y1 }} / span {{ widget_meta.panel_companies_table.h }};">
         <article class="panel grid-stack-item-content{% if widget_meta.panel_companies_table.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_companies_table" hidden=widget_meta.panel_companies_table.hidden %}
-            <div class="panel-header"><h2 class="panel-title">Empresas</h2></div>
+            <div class="panel-header">
+                <h2 class="panel-title">Empresas</h2>
+                <a class="panel-link" href="{% url 'platform-company-create' %}">Nova empresa →</a>
+            </div>
             <div class="overview-table-wrap">
                 <table class="overview-table">
-                    <thead><tr><th>Empresa</th><th>Tipo</th><th>Clientes</th><th>Cabo</th><th>Elementos</th><th>Alertas</th><th>Equipe</th><th>Sincronização</th></tr></thead>
+                    <thead><tr><th>Empresa</th><th>Tipo</th><th>Clientes</th><th>Cabo</th><th>Elementos</th><th>Alertas</th><th>Equipe</th><th>Sincronização</th><th></th></tr></thead>
                     <tbody>
                         {% for row in companies_summary %}
                         <tr class="{% if row.needs_attention %}overview-row-attention{% endif %}">
@@ -125,9 +128,13 @@
                                 {% elif row.sync_state == "falhou" %}<span class="sync-pill sync-danger">Falhou</span>
                                 {% endif %}
                             </td>
+                            <td class="billing-row-actions">
+                                <a href="{% url 'billing-customers' %}?empresa={{ row.company.id }}">Financeiro →</a>
+                                <a href="{% url 'platform-gateway-settings' row.company.id %}">Gateway →</a>
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="8" class="empty-state">Nenhuma empresa ativa.</td></tr>
+                        <tr><td colspan="9" class="empty-state">Nenhuma empresa ativa.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

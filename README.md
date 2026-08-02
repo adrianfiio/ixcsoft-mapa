@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.74.0 — Módulo financeiro: cadastro de cliente, mensalidade recorrente automática, registro de pagamento e página de detalhe por cliente**
+**v0.75.0 — ACL do financeiro por perfil e painel Superadmin: cadastro de empresa, financeiro de qualquer empresa e configuração de gateway de pagamento**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
@@ -62,8 +62,9 @@ cabos, camadas operacionais e importação KML/KMZ.
 - Mensalidade recorrente com geração automática de fatura por mês
 - Registro de pagamento manual (com suporte a pagamento parcial)
 - Página de detalhe do cliente com histórico de faturas
-- Schema pronto para integração futura com gateway de pagamento (ainda
-  não integrado)
+- Acesso restrito a usuários com permissão de edição (EDIT); visualização (VIEW) não acessa
+- Superadmin acessa o financeiro de qualquer empresa pela Visão da plataforma
+- Configuração centralizada de credencial de gateway de pagamento por empresa (armazenamento apenas; integração real ainda não realizada)
 
 ### Plataforma
 

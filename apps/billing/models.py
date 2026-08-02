@@ -173,3 +173,34 @@ class Payment(TimeStampedModel):
 
     def __str__(self):
         return f"{self.amount} · {self.paid_at:%d/%m/%Y}"
+
+
+class CompanyPaymentGatewayConfiguration(TimeStampedModel):
+    """Guarda a credencial do gateway de pagamento escolhido por empresa,
+    gerenciada pelo Superadmin. Só armazenamento — nenhuma chamada real
+    de API/webhook acontece a partir daqui nesta rodada (mesma decisão
+    já tomada na v0.74.0 sobre `Invoice.gateway_provider`).
+
+    `credentials_encrypted` guarda um JSON criptografado (via
+    `apps.core.crypto.SecretCipher`, mesmo padrão de
+    `CompanyEmailConfiguration.password_encrypted`) com as chaves que o
+    provedor escolhido precisar (client_id/client_secret/access_token) —
+    de propósito genérico, pra não exigir nova migration quando a
+    integração real de cada gateway definir os campos exatos."""
+
+    company = models.OneToOneField(
+        "core.Company", on_delete=models.CASCADE, related_name="payment_gateway"
+    )
+    provider = models.CharField(
+        max_length=20, choices=GatewayProvider.choices, default=GatewayProvider.NONE
+    )
+    credentials_encrypted = models.TextField(blank=True, editable=False)
+    sandbox_mode = models.BooleanField(default=True, verbose_name="Ambiente de testes (sandbox)")
+    enabled = models.BooleanField(default=False, verbose_name="Integração ativa")
+
+    class Meta:
+        verbose_name = "Configuração de gateway de pagamento"
+        verbose_name_plural = "Configurações de gateway de pagamento"
+
+    def __str__(self):
+        return f"{self.company} · {self.get_provider_display()}"

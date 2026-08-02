@@ -1,5 +1,77 @@
 # Changelog
 
+## [0.75.0] - 2026-08-02
+
+ACL do financeiro por perfil de usuário e novas telas no painel
+Superadmin ("Visão da plataforma"), fora do Django Admin: cadastro de
+empresa (com tipo/nível de acesso definidos na hora), inspeção do
+financeiro de qualquer empresa, e configuração centralizada de
+credencial de gateway de pagamento por empresa. **Com migration**
+(`apps.billing.0002_gateway_configuration`, roda automaticamente no
+`apply`).
+
+Boa parte da regra de acesso pedida **já estava implementada** desde a
+v0.74.0: `apps/billing/views.py` já restringia o financeiro a quem tem
+`CompanyMembership.role == EDIT` na própria empresa — perfil VIEW já
+era bloqueado por completo, EDIT já só via a própria empresa, tanto pra
+Provedor quanto pra Projetista (a regra não depende do tipo da empresa,
+só do papel do usuário — não precisei criar papéis novos tipo "ISP
+Editor"/"Projetista View", o `Role` genérico já combinado com
+`Company.company_type` já entrega exatamente essa regra). O que faltava
+de verdade era o acesso do Superadmin e as telas de Superadmin.
+
+### Adicionado
+
+- **Superadmin acessa o financeiro de qualquer empresa**: cada linha da
+  tabela de empresas na Visão da plataforma ganhou um link
+  "Financeiro →", que abre a mesma lista/detalhe de cliente que a
+  própria empresa usa — só que resolvendo a empresa por
+  `?empresa=<id>` em vez do vínculo de equipe do usuário. Usuário comum
+  nunca tem esse parâmetro respeitado (a resolução de empresa dele
+  nunca olha a query string), então não abre brecha nenhuma de
+  autorização entre empresas.
+- **Cadastro de empresa pelo Superadmin, fora do Django Admin**: antes
+  só existia via `/admin/` — o único fluxo em-app
+  (`company_onboarding`) exige que a empresa e o vínculo já existam,
+  é o próprio usuário da empresa preenchendo os dados dela. A tela nova
+  (`painel/plataforma/empresas/novo/`) cria a empresa **e** o primeiro
+  usuário responsável numa tacada só, já com tipo (Provedor/Projetista),
+  modo de operação (ERP/manual) e nível de acesso (VIEW/EDIT) definidos.
+- **Configuração de gateway de pagamento centralizada**: novo model
+  `CompanyPaymentGatewayConfiguration` (uma credencial por empresa,
+  criptografada com `SecretCipher` — mesmo padrão já usado pra senha de
+  SMTP em `CompanyEmailConfiguration`), gerenciada só pelo Superadmin em
+  `painel/plataforma/empresas/<id>/gateway/`. **Nenhuma chamada real a
+  gateway acontece a partir daqui** — só guarda a credencial, pronta pra
+  quando a integração de verdade (Efí/Inter/Mercado Pago) entrar, mesma
+  decisão já tomada na v0.74.0 pros campos `gateway_provider`/
+  `gateway_charge_id` da fatura.
+
+### Verificação feita
+
+- `python -m py_compile` em todos os arquivos Python tocados/novos.
+- Migration escrita à mão (sem GDAL neste ambiente de preparação),
+  revisada campo a campo.
+- Geração de slug da empresa nova (`slugify` + sufixo numérico em
+  colisão) — validei a lógica de sufixo com um script Python direto
+  (4 asserções, incluindo colisão dupla e nome vazio).
+- Chaves do `static/css/app.css` balanceadas (278/278) e `{% if %}`/
+  `{% endif %}`/`{% for %}`/`{% endfor %}`/`{% block %}`/`{% endblock %}`
+  balanceados em todos os templates tocados/novos.
+- Revisei que nenhuma view de financeiro deixa um usuário comum
+  acessar dado de outra empresa: a busca do cliente por `pk` sempre
+  filtra por `company=` quando quem pede não é superusuário — cliente
+  de outra empresa retorna 404 (como se não existisse), nunca revela
+  que pertence a outra empresa.
+
+**`manage.py check`, `manage.py migrate`, `manage.py test` e o teste
+real (Superadmin cria empresa definindo tipo e nível de acesso, aquele
+usuário EDIT vê o financeiro da própria empresa, um usuário VIEW da
+mesma empresa não consegue acessar `/painel/financeiro/`, Superadmin
+acessa o financeiro de qualquer empresa pela Visão da plataforma, e
+salva uma credencial de gateway) dependem de banco/GDAL reais — precisam
+ser feitos no servidor.**
+
 ## [0.74.0] - 2026-08-03
 
 Módulo financeiro novo (`apps/billing`) — controle de mensalidade e

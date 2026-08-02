@@ -1,22 +1,22 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.core.models import CompanyMembership
+from apps.core.crypto import SecretCipher
+from apps.core.models import Company, CompanyMembership
 
 from . import services
-from .forms import CustomerForm, PaymentRecordForm
-from .models import Customer, Invoice
+from .forms import CustomerForm, GatewaySettingsForm, PaymentRecordForm
+from .models import CompanyPaymentGatewayConfiguration, Customer, Invoice
 
 
-def _billing_company(request):
-    """Mesma resolução usada em company_team/company_alerts: a empresa
-    do primeiro vínculo EDIT ativo do usuário. Financeiro é sensível o
-    bastante pra seguir a mesma regra restrita da gestão de equipe —
-    somente EDIT (ou superusuário) entra."""
-    if request.user.is_superuser:
-        return None
+def _editable_company(request):
+    """Empresa do primeiro vínculo EDIT ativo do usuário logado (mesma
+    resolução de company_team/company_alerts)."""
     membership = (
         CompanyMembership.objects.filter(
             user=request.user, active=True, role=CompanyMembership.Role.EDIT
@@ -27,26 +27,47 @@ def _billing_company(request):
     return membership.company if membership else None
 
 
-def _require_billing_company(request):
+def _require_list_company(request):
+    """Resolução de empresa pras telas sem cliente ainda escolhido (lista
+    e criação). Usuário normal usa o próprio vínculo EDIT — só isso já
+    bloqueia VIEW por completo, mesma regra restrita de company_team.
+    Superusuário não tem uma "própria" empresa: precisa escolher uma
+    pelo link da Visão da plataforma (`?empresa=<id>`)."""
     if request.user.is_superuser:
-        messages.info(
-            request,
-            "Financeiro é gerenciado dentro de cada empresa — acesse como um usuário da empresa.",
-        )
-        return None
-    company = _billing_company(request)
+        company_id = request.GET.get("empresa")
+        company = Company.objects.filter(pk=company_id).first() if company_id else None
+        if company is None:
+            messages.info(
+                request,
+                "Escolha uma empresa na Visão da plataforma para ver o financeiro dela.",
+            )
+        return company
+    company = _editable_company(request)
     if company is None:
         messages.info(
             request,
             "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.",
         )
-        return None
     return company
+
+
+def _customer_for_request(request, pk):
+    """Resolução pras telas que já têm um cliente (detalhe, edição,
+    pagamento). Superusuário vê o financeiro de qualquer empresa; usuário
+    normal só o da própria empresa (o filtro `company=` no
+    `get_object_or_404` faz o cliente de outra empresa dar 404 — igual a
+    "não existe", sem revelar que pertence a outra empresa)."""
+    if request.user.is_superuser:
+        return get_object_or_404(Customer, pk=pk)
+    company = _editable_company(request)
+    if company is None:
+        return None
+    return get_object_or_404(Customer, pk=pk, company=company)
 
 
 @login_required
 def customer_list(request):
-    company = _require_billing_company(request)
+    company = _require_list_company(request)
     if company is None:
         return redirect("account-panel")
 
@@ -76,7 +97,7 @@ def customer_list(request):
 
 @login_required
 def customer_create(request):
-    company = _require_billing_company(request)
+    company = _require_list_company(request)
     if company is None:
         return redirect("account-panel")
 
@@ -93,26 +114,26 @@ def customer_create(request):
 
 @login_required
 def customer_update(request, pk):
-    company = _require_billing_company(request)
-    if company is None:
+    customer = _customer_for_request(request, pk)
+    if customer is None:
+        messages.info(request, "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.")
         return redirect("account-panel")
-    customer = get_object_or_404(Customer, pk=pk, company=company)
 
-    form = CustomerForm(request.POST or None, instance=customer, company=company)
+    form = CustomerForm(request.POST or None, instance=customer, company=customer.company)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Cadastro atualizado.")
         return redirect("billing-customer-detail", pk=customer.pk)
 
-    return render(request, "billing/customer_form.html", {"company": company, "form": form, "customer": customer})
+    return render(request, "billing/customer_form.html", {"company": customer.company, "form": form, "customer": customer})
 
 
 @login_required
 def customer_detail(request, pk):
-    company = _require_billing_company(request)
-    if company is None:
+    customer = _customer_for_request(request, pk)
+    if customer is None:
+        messages.info(request, "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.")
         return redirect("account-panel")
-    customer = get_object_or_404(Customer, pk=pk, company=company)
     invoices = customer.invoices.prefetch_related("payments").order_by("-reference_month")
     payment_form = PaymentRecordForm()
 
@@ -120,7 +141,7 @@ def customer_detail(request, pk):
         request,
         "billing/customer_detail.html",
         {
-            "company": company,
+            "company": customer.company,
             "customer": customer,
             "invoices": invoices,
             "payment_form": payment_form,
@@ -130,10 +151,10 @@ def customer_detail(request, pk):
 
 @login_required
 def record_payment(request, pk, invoice_id):
-    company = _require_billing_company(request)
-    if company is None:
+    customer = _customer_for_request(request, pk)
+    if customer is None:
+        messages.info(request, "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.")
         return redirect("account-panel")
-    customer = get_object_or_404(Customer, pk=pk, company=company)
     invoice = get_object_or_404(Invoice, pk=invoice_id, customer=customer)
 
     if request.method != "POST":
@@ -152,3 +173,52 @@ def record_payment(request, pk, invoice_id):
     else:
         messages.error(request, "Não foi possível registrar o pagamento — confira os dados.")
     return redirect("billing-customer-detail", pk=customer.pk)
+
+
+@login_required
+def platform_gateway_settings(request, company_id):
+    """Só o Superadmin gerencia credencial de gateway — centralizado,
+    fora do Django Admin. Nenhuma chamada real ao gateway acontece aqui,
+    só armazenamento criptografado (ver docstring do model)."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    company = get_object_or_404(Company, pk=company_id)
+    configuration = CompanyPaymentGatewayConfiguration.objects.filter(company=company).first()
+
+    initial = {}
+    if configuration:
+        initial = {
+            "provider": configuration.provider,
+            "sandbox_mode": configuration.sandbox_mode,
+            "enabled": configuration.enabled,
+        }
+    form = GatewaySettingsForm(request.POST or None, initial=initial)
+
+    if request.method == "POST" and form.is_valid():
+        cipher = SecretCipher()
+        current = {}
+        if configuration and configuration.credentials_encrypted:
+            try:
+                current = json.loads(cipher.decrypt(configuration.credentials_encrypted))
+            except (ValueError, json.JSONDecodeError):
+                current = {}
+        credentials = {
+            "client_id": form.cleaned_data["client_id"] or current.get("client_id", ""),
+            "client_secret": form.cleaned_data["client_secret"] or current.get("client_secret", ""),
+            "access_token": form.cleaned_data["access_token"] or current.get("access_token", ""),
+        }
+        if configuration is None:
+            configuration = CompanyPaymentGatewayConfiguration(company=company)
+        configuration.provider = form.cleaned_data["provider"]
+        configuration.sandbox_mode = form.cleaned_data["sandbox_mode"]
+        configuration.enabled = form.cleaned_data["enabled"]
+        configuration.credentials_encrypted = cipher.encrypt(json.dumps(credentials))
+        configuration.save()
+        messages.success(request, "Configuração de gateway salva.")
+        return redirect("platform-gateway-settings", company_id=company.id)
+
+    return render(
+        request,
+        "billing/gateway_settings.html",
+        {"company": company, "form": form, "configuration": configuration},
+    )
