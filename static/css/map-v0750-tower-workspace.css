@@ -10,8 +10,13 @@
 }
 
 .tower-workspace-dialog-v0750:not(.master-container-fullscreen) {
-    width: min(1180px, calc(100vw - 24px)) !important;
-    height: min(760px, calc(100dvh - 24px)) !important;
+    width: min(1480px, calc(100vw - 48px)) !important;
+    height: min(860px, calc(100dvh - 72px)) !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: 1px solid rgba(56, 189, 248, .2) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .58) !important;
 }
 .tower-workspace-dialog-v0750 > section {
     display: grid !important;
@@ -40,15 +45,17 @@
     justify-content: space-between;
     gap: 10px;
     min-width: 0;
-    padding: 7px 9px;
+    min-height: 52px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--v0750-border);
-    background: color-mix(in srgb, var(--v0750-panel) 94%, transparent);
+    background: rgba(12, 33, 54, .94);
+    backdrop-filter: blur(16px);
 }
 .tower-workspace-title-v0750 {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 190px;
+    min-width: 230px;
 }
 .tower-workspace-title-v0750 > svg {
     width: 25px;
@@ -69,8 +76,7 @@
     gap: 4px;
     min-width: 0;
     flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+    overflow: visible;
 }
 .tower-workspace-actions-v0750::-webkit-scrollbar { display: none; }
 .tower-workspace-actions-v0750 button {
@@ -93,6 +99,12 @@
     color: #fff;
     background: color-mix(in srgb, var(--v0750-accent) 16%, var(--v0750-panel));
 }
+.tower-workspace-actions-v0750 button.primary {
+    border-color: rgba(16, 185, 129, .58);
+    color: #ecfdf5;
+    background: linear-gradient(135deg, rgba(5, 150, 105, .95), rgba(16, 185, 129, .82));
+    box-shadow: 0 8px 22px rgba(16, 185, 129, .16);
+}
 .tower-workspace-actions-v0750 button svg {
     width: 16px;
     height: 16px;
@@ -102,22 +114,41 @@
     stroke-linecap: round;
     stroke-linejoin: round;
 }
-.tower-add-active-v0750 { position: relative; }
-.tower-add-menu-v0750 {
+.tower-toolbar-menu-v0750 { position: relative; }
+.tower-popover-v0750 {
     position: absolute;
-    z-index: 80;
+    z-index: 120;
     top: calc(100% + 6px);
-    left: 0;
+    right: 0;
     display: none;
-    width: 170px;
-    padding: 5px;
+    width: 270px;
+    padding: 7px;
     border: 1px solid var(--v0750-border);
-    border-radius: 10px;
-    background: #071625;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, .48);
+    border-radius: 12px;
+    background: rgba(7, 22, 37, .98);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .58);
+    backdrop-filter: blur(18px);
 }
-.tower-add-menu-v0750.open { display: grid; gap: 3px; }
-.tower-add-menu-v0750 button { justify-content: flex-start; width: 100%; }
+.tower-popover-v0750.open { display: grid; gap: 3px; }
+.tower-popover-v0750 > small {
+    padding: 7px 8px 3px;
+    color: var(--v0750-muted);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .11em;
+}
+.tower-popover-v0750 button {
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 40px;
+    border-color: transparent;
+    background: transparent;
+}
+.tower-popover-v0750 button > span { display: grid; min-width: 0; text-align: left; }
+.tower-popover-v0750 button strong { color: inherit; font-size: 11px; }
+.tower-popover-v0750 button small { color: var(--v0750-muted); font-size: 8px; font-weight: 400; }
+.tower-add-menu-v0750 { left: 0; right: auto; }
+.tower-tools-menu-v0750 { width: 225px; }
 
 .tower-workspace-dialog-v0750 #map-master-container > [data-panel="canvas"] {
     position: relative;
@@ -137,11 +168,10 @@
     scrollbar-width: none !important;
     overscroll-behavior: contain;
     background:
-        radial-gradient(circle at 50% 50%, rgba(34, 211, 238, .05), transparent 42%),
-        linear-gradient(rgba(56, 189, 248, .055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(56, 189, 248, .055) 1px, transparent 1px),
-        #061422;
-    background-size: auto, 28px 28px, 28px 28px, auto;
+        radial-gradient(circle at 50% 42%, rgba(14, 165, 233, .07), transparent 44%),
+        radial-gradient(rgba(71, 113, 145, .36) 1px, transparent 1px),
+        linear-gradient(145deg, #061422, #071a2c 58%, #061422);
+    background-size: auto, 24px 24px, auto;
 }
 .tower-workspace-dialog-v0750 .master-canvas-scroll::-webkit-scrollbar,
 .tower-workspace-dialog-v0750 .master-container-panel::-webkit-scrollbar,
@@ -186,31 +216,71 @@
 .tower-workspace-dialog-v0750 .master-canvas-nodes { z-index: 2; }
 .tower-workspace-dialog-v0750 .master-canvas-node {
     z-index: 3;
-    box-shadow: 0 14px 28px rgba(0, 0, 0, .28);
+    width: 280px;
+    min-height: 118px;
+    overflow: visible;
+    border-color: rgba(71, 113, 145, .62) !important;
+    border-radius: 12px !important;
+    background: rgba(8, 24, 40, .96) !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .38);
 }
 .tower-workspace-dialog-v0750 .master-canvas-node:hover {
     border-color: color-mix(in srgb, var(--v0750-accent) 65%, transparent) !important;
     box-shadow: 0 0 0 2px rgba(34, 211, 238, .09), 0 16px 34px rgba(0, 0, 0, .38);
 }
+.tower-workspace-dialog-v0750 .master-canvas-node > header {
+    justify-content: flex-start;
+    min-height: 42px;
+    padding: 7px 10px;
+    border-color: rgba(71, 113, 145, .32);
+    border-radius: 11px 11px 0 0;
+    background: linear-gradient(90deg, rgba(16, 42, 67, .96), rgba(8, 24, 40, .88));
+}
+.tower-workspace-dialog-v0750 .master-canvas-node > header strong { margin-right: auto; font-size: 11px; }
+.tower-node-icon-v0750 {
+    display: grid;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid rgba(56, 189, 248, .3);
+    border-radius: 8px;
+    color: var(--v0750-accent);
+    background: rgba(14, 165, 233, .1);
+}
+.tower-node-icon-v0750 svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.tower-workspace-dialog-v0750 .master-node-ports {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px 10px;
+    padding: 10px 12px 12px;
+}
+.tower-workspace-dialog-v0750 .master-node-port {
+    min-height: 24px !important;
+    padding: 3px 6px !important;
+    border-radius: 5px !important;
+    font-size: 8px !important;
+    background: rgba(16, 42, 67, .74) !important;
+}
 .tower-workspace-dialog-v0750 .map-canvas-zoom-v0741 {
-    right: 10px !important;
-    bottom: 10px !important;
+    left: 12px !important;
+    right: auto !important;
+    bottom: 12px !important;
     z-index: 25;
-    padding: 4px !important;
-    gap: 3px !important;
+    padding: 3px !important;
+    gap: 2px !important;
     border-radius: 9px !important;
     background: rgba(7, 22, 37, .92) !important;
     backdrop-filter: blur(10px);
 }
 .tower-workspace-dialog-v0750 .map-canvas-zoom-v0741 button {
-    min-width: 28px !important;
-    min-height: 28px !important;
-    padding: 4px 6px !important;
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+    min-height: 27px !important;
+    padding: 4px !important;
 }
-.tower-workspace-dialog-v0750 .map-canvas-zoom-v0741 output {
-    min-width: 42px;
-    font-size: 9px;
-}
+.tower-workspace-dialog-v0750 .map-canvas-zoom-v0741 output,
+.tower-workspace-dialog-v0750 .map-canvas-zoom-v0741 [data-canvas-zoom-fit] { display: none !important; }
 
 .tower-drawer-v0750 {
     position: absolute;
@@ -438,8 +508,8 @@
     .tower-workspace-title-v0750 small { display: none; }
     .tower-workspace-actions-v0750 button span { display: none; }
     .tower-workspace-actions-v0750 button { min-width: 31px; padding-inline: 6px; }
-    .tower-add-menu-v0750 button span,
-    .tower-add-menu-v0750 button { display: flex; }
+    .tower-popover-v0750 button { display: flex; }
+    .tower-popover-v0750 button span { display: grid; }
 }
 @media (max-width: 760px) {
     .tower-workspace-toolbar-v0750 { align-items: flex-start; }

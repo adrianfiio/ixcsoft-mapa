@@ -30,6 +30,7 @@
             sheet: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg>',
             snmp: '<svg viewBox="0 0 24 24"><path d="M4 17h3l2-5 3 8 3-12 2 9h3"></path></svg>',
             menu: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>',
+            chevron: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"></path></svg>',
         };
         return icons[name] || icons.menu;
     }
@@ -216,8 +217,17 @@
     }
 
     function closeActivePopover(root) {
-        qsa(".tower-add-menu-v0750.open", root).forEach((menu) => menu.classList.remove("open"));
-        qsa("[data-active-menu]", root).forEach((button) => button.setAttribute("aria-expanded", "false"));
+        qsa(".tower-popover-v0750.open", root).forEach((menu) => menu.classList.remove("open"));
+        qsa("[data-tower-menu]", root).forEach((button) => button.setAttribute("aria-expanded", "false"));
+    }
+
+    function toggleToolbarMenu(root, button) {
+        const menu = qs(`#${CSS.escape(button.getAttribute("aria-controls"))}`, root);
+        if (!menu) return;
+        const open = !menu.classList.contains("open");
+        closeActivePopover(root);
+        menu.classList.toggle("open", open);
+        button.setAttribute("aria-expanded", String(open));
     }
 
     function ensureToolbar(root) {
@@ -228,27 +238,37 @@
         toolbar.innerHTML = `
             <div class="tower-workspace-title-v0750">
                 ${icon("tower")}
-                <span><strong>Canvas 2D da estrutura</strong><small>Arraste equipamentos e conecte portas</small></span>
+                <span><strong>Editor técnico da Torre</strong><small>Canvas 2D · portas, ativos e conexões</small></span>
             </div>
             <div class="tower-workspace-actions-v0750">
                 <button type="button" data-structure-info>${icon("tower")}<span>Estrutura</span></button>
-                <button type="button" data-quick-add="dio">${icon("dio")}<span>D.I.O</span></button>
-                <button type="button" data-quick-add="pto">${icon("pto")}<span>PTO</span></button>
-                <button type="button" data-quick-add="access_point">${icon("active")}<span>AP</span></button>
-                <button type="button" data-quick-add="ptp">${icon("active")}<span>Rádio PTP</span></button>
-                <button type="button" data-quick-add="switch">${icon("active")}<span>Switch</span></button>
-                <button type="button" data-quick-add="router">${icon("active")}<span>Router</span></button>
-                <button type="button" data-quick-add="onu">${icon("active")}<span>ONU / ONT</span></button>
+                <div class="tower-toolbar-menu-v0750">
+                    <button type="button" class="primary" data-tower-menu aria-controls="tower-add-menu-v0750" aria-expanded="false">${icon("plus")}<span>Adicionar</span>${icon("chevron")}</button>
+                    <div id="tower-add-menu-v0750" class="tower-popover-v0750 tower-add-menu-v0750" role="menu">
+                        <small>INFRAESTRUTURA PASSIVA</small>
+                        <button type="button" data-quick-add="dio">${icon("dio")}<span><strong>D.I.O</strong><small>Distribuidor interno óptico</small></span></button>
+                        <button type="button" data-quick-add="pto">${icon("pto")}<span><strong>PTO</strong><small>Terminação de cabo DROP</small></span></button>
+                        <small>EQUIPAMENTOS ATIVOS</small>
+                        <button type="button" data-quick-add="access_point">${icon("active")}<span><strong>Access Point</strong><small>AP Wi-Fi</small></span></button>
+                        <button type="button" data-quick-add="ptp">${icon("active")}<span><strong>Rádio PTP</strong><small>Enlace ponto a ponto</small></span></button>
+                        <button type="button" data-quick-add="switch">${icon("active")}<span><strong>Switch</strong><small>Comutação Ethernet</small></span></button>
+                        <button type="button" data-quick-add="router">${icon("active")}<span><strong>Router</strong><small>Roteamento da torre</small></span></button>
+                        <button type="button" data-quick-add="onu">${icon("active")}<span><strong>ONU / ONT</strong><small>Terminação óptica ativa</small></span></button>
+                    </div>
+                </div>
                 <button type="button" data-connect-ports>${icon("connect")}<span>Conectar portas</span></button>
                 <button type="button" data-open-panel="fibers">${icon("fiber")}<span>Fibras</span></button>
-                <button type="button" data-open-panel="equipment">${icon("inventory")}<span>Inventário</span></button>
-                <button type="button" data-open-panel="matrix">${icon("connect")}<span>Matriz</span></button>
-                <button type="button" data-open-panel="models">${icon("yaml")}<span>YAML</span></button>
-                <button type="button" data-organize-canvas>${icon("organize")}<span>Organizar</span></button>
-                <button type="button" data-fit-canvas>${icon("fit")}<span>Ajustar</span></button>
-                <button type="button" data-zoom-out>${icon("minus")}<span>Zoom −</span></button>
-                <button type="button" data-zoom-in>${icon("plus")}<span>Zoom +</span></button>
-                <button type="button" data-workspace-fullscreen>${icon("fullscreen")}<span>Tela cheia</span></button>
+                <div class="tower-toolbar-menu-v0750">
+                    <button type="button" data-tower-menu aria-controls="tower-tools-menu-v0750" aria-expanded="false">${icon("menu")}<span>Ferramentas</span>${icon("chevron")}</button>
+                    <div id="tower-tools-menu-v0750" class="tower-popover-v0750 tower-tools-menu-v0750" role="menu">
+                        <button type="button" data-open-panel="equipment">${icon("inventory")}<span>Inventário</span></button>
+                        <button type="button" data-open-panel="matrix">${icon("connect")}<span>Matriz de conexões</span></button>
+                        <button type="button" data-open-panel="models">${icon("yaml")}<span>Importar YAML</span></button>
+                        <button type="button" data-organize-canvas>${icon("organize")}<span>Organizar equipamentos</span></button>
+                        <button type="button" data-fit-canvas>${icon("fit")}<span>Ajustar ao Canvas</span></button>
+                        <button type="button" data-workspace-fullscreen>${icon("fullscreen")}<span>Tela cheia</span></button>
+                    </div>
+                </div>
             </div>`;
         root.insertBefore(toolbar, root.firstChild);
 
@@ -259,21 +279,14 @@
                 quickAdd(root, button.dataset.quickAdd);
             };
         });
-        const activeMenu = qs("[data-active-menu]", toolbar);
-        activeMenu.onclick = (event) => {
+        qsa("[data-tower-menu]", toolbar).forEach((button) => button.onclick = (event) => {
             event.preventDefault();
             event.stopPropagation();
-            const menu = qs(".tower-add-menu-v0750", toolbar);
-            const open = !menu.classList.contains("open");
-            closeActivePopover(root);
-            menu.classList.toggle("open", open);
-            activeMenu.setAttribute("aria-expanded", String(open));
-        };
+            toggleToolbarMenu(root, button);
+        });
         qsa("[data-open-panel]", toolbar).forEach((button) => button.onclick = () => openPanel(root, button.dataset.openPanel));
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
-        qs("[data-zoom-out]", toolbar).onclick = () => qs("[data-canvas-zoom-out]", root)?.click();
-        qs("[data-zoom-in]", toolbar).onclick = () => qs("[data-canvas-zoom-in]", root)?.click();
         qs("[data-connect-ports]", toolbar).onclick = (event) => {
             const native = qs("[data-container-lines]", root);
             if (!native) return notify("Editor de conexões não carregado.", true);
@@ -287,7 +300,7 @@
         };
         qs("[data-workspace-fullscreen]", toolbar).onclick = () => toggleContainerFullscreen(root);
         document.addEventListener("click", (event) => {
-            if (!event.target.closest(".tower-add-active-v0750")) closeActivePopover(root);
+            if (!event.target.closest(".tower-toolbar-menu-v0750")) closeActivePopover(root);
         });
         return toolbar;
     }
@@ -382,6 +395,13 @@
 
     function decorateNodes(root) {
         qsa(".master-canvas-node", root).forEach((node) => {
+            if (!qs(".tower-node-icon-v0750", node)) {
+                const badge = document.createElement("span");
+                badge.className = "tower-node-icon-v0750";
+                const type = node.dataset.equipmentType || "active";
+                badge.innerHTML = icon(type === "dio" ? "dio" : type === "pto" ? "pto" : "active");
+                qs("header", node)?.prepend(badge);
+            }
             if (node.dataset.v0750Inspector === "1") return;
             node.dataset.v0750Inspector = "1";
             node.addEventListener("click", (event) => {
