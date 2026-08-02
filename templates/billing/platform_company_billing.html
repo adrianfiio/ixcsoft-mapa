@@ -87,7 +87,7 @@
         <div class="panel-header"><h2 class="panel-title">Faturas</h2></div>
         <div class="overview-table-wrap">
             <table class="overview-table overview-table--compact">
-                <thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pago</th></tr></thead>
+                <thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pago</th><th></th></tr></thead>
                 <tbody>
                     {% for invoice in invoices %}
                     <tr class="{% if invoice.status == 'overdue' %}overview-row-attention{% endif %}">
@@ -102,9 +102,19 @@
                             {% endif %}
                         </td>
                         <td>R$ {{ invoice.paid_amount }}</td>
+                        <td class="icon-actions">
+                            {% if invoice.status == "pending" or invoice.status == "overdue" %}
+                            <form method="post" onsubmit="return confirm('Cancelar esta fatura? Some do banco automaticamente depois de 90 dias.');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="cancel_invoice">
+                                <input type="hidden" name="invoice_id" value="{{ invoice.pk }}">
+                                <button type="submit" class="icon-action" data-label="Cancelar fatura" aria-label="Cancelar fatura">✕</button>
+                            </form>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="empty-state">Nenhuma fatura ainda.</td></tr>
+                    <tr><td colspan="6" class="empty-state">Nenhuma fatura ainda.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

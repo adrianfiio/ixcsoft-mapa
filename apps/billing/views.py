@@ -119,6 +119,34 @@ def company_financial_export(request):
     return response
 
 
+@login_required
+def company_invoice_detail(request, invoice_id):
+    """Página imprimível de uma fatura — sem boleto/PDF real ainda, só um
+    resumo estruturado dos dados que já existem. "Imprimir"/"Salvar PDF"
+    usam a impressão nativa do navegador (que já oferece "Salvar como
+    PDF" como destino), sem precisar de biblioteca de geração de PDF."""
+    company = _editable_company(request)
+    if company is None:
+        messages.info(
+            request,
+            "Somente um usuário com permissão de edição pode ver o financeiro da empresa.",
+        )
+        return redirect("account-panel")
+    invoice = get_object_or_404(
+        Invoice.objects.prefetch_related("payments"), pk=invoice_id, company=company
+    )
+    return render(
+        request,
+        "billing/invoice_detail.html",
+        {
+            "company": company,
+            "invoice": invoice,
+            "auto_print": request.GET.get("print") == "1",
+            "hide_sidebar": True,
+        },
+    )
+
+
 def company_blocked(request):
     company = _editable_company(request) if request.user.is_authenticated else None
     trust_release_available = False
@@ -208,6 +236,18 @@ def platform_company_billing(request, company_id):
             subscription.status = CompanySubscription.Status.CANCELED
             subscription.save(update_fields=["status", "updated_at"])
             messages.success(request, "Empresa excluída (desativada e assinatura cancelada — nada foi apagado do banco).")
+        elif action == "cancel_invoice":
+            invoice = get_object_or_404(
+                Invoice, pk=request.POST.get("invoice_id"), company=company,
+                status__in=[Invoice.Status.PENDING, Invoice.Status.OVERDUE],
+            )
+            invoice.status = Invoice.Status.CANCELED
+            invoice.save(update_fields=["status", "updated_at"])
+            messages.success(
+                request,
+                f"Fatura de {invoice.reference_month.strftime('%m/%Y')} cancelada — some do banco "
+                f"automaticamente depois de {services.CANCELED_INVOICE_RETENTION_DAYS} dias.",
+            )
         return redirect("platform-company-billing", company_id=company.id)
 
     subscription_form = SubscriptionForm(instance=subscription)

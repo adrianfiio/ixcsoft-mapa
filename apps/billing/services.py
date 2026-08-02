@@ -8,6 +8,7 @@ from django.utils import timezone
 from .models import CompanySubscription, Invoice, Payment, TrustRelease
 
 TRUST_RELEASE_BONUS_DAYS = 2
+CANCELED_INVOICE_RETENTION_DAYS = 90
 
 
 def clamp_due_day(year, month, day):
@@ -74,6 +75,20 @@ def mark_overdue_invoices(today=None):
     return Invoice.objects.filter(
         status=Invoice.Status.PENDING, due_date__lt=today
     ).update(status=Invoice.Status.OVERDUE)
+
+
+def purge_old_canceled_invoices(today=None):
+    """Apaga de vez (não é soft-delete) toda fatura cancelada há mais de
+    CANCELED_INVOICE_RETENTION_DAYS dias. Pedido explícito: cancelar
+    fica reversível na hora, mas depois de 90 dias sem ação some de
+    verdade do banco (junto com qualquer Payment vinculado a ela, via
+    on_delete=CASCADE)."""
+    today = today or timezone.localdate()
+    cutoff = today - datetime.timedelta(days=CANCELED_INVOICE_RETENTION_DAYS)
+    deleted_count, _ = Invoice.objects.filter(
+        status=Invoice.Status.CANCELED, updated_at__date__lte=cutoff
+    ).delete()
+    return deleted_count
 
 
 def record_payment(invoice, amount, method, note="", user=None, paid_at=None):

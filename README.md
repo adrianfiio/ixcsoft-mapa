@@ -13,13 +13,13 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.79.1 |
+| Plataforma | v0.80.0 |
 | Mapa | v0.75.3 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
-  usuários): polimento visual do Financeiro e Gateway por empresa — painéis
-  reagrupados (sem barra de rolagem desnecessária), botões de cabeçalho
-  compactos e checkboxes no tema escuro do site.
+  usuários): Superadmin pode cancelar fatura lançada manualmente (some do
+  banco automaticamente 90 dias depois); cliente ganha página de fatura
+  imprimível/PDF com botões de ver/imprimir/salvar, por ícone com tooltip.
   Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
   SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,
