@@ -22,6 +22,7 @@ from apps.core.views import (
     create_company_asset,
     erp_onboarding,
     platform_company_create,
+    platform_company_edit,
 )
 from apps.billing.views import (
     company_blocked,
@@ -66,6 +67,11 @@ urlpatterns = [
     ),
     path("painel/plataforma/", PlatformOverviewView.as_view(), name="platform-overview"),
     path("painel/plataforma/empresas/novo/", platform_company_create, name="platform-company-create"),
+    path(
+        "painel/plataforma/empresas/<int:company_id>/editar/",
+        platform_company_edit,
+        name="platform-company-edit",
+    ),
     path(
         "painel/plataforma/empresas/<int:company_id>/gateway/",
         platform_gateway_settings,

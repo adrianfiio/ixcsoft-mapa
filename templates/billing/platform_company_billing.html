@@ -12,6 +12,7 @@
     </div>
     <div class="page-heading-actions">
         <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
+        <a class="primary-action" href="{% url 'platform-company-edit' company.id %}">Editar empresa →</a>
         <a class="primary-action" href="{% url 'platform-gateway-settings' company.id %}">Gateway de pagamento →</a>
     </div>
 </section>

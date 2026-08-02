@@ -276,6 +276,46 @@ class SuperadminCompanyForm(forms.ModelForm):
         return password
 
 
+class SuperadminCompanyEditForm(forms.ModelForm):
+    """Edição de uma empresa já existente pelo Superadmin. Mesmos campos
+    de cadastro de SuperadminCompanyForm, sem os campos de primeiro
+    usuário (é edição, não criação). Diferente de CompanyOnboardingForm
+    (self-service): company_type nunca fica travado aqui — só o
+    Superadmin pode mudar o tipo depois de definido."""
+
+    class Meta:
+        model = Company
+        fields = (
+            "name", "trade_name", "document", "contact_name", "contact_phone",
+            "contact_email", "address", "company_type", "integration_mode",
+        )
+        labels = {
+            "name": "Razão social ou nome",
+            "trade_name": "Nome fantasia",
+            "document": "CPF ou CNPJ",
+            "contact_name": "Pessoa de contato",
+            "contact_phone": "Telefone / WhatsApp",
+            "contact_email": "E-mail",
+            "address": "Endereço",
+            "company_type": "Tipo de empresa",
+            "integration_mode": "Modo de operação",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("name", "document", "company_type"):
+            self.fields[name].required = True
+
+
+class TeamPasswordResetForm(forms.Form):
+    password = forms.CharField(label="Nova senha", widget=forms.PasswordInput)
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        validate_password(password)
+        return password
+
+
 class CompanyEmailConfigurationForm(forms.ModelForm):
     password = forms.CharField(
         label="Senha",

@@ -57,7 +57,9 @@ from apps.core.forms import (
     ERPOnboardingForm,
     OLTPlatformForm,
     POPPlatformForm,
+    SuperadminCompanyEditForm,
     SuperadminCompanyForm,
+    TeamPasswordResetForm,
 )
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.fiber_models import IXCFiberAssignment
@@ -482,6 +484,111 @@ def platform_company_create(request):
         messages.success(request, f"Empresa {company.trade_name or company.name} cadastrada.")
         return redirect("platform-overview")
     return render(request, "platform_company_form.html", {"form": form})
+
+
+@login_required
+def platform_company_edit(request, company_id):
+    """Edição de cadastro + gestão de equipe/acessos de uma empresa já
+    existente, pelo Superadmin — companheira de platform_company_create
+    (que só cria). Diferente de company_team (self-service, escopada ao
+    próprio vínculo EDIT do usuário logado): aqui o Superadmin gerencia
+    a equipe de qualquer empresa via company_id na URL."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    company = get_object_or_404(Company, pk=company_id)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "save_company":
+            form = SuperadminCompanyEditForm(request.POST, instance=company)
+            if form.is_valid():
+                saved = form.save(commit=False)
+                if saved.is_designer:
+                    saved.integration_mode = ""
+                saved.save()
+                messages.success(request, "Cadastro da empresa atualizado.")
+            else:
+                messages.error(request, "Não foi possível salvar — confira os dados.")
+        elif action == "create_member":
+            team_form = CompanyTeamMemberForm(request.POST)
+            if team_form.is_valid():
+                new_user = User.objects.create_user(
+                    username=team_form.cleaned_data["username"],
+                    password=team_form.cleaned_data["password"],
+                    first_name=team_form.cleaned_data["first_name"],
+                )
+                CompanyMembership.objects.create(
+                    company=company,
+                    user=new_user,
+                    role=team_form.cleaned_data["role"],
+                    active=True,
+                )
+                messages.success(request, f"Usuário {new_user.username} cadastrado.")
+            else:
+                messages.error(request, "Não foi possível cadastrar — confira os dados.")
+        elif action in ("toggle_active", "change_role"):
+            target = CompanyMembership.objects.filter(
+                pk=request.POST.get("membership_id"), company=company
+            ).first()
+            if target is None:
+                messages.error(request, "Membro não encontrado nesta empresa.")
+            elif action == "toggle_active":
+                target.active = not target.active
+                target.save(update_fields=["active"])
+                messages.success(request, "Acesso do membro atualizado.")
+            elif action == "change_role":
+                new_role = request.POST.get("role")
+                if new_role in CompanyMembership.Role.values:
+                    target.role = new_role
+                    target.save(update_fields=["role"])
+                    messages.success(request, "Nível de acesso atualizado.")
+        elif action == "reset_password":
+            target = (
+                CompanyMembership.objects.filter(pk=request.POST.get("membership_id"), company=company)
+                .select_related("user")
+                .first()
+            )
+            reset_form = TeamPasswordResetForm(request.POST)
+            if target and reset_form.is_valid():
+                target.user.set_password(reset_form.cleaned_data["password"])
+                target.user.save(update_fields=["password"])
+                messages.success(request, f"Senha de {target.user.username} redefinida.")
+            else:
+                messages.error(request, "Não foi possível redefinir a senha — confira os dados.")
+        elif action == "delete_member":
+            target = (
+                CompanyMembership.objects.filter(pk=request.POST.get("membership_id"), company=company)
+                .select_related("user")
+                .first()
+            )
+            if target is None:
+                messages.error(request, "Membro não encontrado nesta empresa.")
+            elif target.user.company_memberships.exclude(pk=target.pk).exists():
+                messages.error(
+                    request,
+                    "Este usuário também tem vínculo com outra empresa — remova o "
+                    "vínculo lá antes de excluir, pra não tirar o acesso dele de "
+                    "um lugar que não é esta empresa.",
+                )
+            else:
+                username = target.user.username
+                target.user.delete()  # cascade apaga o CompanyMembership junto
+                messages.success(request, f"Usuário {username} e tudo relacionado a ele foram excluídos.")
+        return redirect("platform-company-edit", company_id=company.id)
+
+    return render(
+        request,
+        "platform_company_edit.html",
+        {
+            "company": company,
+            "form": SuperadminCompanyEditForm(instance=company),
+            "team_form": CompanyTeamMemberForm(),
+            "reset_form": TeamPasswordResetForm(),
+            "team": CompanyMembership.objects.filter(company=company)
+            .select_related("user")
+            .order_by("user__first_name", "user__username"),
+        },
+    )
 
 
 class AccountPanelView(LoginRequiredMixin, TemplateView):
