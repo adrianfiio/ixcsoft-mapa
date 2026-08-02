@@ -14,7 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r9"), 5)
+        self.assertEqual(template.count("{{ map_version }}-tower-r10"), 5)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
@@ -149,9 +149,9 @@ class MapV0750StaticTests(unittest.TestCase):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
         self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.80.0"))', settings)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.4")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.5")', settings)
         self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.80.0}', compose)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.4}', compose)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.5}', compose)
 
     def test_tower_r7_has_contextual_creation_drop_and_fade(self):
         canvas = content("static/js/map-master-suite.js")
@@ -187,6 +187,21 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertNotIn("<foreignObject", canvas)
         self.assertIn("event.button !== 1", view)
         self.assertIn("master-node-port.left i", css)
+
+    def test_tower_r10_canvas_fibers_actions_and_icons(self):
+        canvas = content("static/js/map-master-suite.js")
+        tower = content("static/js/map-v0750-tower-workspace.js")
+        view = content("static/js/map-v0741-ui.js")
+        editor = content("static/js/map-editor.js")
+        css = content("static/css/map-v0750-tower-workspace.css")
+        for token in ("data-node-delete", "setPointerCapture", "line-mode-active"):
+            self.assertIn(token, canvas)
+        self.assertIn("state.tx = origin.tx + moveEvent.clientX - origin.x", view)
+        self.assertIn("window.networkMap.showUnifilar", tower)
+        self.assertIn('{ x: 20, y: 20 + index * 260 }', editor)
+        for token in ('symbols = {', 'pto:', 'tower:', 'reserve-marker'):
+            self.assertIn(token, editor)
+        self.assertIn('#map-master-container.line-mode-active', css)
 
 
 if __name__ == "__main__":

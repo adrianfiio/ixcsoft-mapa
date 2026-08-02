@@ -564,7 +564,7 @@
 
     function applyConfiguredIcons(root = document) {
         const styles = iconStyles();
-        qsa(".network-marker:not([data-master-icon])", root).forEach((marker) => {
+        qsa(".network-marker", root).forEach((marker) => {
             const [type, subtype] = markerType(marker);
             const style = styles.get(iconKey(type, subtype)) || styles.get(iconKey(type, ""));
             marker.dataset.masterIcon = "true";
@@ -767,6 +767,7 @@
         qs("[data-container-organize]", root).onclick = () => organizeContainerNodes();
         qs("[data-container-lines]", root).onclick = (event) => {
             state.container.lineMode = !state.container.lineMode;
+            root.classList.toggle("line-mode-active", state.container.lineMode);
             event.currentTarget.classList.toggle("active", state.container.lineMode);
             event.currentTarget.textContent = state.container.lineMode ? "Concluir linhas" : "Editar linhas";
             renderContainerCanvas();
@@ -864,10 +865,11 @@
         const canvas = qs(".master-canvas", root);
         const nodes = qs(".master-canvas-nodes", canvas);
         const equipment = state.container.data.equipment || [];
+        root.classList.toggle("line-mode-active", state.container.lineMode);
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
             return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
-                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}">✎</button></header>
+                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><span class="master-node-actions"><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="master-node-delete" data-node-delete="${item.id}" title="Excluir equipamento" aria-label="Excluir ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
                 <div class="master-node-ports">${(item.ports || []).map((port, portIndex) => {
                     if (item.type === "dio") {
                         const rearLink = port.fusion_link_id || "";
@@ -881,7 +883,7 @@
             </article>`;
         }).join("") + (state.container.layout.notes || []).map((note, index) => `
             <article class="master-canvas-note" data-canvas-note="${index}" style="transform:translate(${Number(note.x || 40)}px,${Number(note.y || 40)}px)">
-                <div class="master-note-actions"><button type="button" data-edit-note="${index}" title="Editar nota" aria-label="Editar nota">✎</button><button type="button" data-delete-note="${index}" title="Excluir nota" aria-label="Excluir nota">⌫</button></div>
+                <div class="master-note-actions"><button type="button" data-edit-note="${index}" title="Editar nota" aria-label="Editar nota"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" data-delete-note="${index}" title="Excluir nota" aria-label="Excluir nota"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></div>
                 <p>${escapeHtml(note.text)}</p>
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
@@ -896,6 +898,13 @@
             if (!window.confirm("Excluir esta nota?")) return;
             state.container.layout.notes.splice(Number(button.dataset.deleteNote), 1);
             saveContainerLayout(); renderContainerCanvas();
+        });
+        qsa("[data-node-delete]", nodes).forEach((button) => button.onclick = async (event) => {
+            event.stopPropagation();
+            if (!window.confirm("Excluir este equipamento e suas portas/ligações?")) return;
+            await request(`/api/map/elements/${state.container.elementId}/equipment/${button.dataset.nodeDelete}/`, { method: "DELETE" });
+            await loadContainerMaster(true); renderEquipmentList(); renderContainerCanvas(); renderConnectionMatrix();
+            notify("Equipamento excluído.");
         });
         qsa("[data-edit-note]", nodes).forEach((button) => button.onclick = (event) => {
             event.stopPropagation();
@@ -940,12 +949,16 @@
     function installNoteDrag(note) {
         note.onpointerdown = (event) => {
             if (event.button !== 0 || event.target.closest("button")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            note.setPointerCapture?.(event.pointerId);
             const index = Number(note.dataset.canvasNote);
             const item = state.container.layout.notes[index];
+            const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
             const origin = { x: event.clientX, y: event.clientY, left: Number(item.x || 0), top: Number(item.y || 0) };
             const move = (moveEvent) => {
-                item.x = Math.max(0, origin.left + moveEvent.clientX - origin.x);
-                item.y = Math.max(0, origin.top + moveEvent.clientY - origin.y);
+                item.x = Math.max(0, origin.left + (moveEvent.clientX - origin.x) / scale);
+                item.y = Math.max(0, origin.top + (moveEvent.clientY - origin.y) / scale);
                 note.style.transform = `translate(${item.x}px,${item.y}px)`;
             };
             const up = () => { window.removeEventListener("pointermove", move); saveContainerLayout(); };
@@ -958,14 +971,18 @@
         const header = qs("header", node);
         header.onpointerdown = (event) => {
             if (event.button !== 0 || event.target.closest("button")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            header.setPointerCapture?.(event.pointerId);
             const id = String(node.dataset.equipmentNode);
             const position = state.container.layout.positions[id] || {
                 x: Number(node.dataset.posX || 0),
                 y: Number(node.dataset.posY || 0),
             };
+            const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
             const origin = { x: event.clientX, y: event.clientY, left: position.x, top: position.y };
             const move = (moveEvent) => {
-                const next = { x: Math.max(0, origin.left + moveEvent.clientX - origin.x), y: Math.max(0, origin.top + moveEvent.clientY - origin.y) };
+                const next = { x: Math.max(0, origin.left + (moveEvent.clientX - origin.x) / scale), y: Math.max(0, origin.top + (moveEvent.clientY - origin.y) / scale) };
                 state.container.layout.positions[id] = next;
                 node.dataset.posX = String(next.x); node.dataset.posY = String(next.y);
                 node.style.transform = `translate(${next.x}px,${next.y}px)`;

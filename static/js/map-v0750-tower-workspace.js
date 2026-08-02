@@ -365,6 +365,15 @@
             toggleToolbarMenu(root, button);
         });
         qsa("[data-open-panel]", toolbar).forEach((button) => button.onclick = () => openPanel(root, button.dataset.openPanel));
+        const fibersButton = qs('[data-open-panel="fibers"]', toolbar);
+        if (fibersButton) fibersButton.onclick = () => {
+            closeActivePopover(root);
+            const dialog = dialogRoot();
+            const elementId = Number(dialog?.dataset.elementId || 0);
+            if (!elementId || !window.networkMap?.showUnifilar) return openPanel(root, "fibers");
+            dialog.close();
+            window.networkMap.showUnifilar(elementId).catch((error) => notify(error.message, true));
+        };
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
         qsa("[data-export-canvas]", toolbar).forEach((button) => button.onclick = () => {

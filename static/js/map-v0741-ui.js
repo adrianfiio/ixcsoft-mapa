@@ -204,11 +204,15 @@
             viewport.addEventListener("pointerdown", (event) => {
                 if (event.button !== 1) return;
                 event.preventDefault();
-                const origin = { x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
+                const canvas = qs(".master-canvas", root);
+                const state = viewState(root);
+                const origin = { x: event.clientX, y: event.clientY, tx: state.tx || 0, ty: state.ty || 0 };
                 viewport.classList.add("canvas-panning-v0752");
                 const move = (moveEvent) => {
-                    viewport.scrollLeft = origin.left - (moveEvent.clientX - origin.x);
-                    viewport.scrollTop = origin.top - (moveEvent.clientY - origin.y);
+                    state.tx = origin.tx + moveEvent.clientX - origin.x;
+                    state.ty = origin.ty + moveEvent.clientY - origin.y;
+                    canvas.style.transformOrigin = "0 0";
+                    canvas.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale || 1})`;
                 };
                 const up = () => {
                     viewport.classList.remove("canvas-panning-v0752");
@@ -217,15 +221,6 @@
                 window.addEventListener("pointermove", move);
                 window.addEventListener("pointerup", up, { once: true });
             });
-            viewport.addEventListener("pointerdown", (event) => {
-                if (!event.target.closest(".master-canvas-node header")) return;
-                clearCanvasView(root);
-                const state = viewState(root);
-                state.scale = 1;
-                state.userZoom = true;
-                const output = qs("[data-canvas-zoom-value]", root);
-                if (output) output.textContent = "100%";
-            }, true);
         }
         window.setTimeout(() => fitCanvas(root), 40);
         window.setTimeout(() => fitCanvas(root), 180);

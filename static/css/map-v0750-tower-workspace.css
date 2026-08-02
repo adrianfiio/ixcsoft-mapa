@@ -337,7 +337,9 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
 .tower-workspace-dialog-v0750 .master-canvas-scroll.canvas-panning-v0752 { cursor: grabbing !important; user-select: none; }
 .tower-workspace-dialog-v0750 .master-canvas-links { z-index: 8; overflow: visible; pointer-events: none; }
 .tower-workspace-dialog-v0750 .master-canvas-links path,
-.tower-workspace-dialog-v0750 .master-canvas-links circle { pointer-events: stroke; }
+.tower-workspace-dialog-v0750 .master-canvas-links circle { pointer-events: none; }
+.tower-workspace-dialog-v0750 #map-master-container.line-mode-active .master-canvas-links path,
+.tower-workspace-dialog-v0750 #map-master-container.line-mode-active .master-canvas-links circle { pointer-events: stroke; }
 .tower-workspace-dialog-v0750 .master-canvas-node { z-index: 7; }
 .tower-workspace-dialog-v0750 .master-node-port,
 .tower-workspace-dialog-v0750 .master-node-edit { position: relative; z-index: 12; }
@@ -375,6 +377,11 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
     background: rgba(16, 42, 67, .62);
     text-align: left;
 }
+.master-node-actions { display: inline-flex; align-items: center; gap: 4px; }
+.master-node-actions button svg,
+.master-note-actions button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.master-node-delete { display: grid !important; place-items: center; width: 23px !important; min-width: 23px !important; height: 23px !important; min-height: 23px !important; padding: 0 !important; border-radius: 6px !important; color: #fda4af !important; background: rgba(127,29,29,.22) !important; }
+.master-node-delete:hover { color: #fff !important; border-color: #fb7185 !important; box-shadow: 0 0 12px rgba(251,113,133,.28); }
 .tower-structure-list-v0750 > button.active { border-color: var(--v0750-accent); background: rgba(14,165,233,.16); box-shadow: 0 0 0 1px rgba(14,165,233,.18); }
 .tower-structure-info-v0750 + .tower-inspector-v0750.active { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(148,163,184,.16); }
 .master-node-port.dio-rear { grid-column: 1; }

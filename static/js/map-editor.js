@@ -402,18 +402,19 @@
         const normalizedSubtype = String(subtype || "").toLowerCase();
         const displayType = ["cpd", "pop"].includes(normalizedSubtype)
             ? "cpd" : type === "splice_box" && normalizedSubtype === "cdo" ? "cdo" : type;
-        const labels = { cto: "CTO", splice_box: "CEO", cdo: "CDO", cpd: "CPD", olt: "OLT", dio: "DIO", rack: "RACK", tower: "TORRE" };
+        const labels = { cto: "CTO", pto: "PTO", splice_box: "CEO", cdo: "CDO", cpd: "CPD", olt: "OLT", dio: "DIO", rack: "RACK", tower: "TORRE" };
         const symbols = {
-            pole: '<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 7h18M12 2v23M6 25h12M7 7l5 6 5-6M8 17h8"></path></svg>',
-            cto: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="12" rx="2"></rect><path d="M7 6h10M7 10h10M7 14v3m5-3v3m5-3v3"></path></svg><small>CTO</small>',
-            splice_box: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CEO</small>',
-            cdo: '<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M7 2h10l3 4v7l-3 3H7l-3-3V6z"></path><path d="M8 6h8M8 9h8M8 12h8"></path></svg><small>CDO</small>',
-            cpd: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>CPD</small>',
+            pole: '<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 6h18M6 9h12M12 6v19M8 25h8"></path><circle cx="7" cy="6" r="1"></circle><circle cx="17" cy="6" r="1"></circle></svg>',
+            cto: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M7 9h10M7 15h10M9 20v3m6-3v3"></path><circle cx="9" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle></svg><small>CTO</small>',
+            pto: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4m0 12v4"></path></svg><small>PTO</small>',
+            splice_box: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8M9 21v2m6-2v2"></path></svg><small>CEO</small>',
+            cdo: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8M9 21v2m6-2v2"></path></svg><small>CDO</small>',
+            cpd: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h4m4 0h2M9 20v2m6-2v2"></path><circle cx="7" cy="16" r="1"></circle></svg><small>CPD</small>',
             olt: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>OLT</small>',
-            rack: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M8 6h8M8 11h8M8 16h8"></path></svg><small>RACK</small>',
-            tower: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 6 22m6-20 6 20M8 15h8M9 10h6M5 22h14"></path></svg><small>TORRE</small>',
+            rack: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"></rect><path d="M4 9h16M4 15h16M8 6h8M8 12h8M8 18h8"></path></svg><small>RACK</small>',
+            tower: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="2"></circle><path d="M12 9 7 22m5-13 5 13M9 16h6M7 5a7 7 0 0 0 0 5m10-5a7 7 0 0 1 0 5M4 3a11 11 0 0 0 0 9m16-9a11 11 0 0 1 0 9"></path></svg><small>TORRE</small>',
         };
-        const large = ["cto", "splice_box", "cdo", "cpd", "olt", "rack", "tower"].includes(displayType);
+        const large = ["cto", "pto", "splice_box", "cdo", "cpd", "olt", "rack", "tower"].includes(displayType);
         return L.divIcon({
             className: "",
             html: `<div class="network-marker ${type} ${displayType}">${symbols[displayType] || labels[displayType] || "•"}</div>`,
@@ -1266,7 +1267,7 @@
         const dios = data.equipment.filter((item) => item.type === "dio");
         const cables = data.cables || [];
         const dioCards = dios.map((dio, index) => {
-            const position = layout[`dio-${dio.id}`] || { x: 20, y: 20 + index * 260 };
+            const position = layout[`dio-${dio.id}`] || { x: 680, y: 20 + index * 260 };
             const nodeKey = `dio-${dio.id}`;
             const usedCount = dio.ports.filter((port) => port.fusion_used).length;
             const hasUsedPort = usedCount > 0;
@@ -1280,7 +1281,7 @@
         </section>`;
         }).join("");
         const cableCards = cables.map((cable, index) => {
-            const position = layout[`cable-${cable.id}`] || { x: 900, y: 20 + index * 260 };
+            const position = layout[`cable-${cable.id}`] || { x: 20, y: 20 + index * 260 };
             const nodeKey = `cable-${cable.id}`;
             const usedCount = (cable.fibers || []).filter((fiber) => fiber.used).length;
             const hasUsedFiber = usedCount > 0;
@@ -1294,7 +1295,7 @@
         </section>`;
         }).join("");
         const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
-            <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
+            <header><span class="drag-grip">⋮⋮</span><span class="note-node-actions"><button type="button" class="note-edit" data-edit-fusion-note="${note.id}" title="Editar nota" aria-label="Editar nota"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="note-delete" data-delete-note="${note.id}" title="Excluir nota" aria-label="Excluir nota"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
             <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
         content.innerHTML = `<div class="ceo-instructions">Arraste os blocos pelo ⋮⋮. Clique numa fibra do cabo e depois numa porta do DIO para criar a fusão. Clique numa fibra ou porta já ligada para desfazer. Botão direito no fundo do quadro para adicionar nota.<span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span></div>
             <div class="optical-graph rack-fusion"><div class="graph-nodes"><svg class="optical-links"></svg>${dioCards || "<p>Nenhum DIO cadastrado.</p>"}${cableCards || "<p>Nenhum cabo ligado ao rack.</p>"}${noteNodes}</div><div class="map-context-menu rack-canvas-menu" hidden><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div></div>`;
@@ -1430,6 +1431,17 @@
                 layout.notes = notes.filter((note) => String(note.id) !== String(button.dataset.deleteNote));
                 await saveLayout();
                 unifilarDialog.close(); await showUnifilar(element.id); notify("Nota excluída.");
+            };
+        });
+        content.querySelectorAll("[data-edit-fusion-note]").forEach((button) => {
+            button.onclick = async () => {
+                const note = notes.find((item) => String(item.id) === String(button.dataset.editFusionNote));
+                if (!note) return;
+                const text = await askValue({ title: "Editar nota", label: "Texto", value: note.text || "" });
+                if (!text?.trim()) return;
+                layout.notes = notes.map((item) => String(item.id) === String(note.id) ? { ...item, text: text.trim() } : item);
+                await saveLayout();
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Nota atualizada.");
             };
         });
         content.querySelectorAll("[data-note-id]").forEach((textEl) => {
@@ -1853,7 +1865,7 @@
             if (!window.mapV092 || window.mapV092.areReservesVisible()) (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
                     draggable: editing,
-                    icon: L.divIcon({ className: "", html: '<div class="reserve-marker">↻</div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
+                    icon: L.divIcon({ className: "", html: '<div class="reserve-marker"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"></circle><circle cx="16" cy="16" r="5"></circle><path d="M16 11V5m0 22v-6m5-5h6M5 16h6m12-8-4 4m-6 6-4 4"></path></svg></div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
                 }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${editing ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
                 marker.on("popupopen", () => {
                     popupAction(`[data-edit-reserve="${reserve.id}"]`, () => editReserve(p.id, reserve).catch((error) => notify(error.message, true)));
