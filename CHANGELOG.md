@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.72.1] - 2026-08-02
+
+Hotfix de consistência de UI preparado pelo ChatGPT sobre o commit `c6cf0ec`
+(v0.72.0). Aplicado via `apply_map_ui_v0721.py` (validado antes com
+`--dry-run`, checksums SHA-256 do pacote conferidos). Backup/ponto de
+rollback: branch `backup/mapa-pre-v0721-20260802`. Sem migration.
+
+### Corrigido
+
+- **Menu lateral não recolhia de verdade**: ao recolher, o `#map-sidebar` continuava em 272px (regra `body.map-master-suite #map-sidebar.map-sidebar-master { width: 272px !important; }` da Master Suite) em vez de cair pra 72px, porque essa regra e a de recolhimento do v0.72.0 tinham a mesma especificidade CSS — quem carregava por último no `<link>` vencia o empate. O hotfix usa um seletor com mais classes (`#map-sidebar.map-sidebar-master.map-sidebar-v072.v072-collapsed`), com especificidade estritamente maior, então passa a vencer sempre, independente da ordem de carregamento. Também ajusta o Leaflet (`invalidateSize`) ao abrir/fechar e mantém o último estado salvo no navegador.
+- **Alternância de popup moderno/antigo em Rack, Torre e CPD/POP**: o HUD dos popups agora é reaplicado de forma idempotente (compara uma assinatura do conteúdo antes de remontar) e espera pelas ações que outros módulos injetam depois, evitando a volta ao popup antigo.
+- **Botão "Rotas" dependente de um botão oculto**: agora abre a gaveta de rotas diretamente; some quando o projeto tem só nome de rota cadastrado sem topologia/cabo conectado, e mostra mensagem objetiva quando não há rota nenhuma.
+
+### Adicionado
+
+- **Barra superior com dois modos explícitos**: "Visualizar" e "Editar" no lugar do antigo "Selecionar", com o menu Caixa (CTO/CEO/CDO) reorganizado; no modo Editar aparecem as ações administrativas permitidas.
+- **Busca modernizada**: mantém os handlers antigos por baixo, mas abre num painel com o visual do mapa novo, cor de whitelabel, atalho `Ctrl+K` e fechamento por botão ou `Esc`.
+- **Indicador de monitoramento nos popups** continua obedecendo ao status real vindo do SNMP (verde/vermelho/amarelo/cinza), sem indicador quando o elemento não tem perfil configurado.
+
+### Verificação feita nesta rodada
+
+- Conferido por leitura completa do `apply_map_ui_v0721.py`: só adiciona `map-ui-v0721.js`/`.css` depois dos arquivos v0.72.0 no template e faz bump de versão — **não toca** em `map-optical-editor-v3.js`, `map-link-monitoring.js`, `map-master-suite.js` nem reescreve `map-ui-v072.js`/`.css`. Os hotfixes anteriores (v0.71.1) continuam intactos.
+- **Revisei a causa raiz do bug do menu lateral no CSS antes de aceitar a explicação do pacote**: confirmei em `map-master-suite.css`/`map-ui-v072.css` que as duas regras concorrentes realmente tinham a mesma especificidade, e que a regra nova do hotfix a vence de forma determinística (não só "por sorte" da ordem de carregamento).
+- `--dry-run` limpo, checksums SHA-256 do pacote conferidos, `py_compile` no Python tocado, sintaxe do JS novo validada (esprima, sem itens a neutralizar desta vez), chaves do CSS balanceadas (72/72), `{% if %}`/`{% endif %}` do template balanceados (10/10), YAML do `docker-compose.yml` válido.
+- Rodei manualmente as 5 asserções do teste estático incluído (`test_map_ui_v0721_static.py`, sem dependência de banco): todas passaram.
+
 ## [0.72.0] - 2026-08-02
 
 Pacote "Redesign do mapa" preparado pelo ChatGPT sobre o commit `065a3bb`

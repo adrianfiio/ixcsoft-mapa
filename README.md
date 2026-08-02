@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.72.0 — Redesign do mapa: sidebar nova, whitelabel, HUD nos popups, régua vira cabo, medição de área e remoção do editor duplicado**
+**v0.72.1 — Hotfix de consistência de UI: recolhimento real do menu lateral, modos Visualizar/Editar, popups e busca modernizados**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
