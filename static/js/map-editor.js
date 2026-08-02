@@ -350,12 +350,17 @@
     }
     function refreshClientLayers() {
         const grouped = document.getElementById("group-clients").checked;
+        const clientsVisible = document.getElementById("layer-clients")?.checked !== false;
         ["online", "offline"].forEach((status) => {
             map.removeLayer(clientLayers[status]);
             map.removeLayer(clientPlainLayers[status]);
-            if (!document.getElementById(`layer-${status}`).checked) return;
+            if (!clientsVisible || !document.getElementById(`layer-${status}`).checked) return;
             (grouped ? clientLayers[status] : clientPlainLayers[status]).addTo(map);
         });
+    }
+    function refreshMapLabels() {
+        const visible = document.getElementById("layer-labels")?.checked !== false;
+        document.body.classList.toggle("map-labels-hidden", !visible);
     }
     const structureCategoryCheckbox = { cto: "layer-cto", splice_box: "layer-ceo", other: null };
     function refreshEquipmentLayer() {
@@ -634,7 +639,8 @@
         document.getElementById("container-link-list").innerHTML = data.links.length
             ? data.links.map((link) => `<article><div><strong>${escapeHtml(link.source)} → ${escapeHtml(link.destination)}</strong><small>${escapeHtml(link.link_type_label)}${link.cable ? ` · Cabo: ${escapeHtml(link.cable)}` : ""}</small></div><button class="danger" type="button" data-delete-container-link="${link.id}">Desligar</button></article>`).join("")
             : "<p>Nenhuma ligação interna registrada.</p>";
-        containerDialog.showModal();
+        // Workspace não modal: o menu principal continua visível e utilizável.
+        if (!containerDialog.open) containerDialog.show();
         containerCardForm.hidden = true;
         containerPortForm.hidden = true;
         document.querySelectorAll("[data-add-equipment-card]").forEach((button) => {
@@ -1712,7 +1718,6 @@
         state.lightSourceId = lightSelect.value || null;
         populateConnectionSelects();
         const bounds = [];
-        const showLabels = document.getElementById("layer-labels").checked;
         elements.features.forEach((feature) => {
             if (window.mapV092 && !window.mapV092.isElementVisible(feature)) return;
             const p = feature.properties;
@@ -1724,7 +1729,7 @@
                 const typeLabel = ["cpd", "pop"].includes(String(p.subtype || "").toLowerCase())
                     ? "CPD/POP" : p.tipo === "splice_box" && p.subtype === "cdo" ? "CDO" : p.tipo.toUpperCase();
                 marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
-                if (showLabels) marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
+                marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
                 marker.on("click", (event) => {
                     if (state.tool !== "cable") return;
                     if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
@@ -1811,7 +1816,7 @@
             const editing = canEdit && state.mapMode === "edit";
             const actions = editing ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
             line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
-            if (showLabels) line.bindTooltip(escapeHtml(p.nome), { permanent: true, sticky: true, className: "cable-name-label" });
+            line.bindTooltip(escapeHtml(p.nome), { permanent: true, sticky: true, className: "cable-name-label" });
             line.on("popupopen", () => {
                 popupAction(`[data-edit-cable="${p.id}"]`, () => editCable(p.id).catch((error) => notify(error.message, true)));
                 popupAction(`[data-delete-cable="${p.id}"]`, () => deleteCable(p.id).catch((error) => notify(error.message, true)));
@@ -2229,12 +2234,16 @@
         document.getElementById(`layer-${status}`).onchange = refreshClientLayers;
     });
     document.getElementById("group-clients").onchange = refreshClientLayers;
+    document.getElementById("layer-clients").onchange = refreshClientLayers;
     document.getElementById("group-equipment").onchange = refreshEquipmentLayer;
     // Botões-ícone da barra inferior espelham os checkboxes de camada/agrupamento.
     document.querySelectorAll("[data-layer-toggle]").forEach((button) => {
         const checkbox = document.getElementById(button.dataset.layerToggle);
         if (!checkbox) return;
-        const sync = () => button.classList.toggle("active", checkbox.checked);
+        const sync = () => {
+            button.classList.toggle("active", checkbox.checked);
+            button.setAttribute("aria-pressed", String(checkbox.checked));
+        };
         sync();
         checkbox.addEventListener("change", sync);
         button.addEventListener("click", () => {
@@ -2260,7 +2269,8 @@
         loadStructure().catch((error) => notify(error.message, true));
     };
     document.getElementById("layer-light-flow").onchange = () => loadStructure().catch((error) => notify(error.message, true));
-    document.getElementById("layer-labels").onchange = () => loadStructure().catch((error) => notify(error.message, true));
+    document.getElementById("layer-labels").onchange = refreshMapLabels;
+    refreshMapLabels();
     cableForm.elements.cable_model_id.onchange = () => {
         if (!state.editingCableId) cableForm.elements.name.value = "";
         updateCableDefaults();

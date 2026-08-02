@@ -14,7 +14,26 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r2"), 2)
+        self.assertEqual(template.count("{{ map_version }}-tower-r3"), 2)
+
+    def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
+        css = content("static/css/map-v0750-tower-workspace.css")
+        editor = content("static/js/map-editor.js")
+        self.assertIn("inset: 0 0 0 var(--v072-sidebar, 292px) !important", css)
+        self.assertIn("#map-sidebar.v072-collapsed", css)
+        self.assertIn("containerDialog.show()", editor)
+        self.assertNotIn("containerDialog.showModal()", editor)
+
+    def test_map_has_independent_label_and_client_visibility_controls(self):
+        template = content("templates/map.html")
+        editor = content("static/js/map-editor.js")
+        css = content("static/css/map-editor.css")
+        for token in ('data-layer-toggle="layer-labels"', 'data-layer-toggle="layer-clients"', 'id="layer-clients"'):
+            self.assertIn(token, template)
+        self.assertIn("clientsVisible", editor)
+        self.assertIn("refreshMapLabels", editor)
+        self.assertIn("map-labels-hidden", css)
+        self.assertIn("map-client-visibility-toggle.active", css)
 
     def test_tower_opens_directly_in_canvas(self):
         runtime = content("static/js/map-v0750-tower-workspace.js")

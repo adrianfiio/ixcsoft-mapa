@@ -133,6 +133,16 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .map-icon-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .map-icon-toggle:hover { background: rgba(45,212,191,.1); color: #dbeafe; }
 .map-icon-toggle.active { color: #04211e; background: var(--primary); }
+.map-icon-toggle .toggle-icon-off { display: block; }
+.map-icon-toggle .toggle-icon-on { display: none; }
+.map-icon-toggle.active .toggle-icon-off { display: none; }
+.map-icon-toggle.active .toggle-icon-on { display: block; }
+.map-client-visibility-toggle.active {
+    color: #e0f2fe; background: #1677d2;
+    box-shadow: 0 0 0 1px rgba(125,211,252,.38), 0 0 15px rgba(14,165,233,.38);
+}
+.map-client-visibility-toggle .client-status-light { fill: #526071; stroke: #526071; }
+.map-client-visibility-toggle.active .client-status-light { fill: #7dd3fc; stroke: #e0f2fe; }
 .map-context-menu {
     position: absolute; z-index: 1300; display: grid; gap: 2px; padding: 6px;
     background: rgba(7,17,31,.97); border: 1px solid var(--border); border-radius: 10px;
@@ -337,6 +347,8 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .light-direction-marker { display: grid; place-items: center; width: 25px; height: 25px; color: #4a3600; background: #facc15; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px #facc15; font-size: 14px; font-weight: 900; transform-origin: center; transition: transform .08s linear; }
 .network-name-label, .cable-name-label { padding: 3px 7px; color: #f8fafc; background: rgba(7, 15, 29, .88); border: 1px solid #334766; border-radius: 5px; box-shadow: 0 2px 7px rgba(0,0,0,.3); font-size: 10px; font-weight: 700; }
 .network-name-label::before, .cable-name-label::before { display: none; }
+body.map-labels-hidden .network-name-label,
+body.map-labels-hidden .cable-name-label { display: none !important; }
 .cable-name-label { color: #99f6e4; }
 .client-dot { width: 16px; height: 16px; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
 .client-dot.online { background: #22c55e; }.client-dot.offline { background: #ef476f; }.client-dot.unknown { background: #f5b942; }
