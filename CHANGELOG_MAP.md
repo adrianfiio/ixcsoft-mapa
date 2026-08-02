@@ -1,5 +1,26 @@
 # Changelog — Mapa
 
+## [map-0.74.1] - 2026-08-02
+
+Polimento visual final do Rack/Torre, Canvas 2D, menu lateral, ações de desenho e ficha técnica.
+
+### Corrigido
+
+- barra única com ícones na janela Rack/Torre;
+- Canvas 2D com auto-fit, zoom `+`/`−`, botão Ajustar e `Ctrl + scroll`;
+- remoção de barras desnecessárias no Canvas e menu lateral;
+- mensagem do editor não aparece perdida no menu recolhido;
+- apenas um cancelamento durante o desenho de cabo;
+- ficha técnica sem texto vertical, metadados espremidos ou scroll dentro de scroll;
+- estado de implantação integrado aos cards da ficha.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.77.0`;
+- `MAP_VERSION` atualizada para `0.74.1`;
+- nenhuma migration.
+
+
 ## [map-0.74.0] - 2026-08-02
 
 Estabilização estrutural do editor cartográfico, Rack/Torre, Canvas, ficha
