@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.70.0")
+APP_VERSION = os.getenv("APP_VERSION", "0.71.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -139,6 +139,9 @@ CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 if not CORS_ALLOWED_ORIGINS and WEB_URL:
     CORS_ALLOWED_ORIGINS = [WEB_URL]
 
+SNMP_STATUS_POLL_SECONDS = float(os.getenv("SNMP_STATUS_POLL_SECONDS", "30"))
+SNMP_STATUS_STALE_SECONDS = int(os.getenv("SNMP_STATUS_STALE_SECONDS", "180"))
+
 CELERY_BEAT_SCHEDULE = {
     "synchronize-all-ixc-configurations": {
         "task": "apps.ixc_integration.tasks.synchronize_all_ixc_configurations",
@@ -150,7 +153,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     "poll-snmp-status": {
         "task": "apps.snmp_monitoring.tasks.poll_snmp_status",
-        "schedule": 120.0,
+        "schedule": SNMP_STATUS_POLL_SECONDS,
     },
 }
 

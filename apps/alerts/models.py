@@ -10,6 +10,9 @@ class AlertRule(TimeStampedModel):
         ROUTE = "route", "Rota"
         PON = "pon", "Porta PON"
         OLT = "olt", "OLT"
+        EQUIPMENT = "equipment", "Equipamento"
+        PORT = "port", "Porta monitorada"
+        LINK = "link", "Enlace monitorado"
         SYSTEM = "system", "Sistema"
 
     name = models.CharField(max_length=180)
@@ -36,6 +39,13 @@ class AlertEvent(TimeStampedModel):
         SUPPRESSED = "suppressed", "Suprimido"
 
     fingerprint = models.CharField(max_length=255, unique=True)
+    company = models.ForeignKey(
+        "core.Company",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="alert_events",
+    )
     rule = models.ForeignKey(AlertRule, on_delete=models.SET_NULL, null=True, blank=True)
     title = models.CharField(max_length=255)
     message = models.TextField()
@@ -48,6 +58,34 @@ class AlertEvent(TimeStampedModel):
     onu = models.ForeignKey("olt_integration.ONU", on_delete=models.SET_NULL, null=True, blank=True)
     cto = models.ForeignKey("network_map.CTO", on_delete=models.SET_NULL, null=True, blank=True)
     route = models.ForeignKey("network_map.NetworkRoute", on_delete=models.SET_NULL, null=True, blank=True)
+    network_element = models.ForeignKey(
+        "network_map.NetworkElement",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="monitoring_alerts",
+    )
+    container_equipment = models.ForeignKey(
+        "network_map.ContainerEquipment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="monitoring_alerts",
+    )
+    equipment_port = models.ForeignKey(
+        "network_map.ContainerEquipmentPort",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="monitoring_alerts",
+    )
+    monitored_link = models.ForeignKey(
+        "snmp_monitoring.MonitoredNetworkLink",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alerts",
+    )
     opened_at = models.DateTimeField()
     acknowledged_at = models.DateTimeField(null=True, blank=True)
     acknowledged_by = models.ForeignKey(
@@ -72,6 +110,9 @@ class AlertEvent(TimeStampedModel):
             models.Index(fields=["scope", "state"]),
             models.Index(fields=["cto", "state"]),
             models.Index(fields=["route", "state"]),
+            models.Index(fields=["company", "state", "-opened_at"], name="alerts_company_state_idx"),
+            models.Index(fields=["monitored_link", "state"], name="alerts_link_state_idx"),
+            models.Index(fields=["equipment_port", "state"], name="alerts_port_state_idx"),
         ]
 
     def __str__(self):

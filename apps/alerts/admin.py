@@ -10,10 +10,14 @@ class AlertRuleAdmin(admin.ModelAdmin):
 
 @admin.register(AlertEvent)
 class AlertEventAdmin(admin.ModelAdmin):
-    list_display = ("title", "scope", "severity", "state", "opened_at", "cto", "route", "olt")
-    list_filter = ("scope", "severity", "state")
-    search_fields = ("title", "message", "fingerprint")
+    list_display = (
+        "title", "company", "scope", "severity", "state", "opened_at",
+        "monitored_link", "container_equipment", "equipment_port", "cto", "route", "olt",
+    )
+    list_filter = ("company", "scope", "severity", "state")
+    search_fields = ("title", "message", "fingerprint", "monitored_link__name", "container_equipment__name")
     date_hierarchy = "opened_at"
+    readonly_fields = ("fingerprint", "opened_at", "created_at", "updated_at")
 
 
 @admin.register(AlertNotification)

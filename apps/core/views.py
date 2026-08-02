@@ -195,7 +195,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             customer_queryset = customer_queryset.filter(company_id__in=company_ids)
             sync_queryset = sync_queryset.filter(configuration__company_id__in=company_ids)
             alert_queryset = alert_queryset.filter(
-                Q(cto__company_id__in=company_ids)
+                Q(company_id__in=company_ids)
+                | Q(cto__company_id__in=company_ids)
                 | Q(olt__cpd__company_id__in=company_ids)
                 | Q(route__company_id__in=company_ids)
             ).distinct()
@@ -859,10 +860,13 @@ def company_alerts(request):
     if not request.user.is_superuser and membership and membership.company.is_designer:
         raise PermissionDenied
     company_ids = accessible_company_ids(request.user)
-    alerts = AlertEvent.objects.select_related("rule", "olt", "cto")
+    alerts = AlertEvent.objects.select_related(
+        "rule", "olt", "cto", "monitored_link", "container_equipment", "equipment_port",
+    )
     if company_ids is not None:
         alerts = alerts.filter(
-            Q(cto__company_id__in=company_ids)
+            Q(company_id__in=company_ids)
+            | Q(cto__company_id__in=company_ids)
             | Q(olt__cpd__company_id__in=company_ids)
             | Q(route__company_id__in=company_ids)
         ).distinct()

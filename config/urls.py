@@ -57,6 +57,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("apps.core.urls")),
     path("api/ixc/", include("apps.ixc_integration.api.urls")),
+    path("api/monitoring/", include("apps.snmp_monitoring.urls")),
     path("api/map/", include("apps.network_map.api.urls")),
     path("", include("apps.network_map.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

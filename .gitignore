@@ -228,9 +228,10 @@ telegraf.conf
 /templates/equipamentos_snmp/
 /consultar_status.py
 
-# Backup local do aplicador do pacote mestre do mapa (apply_map_master_suite.py)
-# — o backup "de verdade" é a branch/tag do Git antes de aplicar.
+# Backup local dos aplicadores de pacotes do mapa — o backup "de verdade"
+# é a branch/tag do Git antes de aplicar.
 /.map-master-backup/
+/.map-monitoring-v071/
 
 # Backups temporários
 *.bak

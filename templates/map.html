@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="{% static 'css/map-optical-editor-v3.css' %}?v={{ app_version }}">
     <!-- IXCSOFT_MAP_MASTER_SUITE_V1 -->
     <link rel="stylesheet" href="{% static 'css/map-master-suite.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-link-monitoring.css' %}?v={{ app_version }}">
 </head>
 <body data-can-edit="{{ can_edit_map|yesno:'true,false' }}">
     <form id="map-csrf-token" hidden aria-hidden="true">{% csrf_token %}</form>
@@ -495,6 +496,7 @@
     <script src="{% static 'js/map-optical-editor-v2.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-optical-editor-v3.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-master-suite.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/map-link-monitoring.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>

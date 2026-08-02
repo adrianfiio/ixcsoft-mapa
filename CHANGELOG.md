@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.71.0] - 2026-08-01
+
+Pacote "Monitoramento de portas e enlaces" preparado pelo ChatGPT,
+construído em cima do `apps.snmp_monitoring` da v0.68.0. Aplicado via
+`apply_monitoring_links_v071.py` (validado antes com `--dry-run`).
+Backup/ponto de rollback: tag `v0.70.0` (também disponível como branch
+`backup/mapa-pre-monitoramento-v071`). **Tem migrations** (`snmp_monitoring.0002_link_monitoring`
+e `alerts.0002_network_monitoring_alerts`) — rodam automaticamente no `apply`.
+
+### Adicionado
+
+- **Monitoramento SNMP nos equipamentos internos de Rack/Torre** (switch, roteador, firewall, servidor, access point, rádio PTP, ONU/ONT, outros) — OLT continua bloqueada aqui de propósito, ela usa a integração própria. Informa IP, porta, community (criptografada, nunca retorna pela API) e intervalo de coleta.
+- **Descoberta de portas SNMP** (ifName/ifIndex/ifAlias/status) associável a uma porta física já criada no equipamento, com função (backbone, uplink, acesso, wireless/PTP, gerência, outro) — só as portas vinculadas controlam os enlaces; interface avulsa não derruba o equipamento inteiro.
+- **Enlaces de backbone entre cidades**: duas portas monitoradas associadas a um `FiberCable` do mapa, com dois caminhos independentes possíveis (principal/secundário), cada um com portas, cabo, cor e alerta próprios.
+- **Enlaces PTP wireless**: linha reta tracejada entre torres, cor configurável (roxo por padrão), sem exigir cabo óptico.
+- **Debounce configurável** (padrão 30s para queda e 30s para recuperação) evitando abrir/fechar alerta por oscilação SNMP passageira.
+- **Central de alertas ampliada**: novos escopos equipamento/porta/enlace, com `AlertEvent` recebendo `company` diretamente (além de elemento, equipamento, porta, enlace, cabo, rota, projeto) — funciona tanto para empresa com IXCSoft quanto com outro ERP ou só cadastro manual.
+
+### Alterado
+
+- **Consulta ao InfluxDB em lote**: antes era uma consulta por equipamento; agora todos os perfis ativos são consultados juntos, portas/interfaces atualizadas numa única passada, e só depois os enlaces são avaliados. Atualização visual do mapa a cada 15s, coleta Celery a cada 30s (configurável via `SNMP_STATUS_POLL_SECONDS`).
+- **Recarga do Telegraf deixou de disparar a cada atualização de telemetria**: o sinal que aciona o `SIGHUP` agora só reage a mudanças de configuração (IP, community, alvo, etc.), não mais a cada ciclo de coleta — no v0.68.0 original, qualquer `save()` do perfil (inclusive os de telemetria, a cada ~30s) disparava reload do Telegraf.
+
+### Corrigido
+
+- **Filtro de empresa nos alertas**: o aplicador do pacote tinha um bug na função que insere `Q(company_id__in=company_ids)` nos dois pontos de filtragem de alerta em `apps/core/views.py` — por um efeito colateral do `.replace()` (o texto substituído continha o próprio marcador de busca), o filtro novo acabou duplicado no primeiro ponto (`_provider_context`, inofensivo — só uma condição OR repetida) e **totalmente ausente no segundo, que é a view real da página "Central de alertas"** (`company_alerts`). Sem esse ajuste, alertas de porta/enlace monitorado (que têm `company` mas não `cto`/`olt`/`route`) não apareceriam na Central de alertas de ninguém. Corrigido manualmente antes de liberar: duplicata removida, filtro certo adicionado em `company_alerts`, e `select_related` da view ampliado para incluir `monitored_link`/`container_equipment`/`equipment_port` (evita consulta N+1 ao listar até 200 alertas).
+
+### Segurança
+
+- Token do InfluxDB continua só por variável de ambiente (o token colado numa conversa anterior segue precisando ser rotacionado no InfluxDB, se ainda não foi).
+- Community SNMP criptografada, nunca em texto puro.
+- Socket do Docker continua só no `worker` — nenhuma mudança no `web`.
+- Recarga do Telegraf continua por `SIGHUP`, sem `os.system`/`docker restart`.
+
 ## [0.70.0] - 2026-08-01
 
 Pacote cumulativo "Master Suite" preparado pelo ChatGPT para a área do
