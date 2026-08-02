@@ -21,6 +21,7 @@ from apps.core.views import (
     company_team,
     create_company_asset,
     erp_onboarding,
+    platform_companies_list,
     platform_company_create,
     platform_company_edit,
 )
@@ -66,6 +67,7 @@ urlpatterns = [
         name="dashboard-layout-editor",
     ),
     path("painel/plataforma/", PlatformOverviewView.as_view(), name="platform-overview"),
+    path("painel/plataforma/empresas/", platform_companies_list, name="platform-companies"),
     path("painel/plataforma/empresas/novo/", platform_company_create, name="platform-company-create"),
     path(
         "painel/plataforma/empresas/<int:company_id>/editar/",

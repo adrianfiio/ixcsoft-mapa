@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes | AFService Map{% endblock %}
+{% block topbar_title %}Clientes{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Ferramenta da plataforma</p>
+        <h1>Clientes</h1>
+        <p>Empresas cadastradas na plataforma — cadastro, financeiro e gateway de cada uma.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
+        <a class="primary-action" href="{% url 'platform-company-create' %}">Nova empresa →</a>
+    </div>
+</section>
+
+<article class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Empresas</h2>
+        <span class="billing-row-actions">
+            <a class="panel-link" href="{% url 'platform-financial-overview' %}">Financeiro completo →</a>
+            <a href="{% url 'platform-financial-export' %}">Exportar financeiro →</a>
+        </span>
+    </div>
+    <div class="overview-table-wrap">
+        <table class="overview-table">
+            <thead><tr><th>Empresa</th><th>Tipo</th><th>Clientes</th><th>Cabo</th><th>Elementos</th><th>Alertas</th><th>Atrasados</th><th>Pendentes</th><th>Equipe</th><th>Sincronização</th><th></th></tr></thead>
+            <tbody>
+                {% for row in companies_summary %}
+                <tr class="{% if row.needs_attention %}overview-row-attention{% endif %}">
+                    <td><strong>{{ row.company.trade_name|default:row.company.name }}</strong></td>
+                    <td>{{ row.company.get_company_type_display|default:"—" }}</td>
+                    <td>{{ row.client_count }}</td>
+                    <td>{{ row.cable_km }} km</td>
+                    <td>{{ row.element_count }}</td>
+                    <td>{{ row.alert_count }}</td>
+                    <td>{% if row.overdue_count %}<span class="sync-pill sync-danger">{{ row.overdue_count }}</span>{% else %}0{% endif %}</td>
+                    <td>{% if row.pending_count %}<span class="sync-pill sync-warning">{{ row.pending_count }}</span>{% else %}0{% endif %}</td>
+                    <td>{{ row.team_count }}</td>
+                    <td>
+                        {% if row.sync_state == "ok" %}<span class="sync-pill sync-ok">Em dia{% if row.provider_name %} · {{ row.provider_name }}{% endif %}</span>
+                        {% elif row.sync_state == "sem_erp" %}<span class="sync-pill sync-muted">Sem ERP</span>
+                        {% elif row.sync_state == "nunca_sincronizou" %}<span class="sync-pill sync-warning">Nunca sincronizou</span>
+                        {% elif row.sync_state == "atrasada" %}<span class="sync-pill sync-warning">Atrasada</span>
+                        {% elif row.sync_state == "falhou" %}<span class="sync-pill sync-danger">Falhou</span>
+                        {% endif %}
+                    </td>
+                    <td class="icon-actions">
+                        <a class="icon-action" href="{% url 'platform-company-edit' row.company.id %}" data-label="Editar" aria-label="Editar">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                        </a>
+                        <a class="icon-action" href="{% url 'platform-company-billing' row.company.id %}" data-label="Financeiro" aria-label="Financeiro">$</a>
+                        <a class="icon-action" href="{% url 'platform-gateway-settings' row.company.id %}" data-label="Gateway" aria-label="Gateway">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="6" height="6" rx="1"></rect><rect x="16" y="9" width="6" height="6" rx="1"></rect><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="empty-state">Nenhuma empresa ativa.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}

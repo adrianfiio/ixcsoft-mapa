@@ -15,6 +15,22 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.79.0] - 2026-08-02
+
+Página "Clientes" dedicada no menu do Superadmin — a tabela de
+empresas sai da "Visão da plataforma" e ganha página própria, com
+link no menu lateral (substitui o item "Nova empresa", que passa a
+viver como botão dentro da página). Ver
+[docs/releases/platform/platform-v0.79.0.md](docs/releases/platform/platform-v0.79.0.md).
+
+Resumo: item de menu novo "Clientes" → lista de empresas cadastradas +
+botão "Nova empresa" → em cada linha, as ações Editar/Financeiro/
+Gateway viram botão-ícone com o nome aparecendo em tooltip no hover
+(componente CSS novo, reutilizável, sem lib externa). Também corrige
+um espaçamento pendente entre painéis empilhados no Financeiro da
+plataforma e na tela de Editar empresa (a "barreira" pedida entre
+widgets). Nenhum model novo, nenhuma migration.
+
 ## [platform-0.78.0] - 2026-08-02
 
 Gestão de empresa e equipe pelo Superadmin — página nova "Editar

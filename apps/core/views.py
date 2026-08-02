@@ -482,8 +482,19 @@ def platform_company_create(request):
                 active=True,
             )
         messages.success(request, f"Empresa {company.trade_name or company.name} cadastrada.")
-        return redirect("platform-overview")
+        return redirect("platform-companies")
     return render(request, "platform_company_form.html", {"form": form})
+
+
+@login_required
+def platform_companies_list(request):
+    """Lista de empresas cadastradas pelo Superadmin — página própria
+    (antes era o widget panel_companies_table dentro da Visão da
+    plataforma). Reaproveita platform_overview_summary() por inteiro,
+    sem duplicar nenhuma query."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    return render(request, "platform_companies.html", platform_overview_summary())
 
 
 @login_required
