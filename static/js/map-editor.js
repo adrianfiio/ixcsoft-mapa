@@ -641,6 +641,9 @@
             : "<p>Nenhuma ligação interna registrada.</p>";
         // Workspace não modal: o menu principal continua visível e utilizável.
         if (!containerDialog.open) containerDialog.show();
+        document.dispatchEvent(new CustomEvent("map:container-opening", {
+            detail: { dialog: containerDialog, elementId: id },
+        }));
         containerCardForm.hidden = true;
         containerPortForm.hidden = true;
         document.querySelectorAll("[data-add-equipment-card]").forEach((button) => {

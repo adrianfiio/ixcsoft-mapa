@@ -910,9 +910,12 @@
         const port = qs(`[data-port-id="${portId}"]`, canvas);
         if (!port) return null;
         const canvasRect = canvas.getBoundingClientRect();
-        const rect = port.getBoundingClientRect();
-        const right = port.classList.contains("right");
-        return { x: (right ? rect.right : rect.left) - canvasRect.left, y: rect.top + rect.height / 2 - canvasRect.top };
+        const socket = qs("i", port);
+        const rect = (socket || port).getBoundingClientRect();
+        return {
+            x: rect.left + rect.width / 2 - canvasRect.left,
+            y: rect.top + rect.height / 2 - canvasRect.top,
+        };
     }
 
     function orthogonalPath(start, end, manual = []) {
@@ -1108,11 +1111,46 @@
         dialog = document.createElement("dialog");
         dialog.id = "map-master-equipment-editor";
         dialog.className = "editor-dialog map-master-equipment-dialog";
-        dialog.innerHTML = `<form><header><div><h2>Editar equipamento</h2><p data-subtitle></p></div><button type="button" data-close>×</button></header><div class="master-form-grid"><label>Nome<input name="name"></label><label>IP de gerência<input name="management_ip"></label><label>Fabricante<input name="vendor"></label><label>Modelo<input name="model"></label><label>Número de série<input name="serial_number"></label><label>Patrimônio<input name="asset_tag"></label><label>Posição no rack (U)<input name="rack_unit"></label><label>Altura (U)<input name="height_units" type="number" min="1"></label><label>Face<select name="rack_face"><option value="">Não informado</option><option value="front">Frente</option><option value="rear">Traseira</option></select></label><label>Foto/URL<input name="photo_url"></label><label>Documentação/URL<input name="documentation_url"></label><label>Firmware<input name="firmware"></label><label>Função<input name="role"></label><label>Slots do chassi<input name="chassis_slots" type="number" min="0"></label><label>Uplinks<input name="uplink_count" type="number" min="0"></label><label>Potência TX (dBm)<input name="tx_power_dbm" type="number" step="0.01"></label><label>Conector<select name="connector_type"><option value="">Não informado</option><option value="sc_apc">SC/APC</option><option value="sc_upc">SC/UPC</option><option value="lc_upc">LC/UPC</option><option value="lc_apc">LC/APC</option></select></label><label>Bandejas do DIO<input name="tray_count" type="number" min="0"></label><label>Portas por bandeja<input name="ports_per_tray" type="number" min="0"></label></div><label>Descrição<textarea name="description" rows="2"></textarea></label><label>Observações<textarea name="notes" rows="3"></textarea></label><section class="master-equipment-expand"><h3>Adicionar portas</h3><div><select data-new-port-type></select><input data-new-port-count type="number" min="1" max="256" value="1"><button type="button" data-add-ports>Adicionar</button></div></section><section class="master-equipment-expand" data-card-editor><h3>Adicionar placa à OLT</h3><div><input data-card-slot type="number" min="1" max="64" placeholder="Slot"><input data-card-pons type="number" min="1" max="64" value="8" placeholder="PONs"><input data-card-name placeholder="Nome da placa"><button type="button" data-add-card>Adicionar placa</button></div></section><section><h3>Portas e módulos</h3><div data-ports class="master-equipment-ports"></div></section><p data-status></p><footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Salvar</button></footer></form>`;
+        dialog.innerHTML = `<form><header><div><h2>Editar equipamento</h2><p data-subtitle></p></div><button type="button" data-close>×</button></header><div class="master-form-grid"><label>Nome<input name="name"></label><label>IP de gerência<input name="management_ip"></label><label>Fabricante<input name="vendor"></label><label>Modelo<input name="model"></label><label>Número de série<input name="serial_number"></label><label>Patrimônio<input name="asset_tag"></label><label>Posição no rack (U)<input name="rack_unit"></label><label>Altura (U)<input name="height_units" type="number" min="1"></label><label>Face<select name="rack_face"><option value="">Não informado</option><option value="front">Frente</option><option value="rear">Traseira</option></select></label><label>Foto/URL<input name="photo_url"></label><label>Documentação/URL<input name="documentation_url"></label><label>Firmware<input name="firmware"></label><label>Função<input name="role"></label><label>Slots do chassi<input name="chassis_slots" type="number" min="0"></label><label>Uplinks<input name="uplink_count" type="number" min="0"></label><label>Potência TX (dBm)<input name="tx_power_dbm" type="number" step="0.01"></label><label>Conector<select name="connector_type"><option value="">Não informado</option><option value="sc_apc">SC/APC</option><option value="sc_upc">SC/UPC</option><option value="lc_upc">LC/UPC</option><option value="lc_apc">LC/APC</option></select></label><label>Bandejas do DIO<input name="tray_count" type="number" min="0"></label><label>Portas por bandeja<input name="ports_per_tray" type="number" min="0"></label></div><label>Descrição<textarea name="description" rows="2"></textarea></label><label>Observações<textarea name="notes" rows="3"></textarea></label><section class="master-equipment-expand" data-port-editor><h3>Adicionar interfaces compatíveis</h3><div><select data-new-port-type></select><input data-new-port-count type="number" min="1" max="256" value="1"><button type="button" data-add-ports>Adicionar</button></div></section><section class="master-equipment-expand" data-card-editor><h3>Adicionar placa à OLT</h3><div><input data-card-slot type="number" min="1" max="64" placeholder="Slot"><input data-card-pons type="number" min="1" max="64" value="8" placeholder="PONs"><input data-card-name placeholder="Nome da placa"><button type="button" data-add-card>Adicionar placa</button></div></section><section><h3>Portas e módulos</h3><div data-ports class="master-equipment-ports"></div></section><p data-status></p><footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Salvar</button></footer></form>`;
         document.body.appendChild(dialog);
         dialog.querySelector("[data-close]").onclick = () => dialog.close();
         dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
         return dialog;
+    }
+
+    function configureEquipmentEditorForType(dialog, item) {
+        const form = qs("form", dialog);
+        const type = String(item.type || "other");
+        const mounted = new Set(["olt", "dio", "switch", "router", "firewall", "server"]);
+        const managed = new Set(["olt", "switch", "router", "firewall", "server", "access_point", "ptp", "onu", "other"]);
+        const fieldRules = {
+            management_ip: managed.has(type),
+            rack_unit: mounted.has(type), height_units: mounted.has(type), rack_face: mounted.has(type),
+            firmware: managed.has(type), chassis_slots: ["olt", "switch", "router", "firewall", "server"].includes(type),
+            uplink_count: managed.has(type), tx_power_dbm: type === "olt",
+            connector_type: type === "dio", tray_count: type === "dio", ports_per_tray: type === "dio",
+        };
+        Object.entries(fieldRules).forEach(([name, visible]) => {
+            const wrapper = form.elements[name]?.closest("label");
+            if (wrapper) wrapper.hidden = !visible;
+        });
+        const allowedPorts = {
+            switch: ["rj45_100m", "rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g", "sfp28_25g", "qsfp_plus_40g", "qsfp28_100g"],
+            router: ["rj45_100m", "rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g", "sfp28_25g", "qsfp_plus_40g", "qsfp28_100g"],
+            firewall: ["rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g"],
+            server: ["rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g", "sfp28_25g"],
+            access_point: ["rj45_100m", "rj45_1g", "rj45_2g5", "wireless", "power"],
+            ptp: ["rj45_100m", "rj45_1g", "sfp_1g", "wireless", "power"],
+            onu: ["pon", "rj45_100m", "rj45_1g", "rj45_2g5", "power"],
+            other: ["rj45_1g", "sfp_1g", "wireless", "power"],
+        }[type] || [];
+        const portEditor = qs("[data-port-editor]", dialog);
+        portEditor.hidden = !allowedPorts.length;
+        const choices = new Map(state.bootstrap?.port_types || []);
+        qs("[data-new-port-type]", dialog).innerHTML = allowedPorts
+            .filter((value) => choices.has(value))
+            .map((value) => `<option value="${value}">${escapeHtml(choices.get(value))}</option>`).join("");
+        qs("[data-card-editor]", dialog).hidden = type !== "olt";
     }
 
     async function openEquipmentEditor(equipmentId) {
@@ -1125,8 +1163,7 @@
         ["asset_tag", "rack_unit", "rack_face", "photo_url", "documentation_url", "firmware", "role", "notes", "chassis_slots", "uplink_count", "tray_count", "ports_per_tray", "height_units"].forEach((name) => { form.elements[name].value = metadata[name] || ""; });
         form.elements.tx_power_dbm.value = item.tx_power_dbm ?? "";
         form.elements.connector_type.value = item.connector_type || "";
-        qs("[data-new-port-type]", dialog).innerHTML = (state.bootstrap?.port_types || []).map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
-        qs("[data-card-editor]", dialog).hidden = item.type !== "olt";
+        configureEquipmentEditorForType(dialog, item);
         qs("[data-subtitle]", dialog).textContent = item.type_label;
         qs("[data-ports]", dialog).innerHTML = (item.ports || []).map((port) => `<label><span><strong>${escapeHtml(port.label)}</strong><small>${escapeHtml(port.type_label)}</small></span><select data-port-module="${port.id}">${[["", "Sem módulo"], ["sfp_optical_1g", "SFP óptico 1G"], ["sfp_rj45_1g", "SFP/RJ45 1G"], ["sfp_plus_10g", "SFP+ 10G"], ["sfp28_25g", "SFP28 25G"], ["qsfp_40g", "QSFP+ 40G"], ["qsfp28_100g", "QSFP28 100G"], ["dac", "DAC"], ["gbic", "GBIC"], ["other", "Outro"]].map(([value, label]) => `<option value="${value}" ${port.module === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>`).join("") || "<p>Sem portas cadastradas.</p>";
         qs("[data-add-ports]", dialog).onclick = async () => {
