@@ -1,5 +1,32 @@
 # Changelog — Mapa
 
+## [map-0.75.5] - 2026-08-02
+
+### Adicionado
+
+- ícones SVG técnicos para CTO, PTO, CDO, CEO, Rack, Torre, Poste, reserva e POP/CPD;
+- ações modernas de editar e excluir em notas e equipamentos do Canvas;
+- abertura direta do editor óptico pelo botão Fibras.
+
+### Alterado
+
+- editor óptico posiciona cabos e fibras à esquerda e DIOs à direita;
+- conectores e ligações continuam visíveis sobre os cards sem bloquear o movimento normal;
+- ícones configurados pelo Django são reaplicados após cada renderização do mapa.
+
+### Corrigido
+
+- movimento do Canvas com o botão central quando a área não possui rolagem nativa;
+- movimentação de equipamentos e notas respeitando o nível atual de zoom;
+- linhas capturando o mouse fora do modo de edição;
+- botão de fechar do editor óptico desalinhado.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.80.0`;
+- `MAP_VERSION` atualizada para `0.75.5`;
+- nenhuma migration.
+
 ## [map-0.75.4] - 2026-08-02
 
 ### Adicionado
