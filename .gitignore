@@ -255,3 +255,6 @@ static/img/afservice-map-favicon.png
 
 # Backup local do hotfix estrutural do mapa v0.72.2
 /.map-ui-v0722-backup/
+
+# Backup local do rework de monitoramento SNMP / runtime do mapa v0.75.0
+/.map-v074-backup/

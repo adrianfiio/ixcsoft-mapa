@@ -1,0 +1,117 @@
+/* IXCSoft MAPA v0.74 — runtime leve e editores compactos. */
+body.map-master-suite #container-dialog {
+    width: min(980px, calc(100vw - 32px)) !important;
+    height: min(680px, calc(100vh - 32px)) !important;
+    min-width: 0 !important;
+}
+body.map-master-suite #container-dialog > section > header {
+    min-height: 44px !important;
+    padding: 6px 10px !important;
+}
+body.map-master-suite #container-dialog h2,
+body.map-master-suite #unifilar-dialog h2 {
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+}
+.master-container-tabs,
+.master-container-toolbar {
+    min-height: 36px !important;
+    padding: 4px 6px !important;
+    gap: 4px !important;
+}
+.master-container-tabs button,
+.master-container-toolbar button {
+    min-height: 27px !important;
+    padding: 3px 7px !important;
+    font-size: 10px !important;
+}
+.master-container-panel { padding: 6px !important; }
+.master-equipment-summary,
+.master-matrix-head {
+    padding: 5px 7px !important;
+    margin-bottom: 5px !important;
+}
+.master-equipment-group { margin-bottom: 4px !important; }
+.master-equipment-group summary { padding: 5px 8px !important; font-size: 11px !important; }
+.master-equipment-row {
+    gap: 6px !important;
+    padding: 5px 7px !important;
+    min-height: 40px !important;
+}
+.master-equipment-row button { min-height: 25px !important; padding: 2px 6px !important; font-size: 9px !important; }
+.master-canvas-scroll {
+    min-height: 390px !important;
+    height: calc(100% - 2px) !important;
+}
+.master-canvas {
+    width: max(100%, 880px) !important;
+    min-height: 520px !important;
+}
+.master-canvas-node {
+    width: 205px !important;
+    min-height: 96px !important;
+    border-radius: 8px !important;
+}
+.master-canvas-node > header { padding: 5px 7px !important; }
+.master-node-ports { gap: 3px 7px !important; padding: 6px !important; }
+.master-node-port {
+    min-height: 23px !important;
+    padding: 2px 5px !important;
+    font-size: 8px !important;
+}
+.master-matrix-form { padding: 6px !important; gap: 5px !important; }
+.master-matrix-links article { padding: 5px 7px !important; }
+
+body.map-master-suite #unifilar-dialog.map-master-fusion {
+    width: min(860px, calc(100vw - 32px)) !important;
+    height: min(600px, calc(100vh - 32px)) !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion > section > header {
+    min-height: 40px !important;
+    padding: 5px 8px !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion #unifilar-content {
+    padding: 4px !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion .fusion-toolbar,
+body.map-master-suite #unifilar-dialog.map-master-fusion .unifilar-zoom,
+body.map-master-suite #unifilar-dialog.map-master-fusion .ceo-instructions {
+    min-height: 28px !important;
+    padding: 2px 4px !important;
+    gap: 3px !important;
+    font-size: 9px !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion .fusion-toolbar button,
+body.map-master-suite #unifilar-dialog.map-master-fusion .unifilar-zoom button {
+    min-height: 23px !important;
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+}
+
+.monitoring-dialog-v074 { width: min(760px, calc(100vw - 28px)) !important; max-height: calc(100vh - 28px) !important; }
+.monitor-link-dialog-v074 { width: min(820px, calc(100vw - 28px)) !important; max-height: calc(100vh - 28px) !important; }
+.monitoring-dialog-v074 > section,
+.monitor-link-dialog-v074 > section { max-height: calc(100vh - 42px); overflow: auto; }
+.monitoring-dialog-v074 .monitor-interface-section { margin-top: 8px; }
+.monitoring-dialog-v074 .monitor-interface-section > summary { cursor: pointer; font-weight: 700; }
+.monitoring-dialog-v074 .monitor-form-grid,
+.monitor-link-dialog-v074 .monitor-form-grid { gap: 6px !important; }
+.monitoring-dialog-v074 input,
+.monitoring-dialog-v074 select,
+.monitor-link-dialog-v074 input,
+.monitor-link-dialog-v074 select { min-height: 30px !important; }
+.monitoring-button { white-space: nowrap; }
+
+/* Status só anima quando existe um perfil SNMP real. */
+.network-marker:not(.monitoring-enabled),
+.master-canvas-node:not(.monitoring-enabled) { animation: none !important; }
+
+@media (max-width: 720px) {
+    body.map-master-suite #container-dialog,
+    body.map-master-suite #unifilar-dialog.map-master-fusion {
+        width: calc(100vw - 12px) !important;
+        height: calc(100vh - 12px) !important;
+    }
+    .master-container-toolbar { flex-wrap: wrap; overflow: visible; }
+    .master-canvas { width: 800px !important; }
+}

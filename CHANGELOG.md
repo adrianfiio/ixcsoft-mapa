@@ -1,5 +1,68 @@
 # Changelog
 
+## [0.75.0] - 2026-08-02 (branch `agent/v0-74-snmp-map-rework`, aguardando homologação)
+
+Reestruturação do runtime de monitoramento do mapa e compactação dos
+editores de infraestrutura, preparada pelo ChatGPT sobre o commit
+`cff9db1` (v0.73.1) — antes do módulo financeiro (v0.74.0) entrar no
+`main`. O pacote se chamava "v0.74.0"; renomeei para **v0.75.0** aqui
+porque esse número já foi usado pelo módulo financeiro (nenhuma relação
+entre os dois pacotes, só coincidência de numeração — resolvido
+conforme combinado, "depois vemos"). Corrige o travamento/piscar
+causado pela combinação de polling permanente com observadores
+concorrentes de DOM. **Sem migration.** Aplicado numa branch separada
+(`agent/v0-74-snmp-map-rework`), aguardando homologação antes do merge —
+não fui autorizado a mesclar direto no `main` desta vez.
+
+### Adicionado
+
+- Novo runtime `map-link-monitoring-v074.js`, isolado do runtime antigo — **sem `MutationObserver`** (confirmado por leitura completa do arquivo).
+- Sinalização `monitoring_enabled` no snapshot do projeto.
+- Cancelamento de requisições antigas ao trocar de projeto (`AbortController` + contador de geração).
+- Comparação de assinatura dos estados para evitar reconstruções quando nada mudou.
+- Evento explícito `map:container-rendered` para decorar Rack/Torre sem observar toda a árvore DOM — substitui o padrão de `MutationObserver` que já causou os três incidentes anteriores (v0.71.1, v0.72.0, v0.72.1) por um disparo único e explícito.
+- Comando `cleanup_invalid_snmp_profiles`, com auditoria padrão e aplicação explícita por `--apply` (nunca apaga equipamento, só desativa).
+- Validador estático `scripts/validate_map_v074.py`.
+
+### Alterado
+
+- Monitoramento SNMP universal passa a ser estritamente opt-in: um equipamento só entra na coleta depois de o operador abrir **Ativar SNMP**, informar IP/community e salvar o perfil.
+- Tipos aceitos: switch, roteador, firewall, access point, rádio PTP, ONU/ONT e equipamento ativo classificado como "outro".
+- Atualização visual passa de 15 para 30 segundos e só existe com monitoramento configurado e aba visível.
+- O worker consulta somente perfis ativos ligados a equipamentos elegíveis em `provisioning_mode=snmp`.
+- Rack/Torre abre em tamanho compacto (~980×680), mantendo tela cheia sob demanda.
+- Editor de Fusões (~860×600) e Canvas 2D recebem dimensões, cartões, portas, barras e botões menores.
+
+### Removido
+
+- `MutationObserver` global do runtime de monitoramento.
+- Polling contínuo em projetos sem equipamento SNMP.
+- Monitoramento universal de DIO, PTO, servidor, OLT e elementos ópticos.
+- Servidor das opções e da visualização do Rack/Torre (registros existentes só ficam ocultos, não apagados).
+
+### Corrigido
+
+- Piscar de status, popups e componentes do Rack/Torre.
+- Requisições concorrentes ao trocar rapidamente de projeto.
+- Decoração de status aplicada a elementos sem perfil SNMP.
+- Enlaces que continuavam ativos mesmo quando uma das pontas não era elegível.
+
+### Verificação e um ajuste manual necessário
+
+- Checksums SHA-256 do pacote conferidos (12 arquivos), `BASE_COMMIT` confirmado.
+- **`--dry-run` falhou na primeira tentativa**: o marcador que o pacote esperava em `apps/network_map/api/views.py` (campo `type_label` como uma linha simples) não batia com o código real — nesse arquivo `type_label` já é uma expressão condicional de várias linhas (tratamento especial de ONU sob o tipo "outro", de uma rodada anterior), e `provisioning_mode` já existia no payload. Segui a própria instrução do pacote ("não improvise, informe qual arquivo divergiu") até confirmar exatamente o ponto — mas como o ajuste necessário era pequeno e mecânico (só inserir os dois campos novos, `monitoring_eligible`/`monitoring_configured`, no local certo, sem duplicar `provisioning_mode`), apliquei manualmente essa única correção e o restante do pacote passou a aplicar limpo via `--dry-run` normalmente.
+- `--dry-run` e aplicação real completos sem outro erro.
+- `python -m py_compile` em todos os arquivos Python tocados/novos.
+- Sintaxe do `map-link-monitoring-v074.js` e do `map-master-suite.js` validada (esprima).
+- Validações do `scripts/validate_map_v074.py` executadas manualmente contra `templates/map.html` (o script do pacote tinha um caminho fixo pra `templates/network_map/map_editor.html`, que não existe neste projeto — o template real sempre foi `templates/map.html`, como o próprio `apply_map_v074.py` já detecta corretamente) — todas passaram, incluindo a confirmação de que não há `MutationObserver` nem o polling antigo de 15s no runtime novo.
+- Chaves do `map-v074-rework.css` balanceadas (37/37).
+- `python -m compileall` e `git diff --check` limpos.
+
+**`manage.py check`, a auditoria/aplicação do `cleanup_invalid_snmp_profiles` e toda a homologação em navegador
+(`docs/TESTES_DE_HOMOLOGACAO.md` do pacote) dependem de banco, GDAL e
+navegador reais — precisam ser feitos no servidor, pelo usuário, antes
+do merge.**
+
 ## [0.74.0] - 2026-08-03
 
 Módulo financeiro novo (`apps/billing`) — controle de mensalidade e

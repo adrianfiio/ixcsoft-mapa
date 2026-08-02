@@ -697,7 +697,6 @@
         if (type === "switch") return "Switches";
         if (type === "router") return "Roteadores";
         if (type === "firewall") return "Firewalls";
-        if (type === "server") return "Servidores";
         if (type === "ptp") return "Rádios PTP";
         if (type === "access_point") return "Access points";
         if (type === "onu" || subtype === "onu") return "ONUs / ONTs";
@@ -800,11 +799,12 @@
                 <details class="master-equipment-group" open>
                     <summary>${escapeHtml(group)} <span>${items.length}</span></summary>
                     <div>${items.map((item) => `
-                        <article class="master-equipment-row">
+                        <article class="master-equipment-row" data-equipment-id="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-monitoring-configured="${item.monitoring_configured === true ? 'true' : 'false'}">
                             <div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}${item.vendor ? ` · ${escapeHtml(item.vendor)}` : ""}${item.model ? ` ${escapeHtml(item.model)}` : ""} · ${(item.ports || []).length} porta(s)</small></div>
                             <div><button type="button" data-equipment-sheet="${item.id}">Ficha</button><button type="button" data-edit-equipment="${item.id}">Editar</button><button type="button" class="danger" data-delete-equipment="${item.id}">Excluir</button></div>
                         </article>`).join("")}</div>
                 </details>`).join("") || "<p>Nenhum equipamento cadastrado.</p>");
+        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: panel } }));
         qsa("[data-equipment-sheet]", panel).forEach((button) => button.onclick = () => openAssetSheet("equipment", button.dataset.equipmentSheet).catch((error) => notify(error.message, true)));
         qsa("[data-edit-equipment]", panel).forEach((button) => button.onclick = () => openEquipmentEditor(button.dataset.editEquipment));
         qsa("[data-delete-equipment]", panel).forEach((button) => button.onclick = async () => {
@@ -815,7 +815,7 @@
     }
 
     function defaultNodePosition(item, index) {
-        const columns = { olt: 0, dio: 0, switch: 1, router: 1, firewall: 1, server: 1, onu: 2, access_point: 2, ptp: 2, pto: 2, other: 2 };
+        const columns = { olt: 0, dio: 0, switch: 1, router: 1, firewall: 1, onu: 2, access_point: 2, ptp: 2, pto: 2, other: 2 };
         const column = columns[item.type] ?? 2;
         const siblings = (state.container.data?.equipment || []).slice(0, index).filter((row) => (columns[row.type] ?? 2) === column).length;
         return { x: 40 + column * 340, y: 35 + siblings * 220 };
@@ -838,7 +838,7 @@
         const equipment = state.container.data.equipment || [];
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
-            return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+            return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
                 <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small></header>
                 <div class="master-node-ports">${(item.ports || []).map((port, portIndex) => {
                     const side = portSide(port, portIndex);
@@ -848,6 +848,7 @@
         }).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
         qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
+        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root } }));
         drawContainerLinks();
     }
 

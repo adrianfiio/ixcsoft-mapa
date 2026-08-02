@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.74.0 — Módulo financeiro: cadastro de cliente, mensalidade recorrente automática, registro de pagamento e página de detalhe por cliente**
+**v0.75.0 — Monitoramento SNMP opt-in por equipamento, runtime do mapa sem polling ocioso e editores de Rack/Torre/Fusões/Canvas compactados**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

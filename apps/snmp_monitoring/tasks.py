@@ -242,12 +242,23 @@ def _evaluate_link(link, now):
 @shared_task
 def poll_snmp_status(profile_ids=None):
     """Consulta InfluxDB em lotes, atualiza portas, enlaces, cabos e alertas."""
-    queryset = SNMPMonitoringProfile.objects.filter(enabled=True).select_related(
+    eligible_types = [
+        "switch", "router", "firewall", "access_point", "ptp", "onu", "other",
+    ]
+    queryset = SNMPMonitoringProfile.objects.filter(
+        enabled=True,
+        equipment__enabled=True,
+        equipment__provisioning_mode="snmp",
+        equipment__equipment_type__in=eligible_types,
+    ).select_related(
         "company", "element", "equipment__container",
     )
     if profile_ids:
         queryset = queryset.filter(pk__in=list(profile_ids))
     profiles = list(queryset)
+    if not profiles:
+        logger.debug("Coleta SNMP ignorada: nenhum equipamento elegível/configurado.")
+        return {"profiles": 0, "skipped": True}
     now = timezone.now()
     stale_seconds = int(getattr(settings, "SNMP_STATUS_STALE_SECONDS", 180))
     observations_by_profile = {}
