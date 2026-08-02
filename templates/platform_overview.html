@@ -145,6 +145,7 @@
                                 {% endif %}
                             </td>
                             <td class="billing-row-actions">
+                                <a href="{% url 'platform-company-edit' row.company.id %}">Editar →</a>
                                 <a href="{% url 'platform-company-billing' row.company.id %}">Financeiro →</a>
                                 <a href="{% url 'platform-gateway-settings' row.company.id %}">Gateway →</a>
                             </td>

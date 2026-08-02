@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Editar empresa | {{ company.trade_name|default:company.name }}{% endblock %}
+{% block topbar_title %}Visão da plataforma{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.get_company_type_display|default:"Empresa" }}{% if not company.active %} · Desativada{% endif %}</p>
+        <h1>Editar empresa</h1>
+        <p>Cadastro, equipe e acessos de {{ company.trade_name|default:company.name }}.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
+        <a class="primary-action" href="{% url 'platform-company-billing' company.id %}">Financeiro →</a>
+        <a class="primary-action" href="{% url 'platform-gateway-settings' company.id %}">Gateway →</a>
+    </div>
+</section>
+
+<section class="billing-detail-grid">
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Cadastro da empresa</h2></div>
+        <form class="platform-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_company">
+            <div class="platform-form-grid">
+                {% for field in form %}
+                <label><strong>{{ field.label }}</strong>{{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </label>
+                {% endfor %}
+            </div>
+            <div class="platform-form-actions"><button type="submit">Salvar →</button></div>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Adicionar membro</h2></div>
+        <form class="platform-form onboarding-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_member">
+            <div class="platform-form-grid">
+                {% for field in team_form %}
+                <label><strong>{{ field.label }}</strong>{{ field }}
+                    {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </label>
+                {% endfor %}
+            </div>
+            <div class="platform-form-actions"><button type="submit">Cadastrar →</button></div>
+        </form>
+    </article>
+</section>
+
+<article class="panel">
+    <div class="panel-header"><h2 class="panel-title">Equipe e acessos</h2></div>
+    <div class="account-items">
+        {% for membership in team %}
+        <div>
+            <span>
+                <strong>{{ membership.user.get_full_name|default:membership.user.username }}</strong>
+                <small>{{ membership.user.username }} · {{ membership.get_role_display }}</small>
+            </span>
+            <span class="team-actions" style="flex-wrap: wrap;">
+                <span class="team-status {% if membership.active %}active{% else %}inactive{% endif %}">
+                    {% if membership.active %}Ativo{% else %}Inativo{% endif %}
+                </span>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_role">
+                    <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                    <input type="hidden" name="role" value="{% if membership.role == 'edit' %}view{% else %}edit{% endif %}">
+                    <button type="submit">{% if membership.role == 'edit' %}Tornar VIEW{% else %}Tornar EDIT{% endif %}</button>
+                </form>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                    <button type="submit">{% if membership.active %}Desativar{% else %}Reativar{% endif %}</button>
+                </form>
+                <form method="post" style="display: flex; gap: 6px; align-items: center;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_password">
+                    <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                    <input type="password" name="password" placeholder="Nova senha" required>
+                    <button type="submit">Redefinir senha</button>
+                </form>
+                <form method="post" onsubmit="return confirm('Excluir ESTE usuário e todo o vínculo dele com esta empresa? Isso não pode ser desfeito.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_member">
+                    <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                    <button type="submit" class="danger-action">Excluir</button>
+                </form>
+            </span>
+        </div>
+        {% empty %}
+        <p class="empty-state">Nenhum membro cadastrado ainda.</p>
+        {% endfor %}
+    </div>
+</article>
+{% endblock %}

@@ -15,6 +15,22 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.78.0] - 2026-08-02
+
+Gestão de empresa e equipe pelo Superadmin — página nova "Editar
+empresa" (`painel/plataforma/empresas/<id>/editar/`), ao lado do
+Financeiro e do Gateway que já existiam por empresa. Ver
+[docs/releases/platform/platform-v0.78.0.md](docs/releases/platform/platform-v0.78.0.md).
+
+Resumo: Superadmin agora edita o cadastro de qualquer empresa (nome,
+contato, documento, tipo — inclusive mudar o tipo depois de definido,
+coisa que não tinha nenhuma tela funcional até agora) e gerencia a
+equipe/acessos dela — adicionar membro, trocar papel (VIEW/EDIT),
+ativar/desativar, redefinir senha (novidade: não existia em lugar
+nenhum do sistema) e excluir de vez (novidade, com guarda de segurança
+pra não apagar acesso do usuário numa empresa diferente por engano).
+Nenhum model novo, nenhuma migration.
+
 ## [platform-0.77.0] - 2026-08-02
 
 Sistema de financeiro completo do Superadmin — página dedicada nova em
