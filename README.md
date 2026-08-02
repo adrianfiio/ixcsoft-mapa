@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.72.1 — Hotfix de consistência de UI: recolhimento real do menu lateral, modos Visualizar/Editar, popups e busca modernizados**
+**v0.73.0 — Reskin visual dos dashboards: cabeçalho hero, menu lateral em trilho de ícones, acento por papel e feed de alertas colorido**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

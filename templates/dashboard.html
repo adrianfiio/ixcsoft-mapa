@@ -21,7 +21,7 @@
 </div>
 {% endif %}
 
-<section class="page-heading">
+<section class="page-heading dashboard-hero">
     <div>
         <p class="eyebrow">Monitoramento da rede</p>
         <h1>Visão geral</h1>
@@ -41,7 +41,11 @@
         <article class="metric-card grid-stack-item-content{% if widget_meta.metric_access_online.hidden %} widget-hidden{% endif %}" style="--accent: var(--success);">
             {% include "includes/widget_edit_bar.html" with widget_key="metric_access_online" hidden=widget_meta.metric_access_online.hidden %}
             <div class="metric-head"><span>Acessos online</span><span class="metric-icon">↗</span></div>
-            <div class="metric-value">{{ access.online|default:0 }}</div>
+            {% widthratio access.online access.total 100 as access_online_percent %}
+            <div class="metric-value-row">
+                <div class="metric-value">{{ access.online|default:0 }}</div>
+                {% if access.total %}<span class="metric-badge">{{ access_online_percent|default:0 }}% online</span>{% endif %}
+            </div>
             <div class="metric-note"><strong>{{ access.total|default:0 }}</strong> acessos sincronizados</div>
         </article>
     </div>

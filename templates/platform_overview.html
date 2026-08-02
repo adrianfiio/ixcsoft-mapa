@@ -17,7 +17,7 @@
 </div>
 {% endif %}
 
-<section class="page-heading">
+<section class="page-heading dashboard-hero">
     <div>
         <p class="eyebrow">Ferramenta da plataforma</p>
         <h1>Visão da plataforma</h1>
@@ -142,7 +142,7 @@
             <div class="panel-header"><h2 class="panel-title">Precisa de atenção</h2></div>
             <div class="account-items">
                 {% for row in attention_rows %}
-                <div>
+                <div class="attention-row">
                     <span>
                         <strong>{{ row.company.trade_name|default:row.company.name }}</strong>
                         <small>

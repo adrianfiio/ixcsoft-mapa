@@ -15,6 +15,12 @@
     --blue: #5ba7ff;
     --panel: linear-gradient(145deg, rgba(18, 36, 58, .94), rgba(11, 27, 45, .94));
 }
+/* Acento fixo (roxo) só na Visão da plataforma, exclusiva de
+   superusuário — diferencia visualmente "modo master" do dashboard de
+   provedor/projetista, que continuam seguindo a cor de whitelabel da
+   empresa (--primary setado por templates/base.html a partir de
+   current_company.brand_color, quando existe). */
+body.platform-role { --primary: #8b5cf6; --primary-soft: color-mix(in srgb, #8b5cf6 14%, transparent); }
 
 * { box-sizing: border-box; }
 html, body { min-height: 100%; margin: 0; }
@@ -33,10 +39,20 @@ a { color: inherit; text-decoration: none; }
     background: rgba(8, 22, 37, .98); border-right: 1px solid var(--border);
     transition: transform .2s ease;
 }
-.app-sidebar.desktop-collapsed { transform: translateX(-100%); }
-.app-main.sidebar-collapsed { margin-left: 0; width: 100%; }
-.brand { display: flex; align-items: center; width: 150px; padding: 0 0 28px; margin: 0 auto; }
-.brand-logo { width: 150px; height: 50px; object-fit: contain; object-position: center; }
+/* Recolhida, a sidebar não some — vira um trilho de ícones de 72px
+   (mesmo padrão do menu do mapa em v0.72.1), só o texto de cada link
+   (.nav-label) some. Ver .app-main.sidebar-collapsed logo abaixo pro
+   ajuste de margem correspondente. */
+.app-sidebar.desktop-collapsed { width: 72px; padding: 24px 11px; }
+.app-sidebar.desktop-collapsed .brand { width: 40px; padding-bottom: 22px; }
+.app-sidebar.desktop-collapsed .brand-logo { width: 40px; height: 40px; }
+.app-sidebar.desktop-collapsed .nav-label,
+.app-sidebar.desktop-collapsed .sidebar-footer span:last-child { display: none; }
+.app-sidebar.desktop-collapsed .main-nav a { justify-content: center; padding: 12px; }
+.app-sidebar.desktop-collapsed .sidebar-footer { justify-content: center; padding-left: 0; padding-right: 0; }
+.app-main.sidebar-collapsed { margin-left: 72px; width: calc(100% - 72px); }
+.brand { display: flex; align-items: center; width: 150px; padding: 0 0 28px; margin: 0 auto; transition: width .2s ease; }
+.brand-logo { width: 150px; height: 50px; object-fit: contain; object-position: center; transition: width .2s ease, height .2s ease; }
 .brand-mark {
     display: grid; place-items: center; width: 42px; height: 42px;
     color: #06131c; background: linear-gradient(135deg, #52e0ce, #22a99b);
@@ -69,9 +85,17 @@ a { color: inherit; text-decoration: none; }
 .topbar-subtitle { color: var(--muted); font-size: 12px; }
 .topbar-actions { display: flex; align-items: center; gap: 15px; }
 .topbar-link { color: var(--muted); font-size: 13px; }
+.topbar-crumb { margin-right: 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.topbar-crumb-sep { margin: 0 6px; color: var(--border); }
 .topbar-user {
+    display: inline-flex; align-items: center; gap: 9px;
     color: var(--text); background: transparent; border: 0;
     font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.topbar-avatar {
+    display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0;
+    color: #05201e; background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 55%, #22a99b));
+    border-radius: 9px; font-size: 12px; font-weight: 900;
 }
 .topbar-alerts { position: relative; }
 .topbar-alert-bell {
@@ -108,6 +132,30 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 }
 .nav-svg-icon { display: inline-flex; }
 .page-heading-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+/* Cabeçalho "hero" só dos 3 dashboards (visão geral, projetista,
+   plataforma) — o .page-heading genérico usado nas outras páginas do
+   sistema não é afetado, essa regra exige a classe extra. */
+.page-heading.dashboard-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 26px 30px;
+    background: linear-gradient(120deg, color-mix(in srgb, var(--primary) 12%, var(--surface)), var(--surface) 60%);
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+    border-radius: 18px;
+}
+.page-heading.dashboard-hero::before,
+.page-heading.dashboard-hero::after {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+}
+.page-heading.dashboard-hero::before { top: -90px; right: -60px; background: color-mix(in srgb, var(--primary) 30%, transparent); }
+.page-heading.dashboard-hero::after { bottom: -100px; left: 10%; background: color-mix(in srgb, var(--blue) 22%, transparent); }
+.page-heading.dashboard-hero > * { position: relative; z-index: 1; }
 .dashboard-banner { padding: 14px 18px; margin-bottom: 20px; color: #f8fafc; background: linear-gradient(120deg, color-mix(in srgb, var(--primary) 18%, transparent), color-mix(in srgb, var(--primary) 6%, transparent)); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); border-radius: 12px; font-size: 14px; line-height: 1.5; }
 .dashboard-editor-toolbar { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 18px; margin-bottom: 20px; background: #0b1727; border: 1px solid var(--border); border-radius: 12px; }
 .dashboard-editor-toolbar strong { white-space: nowrap; }
@@ -174,6 +222,9 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .metric-card { position: relative; overflow: hidden; padding: 20px; display: flex; flex-direction: column; }
 .metric-card::after { content: ""; position: absolute; right: -25px; bottom: -35px; width: 100px; height: 100px; background: var(--accent, var(--primary)); border-radius: 50%; opacity: .06; }
 .metric-head { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 700; }
+.metric-badge { display: inline-block; padding: 3px 8px; color: var(--accent, var(--primary)); background: color-mix(in srgb, var(--accent, var(--primary)) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent, var(--primary)) 30%, transparent); border-radius: 999px; font-size: 10px; font-weight: 800; }
+.metric-value-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 18px; }
+.metric-value-row .metric-value { margin-top: 0; }
 .metric-icon { display: grid; place-items: center; width: 33px; height: 33px; color: var(--accent, var(--primary)); background: color-mix(in srgb, var(--accent, var(--primary)) 14%, transparent); border-radius: 9px; font-size: 17px; }
 .metric-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 /* Card vira atalho pro cadastro de equipamentos já filtrado, só fora do
@@ -214,14 +265,24 @@ a.status-row:hover { background: rgba(255,255,255,.04); }
 .quick-link:hover { border-color: var(--primary); }
 .quick-link strong { display: block; margin-bottom: 4px; font-size: 12px; }
 .quick-link small { color: var(--muted); font-size: 10px; }
-.alert-list { display: flex; flex-direction: column; }
-.alert-item { display: grid; grid-template-columns: 9px 1fr auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid var(--border); }
-.alert-item:first-child { padding-top: 0; border-top: 0; }
+.alert-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item {
+    display: grid; grid-template-columns: 9px 1fr auto; align-items: center; gap: 12px;
+    padding: 12px 13px; background: rgba(255,255,255,.02);
+    border: 1px solid var(--border); border-left: 3px solid var(--muted); border-radius: 10px;
+}
+.alert-item:has(.severity-disaster), .alert-item:has(.severity-high) { border-left-color: var(--danger); background: rgba(243,93,109,.06); }
+.alert-item:has(.severity-average), .alert-item:has(.severity-warning) { border-left-color: var(--warning); background: rgba(245,185,66,.06); }
+.alert-item:has(.severity-info) { border-left-color: var(--blue); background: rgba(91,167,255,.06); }
 .alert-item strong { display: block; margin-bottom: 3px; font-size: 12px; }
 .alert-item small, .empty-state { color: var(--muted); font-size: 11px; }
 .severity-disaster, .severity-high { background: var(--danger); }
 .severity-average, .severity-warning { background: var(--warning); }
 .severity-info { background: var(--blue); }
+/* Mesmo tratamento de "stream" nas linhas de "precisa de atenção" da
+   visão da plataforma (não tem legend-dot de severidade — usa uma cor
+   neutra de atenção fixa). */
+.account-items > div.attention-row { border-left: 3px solid var(--warning); background: rgba(245,185,66,.06); }
 .sync-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .sync-info strong { display: block; margin-bottom: 5px; font-size: 13px; }
 .sync-info small { color: var(--muted); font-size: 11px; }
@@ -347,7 +408,7 @@ a.status-row:hover { background: rgba(255,255,255,.04); }
     .menu-toggle { display: block; }
     .app-topbar { justify-content: flex-start; gap: 15px; padding: 0 18px; }
     .topbar-actions { margin-left: auto; }
-    .topbar-subtitle, .topbar-link { display: none; }
+    .topbar-subtitle, .topbar-link, .topbar-crumb, .topbar-user-name { display: none; }
     .page-content { width: calc(100% - 30px); padding-top: 25px; }
     .page-heading { align-items: flex-start; flex-direction: column; }
     .status-layout { grid-template-columns: 1fr; }

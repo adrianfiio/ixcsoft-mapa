@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.73.0] - 2026-08-02
+
+Reskin visual dos 3 dashboards (Visão geral do provedor, Projetista,
+Visão da plataforma) e do menu lateral compartilhado. O Gemini gerou 3
+HTMLs de referência (Tailwind + FontAwesome via CDN) só como ideia de
+design; esta versão aplica essa linguagem visual nos templates reais do
+sistema (`static/css/app.css`, `templates/base.html`,
+`templates/dashboard.html`, `dashboard_designer.html`,
+`platform_overview.html`), sem trazer nenhuma dependência CDN nova e sem
+inventar dado — os widgets, o editor de layout arrastável/redimensionável
+e a fonte de dados continuam exatamente os mesmos de antes. Sem migration.
+
+### Adicionado
+
+- **Menu lateral em trilho de ícones ao recolher**: em vez de sumir por
+  completo (`translateX(-100%)`), agora fica uma faixa de 72px só com os
+  ícones da navegação, no mesmo padrão já usado no mapa desde a v0.72.1.
+- **Cabeçalho "hero" nos 3 dashboards**: fundo em gradiente com halos
+  desfocados e borda sutil na faixa de título/ações de cada dashboard
+  (classe nova `.dashboard-hero`, não afeta o cabeçalho das demais
+  páginas do sistema).
+- **Acento roxo só na Visão da plataforma** (exclusiva de superusuário),
+  pra diferenciar visualmente "modo master" do dashboard de
+  provedor/projetista — que continuam seguindo a cor de whitelabel de
+  cada empresa, como sempre.
+- **Selo de percentual no card "Acessos online"**: mostra o mesmo
+  `% online` que já era calculado no painel "Estado dos acessos" — sem
+  cálculo novo no back-end.
+- **Feed de alertas com borda lateral colorida por severidade** (crítico
+  em vermelho, atenção em amarelo, informativo em azul), mesma ideia nas
+  linhas de "Precisa de atenção" da Visão da plataforma.
+- **Avatar com iniciais + breadcrumb** ("AFService › Seção") na barra
+  superior, no lugar do link de texto puro.
+
+### Fora desta rodada (de propósito)
+
+- Não trouxe os widgets de faturamento/inadimplência/bloqueio automático
+  do mockup do Gemini — não existe módulo financeiro no sistema hoje;
+  mostrar isso seria inventar número falso na tela.
+- Não adicionei busca funcional na topbar — decorativa sem back-end real
+  seria enganosa. A busca de verdade já existe em "Minha administração" e
+  no mapa.
+- Não usei Tailwind/FontAwesome via CDN — todo o CSS novo é vanilla, em
+  `static/css/app.css`, ícones inline em SVG como já é o padrão do
+  projeto.
+
 ## [0.72.1] - 2026-08-02
 
 Hotfix de consistência de UI preparado pelo ChatGPT sobre o commit `c6cf0ec`
