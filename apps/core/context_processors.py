@@ -6,7 +6,12 @@ from .models import Company, CompanyMembership
 
 
 def app_version(request):
-    return {"app_version": settings.APP_VERSION}
+    # app_version é alias de platform_version — ver config/settings.py.
+    return {
+        "app_version": settings.APP_VERSION,
+        "platform_version": settings.PLATFORM_VERSION,
+        "map_version": settings.MAP_VERSION,
+    }
 
 
 def _topbar_alerts(company):

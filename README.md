@@ -8,10 +8,22 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.76.0 — Correção de arquitetura do financeiro: quem é cobrado é a empresa cliente (Provedor/Projetista), gestão exclusiva do Superadmin, liberação de confiança**
+A partir desta separação, plataforma e mapa têm trilhas de versão
+independentes — ver [VERSIONS.md](VERSIONS.md).
 
-Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
-cabos, camadas operacionais e importação KML/KMZ.
+| Componente | Versão |
+|---|---:|
+| Plataforma | v0.76.0 |
+| Mapa | v0.73.1 |
+
+- **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
+  usuários): correção de arquitetura do financeiro — quem é cobrado é a
+  empresa cliente (Provedor/Projetista), gestão exclusiva do Superadmin,
+  liberação de confiança. Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
+- **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
+  SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,
+  CEOs, cabos, camadas operacionais e importação KML/KMZ. Changelog:
+  [CHANGELOG_MAP.md](CHANGELOG_MAP.md).
 
 ## Funcionalidades implementadas
 

@@ -1,4 +1,25 @@
-# Changelog
+# Changelog (histórico — antes da separação por componente)
+
+**Este arquivo é agora um índice histórico.** Até a v0.76.0 (plataforma) /
+v0.73.1 (mapa), o projeto inteiro usava uma única numeração `vX.Y.Z`
+global, misturando mudanças de Dashboard/Financeiro/Superadmin com
+mudanças de mapa/SNMP/Rack-Torre no mesmo número de versão — todas as
+entradas abaixo são desse período.
+
+A partir desta separação, existem **duas trilhas de versão
+independentes**, cada uma com o próprio changelog:
+
+- **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin,
+  empresas, usuários, integrações administrativas) →
+  [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md), tags `platform-vX.Y.Z`.
+- **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups
+  do mapa, ferramentas cartográficas, monitoramento visual, SNMP,
+  enlaces, fichas técnicas do mapa) →
+  [CHANGELOG_MAP.md](CHANGELOG_MAP.md), tags `map-vX.Y.Z`.
+
+Ver [VERSIONS.md](VERSIONS.md) pra saber a versão vigente de cada
+trilha agora. Nenhuma entrada abaixo foi apagada ou reescrita — este
+histórico continua valendo exatamente como estava.
 
 ## [0.76.0] - 2026-08-02
 
