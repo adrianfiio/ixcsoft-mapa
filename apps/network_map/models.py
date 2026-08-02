@@ -150,8 +150,13 @@ class ContainerEquipment(CompanyScopedModel, NamedModel):
         OLT = "olt", "OLT"
         DIO = "dio", "DIO"
         SWITCH = "switch", "Switch"
+        ROUTER = "router", "Roteador"
+        FIREWALL = "firewall", "Firewall"
+        SERVER = "server", "Servidor"
         ACCESS_POINT = "access_point", "Access point"
         PTP = "ptp", "Rádio PTP"
+        ONU = "onu", "ONU / ONT"
+        PTO = "pto", "PTO"
         OTHER = "other", "Outro"
 
     class ProvisioningMode(models.TextChoices):
@@ -242,9 +247,17 @@ class ContainerEquipmentPort(TimeStampedModel):
         DIO = "dio", "Porta de DIO"
         RJ45_100M = "rj45_100m", "RJ45 100 Mb"
         RJ45_1G = "rj45_1g", "RJ45 1 Gb"
+        RJ45_2G5 = "rj45_2g5", "RJ45 2.5 Gb"
         SFP_1G = "sfp_1g", "SFP 1 Gb"
         SFP_PLUS_10G = "sfp_plus_10g", "SFP+ 10 Gb"
+        SFP28_25G = "sfp28_25g", "SFP28 25 Gb"
+        QSFP_PLUS_40G = "qsfp_plus_40g", "QSFP+ 40 Gb"
+        QSFP28_100G = "qsfp28_100g", "QSFP28 100 Gb"
+        SC_APC = "sc_apc", "SC/APC"
+        SC_UPC = "sc_upc", "SC/UPC"
+        LC = "lc", "LC"
         WIRELESS = "wireless", "Interface wireless"
+        POWER = "power", "Energia"
 
     equipment = models.ForeignKey(
         ContainerEquipment,
@@ -1271,5 +1284,10 @@ from apps.network_map.kmz_import_models import (  # noqa: E402,F401
     KMZImportObject,
 )
 
-
+# IXCSOFT_MAP_MASTER_SUITE_V1: modelos complementares descobertos pelo Django.
+from apps.network_map.map_master_models import (  # noqa: E402,F401
+    MapDiagramRevision,
+    MapIconStyle,
+    NetworkAssetLifecycle,
+)
 

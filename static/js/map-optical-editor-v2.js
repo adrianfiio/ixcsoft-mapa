@@ -230,7 +230,7 @@
                     method: "POST",
                     body: JSON.stringify(payload),
                 });
-                elementId = result.element?.id;
+                elementId = result.element?.id || result.id;
                 createdElementId = elementId;
                 if (!elementId) throw new Error("O servidor não retornou a caixa criada.");
             }
@@ -362,11 +362,17 @@
 
     document.addEventListener("click", (event) => {
         const button = event.target.closest("[data-insert-cable]");
-        if (!button) return;
+        if (!button || button.dataset.opticalInsertionBusy === "true") return;
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        openInsertion(button.dataset.insertCable).catch((error) => notify(error.message, true));
+        button.dataset.opticalInsertionBusy = "true";
+        mapApi()?.map?.closePopup?.();
+        Promise.resolve(openInsertion(button.dataset.insertCable))
+            .catch((error) => notify(error.message, true))
+            .finally(() => window.setTimeout(() => {
+                delete button.dataset.opticalInsertionBusy;
+            }, 120));
     }, true);
 
     // ---------------------------------------------------------------------
@@ -698,4 +704,10 @@
             decorateSvg();
         }
     });
+    // IXCSOFT_MAP_MASTER_SUITE_V1: API explícita evita clique duplo e ações presas.
+    window.mapOpticalEditorV2 = {
+        openInsertion,
+        cancelInsertion: removeInsertion,
+    };
+
 }());

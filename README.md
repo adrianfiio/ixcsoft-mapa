@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.69.0 — Tela de carregamento animada pós-login, com o mesmo fundo da tela de login**
+**v0.70.0 — Mapa Master Suite: rotas conectadas de verdade, fusões editáveis, Canvas 2D de POP/Rack/Torre, fichas técnicas e QR Code**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

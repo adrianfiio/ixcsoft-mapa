@@ -538,3 +538,7 @@ class KMZImportObjectAdmin(admin.ModelAdmin):
 class CableElementPassageAdmin(admin.ModelAdmin):
     list_display = ("cable", "element", "action", "sequence", "distance_m")
     list_filter = ("action",)
+
+# IXCSOFT_MAP_MASTER_SUITE_V1: registros administrativos complementares.
+from . import map_master_admin  # noqa: E402,F401
+

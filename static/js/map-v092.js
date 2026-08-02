@@ -280,8 +280,8 @@
         sync();
     }
 
-    const observer = new MutationObserver(() => modernizeYamlPicker());
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    // IXCSOFT_MAP_MASTER_SUITE_V1: o formulário já existe no template; observar
+    // todo o documento congelava projetos grandes por causa dos marcadores Leaflet.
     document.addEventListener("DOMContentLoaded", () => {
         ensurePanel();
         modernizeYamlPicker();

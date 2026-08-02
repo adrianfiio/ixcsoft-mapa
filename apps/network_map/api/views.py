@@ -908,14 +908,18 @@ def container_equipment(request, element_id):
             return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
         requested_equipment_type = str(request.data.get("equipment_type", "")).strip()
         is_onu = requested_equipment_type == "onu"
-        equipment_type = (
-            ContainerEquipment.EquipmentType.OTHER if is_onu else requested_equipment_type
-        )
+        # IXCSOFT_MAP_MASTER_SUITE_V1: ONU/PTO e ativos são tipos reais.
+        equipment_type = requested_equipment_type
         allowed = (
             {
                 ContainerEquipment.EquipmentType.OLT,
                 ContainerEquipment.EquipmentType.DIO,
                 ContainerEquipment.EquipmentType.SWITCH,
+                ContainerEquipment.EquipmentType.ROUTER,
+                ContainerEquipment.EquipmentType.FIREWALL,
+                ContainerEquipment.EquipmentType.SERVER,
+                ContainerEquipment.EquipmentType.ONU,
+                ContainerEquipment.EquipmentType.PTO,
                 ContainerEquipment.EquipmentType.OTHER,
             }
             if container.element_type == NetworkElement.ElementType.RACK
@@ -925,6 +929,11 @@ def container_equipment(request, element_id):
                 ContainerEquipment.EquipmentType.ACCESS_POINT,
                 ContainerEquipment.EquipmentType.PTP,
                 ContainerEquipment.EquipmentType.DIO,
+                ContainerEquipment.EquipmentType.ROUTER,
+                ContainerEquipment.EquipmentType.FIREWALL,
+                ContainerEquipment.EquipmentType.SERVER,
+                ContainerEquipment.EquipmentType.ONU,
+                ContainerEquipment.EquipmentType.PTO,
                 ContainerEquipment.EquipmentType.OTHER,
             }
         )
@@ -986,7 +995,12 @@ def container_equipment(request, element_id):
                 connector_type=(
                     ContainerEquipment.ConnectorType.SC_APC
                     if is_onu
-                    else connector_type if equipment_type == ContainerEquipment.EquipmentType.DIO else ""
+                    else connector_type
+                    if equipment_type in {
+                        ContainerEquipment.EquipmentType.DIO,
+                        ContainerEquipment.EquipmentType.PTO,
+                    }
+                    else ""
                 ),
                 tx_power_dbm=tx_power_dbm,
                 provisioning_mode=provisioning_mode,
@@ -1285,14 +1299,20 @@ def _container_equipment_payload(item):
         "name": item.name,
         "type": (
             "onu"
-            if item.equipment_type == ContainerEquipment.EquipmentType.OTHER
-            and item.metadata.get("equipment_subtype") == "onu"
+            if item.equipment_type == ContainerEquipment.EquipmentType.ONU
+            or (
+                item.equipment_type == ContainerEquipment.EquipmentType.OTHER
+                and item.metadata.get("equipment_subtype") == "onu"
+            )
             else item.equipment_type
         ),
         "type_label": (
             "ONU / ONT"
-            if item.equipment_type == ContainerEquipment.EquipmentType.OTHER
-            and item.metadata.get("equipment_subtype") == "onu"
+            if item.equipment_type == ContainerEquipment.EquipmentType.ONU
+            or (
+                item.equipment_type == ContainerEquipment.EquipmentType.OTHER
+                and item.metadata.get("equipment_subtype") == "onu"
+            )
             else item.get_equipment_type_display()
         ),
         "management_ip": item.management_ip,
@@ -1365,8 +1385,11 @@ def _generate_container_equipment_ports(equipment):
                     label=f"Placa {card} / PON {pon}",
                 ))
     elif (
-        equipment.equipment_type == ContainerEquipment.EquipmentType.OTHER
-        and equipment.metadata.get("equipment_subtype") == "onu"
+        equipment.equipment_type == ContainerEquipment.EquipmentType.ONU
+        or (
+            equipment.equipment_type == ContainerEquipment.EquipmentType.OTHER
+            and equipment.metadata.get("equipment_subtype") == "onu"
+        )
     ):
         lan_count = max(1, min(int(equipment.metadata.get("onu_lan_count") or 4), 16))
         ports = [
@@ -1388,6 +1411,14 @@ def _generate_container_equipment_ports(equipment):
             )
             for number in range(1, lan_count + 1)
         )
+    elif equipment.equipment_type == ContainerEquipment.EquipmentType.PTO:
+        ports = [ContainerEquipmentPort(
+            equipment=equipment,
+            port_type=ContainerEquipmentPort.PortType.DIO,
+            number=1,
+            port_number=1,
+            label=f"PTO 1 · {equipment.get_connector_type_display() or 'SC/APC'}",
+        )]
     elif equipment.equipment_type == ContainerEquipment.EquipmentType.DIO:
         ports = [
             ContainerEquipmentPort(
@@ -1462,9 +1493,17 @@ def container_equipment_ports(request, element_id, equipment_id):
     allowed_types = {
         ContainerEquipmentPort.PortType.RJ45_100M,
         ContainerEquipmentPort.PortType.RJ45_1G,
+        ContainerEquipmentPort.PortType.RJ45_2G5,
         ContainerEquipmentPort.PortType.SFP_1G,
         ContainerEquipmentPort.PortType.SFP_PLUS_10G,
+        ContainerEquipmentPort.PortType.SFP28_25G,
+        ContainerEquipmentPort.PortType.QSFP_PLUS_40G,
+        ContainerEquipmentPort.PortType.QSFP28_100G,
+        ContainerEquipmentPort.PortType.SC_APC,
+        ContainerEquipmentPort.PortType.SC_UPC,
+        ContainerEquipmentPort.PortType.LC,
         ContainerEquipmentPort.PortType.WIRELESS,
+        ContainerEquipmentPort.PortType.POWER,
         ContainerEquipmentPort.PortType.PON,
     }
     port_type = str(request.data.get("port_type", "")).strip()
@@ -1592,10 +1631,17 @@ def container_port_links(request, element_id):
             ContainerEquipmentPort.PortType.PON,
             ContainerEquipmentPort.PortType.SFP_1G,
             ContainerEquipmentPort.PortType.SFP_PLUS_10G,
+            ContainerEquipmentPort.PortType.SFP28_25G,
+            ContainerEquipmentPort.PortType.QSFP_PLUS_40G,
+            ContainerEquipmentPort.PortType.QSFP28_100G,
+            ContainerEquipmentPort.PortType.SC_APC,
+            ContainerEquipmentPort.PortType.SC_UPC,
+            ContainerEquipmentPort.PortType.LC,
         }
         copper_ports = {
             ContainerEquipmentPort.PortType.RJ45_100M,
             ContainerEquipmentPort.PortType.RJ45_1G,
+            ContainerEquipmentPort.PortType.RJ45_2G5,
         }
         if source.port_type in optical_ports and destination.port_type in optical_ports:
             link_type = ContainerPortLink.LinkType.FIBER

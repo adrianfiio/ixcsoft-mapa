@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.70.0] - 2026-08-01
+
+Pacote cumulativo "Master Suite" preparado pelo ChatGPT para a área do
+mapa, aplicado via `apply_map_master_suite.py` (validado com `--dry-run`
+antes). Backup/ponto de rollback: tag `v0.69.0` (também disponível como
+branch `backup/mapa-pre-master-suite-20260801`). **Tem migration**
+(`network_map.0032_map_master_suite`) — roda automaticamente no `apply`.
+
+### Adicionado
+
+- **Rotas passam a existir de verdade pela topologia dos cabos**, não por proximidade: uma rota só aparece pra seleção quando há uma cadeia conectada de ponta a ponta (POP/Rack/Torre com OLT/DIO → cabo com as duas pontas → CEO/CDO/CTO → demais trechos contínuos). O sistema identifica e reporta cabo desconectado, cabo com uma ponta só, trecho isolado, origem OLT/DIO ausente e caixa sem conexão. Rota agora se atribui direto no cabo (e nos demais elementos), com atalho "Definir rota"/"Sem rota" nos popups.
+- **Ícones do mapa configuráveis pelo Django Admin** (`Estilos de ícones do mapa`): SVG, URL de imagem, cores, tamanho e exibição do nome, por empresa — com o comando `seed_map_icon_styles` pra popular os estilos padrão (CTO, CEO, CDO, Rack, Torre, Poste, PTO).
+- **Editor de POP/Rack/Torre ganhou 5 abas**: Equipamentos, Canvas 2D, Matriz de manobra, Fibras e terminações, YAML/modelos. No Canvas 2D, equipamentos são arrastáveis (posição persiste), com organização automática, ligações ancoradas nas portas, caminhos ortogonais, pontos de dobra editáveis, cores diferentes por tipo de ligação (fibra/cobre/wireless), tela cheia e exportação em PNG.
+- **Inventário técnico ampliado**: roteador, firewall, servidor, ONU/ONT e PTO viram tipos reais de equipamento (antes eram "outro" com metadado); portas RJ45 2.5G, SFP28 25G, QSFP+ 40G, QSFP28 100G, SC/APC, SC/UPC e LC; campos de fabricante, modelo, série, patrimônio, IP, firmware, função, posição/altura em U, face do rack, foto, documentação, uplinks, potência TX e observações; placas de OLT com módulos SFP/SFP+/SFP28/QSFP/DAC/GBIC.
+- **CTO e splitters reaproveitam splitters/portas já existentes**, com estados livre/reservada/ocupada/defeituosa, vínculo com cliente/AccessPoint, observações por porta e ficha técnica.
+- **Rastreamento óptico**: grafo considerando elementos, cabos, fibras, fusões, splitters, portas internas, equipamentos e ligações (fibra, cobre, wireless) — a tela "Rastrear" mostra o caminho entre origem e destino com nomes de fibras, cabos, equipamentos e portas.
+- **Ficha técnica, QR Code e histórico** em elementos, cabos e equipamentos: botão "Ficha/QR", impressão, QR Code em SVG que abre o ativo direto no mapa, estados de implantação (em projeto/não implantado/implantado/certificado/desativado) e histórico com usuário, data e observação.
+- **Reserva técnica posicionável e arrastável** sobre a linha do cabo, com metragem, identificação e observações.
+- **`qrcode>=8.2,<9`** nas dependências.
+
+### Alterado
+
+- **Menu lateral e controles do mapa menores**, adequados a Full HD/2K, com opção de minimizar ainda mais; painel de rotas antigo saiu da visualização, substituído pela gaveta nova (recolhida por padrão, só aparece quando existe rota válida).
+- **Editor de fusões mais compacto e móvel**: cabeçalho e controles menores, maximização por CSS (não abre mais pela metade), botão alterna corretamente para "Desmaximizar" e reposiciona a janela dentro da tela; ações internas (splitter, nota, menu) não derrubam mais a maximização.
+- **Ícones menores**, com a repetição visual "CDO CDO" corrigida.
+
+### Corrigido
+
+- **Clique em "Inserir caixa" que criava o elemento mas não continuava o processo**: a API já devolvia `id` na raiz da resposta, mas o código só procurava `result.element.id` — corrigido para aceitar os dois formatos. Também corrigidos: cliques duplicados na inserção (agora bloqueados até a ação terminar), popup fechado antes de inserir, cancelamento com Esc, e a ação não fica mais "presa" pro próximo clique no mapa.
+- **Remoção de cabo de uma caixa específica** (sem apagar o cabo do mapa), com proteção contra remover cabo que termina fisicamente ali.
+- **Performance**: removido mais um `MutationObserver` que observava o documento inteiro (`map-v092.js`, usado para modernizar o seletor de YAML) — reduz chance de travamento em projetos grandes.
+
+### Nesta rodada
+
+- **Conflito de nomes resolvido**: o pacote criava `apps/network_map/services/` (pasta) ao lado de `apps/network_map/services.py` (arquivo já existente e em uso) — Python não aceita os dois convivendo. Resolvido movendo `map_master_topology.py` para `apps/network_map/map_master_topology.py` (mesmo padrão plano dos outros arquivos `map_master_*.py` do pacote) e ajustando os dois imports que apontavam pro caminho antigo.
+- **Migration escrita manualmente**: este ambiente de preparação não tem GDAL nem banco PostGIS, então não dá pra rodar `manage.py makemigrations` aqui. A migration `network_map/migrations/0032_map_master_suite.py` foi escrita à mão a partir da definição exata dos 3 modelos novos (`MapIconStyle`, `MapDiagramRevision`, `NetworkAssetLifecycle`) e das novas choices de `ContainerEquipment`/`ContainerEquipmentPort` — revisar no servidor com `python manage.py showmigrations network_map` e `python manage.py sqlmigrate network_map 0032` antes de confiar cegamente.
+
 ## [0.69.0] - 2026-08-01
 
 ### Adicionado

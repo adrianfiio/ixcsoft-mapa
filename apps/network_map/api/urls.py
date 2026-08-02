@@ -39,6 +39,19 @@ from apps.network_map.api.optical_editor_v3 import (
     fusion_cable_membership,
     fusion_cable_state,
 )
+from apps.network_map.api.map_master_views import (
+    assign_cable_route_master,
+    asset_qr_master,
+    asset_report_master,
+    create_cable_reserve_master,
+    diagram_revisions_master,
+    equipment_master_detail,
+    lifecycle_master,
+    map_master_bootstrap,
+    optical_trace_master,
+    route_topology_master,
+    splitter_ports_master,
+)
 from apps.network_map.kmz_import_api import (
     analyze_kmz_import,
     cleanup_legacy_kmz_import,
@@ -61,6 +74,18 @@ app_name = "network_map_api"
 
 
 urlpatterns = [
+    # IXCSOFT_MAP_MASTER_SUITE_V1
+    path("master/bootstrap/", map_master_bootstrap, name="map-master-bootstrap"),
+    path("master/projects/<int:project_id>/asset-report/", asset_report_master, name="map-master-asset-report"),
+    path("master/projects/<int:project_id>/asset-qr/", asset_qr_master, name="map-master-asset-qr"),
+    path("master/projects/<int:project_id>/routes/", route_topology_master, name="map-master-routes"),
+    path("master/projects/<int:project_id>/trace/", optical_trace_master, name="map-master-trace"),
+    path("master/projects/<int:project_id>/diagram-revisions/", diagram_revisions_master, name="map-master-revisions"),
+    path("master/projects/<int:project_id>/lifecycle/", lifecycle_master, name="map-master-lifecycle"),
+    path("master/cables/<int:cable_id>/route/", assign_cable_route_master, name="map-master-cable-route"),
+    path("master/cables/<int:cable_id>/reserves/", create_cable_reserve_master, name="map-master-cable-reserve"),
+    path("master/ctos/<int:cto_id>/splitter-ports/", splitter_ports_master, name="map-master-splitter-ports"),
+    path("master/elements/<int:element_id>/equipment/<int:equipment_id>/", equipment_master_detail, name="map-master-equipment"),
     path("base-map/google/session/", google_tiles_session, name="google-tiles-session"),
     path(
         "base-map/google/tiles/<int:z>/<int:x>/<int:y>/",
