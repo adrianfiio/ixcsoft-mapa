@@ -2,6 +2,7 @@ import calendar
 import datetime
 
 from django.db import IntegrityError, transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from .models import CompanySubscription, Invoice, Payment, TrustRelease
@@ -124,3 +125,93 @@ def request_trust_release(company, user):
         subscription.access_grace_until = granted_until
         subscription.save(update_fields=["access_grace_until", "updated_at"])
     return release
+
+
+def _shift_month(reference, delta):
+    """Função pura (sem banco): desloca uma data (sempre dia 1) em `delta`
+    meses — positivo ou negativo, tratando virada de ano."""
+    month_index = reference.month - 1 + delta
+    year = reference.year + month_index // 12
+    month = month_index % 12 + 1
+    return reference.replace(year=year, month=month, day=1)
+
+
+def platform_financial_summary(today=None):
+    """Visão financeira agregada de toda a plataforma (todas as empresas),
+    pro painel Superadmin. Só somas diretas (`aggregate`) — diferente de
+    `apps.core.platform_overview`, que faz uma consulta por empresa porque
+    precisa de dados não-financeiros por linha; aqui os números são
+    globais, então dá pra somar direto sem loop."""
+    today = today or timezone.localdate()
+    month_start = today.replace(day=1)
+
+    mrr = CompanySubscription.objects.filter(
+        status=CompanySubscription.Status.ACTIVE, billing_active=True
+    ).aggregate(total=Sum("monthly_amount"))["total"] or 0
+
+    received_month = Invoice.objects.filter(
+        status=Invoice.Status.PAID, reference_month=month_start
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    pending_amount = Invoice.objects.filter(
+        status=Invoice.Status.PENDING
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    overdue_amount = Invoice.objects.filter(
+        status=Invoice.Status.OVERDUE
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    open_count = Invoice.objects.filter(
+        status__in=[Invoice.Status.PENDING, Invoice.Status.OVERDUE]
+    ).count()
+    overdue_count = Invoice.objects.filter(status=Invoice.Status.OVERDUE).count()
+    default_rate = round((overdue_count / open_count) * 100, 1) if open_count else 0
+
+    blocked_subscriptions = list(
+        CompanySubscription.objects.filter(
+            status__in=[CompanySubscription.Status.BLOCKED, CompanySubscription.Status.CANCELED]
+        )
+        .select_related("company")
+        .order_by("company__name")
+    )
+
+    revenue_history = []
+    for offset in range(5, -1, -1):
+        month = _shift_month(month_start, -offset)
+        total = Invoice.objects.filter(
+            status=Invoice.Status.PAID, reference_month=month
+        ).aggregate(total=Sum("amount"))["total"] or 0
+        revenue_history.append({"month": month, "total": total})
+    peak = max((entry["total"] for entry in revenue_history), default=0)
+    for entry in revenue_history:
+        entry["pct"] = round((entry["total"] / peak) * 100, 1) if peak else 0
+
+    aging_invoices = list(
+        Invoice.objects.filter(status=Invoice.Status.OVERDUE)
+        .select_related("company")
+        .order_by("due_date")
+    )
+    for invoice in aging_invoices:
+        invoice.days_overdue = (today - invoice.due_date).days
+
+    recent_payments = list(
+        Payment.objects.select_related("invoice__company", "recorded_by").order_by("-paid_at")[:20]
+    )
+
+    recent_trust_releases = list(
+        TrustRelease.objects.select_related("company", "requested_by").order_by("-created_at")[:20]
+    )
+
+    return {
+        "metric_mrr": mrr,
+        "metric_received_month": received_month,
+        "metric_pending_amount": pending_amount,
+        "metric_overdue_amount": overdue_amount,
+        "metric_default_rate": default_rate,
+        "metric_blocked_companies": len(blocked_subscriptions),
+        "revenue_history": revenue_history,
+        "aging_invoices": aging_invoices,
+        "blocked_subscriptions": blocked_subscriptions,
+        "recent_payments": recent_payments,
+        "recent_trust_releases": recent_trust_releases,
+    }

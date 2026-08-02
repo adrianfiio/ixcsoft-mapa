@@ -15,6 +15,22 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.77.0] - 2026-08-02
+
+Sistema de financeiro completo do Superadmin — página dedicada nova em
+"Financeiro" (menu do Superadmin), consolidando dados de todas as
+empresas num só lugar. Ver
+[docs/releases/platform/platform-v0.77.0.md](docs/releases/platform/platform-v0.77.0.md).
+
+Resumo: MRR ativo, recebido/pendente/atrasado (valores), taxa de atraso,
+gráfico de receita dos últimos 6 meses (CSS puro, sem lib nova), relatório
+de faturas em atraso por empresa, lista de empresas com acesso bloqueado,
+pagamentos recentes e liberações de confiança recentes — tudo agregado em
+`apps/billing/services.py:platform_financial_summary()`, sem nenhum model
+ou migration nova. Também corrigida uma barra de rolagem horizontal que
+aparecia sempre (mesmo vazia) na tabela de faturas do financeiro do
+cliente.
+
 ## [platform-0.76.0] - 2026-08-02
 
 Ponto de partida desta trilha separada. Corresponde exatamente ao que

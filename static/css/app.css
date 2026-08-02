@@ -172,6 +172,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .widget-drag-handle:active { cursor: grabbing; }
 .overview-table-wrap { width: 100%; overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
 .overview-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.overview-table.overview-table--compact { min-width: 0; }
 .overview-table th, .overview-table td { padding: 11px 13px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
 .overview-table th { position: sticky; top: 0; background: #0b1727; color: #f8fafc; }
 .overview-table tr:last-child td { border-bottom: 0; }
@@ -261,6 +262,12 @@ button.primary-action:disabled, button.danger-action:disabled { opacity: .5; cur
 .donut-label { z-index: 1; grid-area: 1 / 1; text-align: center; }
 .donut-label strong { display: block; font-size: 24px; }
 .donut-label small { color: var(--muted); font-size: 10px; }
+.revenue-chart { display: flex; align-items: flex-end; gap: 12px; height: 160px; padding: 10px 4px 0; }
+.revenue-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
+.revenue-bar-track { width: 100%; max-width: 36px; height: 100%; display: flex; align-items: flex-end; }
+.revenue-bar-fill { width: 100%; min-height: 4px; height: var(--pct, 4%); border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--primary), color-mix(in srgb, var(--primary) 35%, transparent)); }
+.revenue-bar-value { font-size: 10px; font-weight: 700; }
+.revenue-bar-label { font-size: 10px; color: var(--muted); }
 .status-list { display: flex; flex-direction: column; gap: 14px; }
 .status-row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; font-size: 12px; }
 .status-row span:nth-child(2) { color: var(--muted); }
