@@ -239,8 +239,24 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
     font-size: 9px;
     letter-spacing: .14em;
 }
-.tower-workspace-dialog-v0750 .master-canvas-links,
 .tower-workspace-dialog-v0750 .master-canvas-nodes { z-index: 2; }
+.tower-workspace-dialog-v0750 .master-canvas-links { z-index: 7; }
+.tower-workspace-dialog-v0750 .master-canvas-links path {
+    filter: drop-shadow(0 0 3px rgba(2, 6, 23, .9));
+}
+.tower-workspace-dialog-v0750 .master-drop-entry {
+    fill: #22d3ee;
+    stroke: #e0f2fe;
+    stroke-width: 2;
+}
+.tower-workspace-dialog-v0750 .master-drop-label {
+    fill: #bae6fd;
+    font-size: 9px;
+    font-weight: 800;
+    paint-order: stroke;
+    stroke: #07111f;
+    stroke-width: 3px;
+}
 .tower-workspace-dialog-v0750 .master-canvas-node {
     z-index: 3;
     width: 280px;
@@ -287,6 +303,14 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
     border-radius: 5px !important;
     font-size: 8px !important;
     background: rgba(16, 42, 67, .74) !important;
+}
+.tower-workspace-dialog-v0750 .master-node-port.left,
+.tower-workspace-dialog-v0750 .master-node-port.right { padding-right: 20px !important; }
+.tower-workspace-dialog-v0750 .master-node-port.left i,
+.tower-workspace-dialog-v0750 .master-node-port.right i {
+    left: auto !important;
+    right: 5px !important;
+    z-index: 9;
 }
 .tower-workspace-dialog-v0750 .map-canvas-zoom-v0741 {
     top: auto !important;
@@ -569,6 +593,46 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
 .map-master-equipment-dialog button:disabled { opacity: .42; cursor: not-allowed; transform: none; box-shadow: none; }
 .tower-workspace-dialog-v0750 button.danger,
 .map-master-equipment-dialog button.danger { border-color: rgba(248,113,113,.35); color: #fecaca; background: rgba(127,29,29,.42); }
+
+/* Versão discreta no rodapé do menu lateral. */
+.map-company-card-main { position: relative; }
+.map-version-menu-v072 {
+    position: absolute;
+    right: 7px;
+    bottom: 6px;
+    padding: 1px 4px;
+    border: 1px solid rgba(125, 211, 252, .12);
+    border-radius: 4px;
+    color: rgba(148, 163, 184, .62) !important;
+    background: rgba(7, 17, 31, .5);
+    font-size: 7px !important;
+    font-weight: 700;
+    letter-spacing: .03em;
+}
+
+/* A torre desaparece suavemente enquanto o formulário técnico entra. */
+body.tower-equipment-modal-open #container-dialog {
+    opacity: .08;
+    transition: opacity .18s ease !important;
+}
+.map-master-equipment-dialog[open] {
+    animation: towerEquipmentFadeIn .2s ease both;
+}
+.map-master-equipment-dialog::backdrop {
+    background: rgba(2, 6, 23, .78);
+    backdrop-filter: blur(4px);
+}
+@keyframes towerEquipmentFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.map-master-equipment-dialog [data-create-field] small {
+    display: block;
+    margin-top: 5px;
+    color: #7f9bb2;
+    font-size: 9px;
+    line-height: 1.35;
+}
 
 /* Ficha técnica fluida, sem valores ou títulos escapando dos cards. */
 body.map-master-suite #map-master-asset-sheet.map-master-asset-sheet {

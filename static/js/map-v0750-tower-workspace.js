@@ -348,19 +348,24 @@
         qsa("[data-open-panel]", toolbar).forEach((button) => button.onclick = () => openPanel(root, button.dataset.openPanel));
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
-        function setLineMode(active) {
+        function setLineMode(active, editing = false) {
             const native = qs("[data-container-lines]", root);
             if (!native) return notify("Editor de conexões não carregado.", true);
             if (native.classList.contains("active") !== active) native.click();
             qsa("[data-connect-ports], [data-edit-lines]", toolbar).forEach((button) => button.classList.toggle("active", active));
+            const editLabel = qs("[data-edit-lines] span", toolbar);
+            if (editLabel) editLabel.textContent = active && editing ? "Concluir e salvar" : "Editar linhas";
         }
         qs("[data-connect-ports]", toolbar).onclick = () => {
-            setLineMode(true);
+            setLineMode(true, false);
             notify("Clique no conector da porta de origem e depois no conector da porta de destino.");
         };
         qs("[data-edit-lines]", toolbar).onclick = () => {
-            setLineMode(true);
-            notify("Clique numa linha para selecionar. Dê dois cliques para criar um ponto e arraste os pontos brancos.");
+            const active = !qs("[data-edit-lines]", toolbar).classList.contains("active");
+            setLineMode(active, active);
+            notify(active
+                ? "Clique numa linha para selecionar. Dê dois cliques para criar um ponto e arraste-o."
+                : "Traçado concluído e salvo.");
         };
         qs("[data-workspace-fullscreen]", toolbar).onclick = () => toggleContainerFullscreen(root);
         document.addEventListener("click", (event) => {

@@ -1,5 +1,33 @@
 # Changelog — Mapa
 
+## [map-0.75.2] - 2026-08-02
+
+Canvas técnico e criação contextual de ativos da torre.
+
+### Adicionado
+
+- seleção opcional de um cabo DROP conectado à torre ao criar ONU/ONT;
+- representação do DROP externo até a porta PON da ONU no Canvas 2D.
+
+### Alterado
+
+- versão do MAPA movida para o rodapé do menu lateral, pequena e discreta;
+- formulário de criação agora mostra somente campos compatíveis com o tipo;
+- linhas e conectores ficam sobre os widgets e junto ao nome das portas;
+- edição de linhas possui a ação explícita **Concluir e salvar**;
+- formulários técnicos abrem com transição em fade.
+
+### Corrigido
+
+- novos enlaces não criam mais pontos de controle fora do Canvas;
+- ligações originadas em cabos externos passam a ser retornadas e desenhadas.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.79.0`;
+- `MAP_VERSION` atualizada para `0.75.2`;
+- nenhuma migration.
+
 ## [map-0.75.1] - 2026-08-02
 
 Estabilização e polimento do editor técnico de Torre/Rack.
