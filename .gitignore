@@ -232,6 +232,7 @@ telegraf.conf
 # é a branch/tag do Git antes de aplicar.
 /.map-master-backup/
 /.map-monitoring-v071/
+/.map-ui-v072-backup/
 
 # Backups temporários
 *.bak

@@ -10,9 +10,8 @@ def app_version(request):
 
 
 def _topbar_alerts(company):
-    """Alertas ativos da empresa pro sino no topo (só provedora com ERP —
-    ver `company_navigation`). Consulta leve, com índice em
-    (state, severity, -opened_at); só roda quando há empresa elegível."""
+    """Alertas ativos da empresa no sino superior, incluindo ocorrências
+    SNMP de equipamentos e enlaces para empresas com ou sem ERP."""
     from apps.alerts.models import AlertEvent
 
     active_states = [
@@ -22,7 +21,8 @@ def _topbar_alerts(company):
     ]
     alerts = (
         AlertEvent.objects.filter(
-            Q(cto__company_id=company.id)
+            Q(company_id=company.id)
+            | Q(cto__company_id=company.id)
             | Q(olt__cpd__company_id=company.id)
             | Q(route__company_id=company.id),
             state__in=active_states,
@@ -47,7 +47,7 @@ def company_navigation(request):
     membership = memberships.first()
     current_company = membership.company if membership else None
     topbar_alerts = {"enabled": False, "count": 0, "items": []}
-    if show_erp and current_company and not current_company.is_designer:
+    if current_company and not current_company.is_designer:
         topbar_alerts = _topbar_alerts(current_company)
     return {
         "show_erp_navigation": show_erp,

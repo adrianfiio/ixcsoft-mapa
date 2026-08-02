@@ -21,8 +21,20 @@
     <!-- IXCSOFT_MAP_MASTER_SUITE_V1 -->
     <link rel="stylesheet" href="{% static 'css/map-master-suite.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-link-monitoring.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-ui-v072.css' %}?v={{ app_version }}">
+    {% if current_company.brand_color %}<style>:root{--map-brand-accent:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
-<body data-can-edit="{{ can_edit_map|yesno:'true,false' }}">
+<!-- IXCSOFT_MAP_UI_V072 -->
+<body
+    data-can-edit="{{ can_edit_map|yesno:'true,false' }}"
+    data-company-name="{{ current_company.trade_name|default:current_company.name|default:'AFService Map' }}"
+    data-company-mode="{% if current_company.is_designer %}Planejamento de rede{% else %}Operação de provedor{% endif %}"
+    data-url-dashboard="{% url 'dashboard' %}"
+    data-url-equipment="{% url 'equipment-list' %}"
+    data-url-alerts="{% if not current_company.is_designer %}{% url 'company-alerts' %}{% endif %}"
+    data-url-account="{% url 'account-panel' %}"
+    data-url-logout="{% url 'logout' %}"
+>
     <form id="map-csrf-token" hidden aria-hidden="true">{% csrf_token %}</form>
     {{ google_maps_config|json_script:"google-maps-config" }}
     <div class="map-shell">
@@ -43,7 +55,11 @@
             </nav>
             <div class="sidebar-content">
                 <a class="map-brand" href="{% url 'dashboard' %}">
+                    {% if current_company.logo %}
+                    <img src="{{ current_company.logo.url }}" alt="{{ current_company.trade_name|default:current_company.name }}">
+                    {% else %}
                     <img src="{% static 'img/afservice-logo.png' %}" alt="AFService">
+                    {% endif %}
                 </a>
                 <a class="back-link" href="{% url 'dashboard' %}">← Voltar para visão geral</a>
 
@@ -491,12 +507,12 @@
     <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-fusion-polish.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/container-device-type.js' %}?v={{ app_version }}"></script>
-    <script src="{% static 'js/container-structure-v09.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-v092.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-optical-editor-v2.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-optical-editor-v3.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-master-suite.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-link-monitoring.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/map-ui-v072.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>

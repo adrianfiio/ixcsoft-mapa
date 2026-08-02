@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.72.0] - 2026-08-02
+
+Pacote "Redesign do mapa" preparado pelo ChatGPT sobre o commit `065a3bb`
+(v0.71.0 + hotfix v0.71.1 já embutidos no `main` quando apliquei). Aplicado
+via `apply_map_ui_v072.py` (validado antes com `--dry-run`). Backup/ponto
+de rollback: tag `v0.71.1` (também disponível como branch
+`backup/mapa-pre-v072-20260802`). Sem migration.
+
+### Corrigido
+
+- **Causa raiz da sobreposição de abas em Rack/Torre**: o template carregava ao mesmo tempo o editor de estrutura antigo (`container-structure-v09.js`, que monta suas próprias abas Resumo/Equipamentos/Diagrama/Fibras/YAML) e a Master Suite (que monta as abas novas Equipamentos/Canvas 2D/Matriz/Fibras/YAML) — os dois competindo pelo mesmo diálogo. É a mesma raiz por trás do laço de requisições visto ao vivo em produção (print do usuário mostrando `container-layout-v3`/`equipment` repetindo dezenas de vezes por segundo). O script legado foi removido do carregamento; só a Master Suite continua ativa.
+- **Whitelabel do mapa**: o mapa mostrava sempre a logo estática da AFService, mesmo quando a empresa já tinha logo/cor configurados em "Minha administração → Marca" (o dashboard já usava isso, o mapa não). Agora usa `current_company.logo`, nome comercial e cor da empresa automaticamente, com fallback pra marca AFService quando não há logo.
+- **Alertas exigindo ERP**: o sino de alertas só aparecia pra empresa com integração ERP configurada — mas alerta de porta/enlace SNMP (v0.71.0) não depende de ERP nenhum. Agora aparece pra qualquer empresa provedora (com ou sem ERP), continua oculto pra empresa em modo projetista.
+- **Controles soltos "Rastrear"/"Menu"** e o painel antigo de rotas removidos da tela — o novo botão "Rotas" só aparece quando a Master Suite confirma uma rota com ligação real (não só cadastrada pelo nome).
+
+### Adicionado
+
+- **Sidebar operacional nova**: logo da empresa, seletor de projeto, Início, busca, Equipamentos, importar KMZ/KML, Alertas, Configurações, alternar tema, Sair, dados da empresa no rodapé, recolhimento pra 72px, último estado salvo no navegador.
+- **Barra de ferramentas única**: Selecionar, CTO, Caixa (CEO/CDO), Poste, Cabo, Régua, Área, Mais (CPD/POP, Rack, Torre), Rotas, Enlaces.
+- **Régua que vira cabo**: mede em vários pontos com distância acumulada, e converte o traçado num cabo real (nome, código, tipo, modelo/fibras, origem, destino, descrição) pela API já existente `/api/map/cables/create/`.
+- **Ferramenta Área**: mede polígono em m², converte pra hectare/km² automaticamente, exporta em GeoJSON (com `project_id` e `area_m2`).
+- **Popups HUD modernos** em CTO/CEO/CDO/Rack/Torre/CPD-POP/Poste/cabo: ícone, nome, tipo, código, status real, ação principal em destaque, ações secundárias organizadas, Excluir em vermelho de verdade, tema escuro/claro. Reaproveita os handlers originais (Cabos e ligações, Equipamentos, Ficha/QR, Fusões, Editar, Excluir, Monitoramento) em vez de recriá-los.
+- **Status SNMP no popup só aparece quando existe monitoramento configurado de verdade** (verde/vermelho pulsante, amarelo degradado, cinza sem dados) — não mostra "online" só por o elemento existir.
+- **Tema claro/escuro** com botão na sidebar, preferência salva no navegador.
+
+### Nesta rodada
+
+- **Reforço de segurança contra o mesmo tipo de laço do hotfix v0.71.1**: o pacote trazia dois observadores de mutação novos em `map-ui-v072.js`; um já tinha proteção contra reagir à própria mudança, o outro (o que limpa a UI do diálogo de Rack/Torre) não — como ele adiciona classes CSS e o observador escuta mudança de classe, isso podia reagendar a si mesmo sem parar. Adicionei a mesma trava de debounce do observador vizinho antes de liberar.
+- Confirmado que o pacote **não toca** em `map-optical-editor-v3.js` nem `map-link-monitoring.js` — os dois arquivos corrigidos no hotfix v0.71.1 continuam intactos.
+
 ## [0.71.1] - 2026-08-01
 
 Hotfix urgente a partir de report ao vivo em produção (print do DevTools
