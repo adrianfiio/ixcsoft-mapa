@@ -13,14 +13,13 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.78.0 |
+| Plataforma | v0.79.0 |
 | Mapa | v0.75.1 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
-  usuários): Superadmin agora edita o cadastro de qualquer empresa e
-  gerencia a equipe/acessos dela (adicionar, trocar papel, ativar/
-  desativar, redefinir senha, excluir) direto do painel — sem precisar do
-  Django Admin. Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
+  usuários): página "Clientes" dedicada no menu do Superadmin, com ações
+  de Editar/Financeiro/Gateway em ícone (tooltip no hover), separada da
+  Visão da plataforma. Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
   SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,
   CEOs, cabos, camadas operacionais e importação KML/KMZ. Changelog:

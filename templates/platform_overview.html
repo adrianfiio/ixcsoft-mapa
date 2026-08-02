@@ -109,56 +109,6 @@
         </article>
     </div>
     {% endif %}
-    {% if edit_mode or not widget_meta.panel_companies_table.hidden %}
-    <div class="grid-stack-item" data-widget="panel_companies_table" gs-id="panel_companies_table" gs-x="{{ widget_meta.panel_companies_table.x }}" gs-y="{{ widget_meta.panel_companies_table.y }}" gs-w="{{ widget_meta.panel_companies_table.w }}" gs-h="{{ widget_meta.panel_companies_table.h }}" style="grid-column: {{ widget_meta.panel_companies_table.x1 }} / span {{ widget_meta.panel_companies_table.w }}; grid-row: {{ widget_meta.panel_companies_table.y1 }} / span {{ widget_meta.panel_companies_table.h }};">
-        <article class="panel grid-stack-item-content{% if widget_meta.panel_companies_table.hidden %} widget-hidden{% endif %}">
-            {% include "includes/widget_edit_bar.html" with widget_key="panel_companies_table" hidden=widget_meta.panel_companies_table.hidden %}
-            <div class="panel-header">
-                <h2 class="panel-title">Empresas</h2>
-                <span class="billing-row-actions">
-                    <a class="panel-link" href="{% url 'platform-financial-overview' %}">Financeiro completo →</a>
-                    <a href="{% url 'platform-financial-export' %}">Exportar financeiro →</a>
-                    <a class="panel-link" href="{% url 'platform-company-create' %}">Nova empresa →</a>
-                </span>
-            </div>
-            <div class="overview-table-wrap">
-                <table class="overview-table">
-                    <thead><tr><th>Empresa</th><th>Tipo</th><th>Clientes</th><th>Cabo</th><th>Elementos</th><th>Alertas</th><th>Atrasados</th><th>Pendentes</th><th>Equipe</th><th>Sincronização</th><th></th></tr></thead>
-                    <tbody>
-                        {% for row in companies_summary %}
-                        <tr class="{% if row.needs_attention %}overview-row-attention{% endif %}">
-                            <td><strong>{{ row.company.trade_name|default:row.company.name }}</strong></td>
-                            <td>{{ row.company.get_company_type_display|default:"—" }}</td>
-                            <td>{{ row.client_count }}</td>
-                            <td>{{ row.cable_km }} km</td>
-                            <td>{{ row.element_count }}</td>
-                            <td>{{ row.alert_count }}</td>
-                            <td>{% if row.overdue_count %}<span class="sync-pill sync-danger">{{ row.overdue_count }}</span>{% else %}0{% endif %}</td>
-                            <td>{% if row.pending_count %}<span class="sync-pill sync-warning">{{ row.pending_count }}</span>{% else %}0{% endif %}</td>
-                            <td>{{ row.team_count }}</td>
-                            <td>
-                                {% if row.sync_state == "ok" %}<span class="sync-pill sync-ok">Em dia{% if row.provider_name %} · {{ row.provider_name }}{% endif %}</span>
-                                {% elif row.sync_state == "sem_erp" %}<span class="sync-pill sync-muted">Sem ERP</span>
-                                {% elif row.sync_state == "nunca_sincronizou" %}<span class="sync-pill sync-warning">Nunca sincronizou</span>
-                                {% elif row.sync_state == "atrasada" %}<span class="sync-pill sync-warning">Atrasada</span>
-                                {% elif row.sync_state == "falhou" %}<span class="sync-pill sync-danger">Falhou</span>
-                                {% endif %}
-                            </td>
-                            <td class="billing-row-actions">
-                                <a href="{% url 'platform-company-edit' row.company.id %}">Editar →</a>
-                                <a href="{% url 'platform-company-billing' row.company.id %}">Financeiro →</a>
-                                <a href="{% url 'platform-gateway-settings' row.company.id %}">Gateway →</a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="11" class="empty-state">Nenhuma empresa ativa.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </article>
-    </div>
-    {% endif %}
     {% if edit_mode or not widget_meta.panel_attention.hidden %}
     <div class="grid-stack-item" data-widget="panel_attention" gs-id="panel_attention" gs-x="{{ widget_meta.panel_attention.x }}" gs-y="{{ widget_meta.panel_attention.y }}" gs-w="{{ widget_meta.panel_attention.w }}" gs-h="{{ widget_meta.panel_attention.h }}" style="grid-column: {{ widget_meta.panel_attention.x1 }} / span {{ widget_meta.panel_attention.w }}; grid-row: {{ widget_meta.panel_attention.y1 }} / span {{ widget_meta.panel_attention.h }};">
         <article class="panel grid-stack-item-content{% if widget_meta.panel_attention.hidden %} widget-hidden{% endif %}">
