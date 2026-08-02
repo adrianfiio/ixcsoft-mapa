@@ -15,6 +15,24 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.81.0] - 2026-08-02
+
+Página de Equipamentos modernizada — sai do shell próprio e antigo,
+entra no layout compartilhado do site. Ver
+[docs/releases/platform/platform-v0.81.0.md](docs/releases/platform/platform-v0.81.0.md).
+
+Resumo: as 4 telas de Equipamentos (listar, ver, editar, excluir)
+tinham HTML/CSS totalmente separados do resto do app, herdados de uma
+geração visual anterior — sem o menu lateral, com sua própria paleta e
+componentes (`.button`, `.card`, `.badge`, `.form-control`). Passaram a
+estender `templates/base.html`, reaproveitando 100% dos componentes já
+estabelecidos (`.page-heading`, `.panel`, `.overview-table`,
+`.sync-pill`, `.platform-form-grid`, `.info-list`, `.icon-action` com
+tooltip para Ver/Editar/Excluir por linha). Nenhuma mudança de
+comportamento — filtro, paginação, exclusão em massa e exclusão
+individual continuam iguais, só o visual mudou. `templates/network_map/equipment/base.html`
+(o shell antigo) foi apagado — não era mais usado por nada.
+
 ## [platform-0.80.0] - 2026-08-02
 
 Cancelar fatura manual (com purga automática em 90 dias) + página de

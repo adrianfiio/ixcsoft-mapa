@@ -1,113 +1,42 @@
-{% extends "network_map/equipment/base.html" %}
+{% extends "base.html" %}
 
-{% block title %}{{ equipment.name }}{% endblock %}
+{% block title %}{{ equipment.name }} | AFService Map{% endblock %}
+{% block topbar_title %}Equipamentos{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<section class="page-heading">
     <div>
-        <h1 class="page-title">{{ equipment.name }}</h1>
-
-        <p class="page-description">
-            Informações completas do equipamento.
-        </p>
+        <h1>{{ equipment.name }}</h1>
+        <p>Informações completas do equipamento.</p>
     </div>
-
-    <div>
-        <a
-            class="button button-secondary"
-            href="{% url 'equipment-update' equipment.pk %}"
-        >
-            Editar
-        </a>
-
-        <a
-            class="button button-danger"
-            href="{% url 'equipment-delete' equipment.pk %}"
-        >
-            Excluir
-        </a>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'equipment-list' %}">← Voltar</a>
+        <a class="panel-link" href="{% url 'equipment-update' equipment.pk %}">Editar →</a>
+        <a class="panel-link" href="{% url 'equipment-delete' equipment.pk %}">Excluir →</a>
     </div>
-</div>
+</section>
 
-<div class="card">
-    <div class="detail-grid">
-        <div class="detail-item">
-            <span class="detail-label">Nome</span>
-            <div class="detail-value">{{ equipment.name }}</div>
-        </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Código</span>
-            <div class="detail-value">
-                {{ equipment.code|default:"—" }}
-            </div>
-        </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Tipo</span>
-            <div class="detail-value">
-                {{ equipment.get_element_type_display }}
-            </div>
-        </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Status operacional</span>
-
-            <div class="detail-value">
-                <span class="badge badge-{{ equipment.status }}">
-                    {{ equipment.get_status_display }}
-                </span>
-            </div>
-        </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Latitude</span>
-            <div class="detail-value">
-                {% if equipment.point %}
-                    {{ equipment.point.y|floatformat:7 }}
-                {% else %}
-                    —
+<article class="panel">
+    <div class="info-list">
+        <div class="info-row"><span>Nome</span><strong>{{ equipment.name }}</strong></div>
+        <div class="info-row"><span>Código</span><strong>{{ equipment.code|default:"—" }}</strong></div>
+        <div class="info-row"><span>Tipo</span><strong>{{ equipment.get_element_type_display }}</strong></div>
+        <div class="info-row">
+            <span>Status operacional</span>
+            <strong>
+                {% if equipment.status == "normal" %}<span class="sync-pill sync-ok">{{ equipment.get_status_display }}</span>
+                {% elif equipment.status == "offline" %}<span class="sync-pill sync-danger">{{ equipment.get_status_display }}</span>
+                {% elif equipment.status == "no_data" %}<span class="sync-pill sync-muted">{{ equipment.get_status_display }}</span>
+                {% else %}<span class="sync-pill sync-warning">{{ equipment.get_status_display }}</span>
                 {% endif %}
-            </div>
+            </strong>
         </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Longitude</span>
-            <div class="detail-value">
-                {% if equipment.point %}
-                    {{ equipment.point.x|floatformat:7 }}
-                {% else %}
-                    —
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Ativo</span>
-            <div class="detail-value">
-                {% if equipment.enabled %}Sim{% else %}Não{% endif %}
-            </div>
-        </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Empresa</span>
-            <div class="detail-value">
-                {{ equipment.company|default:"Não definida" }}
-            </div>
-        </div>
-
-        <div class="detail-item" style="grid-column: 1 / -1;">
-            <span class="detail-label">Descrição</span>
-            <div class="detail-value">
-                {{ equipment.description|default:"Nenhuma descrição cadastrada."|linebreaksbr }}
-            </div>
-        </div>
+        <div class="info-row"><span>Latitude</span><strong>{% if equipment.point %}{{ equipment.point.y|floatformat:7 }}{% else %}—{% endif %}</strong></div>
+        <div class="info-row"><span>Longitude</span><strong>{% if equipment.point %}{{ equipment.point.x|floatformat:7 }}{% else %}—{% endif %}</strong></div>
+        <div class="info-row"><span>Ativo</span><strong>{% if equipment.enabled %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="info-row"><span>Empresa</span><strong>{{ equipment.company|default:"Não definida" }}</strong></div>
     </div>
-
-    <div class="form-actions">
-        <a class="button button-secondary" href="{% url 'equipment-list' %}">
-            Voltar
-        </a>
-    </div>
-</div>
+    <div class="panel-header" style="margin-top: 20px;"><h2 class="panel-title">Descrição</h2></div>
+    <p>{{ equipment.description|default:"Nenhuma descrição cadastrada."|linebreaksbr }}</p>
+</article>
 {% endblock %}

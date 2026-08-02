@@ -13,13 +13,13 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.80.0 |
+| Plataforma | v0.81.0 |
 | Mapa | v0.75.5 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
-  usuários): Superadmin pode cancelar fatura lançada manualmente (some do
-  banco automaticamente 90 dias depois); cliente ganha página de fatura
-  imprimível/PDF com botões de ver/imprimir/salvar, por ícone com tooltip.
+  usuários): página de Equipamentos modernizada — sai do layout próprio
+  antigo (sem menu lateral) e passa a usar o mesmo shell/visual do resto
+  do site, com o menu lateral sempre visível.
   Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
   SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,

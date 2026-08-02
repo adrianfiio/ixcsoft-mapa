@@ -1,159 +1,56 @@
-{% extends "network_map/equipment/base.html" %}
+{% extends "base.html" %}
 
-{% block title %}
-    {% if object %}Editar equipamento{% else %}Novo equipamento{% endif %}
-{% endblock %}
+{% block title %}{% if object %}Editar equipamento{% else %}Novo equipamento{% endif %} | AFService Map{% endblock %}
+{% block topbar_title %}Equipamentos{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<section class="page-heading">
     <div>
-        <h1 class="page-title">
-            {% if object %}
-                Editar equipamento
-            {% else %}
-                Novo equipamento
-            {% endif %}
-        </h1>
-
-        <p class="page-description">
-            Informe os dados e a localização do elemento da rede.
-        </p>
+        <h1>{% if object %}Editar equipamento{% else %}Novo equipamento{% endif %}</h1>
+        <p>Informe os dados e a localização do elemento da rede.</p>
     </div>
-</div>
-
-<form method="post" class="card">
-    {% csrf_token %}
-
-    {% if form.non_field_errors %}
-        <div class="error-list">
-            {{ form.non_field_errors }}
-        </div>
-    {% endif %}
-
-    <div class="form-grid">
-        <div class="form-group">
-            <label class="form-label" for="{{ form.project.id_for_label }}">
-                {{ form.project.label }}
-            </label>
-
-            {{ form.project }}
-
-            {% if form.project.errors %}
-                <div class="error-list">{{ form.project.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="{{ form.name.id_for_label }}">
-                {{ form.name.label }}
-            </label>
-
-            {{ form.name }}
-
-            {% if form.name.errors %}
-                <div class="error-list">{{ form.name.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="{{ form.code.id_for_label }}">
-                {{ form.code.label }}
-            </label>
-
-            {{ form.code }}
-
-            {% if form.code.errors %}
-                <div class="error-list">{{ form.code.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="{{ form.element_type.id_for_label }}">
-                {{ form.element_type.label }}
-            </label>
-
-            {{ form.element_type }}
-
-            {% if form.element_type.errors %}
-                <div class="error-list">{{ form.element_type.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="{{ form.status.id_for_label }}">
-                {{ form.status.label }}
-            </label>
-
-            {{ form.status }}
-
-            {% if form.status.errors %}
-                <div class="error-list">{{ form.status.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="{{ form.latitude.id_for_label }}">
-                {{ form.latitude.label }}
-            </label>
-
-            {{ form.latitude }}
-
-            {% if form.latitude.errors %}
-                <div class="error-list">{{ form.latitude.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="{{ form.longitude.id_for_label }}">
-                {{ form.longitude.label }}
-            </label>
-
-            {{ form.longitude }}
-
-            {% if form.longitude.errors %}
-                <div class="error-list">{{ form.longitude.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group form-group-full">
-            <label class="form-label" for="{{ form.description.id_for_label }}">
-                {{ form.description.label }}
-            </label>
-
-            {{ form.description }}
-
-            {% if form.description.errors %}
-                <div class="error-list">{{ form.description.errors }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group form-group-full">
-            <label class="form-label">
-                Situação do cadastro
-            </label>
-
-            <div class="checkbox-row">
-                {{ form.enabled }}
-
-                <label for="{{ form.enabled.id_for_label }}">
-                    Equipamento ativo
-                </label>
-            </div>
-
-            {% if form.enabled.errors %}
-                <div class="error-list">{{ form.enabled.errors }}</div>
-            {% endif %}
-        </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'equipment-list' %}">← Cancelar</a>
     </div>
+</section>
 
-    <div class="form-actions">
-        <a class="button button-secondary" href="{% url 'equipment-list' %}">
-            Cancelar
-        </a>
-
-        <button class="button" type="submit">
-            Salvar equipamento
-        </button>
-    </div>
-</form>
+<article class="panel">
+    <form class="platform-form" method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="platform-form-grid">
+            <label><strong>{{ form.project.label }}</strong>{{ form.project }}
+                {% for error in form.project.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label><strong>{{ form.name.label }}</strong>{{ form.name }}
+                {% for error in form.name.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label><strong>{{ form.code.label }}</strong>{{ form.code }}
+                {% for error in form.code.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label><strong>{{ form.element_type.label }}</strong>{{ form.element_type }}
+                {% for error in form.element_type.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label><strong>{{ form.status.label }}</strong>{{ form.status }}
+                {% for error in form.status.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label><strong>{{ form.latitude.label }}</strong>{{ form.latitude }}
+                {% for error in form.latitude.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label><strong>{{ form.longitude.label }}</strong>{{ form.longitude }}
+                {% for error in form.longitude.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label style="grid-column: 1 / -1;"><strong>{{ form.description.label }}</strong>{{ form.description }}
+                {% for error in form.description.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+            <label class="check-row" style="grid-column: 1 / -1;">{{ form.enabled }}<strong>Equipamento ativo</strong>
+                {% for error in form.enabled.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </label>
+        </div>
+        <div class="platform-form-actions">
+            <a class="cancel-link" href="{% url 'equipment-list' %}">Cancelar</a>
+            <button type="submit">Salvar equipamento</button>
+        </div>
+    </form>
+</article>
 {% endblock %}
