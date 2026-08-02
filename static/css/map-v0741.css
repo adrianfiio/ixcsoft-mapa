@@ -1,0 +1,466 @@
+/* IXCSoft MAPA v0.74.1
+ * Polimento final de Rack/Torre, Canvas 2D, menu lateral, barra de ações
+ * e ficha técnica. Este arquivo complementa map-v074.css.
+ */
+:root {
+    --v0741-accent: var(--map-brand-accent, #22d3ee);
+    --v0741-panel: #0a1b2d;
+    --v0741-panel-soft: #10263d;
+    --v0741-border: rgba(148, 163, 184, .24);
+    --v0741-text: #ecf5ff;
+    --v0741-muted: #91a8c0;
+}
+
+/* --------------------------------------------------------------------------
+   Ícones e barra única da janela Rack/Torre
+   -------------------------------------------------------------------------- */
+.v0741-button-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+}
+.v0741-button-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.v0741-button-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.map-ui-v0741 .map-master-container {
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    min-height: 0;
+    overflow: hidden;
+}
+body.map-ui-v0741 .master-container-commandbar-v0741 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 5px 7px;
+    border-bottom: 1px solid var(--v0741-border);
+    background: rgba(5, 17, 30, .78);
+}
+body.map-ui-v0741 .master-container-commandbar-v0741 .master-container-tabs,
+body.map-ui-v0741 .master-container-commandbar-v0741 .master-container-toolbar {
+    display: flex !important;
+    flex: 0 1 auto;
+    align-items: center;
+    min-width: 0;
+    min-height: 0 !important;
+    padding: 0 !important;
+    gap: 4px !important;
+    border: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+    flex-wrap: nowrap !important;
+}
+body.map-ui-v0741 .master-container-commandbar-v0741 .master-container-toolbar {
+    flex: 1 1 auto;
+}
+body.map-ui-v0741 .master-container-commandbar-v0741 button,
+body.map-ui-v0741 .master-container-more-menu button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: 30px !important;
+    padding: 4px 8px !important;
+    border: 1px solid var(--v0741-border);
+    border-radius: 8px;
+    color: #cbd9e8;
+    background: rgba(15, 39, 62, .72);
+    font-size: 9px !important;
+    line-height: 1;
+    cursor: pointer;
+}
+body.map-ui-v0741 .master-container-commandbar-v0741 button:hover,
+body.map-ui-v0741 .master-container-commandbar-v0741 button.active {
+    border-color: color-mix(in srgb, var(--v0741-accent) 60%, transparent);
+    color: #fff;
+    background: color-mix(in srgb, var(--v0741-accent) 15%, #0a1b2d);
+}
+body.map-ui-v0741 .master-container-tabs button.active {
+    box-shadow: inset 0 -2px 0 var(--v0741-accent);
+}
+body.map-ui-v0741 .master-container-toolbar [data-container-add] {
+    margin-left: auto;
+}
+body.map-ui-v0741 .master-container-more {
+    margin-left: 0 !important;
+}
+body.map-ui-v0741 .master-container-more-menu {
+    top: calc(100% + 7px) !important;
+}
+body.map-ui-v0741 .master-container-more-menu button {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Canvas 2D: viewport sem barras, auto-fit e zoom controlado
+   -------------------------------------------------------------------------- */
+body.map-ui-v0741 .map-master-container [data-panel="canvas"] {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    padding: 7px !important;
+    overflow: hidden !important;
+}
+body.map-ui-v0741 .master-canvas-scroll {
+    position: relative;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    border: 1px solid var(--v0741-border);
+    border-radius: 10px;
+    background: #061526;
+    scrollbar-width: none !important;
+}
+body.map-ui-v0741 .master-canvas-scroll::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+body.map-ui-v0741 .master-canvas {
+    position: relative;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    transition: transform .16s ease;
+    will-change: transform;
+}
+body.map-ui-v0741 .master-canvas-links,
+body.map-ui-v0741 .master-canvas-nodes {
+    width: 100%;
+    height: 100%;
+}
+body.map-ui-v0741 .map-canvas-zoom-v0741 {
+    position: absolute;
+    z-index: 15;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid var(--v0741-border);
+    border-radius: 9px;
+    color: var(--v0741-text);
+    background: rgba(5, 17, 30, .92);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    backdrop-filter: blur(10px);
+}
+body.map-ui-v0741 .map-canvas-zoom-v0741 button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 4px 7px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #c7d7e7;
+    background: transparent;
+    cursor: pointer;
+}
+body.map-ui-v0741 .map-canvas-zoom-v0741 button:hover {
+    border-color: color-mix(in srgb, var(--v0741-accent) 55%, transparent);
+    color: #fff;
+    background: color-mix(in srgb, var(--v0741-accent) 13%, transparent);
+}
+body.map-ui-v0741 .map-canvas-zoom-v0741 svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+body.map-ui-v0741 .map-canvas-zoom-v0741 output {
+    min-width: 43px;
+    color: var(--v0741-muted);
+    font-size: 9px;
+    text-align: center;
+}
+body.map-ui-v0741 .master-canvas-node {
+    transform-origin: 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   Menu lateral: nenhum texto perdido e nenhuma barra visível
+   -------------------------------------------------------------------------- */
+body.map-ui-v0741 #map-sidebar {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+body.map-ui-v0741 #map-sidebar .sidebar-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+}
+body.map-ui-v0741 #map-sidebar .sidebar-content::-webkit-scrollbar,
+body.map-ui-v0741 #map-sidebar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+body.map-ui-v0741 #map-sidebar .sidebar-content > *,
+body.map-ui-v0741 #map-sidebar .map-nav-v072,
+body.map-ui-v0741 #map-sidebar .v072-project-section,
+body.map-ui-v0741 #map-sidebar .map-company-card-v072 {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+body.map-ui-v0741 #map-sidebar.v072-collapsed #editor-message {
+    display: none !important;
+}
+body.map-ui-v0741 #map-sidebar.v072-collapsed .sidebar-content {
+    overflow: hidden !important;
+}
+body.map-ui-v0741 #map-sidebar.v072-collapsed .map-nav-v072 a,
+body.map-ui-v0741 #map-sidebar.v072-collapsed .map-nav-v072 button {
+    overflow: hidden;
+}
+body.map-ui-v0741 #map-sidebar.v072-collapsed .map-nav-v072 span {
+    display: none !important;
+}
+.map-status-toast-v0741 {
+    position: fixed;
+    z-index: 15000;
+    left: 92px;
+    bottom: 24px;
+    max-width: min(420px, calc(100vw - 116px));
+    padding: 9px 12px;
+    border: 1px solid color-mix(in srgb, var(--v0741-accent) 50%, transparent);
+    border-radius: 10px;
+    color: #effaff;
+    background: rgba(7, 31, 49, .96);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .38);
+    font-size: 11px;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+}
+.map-status-toast-v0741.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+.map-status-toast-v0741.error {
+    border-color: rgba(248, 113, 113, .58);
+    background: rgba(67, 18, 29, .96);
+}
+
+/* --------------------------------------------------------------------------
+   Barra de ferramentas: um único cancelamento contextual
+   -------------------------------------------------------------------------- */
+body.map-ui-v0741:not(.map-tool-active-v0722) #map-toolbar-v072 [data-v0722-cancel],
+body.map-ui-v0741:has(#drawing-bar:not([hidden])) #map-toolbar-v072 [data-v0722-cancel],
+body.map-ui-v0741 #map-toolbar-v072 [data-v0722-cancel].v0741-suppressed {
+    display: none !important;
+}
+body.map-ui-v0741 #drawing-bar:not([hidden]) {
+    top: 82px !important;
+    z-index: 4200 !important;
+    max-width: min(620px, calc(100vw - 24px));
+    min-height: 48px;
+    padding: 6px 8px !important;
+    border: 1px solid color-mix(in srgb, var(--v0741-accent) 58%, transparent);
+    border-radius: 12px;
+    background: rgba(4, 18, 31, .96);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .38);
+    backdrop-filter: blur(12px);
+}
+body.map-ui-v0741 #drawing-bar span {
+    min-width: 0;
+    white-space: normal;
+}
+body.map-ui-v0741 #drawing-bar button {
+    min-height: 34px;
+    border-radius: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Ficha técnica: cards fluidos e apenas uma área de rolagem invisível
+   -------------------------------------------------------------------------- */
+body.map-ui-v0741 #map-master-asset-sheet {
+    width: min(1080px, calc(100vw - 28px)) !important;
+    height: min(760px, calc(100dvh - 28px)) !important;
+    overflow: hidden !important;
+}
+body.map-ui-v0741 #map-master-asset-sheet > section {
+    min-width: 0;
+    min-height: 0;
+}
+body.map-ui-v0741 #map-master-asset-sheet > section > header {
+    min-width: 0;
+    padding: 12px 16px;
+}
+body.map-ui-v0741 #map-master-asset-sheet > section > header > div:first-child {
+    min-width: 0;
+}
+body.map-ui-v0741 .master-sheet-header-actions {
+    flex: 0 0 auto;
+}
+body.map-ui-v0741 .master-sheet-header-actions button,
+body.map-ui-v0741 .master-sheet-header-actions a {
+    gap: 6px;
+    white-space: nowrap;
+}
+body.map-ui-v0741 .master-sheet-scroll {
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: 13px !important;
+    scrollbar-width: none !important;
+}
+body.map-ui-v0741 .master-sheet-scroll::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+body.map-ui-v0741 .master-sheet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 11px;
+    width: 100%;
+    min-width: 0;
+}
+body.map-ui-v0741 .master-sheet-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible !important;
+}
+body.map-ui-v0741 .master-sheet-card.full {
+    grid-column: 1 / -1;
+}
+body.map-ui-v0741 .master-sheet-definition,
+body.map-ui-v0741 .master-sheet-list,
+body.map-ui-v0741 .master-sheet-definition dd {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+body.map-ui-v0741 .master-sheet-definition > div {
+    grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) !important;
+}
+body.map-ui-v0741 .master-sheet-definition > div.has-nested-value-v0741 {
+    grid-template-columns: 1fr !important;
+    gap: 5px !important;
+}
+body.map-ui-v0741 .master-sheet-definition > div.has-nested-value-v0741 > dt {
+    padding-bottom: 3px;
+    color: #b8c9da;
+    font-size: 11px;
+}
+body.map-ui-v0741 .nested-definition-v0741 {
+    display: grid;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid rgba(148, 163, 184, .13);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .018);
+}
+body.map-ui-v0741 .nested-definition-v0741 > div {
+    grid-template-columns: minmax(115px, 165px) minmax(0, 1fr) !important;
+}
+body.map-ui-v0741 .master-sheet-definition dd,
+body.map-ui-v0741 .master-sheet-definition dd *,
+body.map-ui-v0741 .master-sheet-list article {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    white-space: normal;
+}
+body.map-ui-v0741 .master-sheet-value-coordinate,
+body.map-ui-v0741 .master-sheet-value-number {
+    white-space: normal !important;
+}
+body.map-ui-v0741 .v0741-lifecycle-card {
+    margin: 0 !important;
+    padding: 11px !important;
+}
+body.map-ui-v0741 .v0741-lifecycle-card > div {
+    grid-template-columns: minmax(170px, 230px) minmax(0, 1fr) auto !important;
+}
+body.map-ui-v0741 .v0741-lifecycle-card input,
+body.map-ui-v0741 .v0741-lifecycle-card select {
+    width: 100%;
+}
+
+@media (max-width: 980px) {
+    body.map-ui-v0741 .master-container-commandbar-v0741 {
+        gap: 4px;
+    }
+    body.map-ui-v0741 .master-container-commandbar-v0741 button {
+        padding-inline: 6px !important;
+    }
+    body.map-ui-v0741 .master-container-commandbar-v0741 .v0741-button-label {
+        max-width: 86px;
+    }
+    body.map-ui-v0741 .master-sheet-grid {
+        grid-template-columns: 1fr;
+    }
+    body.map-ui-v0741 .master-sheet-card.full {
+        grid-column: auto;
+    }
+}
+
+@media (max-width: 760px) {
+    body.map-ui-v0741 .master-container-commandbar-v0741 {
+        overflow-x: auto !important;
+        scrollbar-width: none;
+    }
+    body.map-ui-v0741 .master-container-commandbar-v0741::-webkit-scrollbar {
+        display: none;
+    }
+    body.map-ui-v0741 .master-container-commandbar-v0741 .master-container-tabs,
+    body.map-ui-v0741 .master-container-commandbar-v0741 .master-container-toolbar {
+        flex: 0 0 auto;
+    }
+    body.map-ui-v0741 .v0741-lifecycle-card > div,
+    body.map-ui-v0741 .master-sheet-definition > div,
+    body.map-ui-v0741 .nested-definition-v0741 > div {
+        grid-template-columns: 1fr !important;
+    }
+    body.map-ui-v0741 #drawing-bar:not([hidden]) {
+        top: 70px !important;
+        flex-wrap: wrap;
+    }
+}
+
+@media print {
+    body.map-ui-v0741 .master-sheet-scroll {
+        overflow: visible !important;
+    }
+    body.map-ui-v0741 .master-sheet-grid {
+        display: block !important;
+    }
+    body.map-ui-v0741 .master-sheet-card {
+        margin-bottom: 10px;
+    }
+}
