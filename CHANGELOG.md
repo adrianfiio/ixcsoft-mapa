@@ -1,5 +1,69 @@
 # Changelog
 
+## [0.74.0] - 2026-08-03
+
+Módulo financeiro novo (`apps/billing`) — controle de mensalidade e
+pagamento por cliente. Sem integração com IXCSoft: o sistema não tinha
+nenhum dado financeiro estruturado (só `raw_data` solto do ERP), e a
+plataforma também atende empresa sem ERP nenhum, então o cadastro de
+cliente financeiro é próprio, com vínculo opcional (não obrigatório) a
+um ponto de acesso já existente no mapa. **Com migration**
+(`apps.billing.0001_initial`, roda automaticamente no `apply`).
+
+### Adicionado
+
+- **Cadastro de cliente financeiro** (nome, documento, contato,
+  mensalidade, dia de vencimento, vínculo opcional com o mapa/ERP).
+- **Mensalidade recorrente automática**: todo cliente com mensalidade
+  ativa recebe a fatura do mês sozinho, via Celery Beat
+  (`generate-monthly-invoices`, de hora em hora — idempotente, nunca
+  duplica fatura no mesmo mês graças a uma trava única por
+  cliente+mês). Fatura vencida vira "Atrasada" sozinha
+  (`mark-overdue-invoices`, mesmo agendamento).
+- **Registro de pagamento manual** (dinheiro, PIX, transferência, cartão,
+  outro), com suporte a pagamento parcial — a fatura só fecha como paga
+  quando a soma dos pagamentos bate com o valor.
+- **Página de cliente nova**: lista de clientes com resumo (atrasados,
+  pendentes, pagos no mês) + página de detalhe com histórico de faturas
+  e formulário de pagamento por fatura em aberto.
+- **Item "Financeiro" no menu lateral**, mesmo acesso EDIT já usado no
+  resto do sistema (sem controle de permissão novo).
+- **Schema pronto pra gateway de pagamento futuro** (Efí, Inter, Mercado
+  Pago — escolha por empresa): campos `gateway_provider`/
+  `gateway_charge_id` já reservados na fatura. **Nenhuma integração real
+  nesta versão** — nenhuma chamada de API, webhook ou boleto/PIX
+  cobrável de verdade. Só evita redesenhar o banco quando isso entrar.
+
+### Fora desta entrega (avisado ao usuário)
+
+- Integração de gateway de pagamento de verdade.
+- Botão de financeiro no popup do mapa (o usuário escolheu a página de
+  detalhe nova em vez disso).
+- Visão financeira consolidada entre empresas na "Visão da plataforma".
+
+### Verificação feita
+
+- `clamp_due_day`/`due_date_for` (cálculo de vencimento, incluindo
+  fevereiro/meses de 30 dias) são funções puras sem banco — **executadas
+  de verdade** via script Python direto, mesmo método já usado este ano
+  com `apps/snmp_monitoring/link_status.py`: 5 asserções, todas
+  passaram.
+- `python -m py_compile` em todos os arquivos Python novos e nos tocados
+  (`config/settings.py`, `config/urls.py`).
+- Migration escrita à mão (sem GDAL neste ambiente de preparação),
+  revisada campo a campo contra `models.py`; dependências
+  (`core.0013`, `access.0002`) conferidas como as últimas migrations de
+  cada app.
+- Chaves do `static/css/app.css` balanceadas (276/276) e `{% if %}`/
+  `{% endif %}`/`{% for %}`/`{% endfor %}`/`{% block %}`/`{% endblock %}`
+  balanceados nos 3 templates novos e no `base.html` tocado.
+- YAML do `docker-compose.yml` válido.
+
+**`manage.py check`, `manage.py migrate`, `manage.py test` e o teste
+visual real (cadastrar cliente, gerar mensalidade, registrar pagamento,
+ver o status virar "Paga") dependem de banco/GDAL reais — precisam ser
+rodados no servidor.**
+
 ## [0.73.1] - 2026-08-02
 
 Hotfix estrutural do runtime do mapa, preparado pelo ChatGPT como

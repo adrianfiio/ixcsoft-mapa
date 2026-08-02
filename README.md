@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.73.1 — Hotfix estrutural do runtime do mapa: remove o laço de reconstrução dos popups, restaura botões de ação e cancelamento de ferramentas**
+**v0.74.0 — Módulo financeiro: cadastro de cliente, mensalidade recorrente automática, registro de pagamento e página de detalhe por cliente**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
@@ -55,6 +55,15 @@ cabos, camadas operacionais e importação KML/KMZ.
 - Agrupamento de marcadores
 - Busca e filtros por estado
 - API GeoJSON para os acessos
+
+### Financeiro
+
+- Cadastro de cliente para controle de pagamento (independente de ERP)
+- Mensalidade recorrente com geração automática de fatura por mês
+- Registro de pagamento manual (com suporte a pagamento parcial)
+- Página de detalhe do cliente com histórico de faturas
+- Schema pronto para integração futura com gateway de pagamento (ainda
+  não integrado)
 
 ### Plataforma
 

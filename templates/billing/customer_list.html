@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Financeiro | AFService Map{% endblock %}
+{% block topbar_title %}Financeiro{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>Financeiro</h1>
+        <p>Controle de mensalidade e pagamento dos seus clientes.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="primary-action" href="{% url 'billing-customer-create' %}">Novo cliente →</a>
+    </div>
+</section>
+
+<div class="billing-summary-grid">
+    <article class="metric-card" style="--accent: var(--danger);">
+        <div class="metric-head"><span>Faturas atrasadas</span><span class="metric-icon">!</span></div>
+        <div class="metric-value">{{ summary.overdue_count }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--warning);">
+        <div class="metric-head"><span>Faturas pendentes</span><span class="metric-icon">…</span></div>
+        <div class="metric-value">{{ summary.pending_count }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--success);">
+        <div class="metric-head"><span>Pagas este mês</span><span class="metric-icon">✓</span></div>
+        <div class="metric-value">{{ summary.received_month }}</div>
+    </article>
+</div>
+
+<article class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Clientes</h2>
+        <form method="get" class="billing-search">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nome...">
+            <button type="submit">Buscar</button>
+        </form>
+    </div>
+    <div class="overview-table-wrap">
+        <table class="overview-table">
+            <thead><tr><th>Cliente</th><th>Situação</th><th>Mensalidade</th><th>Vencimento</th><th></th></tr></thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td><a href="{% url 'billing-customer-detail' customer.pk %}"><strong>{{ customer.name }}</strong></a></td>
+                    <td>{{ customer.get_status_display }}</td>
+                    <td>{% if customer.monthly_amount %}R$ {{ customer.monthly_amount }}{% else %}—{% endif %}</td>
+                    <td>{% if customer.due_day %}dia {{ customer.due_day }}{% else %}—{% endif %}</td>
+                    <td><a href="{% url 'billing-customer-detail' customer.pk %}">Ver →</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="empty-state">Nenhum cliente cadastrado ainda.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}

@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.73.1")
+APP_VERSION = os.getenv("APP_VERSION", "0.74.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.network_map",
     "apps.alerts",
     "apps.snmp_monitoring",
+    "apps.billing.apps.BillingConfig",
 ]
 
 MIDDLEWARE = [
@@ -154,6 +155,14 @@ CELERY_BEAT_SCHEDULE = {
     "poll-snmp-status": {
         "task": "apps.snmp_monitoring.tasks.poll_snmp_status",
         "schedule": SNMP_STATUS_POLL_SECONDS,
+    },
+    "generate-monthly-invoices": {
+        "task": "apps.billing.tasks.generate_monthly_invoices",
+        "schedule": 3600.0,
+    },
+    "mark-overdue-invoices": {
+        "task": "apps.billing.tasks.mark_overdue_invoices",
+        "schedule": 3600.0,
     },
 }
 

@@ -22,6 +22,13 @@ from apps.core.views import (
     create_company_asset,
     erp_onboarding,
 )
+from apps.billing.views import (
+    customer_create,
+    customer_detail,
+    customer_list,
+    customer_update,
+    record_payment,
+)
 
 
 urlpatterns = [
@@ -54,6 +61,15 @@ urlpatterns = [
         name="dashboard-layout-editor",
     ),
     path("painel/plataforma/", PlatformOverviewView.as_view(), name="platform-overview"),
+    path("painel/financeiro/", customer_list, name="billing-customers"),
+    path("painel/financeiro/novo/", customer_create, name="billing-customer-create"),
+    path("painel/financeiro/<int:pk>/", customer_detail, name="billing-customer-detail"),
+    path("painel/financeiro/<int:pk>/editar/", customer_update, name="billing-customer-update"),
+    path(
+        "painel/financeiro/<int:pk>/faturas/<int:invoice_id>/pagamento/",
+        record_payment,
+        name="billing-record-payment",
+    ),
     path("admin/", admin.site.urls),
     path("api/", include("apps.core.urls")),
     path("api/ixc/", include("apps.ixc_integration.api.urls")),

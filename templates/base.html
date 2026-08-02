@@ -40,6 +40,9 @@
                 <a class="{% if request.resolver_match.url_name == 'company-alerts' %}active{% endif %}" href="{% url 'company-alerts' %}">
                     <span class="nav-icon">!</span><span class="nav-label">Alertas</span>
                 </a>
+                <a class="{% if 'billing-customer' in request.resolver_match.url_name or request.resolver_match.url_name == 'billing-customers' %}active{% endif %}" href="{% url 'billing-customers' %}">
+                    <span class="nav-icon">$</span><span class="nav-label">Financeiro</span>
+                </a>
                 {% endif %}
                 <a class="{% if request.resolver_match.url_name == 'account-panel' %}active{% endif %}" href="{% url 'account-panel' %}">
                     <span class="nav-icon">⚙</span><span class="nav-label">Minha administração</span>
