@@ -14,7 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r4"), 2)
+        self.assertEqual(template.count("{{ map_version }}-tower-r5"), 2)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
@@ -47,6 +47,14 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertIn("top: auto !important", css)
         self.assertIn("flex-direction: row !important", css)
         self.assertEqual(template.count("workspace-r4"), 2)
+
+    def test_workspace_position_is_locked_and_always_closable(self):
+        runtime = content("static/js/map-v0750-tower-workspace.js")
+        css = content("static/css/map-v0750-tower-workspace.css")
+        for token in ("lockWorkspacePosition", "getBoundingClientRect().right", 'event.key !== "Escape"', "dialog.close()"):
+            self.assertIn(token, runtime)
+        self.assertIn("section > header", css)
+        self.assertIn("position: sticky !important", css)
 
     def test_tower_opens_directly_in_canvas(self):
         runtime = content("static/js/map-v0750-tower-workspace.js")
@@ -120,9 +128,9 @@ class MapV0750StaticTests(unittest.TestCase):
     def test_versions_are_independent(self):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
-        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.77.0"))', settings)
+        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.78.0"))', settings)
         self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.0")', settings)
-        self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.77.0}', compose)
+        self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.78.0}', compose)
         self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.0}', compose)
 
 

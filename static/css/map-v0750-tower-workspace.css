@@ -22,6 +22,7 @@ body.map-master-suite #container-dialog.tower-workspace-dialog-v0750:not(.master
     border-radius: 0 !important;
     box-shadow: -18px 0 55px rgba(0, 0, 0, .38) !important;
     z-index: 1800 !important;
+    overflow: hidden !important;
 }
 body.map-master-suite:has(#map-sidebar.v072-collapsed) #container-dialog.tower-workspace-dialog-v0750:not(.master-container-fullscreen) {
     left: 72px !important;
@@ -113,6 +114,17 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
     border-color: color-mix(in srgb, var(--v0750-accent) 62%, transparent);
     color: #fff;
     background: color-mix(in srgb, var(--v0750-accent) 16%, var(--v0750-panel));
+}
+.tower-workspace-dialog-v0750 > section > header {
+    position: sticky !important;
+    z-index: 100 !important;
+    top: 0 !important;
+    flex: none;
+    background: #071a2c !important;
+}
+.tower-workspace-dialog-v0750 > section > header .dialog-close {
+    position: relative;
+    z-index: 101;
 }
 .tower-workspace-actions-v0750 button.primary {
     border-color: rgba(16, 185, 129, .58);
@@ -532,7 +544,6 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
     .tower-popover-v0750 button span { display: grid; }
 }
 @media (max-width: 760px) {
-    body.map-master-suite #container-dialog.tower-workspace-dialog-v0750:not(.master-container-fullscreen) { left: 0 !important; }
     .tower-workspace-toolbar-v0750 { align-items: flex-start; }
     .tower-workspace-title-v0750 { min-width: auto; }
     .tower-workspace-actions-v0750 { flex-wrap: wrap; }

@@ -8,6 +8,7 @@
         activeMenu: null,
         inspectorEquipmentId: "",
         fusionFitTimer: null,
+        workspaceResizeObserver: null,
     };
 
     function icon(name) {
@@ -81,6 +82,49 @@
         return qs("#map-master-container");
     }
 
+    function lockWorkspacePosition() {
+        const dialog = dialogRoot();
+        if (!dialog?.open || !dialog.classList.contains("tower-workspace-dialog-v0750")) return;
+        const sidebar = qs("#map-sidebar");
+        const sidebarRight = sidebar && getComputedStyle(sidebar).display !== "none"
+            ? Math.max(0, Math.round(sidebar.getBoundingClientRect().right))
+            : 0;
+        const left = Math.min(sidebarRight, Math.max(0, window.innerWidth - 320));
+        dialog.style.setProperty("position", "fixed", "important");
+        dialog.style.setProperty("top", "0", "important");
+        dialog.style.setProperty("right", "0", "important");
+        dialog.style.setProperty("bottom", "0", "important");
+        dialog.style.setProperty("left", `${Math.max(0, left)}px`, "important");
+        dialog.style.setProperty("width", "auto", "important");
+        dialog.style.setProperty("height", "100dvh", "important");
+        dialog.style.setProperty("max-width", "none", "important");
+        dialog.style.setProperty("max-height", "none", "important");
+        dialog.style.setProperty("margin", "0", "important");
+        dialog.style.setProperty("transform", "none", "important");
+        dialog.scrollTop = 0;
+        const section = qs(":scope > section", dialog);
+        if (section) section.scrollTop = 0;
+    }
+
+    function installWorkspacePositionLock() {
+        const sidebar = qs("#map-sidebar");
+        if (sidebar && !state.workspaceResizeObserver && window.ResizeObserver) {
+            state.workspaceResizeObserver = new ResizeObserver(() => lockWorkspacePosition());
+            state.workspaceResizeObserver.observe(sidebar);
+        }
+        if (document.body.dataset.v0750WorkspaceLock !== "1") {
+            document.body.dataset.v0750WorkspaceLock = "1";
+            window.addEventListener("resize", lockWorkspacePosition);
+            document.addEventListener("keydown", (event) => {
+                const dialog = dialogRoot();
+                if (event.key !== "Escape" || !dialog?.open) return;
+                event.preventDefault();
+                dialog.close();
+            });
+        }
+        lockWorkspacePosition();
+    }
+
     function activateCanvas(root) {
         if (!root) return;
         const canvasTab = qs('[data-tab="canvas"]', root);
@@ -152,6 +196,7 @@
         root.classList.add("drawer-open-v0750");
         state.activeMenu = mode;
         activateCanvas(root);
+        lockWorkspacePosition();
     }
 
     function openStructureInfo(root) {
@@ -433,6 +478,7 @@
         if (!root) return;
         root.dataset.v0750Workspace = "1";
         root.closest("#container-dialog")?.classList.add("tower-workspace-dialog-v0750");
+        installWorkspacePositionLock();
         ensureToolbar(root);
         ensureDrawer(root);
         movePanelsIntoDrawer(root);
@@ -440,6 +486,7 @@
         activateCanvas(root);
         ensureStructureBackdrop(root);
         decorateNodes(root);
+        lockWorkspacePosition();
         window.setTimeout(() => qs("[data-canvas-zoom-fit]", root)?.click(), 100);
     }
 
