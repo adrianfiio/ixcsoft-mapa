@@ -28,6 +28,9 @@
                 <a class="{% if request.resolver_match.url_name == 'platform-overview' %}active{% endif %}" href="{% url 'platform-overview' %}">
                     <span class="nav-icon">◈</span><span class="nav-label">Visão da plataforma</span>
                 </a>
+                <a class="{% if request.resolver_match.url_name == 'platform-financial-overview' %}active{% endif %}" href="{% url 'platform-financial-overview' %}">
+                    <span class="nav-icon">$</span><span class="nav-label">Financeiro</span>
+                </a>
                 <a class="{% if request.resolver_match.url_name == 'platform-company-create' %}active{% endif %}" href="{% url 'platform-company-create' %}">
                     <span class="nav-icon">＋</span><span class="nav-label">Nova empresa</span>
                 </a>

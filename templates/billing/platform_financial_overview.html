@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Financeiro | AFService Map{% endblock %}
+{% block topbar_title %}Financeiro da plataforma{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Ferramenta da plataforma</p>
+        <h1>Financeiro</h1>
+        <p>Visão consolidada de mensalidade, recebido, pendente e atrasado de todas as empresas.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
+        <a class="primary-action" href="{% url 'platform-financial-export' %}">Exportar CSV →</a>
+    </div>
+</section>
+
+<div class="billing-summary-grid">
+    <article class="metric-card" style="--accent: var(--primary);">
+        <div class="metric-head"><span>MRR ativo</span><span class="metric-icon">R$</span></div>
+        <div class="metric-value">R$ {{ metric_mrr }}</div>
+        <div class="metric-note">Assinaturas ativas com cobrança automática</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--success);">
+        <div class="metric-head"><span>Recebido este mês</span><span class="metric-icon">✓</span></div>
+        <div class="metric-value">R$ {{ metric_received_month }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--warning);">
+        <div class="metric-head"><span>Pendente</span><span class="metric-icon">…</span></div>
+        <div class="metric-value">R$ {{ metric_pending_amount }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--danger);">
+        <div class="metric-head"><span>Atrasado</span><span class="metric-icon">!</span></div>
+        <div class="metric-value">R$ {{ metric_overdue_amount }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--danger);">
+        <div class="metric-head"><span>Taxa de atraso</span><span class="metric-icon">%</span></div>
+        <div class="metric-value">{{ metric_default_rate }}%</div>
+        <div class="metric-note">Faturas abertas em atraso</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--danger);">
+        <div class="metric-head"><span>Empresas bloqueadas</span><span class="metric-icon">⛔</span></div>
+        <div class="metric-value">{{ metric_blocked_companies }}</div>
+    </article>
+</div>
+
+<article class="panel">
+    <div class="panel-header"><h2 class="panel-title">Receita dos últimos 6 meses</h2></div>
+    <div class="revenue-chart">
+        {% for entry in revenue_history %}
+        <div class="revenue-bar">
+            <span class="revenue-bar-value">R$ {{ entry.total }}</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill" style="--pct: {{ entry.pct }}%;"></div></div>
+            <span class="revenue-bar-label">{{ entry.month|date:"m/Y" }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</article>
+
+<section class="billing-detail-grid">
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Faturas em atraso</h2></div>
+        <div class="overview-table-wrap">
+            <table class="overview-table overview-table--compact">
+                <thead><tr><th>Empresa</th><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Atraso</th><th></th></tr></thead>
+                <tbody>
+                    {% for invoice in aging_invoices %}
+                    <tr class="overview-row-attention">
+                        <td><strong>{{ invoice.company.trade_name|default:invoice.company.name }}</strong></td>
+                        <td>{{ invoice.reference_month|date:"m/Y" }}</td>
+                        <td>R$ {{ invoice.amount }}</td>
+                        <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
+                        <td><span class="sync-pill sync-danger">{{ invoice.days_overdue }} dia{{ invoice.days_overdue|pluralize }}</span></td>
+                        <td class="billing-row-actions"><a href="{% url 'platform-company-billing' invoice.company.id %}">Financeiro →</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="empty-state">Nenhuma fatura em atraso.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Empresas com acesso bloqueado</h2></div>
+        <div class="overview-table-wrap">
+            <table class="overview-table overview-table--compact">
+                <thead><tr><th>Empresa</th><th>Tipo</th><th>Status</th><th>Desde</th><th></th></tr></thead>
+                <tbody>
+                    {% for subscription in blocked_subscriptions %}
+                    <tr class="overview-row-attention">
+                        <td><strong>{{ subscription.company.trade_name|default:subscription.company.name }}</strong></td>
+                        <td>{{ subscription.company.get_company_type_display|default:"—" }}</td>
+                        <td><span class="sync-pill sync-danger">{{ subscription.get_status_display }}</span></td>
+                        <td>{{ subscription.updated_at|date:"d/m/Y" }}</td>
+                        <td class="billing-row-actions"><a href="{% url 'platform-company-billing' subscription.company.id %}">Financeiro →</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="empty-state">Nenhuma empresa bloqueada.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+
+<section class="billing-detail-grid">
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Pagamentos recentes</h2></div>
+        <div class="overview-table-wrap">
+            <table class="overview-table overview-table--compact">
+                <thead><tr><th>Empresa</th><th>Fatura</th><th>Valor</th><th>Método</th><th>Data</th></tr></thead>
+                <tbody>
+                    {% for payment in recent_payments %}
+                    <tr>
+                        <td><strong>{{ payment.invoice.company.trade_name|default:payment.invoice.company.name }}</strong></td>
+                        <td>{{ payment.invoice.reference_month|date:"m/Y" }}</td>
+                        <td>R$ {{ payment.amount }}</td>
+                        <td>{{ payment.get_method_display }}</td>
+                        <td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="empty-state">Nenhum pagamento registrado ainda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Liberações de confiança recentes</h2></div>
+        <div class="overview-table-wrap">
+            <table class="overview-table overview-table--compact">
+                <thead><tr><th>Empresa</th><th>Solicitado por</th><th>Concedido até</th><th>Data</th></tr></thead>
+                <tbody>
+                    {% for release in recent_trust_releases %}
+                    <tr>
+                        <td><strong>{{ release.company.trade_name|default:release.company.name }}</strong></td>
+                        <td>{{ release.requested_by.get_full_name|default:release.requested_by.username|default:"—" }}</td>
+                        <td>{{ release.granted_until|date:"d/m/Y H:i" }}</td>
+                        <td>{{ release.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty-state">Nenhuma liberação de confiança usada ainda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

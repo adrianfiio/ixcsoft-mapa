@@ -29,6 +29,7 @@ from apps.billing.views import (
     company_financial_overview,
     platform_company_billing,
     platform_financial_export,
+    platform_financial_overview,
     platform_gateway_settings,
     request_trust_release_view,
 )
@@ -75,6 +76,7 @@ urlpatterns = [
         platform_company_billing,
         name="platform-company-billing",
     ),
+    path("painel/plataforma/financeiro/", platform_financial_overview, name="platform-financial-overview"),
     path("painel/plataforma/financeiro/exportar/", platform_financial_export, name="platform-financial-export"),
     path("painel/financeiro/", company_financial_overview, name="billing-overview"),
     path("painel/financeiro/liberacao-confianca/", request_trust_release_view, name="billing-request-trust-release"),

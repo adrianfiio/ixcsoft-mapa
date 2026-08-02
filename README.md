@@ -13,13 +13,14 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.76.0 |
+| Plataforma | v0.77.0 |
 | Mapa | v0.74.0 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
-  usuários): correção de arquitetura do financeiro — quem é cobrado é a
-  empresa cliente (Provedor/Projetista), gestão exclusiva do Superadmin,
-  liberação de confiança. Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
+  usuários): sistema de financeiro completo do Superadmin — MRR, recebido/
+  pendente/atrasado, taxa de atraso, receita dos últimos 6 meses, faturas em
+  atraso, empresas bloqueadas, pagamentos e liberações de confiança recentes,
+  tudo numa página só. Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
   SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,
   CEOs, cabos, camadas operacionais e importação KML/KMZ. Changelog:

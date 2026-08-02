@@ -231,6 +231,20 @@ def platform_company_billing(request, company_id):
 
 
 @login_required
+def platform_financial_overview(request):
+    """Visão financeira consolidada de toda a plataforma (todas as
+    empresas) — MRR, recebido/pendente/atrasado, taxa de atraso, empresas
+    bloqueadas, histórico de receita, faturas em atraso, pagamentos e
+    liberações de confiança recentes."""
+    _require_superuser(request)
+    return render(
+        request,
+        "billing/platform_financial_overview.html",
+        services.platform_financial_summary(),
+    )
+
+
+@login_required
 def platform_financial_export(request):
     _require_superuser(request)
     response = HttpResponse(content_type="text/csv")
