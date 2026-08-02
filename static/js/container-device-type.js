@@ -176,10 +176,10 @@
     function populateFibers(cableId) {
         const fiberSelect = terminationForm.elements.cable_fiber_id;
         const cable = selectedCable(cableId);
-        const fibers = (cable?.fibers || []).filter((fiber) => !fiber.used);
+        const fibers = cable?.fibers || [];
         fiberSelect.innerHTML = fibers.length
-            ? '<option value="">Selecione a fibra</option>' + fibers.map((fiber) => `<option value="${fiber.id}">F${fiber.number} · ${escapeHtml(fiber.color_name)}</option>`).join("")
-            : '<option value="">Cabo sem fibras livres/geradas</option>';
+            ? '<option value="">Selecione a fibra</option>' + fibers.map((fiber) => `<option value="${fiber.id}" ${fiber.used ? "disabled" : ""}>F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used ? ` · EM USO${fiber.used_by ? ` — ${escapeHtml(fiber.used_by)}` : ""}` : " · livre"}</option>`).join("")
+            : '<option value="">Cabo sem fibras geradas</option>';
         populateDestinationPorts(cableId);
     }
 

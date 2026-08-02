@@ -106,6 +106,9 @@
         if (!canEdit || !qs("#project-select")?.value) return;
         if (event.target.closest("dialog, button, a, input, select, textarea, .leaflet-popup, .map-toolbar-v072, #map-sidebar")) return;
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        qs("#map .map-context-menu")?.setAttribute("hidden", "hidden");
         const map = window.networkMap?.map;
         if (!map) return;
         state.contextLatLng = map.mouseEventToLatLng(event);

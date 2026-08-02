@@ -1325,6 +1325,11 @@ def _fiber_payload(fiber):
         "color_hex": fiber.color.hex_color,
         "used": link is not None,
         "link_id": link.id if link else None,
+        "used_by": (
+            f"{link.destination_port.equipment.name} · {link.destination_port.label}"
+            if link and link.destination_port_id
+            else None
+        ),
     }
 
 

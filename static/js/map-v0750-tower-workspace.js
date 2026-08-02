@@ -240,6 +240,16 @@
             <h3>Equipamentos instalados</h3>
             <div class="tower-structure-list-v0750">${nodeItems.map((item) => `<button type="button" data-structure-equipment="${item.id}"><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type)}</small></span><i>›</i></button>`).join("") || "<p>Nenhum equipamento instalado.</p>"}</div>`;
         qsa("[data-structure-equipment]", info).forEach((button) => button.onclick = () => {
+            const id = String(button.dataset.structureEquipment || "");
+            const inspector = qs(".tower-inspector-v0750", body);
+            if (state.inspectorEquipmentId === id && inspector?.classList.contains("active")) {
+                inspector.classList.remove("active");
+                state.inspectorEquipmentId = "";
+                button.classList.remove("active");
+                info.classList.add("active");
+                return;
+            }
+            qsa("[data-structure-equipment]", info).forEach((item) => item.classList.toggle("active", item === button));
             const node = qs(`[data-equipment-node="${CSS.escape(button.dataset.structureEquipment)}"]`, root);
             if (node) openInspector(root, node);
         });
@@ -337,7 +347,6 @@
                         <button type="button" data-fit-canvas>${icon("fit")}<span>Ajustar ao Canvas</span></button>
                         <button type="button" data-export-canvas="png">${icon("sheet")}<span>Exportar PNG</span></button>
                         <button type="button" data-export-canvas="pdf">${icon("sheet")}<span>Exportar PDF</span></button>
-                        <button type="button" data-workspace-fullscreen>${icon("fullscreen")}<span>Tela cheia</span></button>
                     </div>
                 </div>
             </div>`;
@@ -387,7 +396,6 @@
                 ? "Clique numa linha para selecionar. Dê dois cliques para criar um ponto e arraste-o."
                 : "Traçado concluído e salvo.");
         };
-        qs("[data-workspace-fullscreen]", toolbar).onclick = () => toggleContainerFullscreen(root);
         document.addEventListener("click", (event) => {
             if (!event.target.closest(".tower-toolbar-menu-v0750")) closeActivePopover(root);
         });
@@ -461,12 +469,12 @@
         const row = qs(`[data-equipment-id="${CSS.escape(id)}"]`, root);
         const name = qs("header strong", node)?.textContent || "Equipamento";
         const type = qs("header small", node)?.textContent || node.dataset.equipmentType || "";
-        const ports = qsa("[data-port-id]", node);
+        const ports = new Set(qsa("[data-port-id]", node).map((port) => port.dataset.portId));
         const monitoring = node.dataset.monitoringConfigured === "true";
         inspector.innerHTML = `
             <div class="tower-inspector-title-v0750">${icon("active")}<div><strong>${name}</strong><span>${type}</span></div></div>
             <dl>
-                <div><dt>Portas</dt><dd>${ports.length}</dd></div>
+                <div><dt>Portas</dt><dd>${ports.size}</dd></div>
                 <div><dt>Monitoramento</dt><dd>${monitoring ? "SNMP configurado" : "Não configurado"}</dd></div>
                 <div><dt>Modo</dt><dd>${node.dataset.provisioningMode || "manual"}</dd></div>
             </dl>

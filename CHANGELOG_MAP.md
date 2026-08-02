@@ -1,5 +1,32 @@
 # Changelog — Mapa
 
+## [map-0.75.4] - 2026-08-02
+
+### Adicionado
+
+- visão frontal e traseira das portas do DIO no Canvas 2D;
+- exclusão de ligação pela porta ocupada ou pelo menu de contexto da linha;
+- edição e exclusão modernas de notas, com menu contextual no fundo do Canvas;
+- identificação das fibras já ocupadas no seletor de terminações.
+
+### Alterado
+
+- lista de equipamentos da estrutura funciona como acordeão e respeita espaçamento entre detalhes;
+- exportação PNG/PDF usa SVG próprio, sem capturar tiles ou conteúdo externo;
+- botão de tela cheia removido do editor técnico.
+
+### Corrigido
+
+- conflito HTTP 409 ao clicar novamente em porta já ligada;
+- dois menus simultâneos ao clicar com o botão direito no mapa;
+- erro de segurança `Tainted canvases may not be exported`.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.80.0`;
+- `MAP_VERSION` atualizada para `0.75.4`;
+- nenhuma migration.
+
 ## [map-0.75.3] - 2026-08-02
 
 ### Adicionado

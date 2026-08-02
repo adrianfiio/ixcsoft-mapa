@@ -14,7 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r8"), 5)
+        self.assertEqual(template.count("{{ map_version }}-tower-r9"), 5)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
@@ -98,7 +98,7 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertIn('data-canvas-zoom-in', zoom_runtime)
         self.assertIn('if (!event.ctrlKey) return;', zoom_runtime)
 
-    def test_fullscreen_is_css_only_in_loaded_runtimes(self):
+    def test_fullscreen_button_is_not_exposed_by_tower_toolbar(self):
         paths = (
             "static/js/map-v0750-tower-workspace.js",
             "static/js/map-fusion-polish.js",
@@ -110,7 +110,7 @@ class MapV0750StaticTests(unittest.TestCase):
             for forbidden in ("requestFullscreen", "exitFullscreen", "document.fullscreenElement", "fullscreenchange"):
                 self.assertNotIn(forbidden, runtime, f"{forbidden} ainda existe em {path}")
         tower = content(paths[0])
-        self.assertIn("requestFullscreen", tower)
+        self.assertNotIn('<button type="button" data-workspace-fullscreen>', tower)
         self.assertIn("document.exitFullscreen", tower)
         self.assertIn('addEventListener("cancel"', tower)
 
@@ -148,10 +148,10 @@ class MapV0750StaticTests(unittest.TestCase):
     def test_versions_are_independent(self):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
-        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.79.1"))', settings)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.3")', settings)
-        self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.79.1}', compose)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.3}', compose)
+        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.80.0"))', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.4")', settings)
+        self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.80.0}', compose)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.4}', compose)
 
     def test_tower_r7_has_contextual_creation_drop_and_fade(self):
         canvas = content("static/js/map-master-suite.js")
@@ -173,15 +173,18 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertIn('"Concluir e salvar"', toolbar)
         self.assertIn('"Traçado concluído e salvo."', toolbar)
 
-    def test_tower_r8_interactions_and_exports(self):
+    def test_tower_r9_interactions_and_exports(self):
         canvas = content("static/js/map-master-suite.js")
         tower = content("static/js/map-v0750-tower-workspace.js")
         view = content("static/js/map-v0741-ui.js")
         css = content("static/css/map-v0750-tower-workspace.css")
         for token in ("master-node-edit", "data-drop-entry", "master-canvas-note", "exportContainerPdf", "Relatório de ligações"):
             self.assertIn(token, canvas)
-        for token in ("Concluir ligação", "requestFullscreen", "data-export-canvas=\"pdf\"", "tower-structure-list-v0750"):
+        for token in ("Concluir ligação", "data-export-canvas=\"pdf\"", "tower-structure-list-v0750"):
             self.assertIn(token, tower)
+        for token in ("buildContainerExportSvg", "data-edit-note", "data-port-role=\"rear\"", "Esta porta ${role} já está ligada"):
+            self.assertIn(token, canvas)
+        self.assertNotIn("<foreignObject", canvas)
         self.assertIn("event.button !== 1", view)
         self.assertIn("master-node-port.left i", css)
 
