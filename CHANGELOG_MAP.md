@@ -1,5 +1,31 @@
 # Changelog — Mapa
 
+## [map-0.75.0] - 2026-08-02
+
+Workspace estrutural de Torre/Rack com Canvas 2D direto.
+
+### Adicionado
+
+- toolbar do Canvas com D.I.O, PTO, AP, PTP, Switch, Router e ONU/ONT;
+- drawers laterais para inventário, fibras, matriz e importação YAML;
+- painel de propriedades do equipamento com atalhos para edição, ficha e SNMP;
+- estrutura visual da torre e estado vazio guiado.
+
+### Corrigido
+
+- primeiro clique em Tela cheia abrindo conteúdo fora da aplicação;
+- fullscreen de Rack/Torre e Fusões agora exclusivamente por CSS;
+- toolbar/slider de Fusões compactos e sem barras aninhadas visíveis;
+- importação YAML com validação de IP, limite de interfaces, conflito de nome e erros transacionais legíveis;
+- tipos Router, AP, PTP, ONU/ONT e PTO aceitos de forma consistente em Rack/Torre.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.77.0`;
+- `MAP_VERSION` atualizada para `0.75.0`;
+- nenhuma migration.
+
+
 ## [map-0.74.1] - 2026-08-02
 
 Polimento visual final do Rack/Torre, Canvas 2D, menu lateral, ações de desenho e ficha técnica.

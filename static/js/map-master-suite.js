@@ -654,7 +654,6 @@
             replacement.dataset.masterFullscreen = "true";
             replacement.addEventListener("click", (event) => {
                 event.preventDefault(); event.stopImmediatePropagation();
-                if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
                 const active = dialog.classList.toggle("is-fullscreen");
                 replacement.textContent = active ? "Desmaximizar" : "Tela cheia";
                 replacement.setAttribute("aria-pressed", String(active));
@@ -796,7 +795,7 @@
             renderContainerCanvas();
             renderConnectionMatrix();
             attachLegacyPanels();
-            document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: dialog } }));
+            document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: dialog, data } }));
         } finally {
             state.container.rendering = false;
         }
@@ -832,7 +831,7 @@
                             <div><button type="button" data-equipment-sheet="${item.id}">Ficha</button><button type="button" data-edit-equipment="${item.id}">Editar</button><button type="button" class="danger" data-delete-equipment="${item.id}">Excluir</button></div>
                         </article>`).join("")}</div>
                 </details>`).join("") || "<p>Nenhum equipamento cadastrado.</p>");
-        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: panel } }));
+        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: panel, data: state.container.data } }));
         qsa("[data-equipment-sheet]", panel).forEach((button) => button.onclick = () => openAssetSheet("equipment", button.dataset.equipmentSheet).catch((error) => notify(error.message, true)));
         qsa("[data-edit-equipment]", panel).forEach((button) => button.onclick = () => openEquipmentEditor(button.dataset.editEquipment));
         qsa("[data-delete-equipment]", panel).forEach((button) => button.onclick = async () => {
@@ -876,7 +875,7 @@
         }).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
         qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
-        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root } }));
+        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root, data: state.container.data } }));
         drawContainerLinks();
     }
 

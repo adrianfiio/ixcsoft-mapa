@@ -38,21 +38,8 @@
         return Math.min(maximum, Math.max(minimum, Number(value)));
     }
 
-    async function toggleFullscreen() {
+    function toggleFullscreen() {
         const button = content.querySelector("[data-fusion-fullscreen]");
-        try {
-            if (document.fullscreenElement === dialog) {
-                await document.exitFullscreen();
-                return;
-            }
-            if (dialog.requestFullscreen) {
-                await dialog.requestFullscreen();
-                return;
-            }
-        } catch (_error) {
-            // O fallback CSS abaixo mantém a função disponível mesmo quando o
-            // navegador bloqueia a Fullscreen API.
-        }
         fullscreenFallback = !fullscreenFallback;
         dialog.classList.toggle("is-fullscreen", fullscreenFallback);
         if (button) button.setAttribute("aria-pressed", String(fullscreenFallback));
@@ -60,7 +47,7 @@
     }
 
     function syncFullscreenButton() {
-        const active = document.fullscreenElement === dialog || fullscreenFallback;
+        const active = fullscreenFallback;
         dialog.classList.toggle("is-fullscreen", active);
         const button = content.querySelector("[data-fusion-fullscreen]");
         if (button) {
@@ -304,15 +291,12 @@
         resizeObserver.observe(graph);
     }
 
-    const observer = new MutationObserver(() => requestAnimationFrame(enhance));
-    observer.observe(content, { childList: true, subtree: true });
-    document.addEventListener("fullscreenchange", syncFullscreenButton);
+    document.addEventListener("map:fusion-rendered", () => requestAnimationFrame(enhance));
     dialog.addEventListener("close", () => {
         enhancedGraph = null;
         resizeObserver?.disconnect();
         fullscreenFallback = false;
         dialog.classList.remove("is-fullscreen");
-        if (document.fullscreenElement === dialog) document.exitFullscreen().catch(() => {});
     });
     dialog.addEventListener("toggle", enhance);
 }());

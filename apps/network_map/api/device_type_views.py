@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from django.db import transaction
+import logging
+
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_ipv46_address
+from django.db import DataError, IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
@@ -15,22 +19,44 @@ from apps.network_map.models import (
 )
 
 
+logger = logging.getLogger(__name__)
+MAX_IMPORTED_INTERFACES = 256
+
+ACTIVE_TYPES = {
+    ContainerEquipment.EquipmentType.SWITCH,
+    ContainerEquipment.EquipmentType.ROUTER,
+    ContainerEquipment.EquipmentType.FIREWALL,
+    ContainerEquipment.EquipmentType.ACCESS_POINT,
+    ContainerEquipment.EquipmentType.PTP,
+    ContainerEquipment.EquipmentType.ONU,
+    ContainerEquipment.EquipmentType.OTHER,
+}
+
 ALLOWED_BY_CONTAINER = {
     NetworkElement.ElementType.RACK: {
         ContainerEquipment.EquipmentType.OLT,
         ContainerEquipment.EquipmentType.DIO,
-        ContainerEquipment.EquipmentType.SWITCH,
-        ContainerEquipment.EquipmentType.OTHER,
+        ContainerEquipment.EquipmentType.PTO,
+        *ACTIVE_TYPES,
     },
     NetworkElement.ElementType.TOWER: {
         ContainerEquipment.EquipmentType.OLT,
-        ContainerEquipment.EquipmentType.SWITCH,
-        ContainerEquipment.EquipmentType.ACCESS_POINT,
-        ContainerEquipment.EquipmentType.PTP,
         ContainerEquipment.EquipmentType.DIO,
-        ContainerEquipment.EquipmentType.OTHER,
+        ContainerEquipment.EquipmentType.PTO,
+        *ACTIVE_TYPES,
     },
 }
+
+
+def _error_detail(exc: Exception) -> str:
+    if isinstance(exc, ValidationError):
+        if hasattr(exc, "message_dict"):
+            return " ".join(
+                f"{field}: {' '.join(str(item) for item in messages)}"
+                for field, messages in exc.message_dict.items()
+            )
+        return " ".join(str(item) for item in exc.messages)
+    return str(exc)
 
 
 @api_view(["POST"])
@@ -51,6 +77,17 @@ def import_container_device_type_yaml(request, element_id):
         parsed = parse_device_type_yaml(upload.read())
     except DeviceTypeYAMLError as exc:
         return JsonResponse({"detail": str(exc)}, status=400)
+
+    if len(parsed.interfaces) > MAX_IMPORTED_INTERFACES:
+        return JsonResponse(
+            {
+                "detail": (
+                    f"O YAML possui {len(parsed.interfaces)} interfaces físicas. "
+                    f"O limite por importação é {MAX_IMPORTED_INTERFACES}."
+                )
+            },
+            status=400,
+        )
 
     action = str(request.data.get("action") or "preview").strip().lower()
     selected_type = str(request.data.get("equipment_type") or "auto").strip()
@@ -73,55 +110,105 @@ def import_container_device_type_yaml(request, element_id):
     name = str(request.data.get("name") or parsed.model).strip()
     if not name:
         return JsonResponse({"detail": "Informe o nome do equipamento."}, status=400)
-    management_ip = request.data.get("management_ip") or None
+    if ContainerEquipment.objects.filter(container=container, name=name).exists():
+        return JsonResponse(
+            {
+                "detail": (
+                    f"Já existe um equipamento chamado '{name}' nesta estrutura. "
+                    "Informe um nome diferente antes de importar."
+                )
+            },
+            status=409,
+        )
+
+    management_ip = str(request.data.get("management_ip") or "").strip() or None
+    if management_ip:
+        try:
+            validate_ipv46_address(management_ip)
+        except ValidationError:
+            return JsonResponse({"detail": "O IP de gerência informado é inválido."}, status=400)
+
     subtype = str(request.data.get("equipment_subtype") or "").strip()
-    if equipment_type == ContainerEquipment.EquipmentType.OTHER and not subtype:
+    if equipment_type == ContainerEquipment.EquipmentType.ONU:
+        subtype = "onu"
+    elif equipment_type == ContainerEquipment.EquipmentType.PTO:
+        subtype = "pto"
+    elif equipment_type == ContainerEquipment.EquipmentType.OTHER and not subtype:
         subtype = "onu" if any(
             item.port_type == ContainerEquipmentPort.PortType.PON
             for item in parsed.interfaces
         ) else "device"
 
-    with transaction.atomic():
-        equipment = ContainerEquipment.objects.create(
-            company=container.company,
-            container=container,
-            name=name,
-            equipment_type=equipment_type,
-            management_ip=management_ip,
-            provisioning_mode=ContainerEquipment.ProvisioningMode.MANUAL,
-            vendor=parsed.manufacturer,
-            model=parsed.model,
-            metadata={
-                "device_type": {
-                    "manufacturer": parsed.manufacturer,
-                    "model": parsed.model,
-                    "slug": parsed.slug,
-                    "source_format": "netbox-device-type-yaml",
-                    "skipped_interfaces": [
-                        {
-                            "name": item.name,
-                            "type": item.source_type,
-                            "reason": item.warning,
-                        }
-                        for item in parsed.skipped_interfaces
-                    ],
+    try:
+        with transaction.atomic():
+            equipment = ContainerEquipment(
+                company=container.company,
+                container=container,
+                name=name,
+                equipment_type=equipment_type,
+                management_ip=management_ip,
+                provisioning_mode=ContainerEquipment.ProvisioningMode.MANUAL,
+                vendor=parsed.manufacturer,
+                model=parsed.model,
+                metadata={
+                    "device_type": {
+                        "manufacturer": parsed.manufacturer,
+                        "model": parsed.model,
+                        "slug": parsed.slug,
+                        "source_format": "netbox-device-type-yaml",
+                        "skipped_interfaces": [
+                            {
+                                "name": item.name,
+                                "type": item.source_type,
+                                "reason": item.warning,
+                            }
+                            for item in parsed.skipped_interfaces
+                        ],
+                    },
+                    "equipment_subtype": subtype,
                 },
-                "equipment_subtype": subtype,
-            },
-        )
-        ports = []
-        for number, interface in enumerate(parsed.interfaces, 1):
-            ports.append(
-                ContainerEquipmentPort(
-                    equipment=equipment,
-                    port_type=interface.port_type,
-                    number=number,
-                    port_number=number,
-                    label=interface.name,
-                    enabled=interface.enabled,
-                )
             )
-        ContainerEquipmentPort.objects.bulk_create(ports)
+            equipment.full_clean()
+            equipment.save()
+
+            ports = []
+            for number, interface in enumerate(parsed.interfaces, 1):
+                ports.append(
+                    ContainerEquipmentPort(
+                        equipment=equipment,
+                        port_type=str(interface.port_type),
+                        number=number,
+                        port_number=number,
+                        label=interface.name,
+                        enabled=interface.enabled,
+                    )
+                )
+            ContainerEquipmentPort.objects.bulk_create(ports)
+    except IntegrityError:
+        logger.exception("Conflito ao importar Device Type YAML no container %s", container.id)
+        return JsonResponse(
+            {
+                "detail": (
+                    "Não foi possível importar porque nome, porta ou outro dado já existe "
+                    "nesta estrutura. Revise o nome do equipamento e tente novamente."
+                )
+            },
+            status=409,
+        )
+    except (ValidationError, DataError, ValueError) as exc:
+        logger.warning("YAML rejeitado no container %s: %s", container.id, exc)
+        return JsonResponse({"detail": _error_detail(exc)}, status=400)
+    except Exception:
+        logger.exception("Erro inesperado ao importar Device Type YAML no container %s", container.id)
+        return JsonResponse(
+            {
+                "detail": (
+                    "Falha interna ao importar o YAML. O erro foi registrado nos logs "
+                    "do servidor para diagnóstico."
+                )
+            },
+            status=500,
+        )
 
     return JsonResponse(
         {
