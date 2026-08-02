@@ -869,13 +869,19 @@
             return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
                 <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}">✎</button></header>
                 <div class="master-node-ports">${(item.ports || []).map((port, portIndex) => {
+                    if (item.type === "dio") {
+                        const rearLink = port.fusion_link_id || "";
+                        const frontLink = port.link_id || "";
+                        return `<button type="button" class="master-node-port left dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · entrada do cabo"><span>${escapeHtml(port.label)}</span><i></i></button>
+                            <button type="button" class="master-node-port right dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · cordão para equipamento"><span>${escapeHtml(port.label)}</span><i></i></button>`;
+                    }
                     const side = portSide(port, portIndex);
-                    return `<button type="button" class="master-node-port ${side} ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-type="${port.type}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`;
+                    return `<button type="button" class="master-node-port ${side} ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`;
                 }).join("") || '<small class="empty">Sem portas</small>'}</div>
             </article>`;
         }).join("") + (state.container.layout.notes || []).map((note, index) => `
             <article class="master-canvas-note" data-canvas-note="${index}" style="transform:translate(${Number(note.x || 40)}px,${Number(note.y || 40)}px)">
-                <button type="button" data-delete-note="${index}" title="Excluir nota">×</button>
+                <div class="master-note-actions"><button type="button" data-edit-note="${index}" title="Editar nota" aria-label="Editar nota">✎</button><button type="button" data-delete-note="${index}" title="Excluir nota" aria-label="Excluir nota">⌫</button></div>
                 <p>${escapeHtml(note.text)}</p>
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
@@ -887,21 +893,45 @@
         qsa("[data-canvas-note]", nodes).forEach((note) => installNoteDrag(note));
         qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = (event) => {
             event.stopPropagation();
+            if (!window.confirm("Excluir esta nota?")) return;
             state.container.layout.notes.splice(Number(button.dataset.deleteNote), 1);
+            saveContainerLayout(); renderContainerCanvas();
+        });
+        qsa("[data-edit-note]", nodes).forEach((button) => button.onclick = (event) => {
+            event.stopPropagation();
+            const note = state.container.layout.notes[Number(button.dataset.editNote)];
+            const text = window.prompt("Editar nota técnica:", note?.text || "");
+            if (text === null || !text.trim()) return;
+            note.text = text.trim();
             saveContainerLayout(); renderContainerCanvas();
         });
         if (canvas.dataset.notesReady !== "1") {
             canvas.dataset.notesReady = "1";
+            const menu = document.createElement("div");
+            menu.className = "master-note-context";
+            menu.hidden = true;
+            menu.innerHTML = '<button type="button" data-add-canvas-note>＋ Adicionar nota</button>';
+            canvas.appendChild(menu);
+            let menuPoint = null;
             canvas.addEventListener("contextmenu", (event) => {
                 if (event.target.closest(".master-canvas-node, .master-canvas-note")) return;
                 event.preventDefault();
+                event.stopPropagation();
+                const rect = canvas.getBoundingClientRect();
+                menuPoint = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+                menu.style.left = `${menuPoint.x}px`;
+                menu.style.top = `${menuPoint.y}px`;
+                menu.hidden = false;
+            });
+            menu.querySelector("[data-add-canvas-note]").onclick = () => {
+                menu.hidden = true;
                 const text = window.prompt("Nota técnica da estrutura:");
                 if (!text?.trim()) return;
-                const rect = canvas.getBoundingClientRect();
                 state.container.layout.notes ||= [];
-                state.container.layout.notes.push({ text: text.trim(), x: event.clientX - rect.left, y: event.clientY - rect.top });
+                state.container.layout.notes.push({ text: text.trim(), x: menuPoint.x, y: menuPoint.y });
                 saveContainerLayout(); renderContainerCanvas();
-            });
+            };
+            document.addEventListener("click", (event) => { if (!event.target.closest(".master-note-context")) menu.hidden = true; });
         }
         document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root, data: state.container.data } }));
         drawContainerLinks();
@@ -950,9 +980,10 @@
         };
     }
 
-    function portAnchor(portId) {
+    function portAnchor(portId, role = "front") {
         const canvas = qs("#map-master-container .master-canvas");
-        const port = qs(`[data-port-id="${portId}"]`, canvas);
+        const port = qs(`[data-port-id="${portId}"][data-port-role="${role}"]`, canvas)
+            || qs(`[data-port-id="${portId}"]`, canvas);
         if (!port) return null;
         const canvasRect = canvas.getBoundingClientRect();
         const socket = qs("i", port);
@@ -974,10 +1005,11 @@
         if (!svg) return;
         const links = state.container.data?.links || [];
         svg.innerHTML = links.map((link) => {
-            const end = portAnchor(link.destination_port_id);
+            const destinationRole = !link.source_port_id && link.cable_id ? "rear" : "front";
+            const end = portAnchor(link.destination_port_id, destinationRole);
             const externalPosition = state.container.layout.externalLinks?.[String(link.id)];
             const start = link.source_port_id
-                ? portAnchor(link.source_port_id)
+                ? portAnchor(link.source_port_id, "front")
                 : (end ? externalPosition || { x: 24, y: end.y } : null);
             if (!start || !end) return "";
             const manual = state.container.layout.routes[String(link.id)] || [];
@@ -1001,6 +1033,15 @@
                 points.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
                 state.container.layout.routes[String(path.dataset.masterLink)] = points;
                 saveContainerLayout(); drawContainerLinks();
+            };
+            path.oncontextmenu = async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!window.confirm("Excluir esta ligação?")) return;
+                await request(`/api/map/elements/${state.container.elementId}/equipment-links/${path.dataset.masterLink}/`, { method: "DELETE" });
+                state.container.selectedLink = null;
+                await loadContainerMaster(true); renderContainerCanvas(); renderConnectionMatrix();
+                notify("Ligação excluída.");
             };
         });
         qsa("[data-drop-entry]", svg).forEach((handle) => {
@@ -1065,6 +1106,20 @@
 
     async function selectContainerPort(button) {
         if (button.dataset.busy === "true") return;
+        const existingLinkId = String(button.dataset.linkId || "");
+        if (existingLinkId) {
+            const role = button.dataset.portRole === "rear" ? "traseira" : "frontal";
+            if (!window.confirm(`Esta porta ${role} já está ligada. Deseja excluir a ligação?`)) return;
+            await request(`/api/map/elements/${state.container.elementId}/equipment-links/${existingLinkId}/`, { method: "DELETE" });
+            state.container.selectedPort = null;
+            await loadContainerMaster(true); renderContainerCanvas(); renderConnectionMatrix();
+            notify("Ligação removida.");
+            return;
+        }
+        if (button.dataset.portRole === "rear") {
+            notify("Use Fibras para terminar o cabo na traseira desta porta do DIO.");
+            return;
+        }
         const current = { id: Number(button.dataset.portId), type: button.dataset.portType, button };
         if (!state.container.selectedPort) {
             state.container.selectedPort = current;
@@ -1267,12 +1322,34 @@
         showEquipmentDialogWithFade(dialog);
     }
 
-    async function exportContainerPng() {
+    function buildContainerExportSvg() {
         const canvasRoot = qs("#map-master-container .master-canvas");
-        if (!canvasRoot) return;
-        const clone = canvasRoot.cloneNode(true);
-        clone.style.transform = "none";
-        const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasRoot.scrollWidth}" height="${canvasRoot.scrollHeight}"><foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(clone)}</foreignObject></svg>`;
+        if (!canvasRoot) return null;
+        const width = Math.max(1200, canvasRoot.scrollWidth);
+        const height = Math.max(760, canvasRoot.scrollHeight);
+        const links = qs(".master-canvas-links", canvasRoot)?.innerHTML || "";
+        const cards = (state.container.data?.equipment || []).map((item, index) => {
+            const position = nodePosition(item, index);
+            const cardWidth = 250;
+            const rowHeight = 24;
+            const ports = item.ports || [];
+            const cardHeight = 58 + Math.max(1, Math.ceil(ports.length / 2)) * rowHeight;
+            const portRows = ports.map((port, portIndex) => {
+                const column = portIndex % 2;
+                const row = Math.floor(portIndex / 2);
+                const x = position.x + 10 + column * 118;
+                const y = position.y + 44 + row * rowHeight;
+                return `<rect x="${x}" y="${y}" width="108" height="18" rx="4" fill="#102a43" stroke="#24506f"/><text x="${x + 8}" y="${y + 12}" fill="#dbeafe" font-size="8" font-family="Arial">${escapeHtml(port.label)}</text>`;
+            }).join("");
+            return `<g><rect x="${position.x}" y="${position.y}" width="${cardWidth}" height="${cardHeight}" rx="10" fill="#091d30" stroke="#24506f" stroke-width="2"/><text x="${position.x + 14}" y="${position.y + 25}" fill="#f8fafc" font-size="13" font-weight="700" font-family="Arial">${escapeHtml(item.name)}</text><text x="${position.x + cardWidth - 12}" y="${position.y + 25}" text-anchor="end" fill="#94a3b8" font-size="9" font-family="Arial">${escapeHtml(item.type_label)}</text>${portRows}</g>`;
+        }).join("");
+        const notes = (state.container.layout.notes || []).map((note) => `<g><rect x="${Number(note.x || 40)}" y="${Number(note.y || 40)}" width="190" height="64" rx="9" fill="#42300a" stroke="#facc15"/><text x="${Number(note.x || 40) + 12}" y="${Number(note.y || 40) + 25}" fill="#fef3c7" font-size="10" font-family="Arial">${escapeHtml(note.text)}</text></g>`).join("");
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#07111f"/><style>.master-canvas-links path{fill:none;stroke:#38bdf8;stroke-width:3}.master-canvas-links circle{fill:#fff;stroke:#38bdf8;stroke-width:2}.master-drop-label{fill:#e2e8f0;font:10px Arial}</style><g class="master-canvas-links">${links}</g>${cards}${notes}</svg>`;
+    }
+
+    async function exportContainerPng() {
+        const svgText = buildContainerExportSvg();
+        if (!svgText) return;
         const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const image = new Image();
@@ -1284,17 +1361,19 @@
             URL.revokeObjectURL(url);
             const link = document.createElement("a");
             link.download = `estrutura-${state.container.elementId}-${Date.now()}.png`;
-            link.href = canvas.toDataURL("image/png"); link.click();
+            try {
+                link.href = canvas.toDataURL("image/png"); link.click();
+            } catch (error) {
+                notify(`Não foi possível exportar PNG: ${error.message}`, true);
+            }
         };
+        image.onerror = () => { URL.revokeObjectURL(url); notify("Não foi possível preparar a imagem PNG.", true); };
         image.src = url;
     }
 
     async function exportContainerPdf() {
-        const canvasRoot = qs("#map-master-container .master-canvas");
-        if (!canvasRoot) return;
-        const clone = canvasRoot.cloneNode(true);
-        clone.style.transform = "none";
-        const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasRoot.scrollWidth}" height="${canvasRoot.scrollHeight}"><foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(clone)}</foreignObject></svg>`;
+        const svgText = buildContainerExportSvg();
+        if (!svgText) return;
         const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const popup = window.open("", "_blank", "width=1200,height=850,scrollbars=yes");

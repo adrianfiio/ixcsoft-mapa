@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.80.0 |
-| Mapa | v0.75.3 |
+| Mapa | v0.75.4 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): Superadmin pode cancelar fatura lançada manualmente (some do

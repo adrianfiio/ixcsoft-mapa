@@ -1971,6 +1971,7 @@
     L.DomEvent.disableClickPropagation(mapContextMenu);
     let contextMenuLatLng = null;
     map.on("contextmenu", (event) => {
+        if (event.originalEvent?.defaultPrevented || document.querySelector("#map-context-v074:not([hidden])")) return;
         L.DomEvent.preventDefault(event.originalEvent);
         if (state.mapMode !== "edit") return notify("Clique no lápis para liberar as ferramentas de edição.", true);
         if (!state.projectId) return notify("Selecione um projeto primeiro.", true);
