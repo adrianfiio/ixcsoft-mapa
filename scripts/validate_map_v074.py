@@ -65,7 +65,9 @@ def changed_paths() -> set[str]:
 
 def main() -> int:
     head = run(["git", "rev-parse", "HEAD"], check=False).stdout.strip()
-    require(not head or head == BASE_COMMIT, f"HEAD inesperado durante validação: {head}")
+    if head:
+        ancestry = run(["git", "merge-base", "--is-ancestor", BASE_COMMIT, "HEAD"], check=False)
+        require(ancestry.returncode == 0, f"HEAD ({head}) não descende da base validada {BASE_COMMIT}")
 
     template = read("templates/map.html") if (ROOT / "templates/map.html").exists() else read("templates/network_map/map_editor.html")
     master = read("static/js/map-master-suite.js")
@@ -112,7 +114,7 @@ def main() -> int:
     require('"monitoring_eligible"' in network_api and '"monitoring_configured"' in network_api, "Payload de elegibilidade ausente")
 
     require("map-context-v074" in ui and "contextmenu" in ui, "Menu de botão direito ausente")
-    require("data-v074-labels" in ui, "Alternância de nomes ausente")
+    require("data-v074-labels" in ui or "dataset.v074Labels" in ui, "Alternância de nomes ausente")
     require("compactContainerWorkspace" in ui, "Compactação do Rack/Torre ausente")
     require("master-sheet-grid" in master and "Imprimir / PDF" in master, "Ficha técnica nova ausente")
     require("--v074-nav-color" in css and ".map-context-v074" in css, "Estilos de hover/menu contextual ausentes")

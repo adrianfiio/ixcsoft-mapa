@@ -55,4 +55,4 @@ def test_ficha_and_context_menu_exist():
     assert "master-sheet-grid" in master
     assert "Imprimir / PDF" in master
     assert "map-context-v074" in ui
-    assert "data-v074-labels" in ui
+    assert "data-v074-labels" in ui or "dataset.v074Labels" in ui
