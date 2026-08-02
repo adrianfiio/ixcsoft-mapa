@@ -1,5 +1,85 @@
 # Changelog
 
+## [0.76.0] - 2026-08-02
+
+Correção de arquitetura do módulo financeiro — o modelo das v0.74.0/
+v0.75.x estava errado: tratava cada assinante de internet de um
+Provedor ISP como o "cliente" a ser cobrado. O correto é a própria
+**empresa cliente da plataforma** (Provedor ISP ou Projetista) — quem
+cobra é a AFService/Superadmin, e o Provedor/Projetista só consulta o
+próprio financeiro, sem cadastrar nada. **Com migration** (remove o
+model `Customer` por completo, sem dado real de produção — a
+funcionalidade tinha sido lançada há poucos dias e todos os prints
+mostravam "nenhum cliente cadastrado").
+
+### Removido
+
+- `apps.billing.Customer` e todo o fluxo de cadastro/edição de cliente
+  (`Novo cliente`, editar, detalhe por cliente) dos painéis de
+  Provedor ISP e Projetista — eles não criam clientes, são eles
+  próprios os clientes da AFService.
+- A seção "Clientes do ERP sem financeiro configurado" da v0.75.1 — fazia
+  sentido no modelo antigo (assinante = cliente), não faz mais sentido
+  agora.
+
+### Adicionado
+
+- `CompanySubscription` — assinatura da empresa junto à plataforma
+  (mensalidade, dia de vencimento, status: ativa/bloqueada/cancelada).
+  Gerida só pelo Superadmin.
+- **Painel do cliente (Provedor ISP / Projetista) — só consulta**: o que
+  deve, pagou, está em aberto, histórico de faturas, exportação em CSV.
+  Continua restrito a `CompanyMembership.role == EDIT`; VIEW não acessa,
+  mesma regra de antes.
+- **Painel Superadmin por empresa**
+  (`/painel/plataforma/empresas/<id>/financeiro/`): editar assinatura,
+  **lançar cobrança manual avulsa**, registrar pagamento, e controlar o
+  status da empresa — Ativar, Bloquear, Cancelar, Desativar e Excluir
+  (esta última desativa a empresa e cancela a assinatura, sem apagar
+  nada do banco — mesma filosofia não-destrutiva do resto do sistema).
+- **"Liberação de confiança"**: botão no painel do cliente e na tela de
+  bloqueio — concede mais 2 dias de acesso mesmo com assinatura
+  bloqueada/cancelada, limitado a 1 uso por mês corrido (validado no
+  backend, não só na interface).
+- **Bloqueio de acesso de verdade**: novo middleware
+  (`apps.billing.middleware.SubscriptionAccessMiddleware`) redireciona
+  pra uma tela de "conta bloqueada" quando a assinatura da empresa está
+  bloqueada/cancelada e não há liberação de confiança em vigor.
+  Superusuário nunca é afetado; empresa sem `CompanySubscription`
+  cadastrada (a maioria, hoje) **nunca é bloqueada** — só entra em vigor
+  quando o Superadmin explicitamente bloqueia/cancela.
+- Exportação CSV do financeiro — por empresa (painel do cliente) e
+  consolidada de todas as empresas (Superadmin).
+- Cartão "Recebido este mês (todas as empresas)" na Visão da plataforma.
+
+### Verificação feita
+
+- `python -m py_compile` em todos os arquivos tocados/novos.
+- **As duas regras de negócio mais sensíveis são funções puras, sem
+  banco — executadas de verdade** via script Python direto: `is_access_blocked`
+  (6 asserções, incluindo o caso crítico "sem assinatura cadastrada
+  nunca bloqueia") e `has_trust_release_this_month` (4 asserções,
+  incluindo mês/ano diferentes) — todas passaram.
+- Migration revisada campo a campo (sem GDAL neste ambiente de
+  preparação): ordem correta de remoção (constraint → índice → campo →
+  model) antes de apagar `Customer`, nomes de constraint/índice
+  conferidos contra a migration original que os criou.
+- Chaves do `static/css/app.css` balanceadas (282/282); `{% if %}`/
+  `{% endif %}`/`{% for %}`/`{% endfor %}`/`{% block %}`/`{% endblock %}`
+  balanceados em todos os templates tocados/novos.
+- `git diff --check` limpo.
+- Grep em todo o projeto confirmando que nenhuma referência solta ao
+  model/URLs antigos (`Customer`, `billing-customers`,
+  `billing-customer-*`) sobrou fora das migrations históricas (onde é
+  esperado e correto continuar existindo).
+
+**`manage.py check`, `manage.py migrate`, `manage.py test` e o teste
+real (Superadmin lança cobrança manual, bloqueia uma empresa de teste e
+confirma que o usuário dela é redirecionado pra "conta bloqueada", pede
+liberação de confiança e confirma os +2 dias, tenta pedir de novo no
+mesmo mês e é bloqueado) dependem de banco, GDAL e navegador reais —
+precisam ser feitos no servidor.**
+
 ## [0.75.1] - 2026-08-02
 
 Hotfix de 3 problemas reais reportados logo depois da v0.75.0, com

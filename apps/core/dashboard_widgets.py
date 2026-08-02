@@ -48,6 +48,7 @@ PLATFORM_WIDGETS = [
     ("metric_platform_elements", "Cartão · Elementos de rede (total)"),
     ("metric_platform_alerts", "Cartão · Alertas ativos (total)"),
     ("metric_sync_issues", "Cartão · Empresas com sincronização atrasada"),
+    ("metric_platform_received_month", "Cartão · Recebido este mês (todas as empresas)"),
     ("panel_companies_table", "Painel · Empresas"),
     ("panel_attention", "Painel · Precisa de atenção"),
 ]

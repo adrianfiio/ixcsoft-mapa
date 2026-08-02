@@ -13,7 +13,7 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.75.1")
+APP_VERSION = os.getenv("APP_VERSION", "0.76.0")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -61,6 +61,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.billing.middleware.SubscriptionAccessMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

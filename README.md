@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.75.1 — Hotfix: Financeiro do projetista, clientes do ERP no Financeiro do provedor, menu do Superadmin na Visão da plataforma**
+**v0.76.0 — Correção de arquitetura do financeiro: quem é cobrado é a empresa cliente (Provedor/Projetista), gestão exclusiva do Superadmin, liberação de confiança**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.
@@ -58,13 +58,17 @@ cabos, camadas operacionais e importação KML/KMZ.
 
 ### Financeiro
 
-- Cadastro de cliente para controle de pagamento (independente de ERP)
+Quem é cobrado é a própria empresa cliente da plataforma (Provedor ISP
+ou Projetista) — não os assinantes de internet de cada provedor.
+
+- Cadastro de empresa e assinatura feito exclusivamente pelo Superadmin, fora do Django Admin
 - Mensalidade recorrente com geração automática de fatura por mês
-- Registro de pagamento manual (com suporte a pagamento parcial)
-- Página de detalhe do cliente com histórico de faturas
+- Cobrança manual avulsa e registro de pagamento (com suporte a pagamento parcial), feitos pelo Superadmin
+- Painel do cliente (Provedor/Projetista) só consulta: o que deve, pagou, está em aberto — sem cadastro de cliente próprio
 - Acesso restrito a usuários com permissão de edição (EDIT); visualização (VIEW) não acessa
-- Superadmin acessa o financeiro de qualquer empresa pela Visão da plataforma
+- Gestão de status por empresa (ativar, desativar, bloquear, cancelar) e "liberação de confiança" (+2 dias de acesso, 1 vez por mês)
 - Configuração centralizada de credencial de gateway de pagamento por empresa (armazenamento apenas; integração real ainda não realizada)
+- Exportação de relatório financeiro em CSV (por empresa e consolidado, pelo Superadmin)
 
 ### Plataforma
 

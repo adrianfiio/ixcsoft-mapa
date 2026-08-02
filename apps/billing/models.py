@@ -22,44 +22,20 @@ class GatewayProvider(models.TextChoices):
     MERCADO_PAGO = "mercado_pago", "Mercado Pago"
 
 
-class Customer(CompanyScopedModel):
-    """Cliente cadastrado para controle financeiro.
-
-    Não depende de integração com ERP nem de já existir um AccessPoint —
-    a empresa pode não ter ERP nenhum. O vínculo com AccessPoint é
-    opcional, só para quem já usa o mapa/ERP.
+class CompanySubscription(TimeStampedModel):
+    """Assinatura da empresa (Provedor ISP ou Projetista) junto à
+    plataforma — quem é cobrado aqui é a própria empresa cliente da
+    AFService, não os assinantes de internet de cada provedor. Gerida
+    exclusivamente pelo Superadmin.
     """
 
     class Status(models.TextChoices):
-        ACTIVE = "active", "Ativo"
-        INACTIVE = "inactive", "Inativo"
-        SUSPENDED = "suspended", "Suspenso"
+        ACTIVE = "active", "Ativa"
+        BLOCKED = "blocked", "Bloqueada"
+        CANCELED = "canceled", "Cancelada"
 
-    name = models.CharField(max_length=180, verbose_name="Nome")
-    document = models.CharField(max_length=30, blank=True, verbose_name="CPF/CNPJ")
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=40, blank=True, verbose_name="Telefone")
-    address = models.CharField(max_length=255, blank=True, verbose_name="Endereço")
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.ACTIVE
-    )
-    access_point = models.ForeignKey(
-        "access.AccessPoint",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="+",
-        verbose_name="Ponto de acesso vinculado",
-        help_text="Opcional — vincula este cliente a um cadastro já existente no mapa/ERP.",
-    )
-    ixc_customer = models.OneToOneField(
-        "ixc_integration.IXCCustomer",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="billing_customer",
-        verbose_name="Cliente do ERP vinculado",
-        help_text="Vincula este cadastro financeiro a um cliente já sincronizado do IXCSoft.",
+    company = models.OneToOneField(
+        "core.Company", on_delete=models.CASCADE, related_name="subscription"
     )
     monthly_amount = models.DecimalField(
         max_digits=10,
@@ -67,7 +43,7 @@ class Customer(CompanyScopedModel):
         null=True,
         blank=True,
         verbose_name="Mensalidade",
-        help_text="Deixe em branco se este cliente não tem cobrança recorrente.",
+        help_text="Deixe em branco se esta empresa não tem cobrança recorrente.",
     )
     due_day = models.PositiveSmallIntegerField(
         null=True,
@@ -79,19 +55,52 @@ class Customer(CompanyScopedModel):
         default=True,
         verbose_name="Gerar mensalidade automaticamente",
     )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.ACTIVE
+    )
+    # Enquanto no futuro (maior que agora), o acesso ao sistema não é
+    # bloqueado mesmo com status BLOCKED/CANCELED — é a "liberação de
+    # confiança" (services.request_trust_release) e também usado pelo
+    # Superadmin pra dar um prazo antes de bloquear de verdade.
+    access_grace_until = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True, verbose_name="Observações")
 
     class Meta:
-        verbose_name = "Cliente"
-        verbose_name_plural = "Clientes"
-        ordering = ["name"]
+        verbose_name = "Assinatura da empresa"
+        verbose_name_plural = "Assinaturas das empresas"
+
+    def __str__(self):
+        return f"{self.company} · {self.get_status_display()}"
+
+
+class TrustRelease(TimeStampedModel):
+    """Registro de "liberação de confiança" pedida pela própria empresa
+    — concede mais 2 dias de acesso mesmo com a assinatura bloqueada/
+    cancelada. Limitado a 1 uso por mês corrido, validado no backend
+    (`services.request_trust_release`)."""
+
+    company = models.ForeignKey(
+        "core.Company", on_delete=models.CASCADE, related_name="trust_releases"
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    granted_until = models.DateTimeField()
+
+    class Meta:
+        verbose_name = "Liberação de confiança"
+        verbose_name_plural = "Liberações de confiança"
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["company", "status"], name="billing_customer_status_idx"),
-            models.Index(fields=["company", "billing_active"], name="billing_customer_active_idx"),
+            models.Index(fields=["company", "created_at"], name="billing_trust_company_idx"),
         ]
 
     def __str__(self):
-        return self.name
+        return f"{self.company} · {self.created_at:%d/%m/%Y}"
 
 
 class Invoice(CompanyScopedModel):
@@ -101,9 +110,6 @@ class Invoice(CompanyScopedModel):
         OVERDUE = "overdue", "Atrasada"
         CANCELED = "canceled", "Cancelada"
 
-    customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, related_name="invoices"
-    )
     reference_month = models.DateField(
         verbose_name="Mês de referência",
         help_text="Sempre o dia 1 do mês cobrado.",
@@ -131,23 +137,17 @@ class Invoice(CompanyScopedModel):
         ordering = ["-reference_month"]
         constraints = [
             models.UniqueConstraint(
-                fields=["customer", "reference_month"],
-                name="unique_invoice_customer_month",
+                fields=["company", "reference_month"],
+                name="unique_invoice_company_month",
             )
         ]
         indexes = [
             models.Index(fields=["company", "status"], name="billing_invoice_status_idx"),
-            models.Index(fields=["customer", "status"], name="billing_invoice_customer_idx"),
             models.Index(fields=["status", "due_date"], name="billing_invoice_due_idx"),
         ]
 
     def __str__(self):
-        return f"{self.customer} · {self.reference_month:%m/%Y}"
-
-    def save(self, *args, **kwargs):
-        if self.customer_id and not self.company_id:
-            self.company_id = self.customer.company_id
-        super().save(*args, **kwargs)
+        return f"{self.company} · {self.reference_month:%m/%Y}"
 
     @property
     def paid_amount(self):

@@ -99,13 +99,26 @@
         </article>
     </div>
     {% endif %}
+    {% if edit_mode or not widget_meta.metric_platform_received_month.hidden %}
+    <div class="grid-stack-item" data-widget="metric_platform_received_month" gs-id="metric_platform_received_month" gs-x="{{ widget_meta.metric_platform_received_month.x }}" gs-y="{{ widget_meta.metric_platform_received_month.y }}" gs-w="{{ widget_meta.metric_platform_received_month.w }}" gs-h="{{ widget_meta.metric_platform_received_month.h }}" style="grid-column: {{ widget_meta.metric_platform_received_month.x1 }} / span {{ widget_meta.metric_platform_received_month.w }}; grid-row: {{ widget_meta.metric_platform_received_month.y1 }} / span {{ widget_meta.metric_platform_received_month.h }};">
+        <article class="metric-card grid-stack-item-content{% if widget_meta.metric_platform_received_month.hidden %} widget-hidden{% endif %}" style="--accent: var(--success);">
+            {% include "includes/widget_edit_bar.html" with widget_key="metric_platform_received_month" hidden=widget_meta.metric_platform_received_month.hidden %}
+            <div class="metric-head"><span>Recebido este mês</span><span class="metric-icon">R$</span></div>
+            <div class="metric-value">R$ {{ metric_platform_received_month|default:0 }}</div>
+            <div class="metric-note">Somado em todas as empresas</div>
+        </article>
+    </div>
+    {% endif %}
     {% if edit_mode or not widget_meta.panel_companies_table.hidden %}
     <div class="grid-stack-item" data-widget="panel_companies_table" gs-id="panel_companies_table" gs-x="{{ widget_meta.panel_companies_table.x }}" gs-y="{{ widget_meta.panel_companies_table.y }}" gs-w="{{ widget_meta.panel_companies_table.w }}" gs-h="{{ widget_meta.panel_companies_table.h }}" style="grid-column: {{ widget_meta.panel_companies_table.x1 }} / span {{ widget_meta.panel_companies_table.w }}; grid-row: {{ widget_meta.panel_companies_table.y1 }} / span {{ widget_meta.panel_companies_table.h }};">
         <article class="panel grid-stack-item-content{% if widget_meta.panel_companies_table.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_companies_table" hidden=widget_meta.panel_companies_table.hidden %}
             <div class="panel-header">
                 <h2 class="panel-title">Empresas</h2>
-                <a class="panel-link" href="{% url 'platform-company-create' %}">Nova empresa →</a>
+                <span class="billing-row-actions">
+                    <a href="{% url 'platform-financial-export' %}">Exportar financeiro →</a>
+                    <a class="panel-link" href="{% url 'platform-company-create' %}">Nova empresa →</a>
+                </span>
             </div>
             <div class="overview-table-wrap">
                 <table class="overview-table">
@@ -131,7 +144,7 @@
                                 {% endif %}
                             </td>
                             <td class="billing-row-actions">
-                                <a href="{% url 'billing-customers' %}?empresa={{ row.company.id }}">Financeiro →</a>
+                                <a href="{% url 'platform-company-billing' row.company.id %}">Financeiro →</a>
                                 <a href="{% url 'platform-gateway-settings' row.company.id %}">Gateway →</a>
                             </td>
                         </tr>

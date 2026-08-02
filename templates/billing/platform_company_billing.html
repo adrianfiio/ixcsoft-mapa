@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Financeiro | {{ company.trade_name|default:company.name }}{% endblock %}
+{% block topbar_title %}Visão da plataforma{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.get_company_type_display|default:"Empresa" }}{% if not company.active %} · Desativada{% endif %}</p>
+        <h1>{{ company.trade_name|default:company.name }}</h1>
+        <p>Assinatura, cobrança manual e status de acesso desta empresa.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
+        <a class="primary-action" href="{% url 'platform-gateway-settings' company.id %}">Gateway de pagamento →</a>
+    </div>
+</section>
+
+<div class="billing-summary-grid">
+    <article class="metric-card" style="--accent: var(--danger);">
+        <div class="metric-head"><span>Faturas atrasadas</span><span class="metric-icon">!</span></div>
+        <div class="metric-value">{{ summary.overdue_count }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--warning);">
+        <div class="metric-head"><span>Faturas pendentes</span><span class="metric-icon">…</span></div>
+        <div class="metric-value">{{ summary.pending_count }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--success);">
+        <div class="metric-head"><span>Pagas este mês</span><span class="metric-icon">✓</span></div>
+        <div class="metric-value">{{ summary.received_month }}</div>
+    </article>
+</div>
+
+<section class="billing-detail-grid">
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Assinatura</h2></div>
+        <form class="platform-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_subscription">
+            <div class="platform-form-grid">
+                {% for field in subscription_form %}
+                <label><strong>{{ field.label }}</strong>{{ field }}
+                    {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </label>
+                {% endfor %}
+            </div>
+            <div class="platform-form-actions"><button type="submit">Salvar →</button></div>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Status de acesso</h2></div>
+        <div class="info-list">
+            <div class="info-row"><span>Assinatura</span><strong>{{ subscription.get_status_display }}</strong></div>
+            <div class="info-row"><span>Empresa</span><strong>{% if company.active %}Ativa{% else %}Desativada{% endif %}</strong></div>
+        </div>
+        <div class="team-actions" style="flex-wrap: wrap;">
+            <form method="post"><input type="hidden" name="action" value="set_status"><input type="hidden" name="status" value="active"><button type="submit">Reativar assinatura</button></form>
+            <form method="post"><input type="hidden" name="action" value="set_status"><input type="hidden" name="status" value="blocked"><button type="submit" class="danger-action">Bloquear</button></form>
+            <form method="post"><input type="hidden" name="action" value="set_status"><input type="hidden" name="status" value="canceled"><button type="submit" class="danger-action">Cancelar</button></form>
+            <form method="post"><input type="hidden" name="action" value="toggle_company_active"><button type="submit">{% if company.active %}Desativar empresa{% else %}Reativar empresa{% endif %}</button></form>
+            <form method="post" onsubmit="return confirm('Excluir esta empresa? Ela será desativada e a assinatura cancelada — nada é apagado do banco.');"><input type="hidden" name="action" value="delete_company"><button type="submit" class="danger-action">Excluir</button></form>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Lançar cobrança manual</h2></div>
+        <form class="platform-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_invoice">
+            <div class="platform-form-grid">
+                {% for field in invoice_form %}
+                <label><strong>{{ field.label }}</strong>{{ field }}
+                    {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </label>
+                {% endfor %}
+            </div>
+            <div class="platform-form-actions"><button type="submit">Lançar →</button></div>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Faturas</h2></div>
+        <div class="overview-table-wrap">
+            <table class="overview-table">
+                <thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pago</th></tr></thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr class="{% if invoice.status == 'overdue' %}overview-row-attention{% endif %}">
+                        <td>{{ invoice.reference_month|date:"m/Y" }}</td>
+                        <td>R$ {{ invoice.amount }}</td>
+                        <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if invoice.status == "paid" %}<span class="sync-pill sync-ok">Paga</span>
+                            {% elif invoice.status == "overdue" %}<span class="sync-pill sync-danger">Atrasada</span>
+                            {% elif invoice.status == "canceled" %}<span class="sync-pill sync-muted">Cancelada</span>
+                            {% else %}<span class="sync-pill sync-warning">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td>R$ {{ invoice.paid_amount }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="empty-state">Nenhuma fatura ainda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    {% for invoice in invoices %}
+    {% if invoice.status == "pending" or invoice.status == "overdue" %}
+    <article class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Registrar pagamento — {{ invoice.reference_month|date:"m/Y" }}</h2>
+            <span>Saldo: R$ {{ invoice.balance }}</span>
+        </div>
+        <form class="platform-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="record_payment">
+            <input type="hidden" name="invoice_id" value="{{ invoice.pk }}">
+            <div class="platform-form-grid">
+                {% for field in payment_form %}
+                <label><strong>{{ field.label }}</strong>{{ field }}
+                    {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </label>
+                {% endfor %}
+            </div>
+            <div class="platform-form-actions"><button type="submit">Registrar pagamento →</button></div>
+        </form>
+    </article>
+    {% endif %}
+    {% endfor %}
+</section>
+{% endblock %}

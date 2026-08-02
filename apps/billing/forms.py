@@ -1,48 +1,27 @@
 from django import forms
 
-from apps.access.models import AccessPoint
-
-from .models import Customer, GatewayProvider, PaymentMethod
+from .models import CompanySubscription, GatewayProvider, PaymentMethod
 
 
-class CustomerForm(forms.ModelForm):
+class SubscriptionForm(forms.ModelForm):
     class Meta:
-        model = Customer
-        fields = (
-            "name",
-            "document",
-            "email",
-            "phone",
-            "address",
-            "status",
-            "monthly_amount",
-            "due_day",
-            "billing_active",
-            "access_point",
-            "notes",
-        )
+        model = CompanySubscription
+        fields = ("monthly_amount", "due_day", "billing_active", "notes")
         labels = {
-            "name": "Nome",
-            "document": "CPF/CNPJ",
-            "email": "E-mail",
-            "phone": "Telefone",
-            "address": "Endereço",
-            "status": "Situação",
             "monthly_amount": "Mensalidade (R$)",
             "due_day": "Dia de vencimento",
             "billing_active": "Gerar mensalidade automaticamente",
-            "access_point": "Vincular a um ponto de acesso (opcional)",
             "notes": "Observações",
         }
 
-    def __init__(self, *args, company=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["access_point"].required = False
-        self.fields["access_point"].empty_label = "— nenhum —"
-        queryset = AccessPoint.objects.none()
-        if company is not None:
-            queryset = AccessPoint.objects.filter(company=company).order_by("customer_name")
-        self.fields["access_point"].queryset = queryset
+
+class ManualInvoiceForm(forms.Form):
+    """"Lançar cobrança manual" — fatura avulsa, fora do ciclo mensal
+    automático (que já cobre a mensalidade recorrente sozinho)."""
+
+    amount = forms.DecimalField(label="Valor (R$)", max_digits=10, decimal_places=2, min_value=0.01)
+    due_date = forms.DateField(label="Vencimento", widget=forms.DateInput(attrs={"type": "date"}))
+    notes = forms.CharField(label="Observação", required=False, widget=forms.Textarea(attrs={"rows": 2}))
 
 
 class PaymentRecordForm(forms.Form):

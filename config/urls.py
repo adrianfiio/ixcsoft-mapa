@@ -24,12 +24,13 @@ from apps.core.views import (
     platform_company_create,
 )
 from apps.billing.views import (
-    customer_create,
-    customer_detail,
-    customer_list,
-    customer_update,
+    company_blocked,
+    company_financial_export,
+    company_financial_overview,
+    platform_company_billing,
+    platform_financial_export,
     platform_gateway_settings,
-    record_payment,
+    request_trust_release_view,
 )
 
 
@@ -69,15 +70,16 @@ urlpatterns = [
         platform_gateway_settings,
         name="platform-gateway-settings",
     ),
-    path("painel/financeiro/", customer_list, name="billing-customers"),
-    path("painel/financeiro/novo/", customer_create, name="billing-customer-create"),
-    path("painel/financeiro/<int:pk>/", customer_detail, name="billing-customer-detail"),
-    path("painel/financeiro/<int:pk>/editar/", customer_update, name="billing-customer-update"),
     path(
-        "painel/financeiro/<int:pk>/faturas/<int:invoice_id>/pagamento/",
-        record_payment,
-        name="billing-record-payment",
+        "painel/plataforma/empresas/<int:company_id>/financeiro/",
+        platform_company_billing,
+        name="platform-company-billing",
     ),
+    path("painel/plataforma/financeiro/exportar/", platform_financial_export, name="platform-financial-export"),
+    path("painel/financeiro/", company_financial_overview, name="billing-overview"),
+    path("painel/financeiro/liberacao-confianca/", request_trust_release_view, name="billing-request-trust-release"),
+    path("painel/financeiro/exportar/", company_financial_export, name="billing-export"),
+    path("conta-bloqueada/", company_blocked, name="company-blocked"),
     path("admin/", admin.site.urls),
     path("api/", include("apps.core.urls")),
     path("api/ixc/", include("apps.ixc_integration.api.urls")),

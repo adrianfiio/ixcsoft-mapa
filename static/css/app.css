@@ -190,6 +190,8 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .billing-row-actions a { color: var(--primary); font-size: 12px; font-weight: 700; }
 .billing-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px; color: var(--muted); font-size: 12px; }
 .billing-pagination a { color: var(--primary); font-weight: 700; }
+button.primary-action, button.danger-action { border: 0; font: inherit; cursor: pointer; }
+button.primary-action:disabled, button.danger-action:disabled { opacity: .5; cursor: not-allowed; }
 /* Grid livre de widgets (arrastar/redimensionar tipo Zabbix/Grafana):
    12 colunas, cada widget ocupa `grid-column`/`grid-row` calculados a
    partir de x/y/w/h salvos (`apps/core/dashboard_widgets.py`).

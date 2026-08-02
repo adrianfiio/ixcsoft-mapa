@@ -94,6 +94,10 @@ def platform_overview_summary():
     companies = Company.objects.filter(active=True).order_by("name")
     rows = [_company_row(company) for company in companies]
 
+    received_month = Invoice.objects.filter(
+        status=Invoice.Status.PAID, reference_month=timezone.localdate().replace(day=1)
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
     return {
         "companies_summary": rows,
         "attention_rows": [row for row in rows if row["needs_attention"]],
@@ -108,4 +112,5 @@ def platform_overview_summary():
         "metric_sync_issues": sum(
             1 for row in rows if row["sync_state"] in {"atrasada", "falhou", "nunca_sincronizou"}
         ),
+        "metric_platform_received_month": received_month,
     }

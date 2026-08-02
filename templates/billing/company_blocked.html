@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Acesso bloqueado | AFService Map{% endblock %}
+{% block topbar_title %}Acesso bloqueado{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>Acesso temporariamente bloqueado</h1>
+        <p>A assinatura desta empresa está bloqueada ou cancelada. Fale com a AFService para regularizar, ou use a liberação de confiança abaixo se ainda não usou este mês.</p>
+    </div>
+</section>
+
+<article class="panel" style="max-width: 520px;">
+    <form method="post" action="{% url 'billing-request-trust-release' %}">
+        {% csrf_token %}
+        <button type="submit" class="primary-action" {% if not trust_release_available %}disabled{% endif %}>
+            {% if trust_release_available %}Pedir liberação de confiança (+2 dias){% else %}Liberação de confiança já usada este mês{% endif %}
+        </button>
+    </form>
+</article>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Financeiro | AFService Map{% endblock %}
+{% block topbar_title %}Financeiro{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>Financeiro</h1>
+        <p>O que sua empresa deve, já pagou e está em aberto junto à AFService.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'billing-export' %}">Exportar relatório →</a>
+    </div>
+</section>
+
+<div class="billing-summary-grid">
+    <article class="metric-card" style="--accent: var(--danger);">
+        <div class="metric-head"><span>Faturas atrasadas</span><span class="metric-icon">!</span></div>
+        <div class="metric-value">{{ summary.overdue_count }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--warning);">
+        <div class="metric-head"><span>Faturas pendentes</span><span class="metric-icon">…</span></div>
+        <div class="metric-value">{{ summary.pending_count }}</div>
+    </article>
+    <article class="metric-card" style="--accent: var(--success);">
+        <div class="metric-head"><span>Pagas este mês</span><span class="metric-icon">✓</span></div>
+        <div class="metric-value">{{ summary.received_month }}</div>
+    </article>
+</div>
+
+<section class="billing-detail-grid">
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Assinatura</h2></div>
+        <div class="info-list">
+            <div class="info-row"><span>Situação</span><strong>{% if subscription %}{{ subscription.get_status_display }}{% else %}Ativa{% endif %}</strong></div>
+            <div class="info-row"><span>Mensalidade</span><strong>{% if subscription.monthly_amount %}R$ {{ subscription.monthly_amount }}{% else %}—{% endif %}</strong></div>
+            <div class="info-row"><span>Vencimento</span><strong>{% if subscription.due_day %}dia {{ subscription.due_day }}{% else %}—{% endif %}</strong></div>
+            {% if subscription.access_grace_until %}
+            <div class="info-row"><span>Acesso liberado até</span><strong>{{ subscription.access_grace_until|date:"d/m/Y H:i" }}</strong></div>
+            {% endif %}
+        </div>
+        <form method="post" action="{% url 'billing-request-trust-release' %}" style="margin-top: 16px;">
+            {% csrf_token %}
+            <button type="submit" class="primary-action" {% if not trust_release_available %}disabled{% endif %}>
+                {% if trust_release_available %}Pedir liberação de confiança (+2 dias){% else %}Liberação de confiança já usada este mês{% endif %}
+            </button>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2 class="panel-title">Faturas</h2></div>
+        <div class="overview-table-wrap">
+            <table class="overview-table">
+                <thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pago</th></tr></thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr class="{% if invoice.status == 'overdue' %}overview-row-attention{% endif %}">
+                        <td>{{ invoice.reference_month|date:"m/Y" }}</td>
+                        <td>R$ {{ invoice.amount }}</td>
+                        <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if invoice.status == "paid" %}<span class="sync-pill sync-ok">Paga</span>
+                            {% elif invoice.status == "overdue" %}<span class="sync-pill sync-danger">Atrasada</span>
+                            {% elif invoice.status == "canceled" %}<span class="sync-pill sync-muted">Cancelada</span>
+                            {% else %}<span class="sync-pill sync-warning">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td>R$ {{ invoice.paid_amount }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="empty-state">Nenhuma fatura ainda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

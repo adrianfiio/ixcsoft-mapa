@@ -1,24 +1,30 @@
+import csv
 import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.core.crypto import SecretCipher
 from apps.core.models import Company, CompanyMembership
-from apps.ixc_integration.models import IXCCustomer
 
 from . import services
-from .forms import CustomerForm, GatewaySettingsForm, PaymentRecordForm
-from .models import CompanyPaymentGatewayConfiguration, Customer, Invoice
+from .forms import (
+    GatewaySettingsForm,
+    ManualInvoiceForm,
+    PaymentRecordForm,
+    SubscriptionForm,
+)
+from .models import CompanyPaymentGatewayConfiguration, CompanySubscription, Invoice
 
 
 def _editable_company(request):
     """Empresa do primeiro vínculo EDIT ativo do usuário logado (mesma
-    resolução de company_team/company_alerts)."""
+    resolução de company_team/company_alerts). Financeiro é sensível o
+    bastante pra seguir essa mesma regra restrita — VIEW nunca entra."""
     membership = (
         CompanyMembership.objects.filter(
             user=request.user, active=True, role=CompanyMembership.Role.EDIT
@@ -29,60 +35,12 @@ def _editable_company(request):
     return membership.company if membership else None
 
 
-def _require_list_company(request):
-    """Resolução de empresa pras telas sem cliente ainda escolhido (lista
-    e criação). Usuário normal usa o próprio vínculo EDIT — só isso já
-    bloqueia VIEW por completo, mesma regra restrita de company_team.
-    Superusuário não tem uma "própria" empresa: precisa escolher uma
-    pelo link da Visão da plataforma (`?empresa=<id>`)."""
-    if request.user.is_superuser:
-        company_id = request.GET.get("empresa")
-        company = Company.objects.filter(pk=company_id).first() if company_id else None
-        if company is None:
-            messages.info(
-                request,
-                "Escolha uma empresa na Visão da plataforma para ver o financeiro dela.",
-            )
-        return company
-    company = _editable_company(request)
-    if company is None:
-        messages.info(
-            request,
-            "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.",
-        )
-    return company
-
-
-def _customer_for_request(request, pk):
-    """Resolução pras telas que já têm um cliente (detalhe, edição,
-    pagamento). Superusuário vê o financeiro de qualquer empresa; usuário
-    normal só o da própria empresa (o filtro `company=` no
-    `get_object_or_404` faz o cliente de outra empresa dar 404 — igual a
-    "não existe", sem revelar que pertence a outra empresa)."""
-    if request.user.is_superuser:
-        return get_object_or_404(Customer, pk=pk)
-    company = _editable_company(request)
-    if company is None:
-        return None
-    return get_object_or_404(Customer, pk=pk, company=company)
-
-
-@login_required
-def customer_list(request):
-    company = _require_list_company(request)
-    if company is None:
-        return redirect("account-panel")
-
-    query = request.GET.get("q", "").strip()
-    customers = Customer.objects.filter(company=company).order_by("name")
-    if query:
-        customers = customers.filter(name__icontains=query)
-
+def _invoice_summary(company):
     today = timezone.localdate()
     open_invoices = Invoice.objects.filter(
         company=company, status__in=[Invoice.Status.PENDING, Invoice.Status.OVERDUE]
     )
-    summary = {
+    return {
         "overdue_count": open_invoices.filter(status=Invoice.Status.OVERDUE).count(),
         "pending_count": open_invoices.filter(status=Invoice.Status.PENDING).count(),
         "received_month": Invoice.objects.filter(
@@ -90,125 +48,206 @@ def customer_list(request):
         ).count(),
     }
 
-    # Clientes já sincronizados do IXCSoft que ainda não têm nenhum
-    # cadastro financeiro — sem isso, uma empresa com ERP via Financeiro
-    # vazio mesmo já tendo milhares de clientes reais no sistema.
-    unconfigured = (
-        IXCCustomer.objects.filter(company=company, active=True, billing_customer__isnull=True)
-        .order_by("name")
+
+# ---------------------------------------------------------------------
+# Painel do cliente (Provedor ISP / Projetista) — só consulta os
+# próprios dados. Nenhum cadastro de cliente aqui: quem é cobrado é a
+# própria empresa, não um assinante dela.
+# ---------------------------------------------------------------------
+
+@login_required
+def company_financial_overview(request):
+    company = _editable_company(request)
+    if company is None:
+        messages.info(
+            request,
+            "Somente um usuário com permissão de edição pode ver o financeiro da empresa.",
+        )
+        return redirect("account-panel")
+
+    subscription = CompanySubscription.objects.filter(company=company).first()
+    invoices = Invoice.objects.filter(company=company).prefetch_related("payments").order_by("-reference_month")
+    summary = _invoice_summary(company)
+    trust_release_available = not services.has_trust_release_this_month(
+        list(company.trust_releases.values_list("created_at", flat=True))
     )
-    if query:
-        unconfigured = unconfigured.filter(name__icontains=query)
-    unconfigured_page = Paginator(unconfigured, 25).get_page(request.GET.get("pagina_erp"))
 
     return render(
         request,
-        "billing/customer_list.html",
+        "billing/company_overview.html",
         {
             "company": company,
-            "customers": customers,
-            "query": query,
+            "subscription": subscription,
+            "invoices": invoices,
             "summary": summary,
-            "unconfigured_page": unconfigured_page,
+            "trust_release_available": trust_release_available,
         },
     )
 
 
 @login_required
-def customer_create(request):
-    company = _require_list_company(request)
+def request_trust_release_view(request):
+    company = _editable_company(request)
+    if company is None or request.method != "POST":
+        return redirect("billing-overview")
+    try:
+        services.request_trust_release(company, request.user)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Liberação de confiança concedida — mais 2 dias de acesso.")
+    return redirect("billing-overview")
+
+
+@login_required
+def company_financial_export(request):
+    company = _editable_company(request)
     if company is None:
         return redirect("account-panel")
-
-    ixc_customer = None
-    ixc_customer_id = request.GET.get("ixc_customer")
-    if ixc_customer_id:
-        ixc_customer = IXCCustomer.objects.filter(pk=ixc_customer_id, company=company).first()
-        if ixc_customer and hasattr(ixc_customer, "billing_customer"):
-            messages.info(request, "Este cliente do ERP já tem um cadastro financeiro.")
-            return redirect("billing-customer-detail", pk=ixc_customer.billing_customer.pk)
-
-    initial = None
-    if ixc_customer and request.method != "POST":
-        initial = {
-            "name": ixc_customer.name,
-            "document": ixc_customer.document,
-            "email": ixc_customer.email,
-            "phone": ixc_customer.phone,
-        }
-    form = CustomerForm(request.POST or None, company=company, initial=initial)
-    if request.method == "POST" and form.is_valid():
-        customer = form.save(commit=False)
-        customer.company = company
-        customer.ixc_customer = ixc_customer
-        customer.save()
-        messages.success(request, f"Cliente {customer.name} cadastrado.")
-        return redirect("billing-customer-detail", pk=customer.pk)
-
-    return render(request, "billing/customer_form.html", {"company": company, "form": form, "customer": None})
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="financeiro-{company.slug}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Mês de referência", "Valor", "Vencimento", "Status", "Pago"])
+    for invoice in Invoice.objects.filter(company=company).order_by("-reference_month"):
+        writer.writerow([
+            invoice.reference_month.strftime("%m/%Y"),
+            invoice.amount,
+            invoice.due_date.strftime("%d/%m/%Y"),
+            invoice.get_status_display(),
+            invoice.paid_amount,
+        ])
+    return response
 
 
-@login_required
-def customer_update(request, pk):
-    customer = _customer_for_request(request, pk)
-    if customer is None:
-        messages.info(request, "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.")
-        return redirect("account-panel")
+def company_blocked(request):
+    company = _editable_company(request) if request.user.is_authenticated else None
+    trust_release_available = False
+    if company is not None:
+        trust_release_available = not services.has_trust_release_this_month(
+            list(company.trust_releases.values_list("created_at", flat=True))
+        )
+    return render(
+        request,
+        "billing/company_blocked.html",
+        {"company": company, "trust_release_available": trust_release_available, "hide_sidebar": True},
+    )
 
-    form = CustomerForm(request.POST or None, instance=customer, company=customer.company)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Cadastro atualizado.")
-        return redirect("billing-customer-detail", pk=customer.pk)
 
-    return render(request, "billing/customer_form.html", {"company": customer.company, "form": form, "customer": customer})
+# ---------------------------------------------------------------------
+# Painel Superadmin — único lugar que cadastra/gerencia empresas,
+# lança cobrança manual, registra pagamento e controla status de
+# acesso (desativar/bloquear/cancelar).
+# ---------------------------------------------------------------------
+
+def _require_superuser(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
 
 
 @login_required
-def customer_detail(request, pk):
-    customer = _customer_for_request(request, pk)
-    if customer is None:
-        messages.info(request, "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.")
-        return redirect("account-panel")
-    invoices = customer.invoices.prefetch_related("payments").order_by("-reference_month")
+def platform_company_billing(request, company_id):
+    _require_superuser(request)
+    company = get_object_or_404(Company, pk=company_id)
+    subscription, _created = CompanySubscription.objects.get_or_create(company=company)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "save_subscription":
+            form = SubscriptionForm(request.POST, instance=subscription)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Assinatura atualizada.")
+            else:
+                messages.error(request, "Não foi possível salvar — confira os dados.")
+        elif action == "create_invoice":
+            invoice_form = ManualInvoiceForm(request.POST)
+            if invoice_form.is_valid():
+                Invoice.objects.create(
+                    company=company,
+                    reference_month=invoice_form.cleaned_data["due_date"].replace(day=1),
+                    amount=invoice_form.cleaned_data["amount"],
+                    due_date=invoice_form.cleaned_data["due_date"],
+                    notes=invoice_form.cleaned_data["notes"],
+                )
+                messages.success(request, "Cobrança lançada.")
+            else:
+                messages.error(request, "Não foi possível lançar a cobrança — confira os dados.")
+        elif action == "record_payment":
+            invoice = get_object_or_404(Invoice, pk=request.POST.get("invoice_id"), company=company)
+            payment_form = PaymentRecordForm(request.POST)
+            if payment_form.is_valid():
+                services.record_payment(
+                    invoice,
+                    amount=payment_form.cleaned_data["amount"],
+                    method=payment_form.cleaned_data["method"],
+                    note=payment_form.cleaned_data["note"],
+                    user=request.user,
+                )
+                messages.success(request, "Pagamento registrado.")
+            else:
+                messages.error(request, "Não foi possível registrar o pagamento — confira os dados.")
+        elif action == "set_status":
+            new_status = request.POST.get("status")
+            if new_status in CompanySubscription.Status.values:
+                subscription.status = new_status
+                if new_status == CompanySubscription.Status.ACTIVE:
+                    subscription.access_grace_until = None
+                subscription.save(update_fields=["status", "access_grace_until", "updated_at"])
+                messages.success(request, "Status da assinatura atualizado.")
+        elif action == "toggle_company_active":
+            company.active = not company.active
+            company.save(update_fields=["active"])
+            messages.success(request, "Empresa atualizada." if company.active else "Empresa desativada.")
+        elif action == "delete_company":
+            # Sem exclusão física de verdade — desativa a empresa e
+            # cancela a assinatura junto, mesma filosofia não-destrutiva
+            # já usada no resto do sistema (nunca apaga cadastro,
+            # equipamento, cabo etc.). Dá pra reverter pela mesma tela.
+            company.active = False
+            company.save(update_fields=["active"])
+            subscription.status = CompanySubscription.Status.CANCELED
+            subscription.save(update_fields=["status", "updated_at"])
+            messages.success(request, "Empresa excluída (desativada e assinatura cancelada — nada foi apagado do banco).")
+        return redirect("platform-company-billing", company_id=company.id)
+
+    subscription_form = SubscriptionForm(instance=subscription)
+    invoice_form = ManualInvoiceForm()
     payment_form = PaymentRecordForm()
+    invoices = Invoice.objects.filter(company=company).prefetch_related("payments").order_by("-reference_month")
 
     return render(
         request,
-        "billing/customer_detail.html",
+        "billing/platform_company_billing.html",
         {
-            "company": customer.company,
-            "customer": customer,
-            "invoices": invoices,
+            "company": company,
+            "subscription": subscription,
+            "subscription_form": subscription_form,
+            "invoice_form": invoice_form,
             "payment_form": payment_form,
+            "invoices": invoices,
+            "summary": _invoice_summary(company),
         },
     )
 
 
 @login_required
-def record_payment(request, pk, invoice_id):
-    customer = _customer_for_request(request, pk)
-    if customer is None:
-        messages.info(request, "Somente um usuário com permissão de edição pode gerenciar o financeiro da empresa.")
-        return redirect("account-panel")
-    invoice = get_object_or_404(Invoice, pk=invoice_id, customer=customer)
-
-    if request.method != "POST":
-        return redirect("billing-customer-detail", pk=customer.pk)
-
-    form = PaymentRecordForm(request.POST)
-    if form.is_valid():
-        services.record_payment(
-            invoice,
-            amount=form.cleaned_data["amount"],
-            method=form.cleaned_data["method"],
-            note=form.cleaned_data["note"],
-            user=request.user,
-        )
-        messages.success(request, "Pagamento registrado.")
-    else:
-        messages.error(request, "Não foi possível registrar o pagamento — confira os dados.")
-    return redirect("billing-customer-detail", pk=customer.pk)
+def platform_financial_export(request):
+    _require_superuser(request)
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="financeiro-plataforma.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Empresa", "Mês de referência", "Valor", "Vencimento", "Status", "Pago"])
+    invoices = Invoice.objects.select_related("company").order_by("company__name", "-reference_month")
+    for invoice in invoices:
+        writer.writerow([
+            invoice.company.trade_name or invoice.company.name,
+            invoice.reference_month.strftime("%m/%Y"),
+            invoice.amount,
+            invoice.due_date.strftime("%d/%m/%Y"),
+            invoice.get_status_display(),
+            invoice.paid_amount,
+        ])
+    return response
 
 
 @login_required
@@ -216,8 +255,7 @@ def platform_gateway_settings(request, company_id):
     """Só o Superadmin gerencia credencial de gateway — centralizado,
     fora do Django Admin. Nenhuma chamada real ao gateway acontece aqui,
     só armazenamento criptografado (ver docstring do model)."""
-    if not request.user.is_superuser:
-        raise PermissionDenied
+    _require_superuser(request)
     company = get_object_or_404(Company, pk=company_id)
     configuration = CompanyPaymentGatewayConfiguration.objects.filter(company=company).first()
 
