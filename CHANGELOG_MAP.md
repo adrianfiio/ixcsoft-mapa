@@ -1,5 +1,33 @@
 # Changelog — Mapa
 
+## [map-0.75.3] - 2026-08-02
+
+### Adicionado
+
+- lápis compacto no card para abrir propriedades, sem painel automático ao clicar;
+- movimentação do Canvas com o botão central do mouse;
+- entrada DROP reposicionável e notas técnicas por clique direito;
+- exportação do Canvas para PNG e impressão/PDF;
+- tela cheia nativa do navegador com fallback CSS.
+
+### Alterado
+
+- conectores seguem o lado esquerdo/direito de cada porta;
+- ligar portas e editar linhas são modos ativáveis e concluíveis;
+- estrutura mostra lista compacta de equipamentos;
+- matriz virou relatório de ligações, sem criar conexões por formulário.
+
+### Corrigido
+
+- ficha técnica antiga/incompleta é recriada antes de conectar seus eventos;
+- clique comum no equipamento agora apenas seleciona o card.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.79.1`;
+- `MAP_VERSION` atualizada para `0.75.3`;
+- nenhuma migration.
+
 ## [map-0.75.2] - 2026-08-02
 
 Canvas técnico e criação contextual de ativos da torre.

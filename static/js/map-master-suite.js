@@ -744,6 +744,7 @@
                 <button type="button" data-container-organize>Organizar</button>
                 <button type="button" data-container-lines>Editar linhas</button>
                 <button type="button" data-container-export>Exportar PNG</button>
+                <button type="button" data-container-export-pdf>Exportar PDF</button>
                 <button type="button" data-container-revision>Salvar versão</button>
                 <button type="button" data-container-fullscreen>Tela cheia</button>
             </div>
@@ -771,6 +772,7 @@
             renderContainerCanvas();
         };
         qs("[data-container-export]", root).onclick = () => exportContainerPng();
+        qs("[data-container-export-pdf]", root).onclick = () => exportContainerPdf();
         qs("[data-container-revision]", root).onclick = async () => {
             await saveDiagramRevision("container", Number(state.container.elementId), state.container.layout, "Versão do Canvas 2D");
             notify("Versão do Canvas 2D salva.");
@@ -853,8 +855,7 @@
     }
 
     function portSide(port, index) {
-        const optical = ["pon", "dio", "sfp_1g", "sfp_plus_10g", "sfp28_25g", "sc_apc", "sc_upc", "lc"].includes(port.type);
-        return optical || index % 2 === 0 ? "right" : "left";
+        return index % 2 === 0 ? "left" : "right";
     }
 
     function renderContainerCanvas() {
@@ -866,23 +867,67 @@
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
             return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
-                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small></header>
+                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}">✎</button></header>
                 <div class="master-node-ports">${(item.ports || []).map((port, portIndex) => {
                     const side = portSide(port, portIndex);
                     return `<button type="button" class="master-node-port ${side} ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-type="${port.type}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`;
                 }).join("") || '<small class="empty">Sem portas</small>'}</div>
             </article>`;
-        }).join("");
+        }).join("") + (state.container.layout.notes || []).map((note, index) => `
+            <article class="master-canvas-note" data-canvas-note="${index}" style="transform:translate(${Number(note.x || 40)}px,${Number(note.y || 40)}px)">
+                <button type="button" data-delete-note="${index}" title="Excluir nota">×</button>
+                <p>${escapeHtml(note.text)}</p>
+            </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
+        qsa("[data-node-edit]", nodes).forEach((button) => button.onclick = (event) => {
+            event.stopPropagation();
+            openEquipmentEditor(button.dataset.nodeEdit);
+        });
         qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
+        qsa("[data-canvas-note]", nodes).forEach((note) => installNoteDrag(note));
+        qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = (event) => {
+            event.stopPropagation();
+            state.container.layout.notes.splice(Number(button.dataset.deleteNote), 1);
+            saveContainerLayout(); renderContainerCanvas();
+        });
+        if (canvas.dataset.notesReady !== "1") {
+            canvas.dataset.notesReady = "1";
+            canvas.addEventListener("contextmenu", (event) => {
+                if (event.target.closest(".master-canvas-node, .master-canvas-note")) return;
+                event.preventDefault();
+                const text = window.prompt("Nota técnica da estrutura:");
+                if (!text?.trim()) return;
+                const rect = canvas.getBoundingClientRect();
+                state.container.layout.notes ||= [];
+                state.container.layout.notes.push({ text: text.trim(), x: event.clientX - rect.left, y: event.clientY - rect.top });
+                saveContainerLayout(); renderContainerCanvas();
+            });
+        }
         document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root, data: state.container.data } }));
         drawContainerLinks();
+    }
+
+    function installNoteDrag(note) {
+        note.onpointerdown = (event) => {
+            if (event.button !== 0 || event.target.closest("button")) return;
+            const index = Number(note.dataset.canvasNote);
+            const item = state.container.layout.notes[index];
+            const origin = { x: event.clientX, y: event.clientY, left: Number(item.x || 0), top: Number(item.y || 0) };
+            const move = (moveEvent) => {
+                item.x = Math.max(0, origin.left + moveEvent.clientX - origin.x);
+                item.y = Math.max(0, origin.top + moveEvent.clientY - origin.y);
+                note.style.transform = `translate(${item.x}px,${item.y}px)`;
+            };
+            const up = () => { window.removeEventListener("pointermove", move); saveContainerLayout(); };
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", up, { once: true });
+        };
     }
 
     function installNodeDrag(node) {
         const header = qs("header", node);
         header.onpointerdown = (event) => {
-            if (event.button !== 0) return;
+            if (event.button !== 0 || event.target.closest("button")) return;
             const id = String(node.dataset.equipmentNode);
             const position = state.container.layout.positions[id] || {
                 x: Number(node.dataset.posX || 0),
@@ -930,13 +975,14 @@
         const links = state.container.data?.links || [];
         svg.innerHTML = links.map((link) => {
             const end = portAnchor(link.destination_port_id);
+            const externalPosition = state.container.layout.externalLinks?.[String(link.id)];
             const start = link.source_port_id
                 ? portAnchor(link.source_port_id)
-                : (end ? { x: 24, y: end.y } : null);
+                : (end ? externalPosition || { x: 24, y: end.y } : null);
             if (!start || !end) return "";
             const manual = state.container.layout.routes[String(link.id)] || [];
             const external = !link.source_port_id
-                ? `<circle class="master-drop-entry" cx="${start.x}" cy="${start.y}" r="6"></circle><text class="master-drop-label" x="${start.x + 11}" y="${start.y - 9}">${escapeHtml(link.cable || "DROP")}</text>`
+                ? `<circle data-drop-entry="${link.id}" class="master-drop-entry" cx="${start.x}" cy="${start.y}" r="7"></circle><text class="master-drop-label" x="${start.x + 11}" y="${start.y - 9}">${escapeHtml(link.cable || "DROP")}</text>`
                 : "";
             return `${external}<path data-master-link="${link.id}" class="link-${link.link_type} ${state.container.selectedLink === String(link.id) ? "selected" : ""}" d="${orthogonalPath(start, end, manual)}"></path>`;
         }).join("");
@@ -955,6 +1001,24 @@
                 points.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
                 state.container.layout.routes[String(path.dataset.masterLink)] = points;
                 saveContainerLayout(); drawContainerLinks();
+            };
+        });
+        qsa("[data-drop-entry]", svg).forEach((handle) => {
+            handle.onpointerdown = (event) => {
+                event.preventDefault(); event.stopPropagation();
+                const id = String(handle.dataset.dropEntry);
+                const rect = svg.getBoundingClientRect();
+                const move = (moveEvent) => {
+                    state.container.layout.externalLinks ||= {};
+                    state.container.layout.externalLinks[id] = {
+                        x: moveEvent.clientX - rect.left,
+                        y: moveEvent.clientY - rect.top,
+                    };
+                    drawContainerLinks();
+                };
+                const up = () => { window.removeEventListener("pointermove", move); saveContainerLayout(); };
+                window.addEventListener("pointermove", move);
+                window.addEventListener("pointerup", up, { once: true });
             };
         });
         renderLinkHandles();
@@ -1050,23 +1114,8 @@
         const equipment = state.container.data?.equipment || [];
         const ports = equipment.flatMap((item) => (item.ports || []).map((port) => ({ ...port, equipment: item.name })));
         panel.innerHTML = `
-            <div class="master-matrix-head"><div><strong>Matriz de manobra</strong><span>Conecte portas sem precisar abrir todos os cards.</span></div></div>
-            <form class="master-matrix-form">
-                <label>Origem<select name="source">${ports.map((port) => `<option value="${port.id}" data-type="${port.type}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("")}</select></label>
-                <span>→</span>
-                <label>Destino<select name="destination">${ports.map((port) => `<option value="${port.id}" data-type="${port.type}">${escapeHtml(port.equipment)} · ${escapeHtml(port.label)}</option>`).join("")}</select></label>
-                <button type="submit">Conectar</button>
-            </form>
+            <div class="master-matrix-head"><div><strong>Relatório de ligações</strong><span>Conexões registradas no Canvas 2D.</span></div></div>
             <div class="master-matrix-links">${(state.container.data?.links || []).map((link) => `<article><div><strong>${escapeHtml(link.source)}</strong><span>→ ${escapeHtml(link.destination)}</span><small>${escapeHtml(link.link_type_label)}</small></div><button type="button" class="danger" data-delete-link="${link.id}">Desligar</button></article>`).join("") || "<p>Nenhuma ligação interna.</p>"}</div>`;
-        qs("form", panel).onsubmit = async (event) => {
-            event.preventDefault();
-            const form = event.currentTarget;
-            await request(`/api/map/elements/${state.container.elementId}/equipment-links/`, {
-                method: "POST",
-                body: JSON.stringify({ source_port_id: form.elements.source.value, destination_port_id: form.elements.destination.value }),
-            });
-            await loadContainerMaster(true); renderConnectionMatrix(); renderContainerCanvas();
-        };
         qsa("[data-delete-link]", panel).forEach((button) => button.onclick = async () => {
             await request(`/api/map/elements/${state.container.elementId}/equipment-links/${button.dataset.deleteLink}/`, { method: "DELETE" });
             await loadContainerMaster(true); renderConnectionMatrix(); renderContainerCanvas();
@@ -1240,6 +1289,24 @@
         image.src = url;
     }
 
+    async function exportContainerPdf() {
+        const canvasRoot = qs("#map-master-container .master-canvas");
+        if (!canvasRoot) return;
+        const clone = canvasRoot.cloneNode(true);
+        clone.style.transform = "none";
+        const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasRoot.scrollWidth}" height="${canvasRoot.scrollHeight}"><foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(clone)}</foreignObject></svg>`;
+        const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const popup = window.open("", "_blank", "width=1200,height=850,scrollbars=yes");
+        if (!popup) {
+            URL.revokeObjectURL(url);
+            return notify("O navegador bloqueou a janela de exportação PDF.", true);
+        }
+        popup.document.write(`<!doctype html><html><head><title>Canvas da estrutura</title><style>@page{size:landscape;margin:8mm}body{margin:0;background:#fff}img{display:block;width:100%;height:auto;object-fit:contain}</style></head><body><img src="${url}"><script>const image=document.querySelector('img');image.onload=()=>setTimeout(()=>window.print(),250);window.onafterprint=()=>window.close();<\/script></body></html>`);
+        popup.document.close();
+        window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+
 
     // ------------------------------------------------------------------
     // Technical sheets, lifecycle history, printing and QR code
@@ -1247,6 +1314,10 @@
 
     function assetSheetDialog() {
         let dialog = qs("#map-master-asset-sheet");
+        if (dialog && !qs("[data-stage-save]", dialog)) {
+            dialog.remove();
+            dialog = null;
+        }
         if (dialog) return dialog;
         dialog = document.createElement("dialog");
         dialog.id = "map-master-asset-sheet";
