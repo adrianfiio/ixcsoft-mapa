@@ -8,7 +8,7 @@ infraestrutura óptica, estado de ONUs, sinais e eventos em uma única aplicaç�
 
 ## Versão atual
 
-**v0.75.0 — ACL do financeiro por perfil e painel Superadmin: cadastro de empresa, financeiro de qualquer empresa e configuração de gateway de pagamento**
+**v0.75.1 — Hotfix: Financeiro do projetista, clientes do ERP no Financeiro do provedor, menu do Superadmin na Visão da plataforma**
 
 Esta versão transforma o mapa em um editor de projetos com postes, CTOs, CEOs,
 cabos, camadas operacionais e importação KML/KMZ.

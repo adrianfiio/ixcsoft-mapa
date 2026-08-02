@@ -188,6 +188,8 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
 .billing-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; align-items: start; }
 .billing-row-actions { display: flex; gap: 10px; white-space: nowrap; }
 .billing-row-actions a { color: var(--primary); font-size: 12px; font-weight: 700; }
+.billing-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px; color: var(--muted); font-size: 12px; }
+.billing-pagination a { color: var(--primary); font-weight: 700; }
 /* Grid livre de widgets (arrastar/redimensionar tipo Zabbix/Grafana):
    12 colunas, cada widget ocupa `grid-column`/`grid-row` calculados a
    partir de x/y/w/h salvos (`apps/core/dashboard_widgets.py`).

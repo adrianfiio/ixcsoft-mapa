@@ -16,6 +16,7 @@ from django.db.models import FloatField, Q, Sum
 from django.utils import timezone
 
 from apps.alerts.models import AlertEvent
+from apps.billing.models import Invoice
 from apps.ixc_integration.models import IXCConfiguration, IXCCustomer
 from apps.network_map.models import CTO, FiberCable, NetworkElement
 
@@ -66,6 +67,9 @@ def _company_row(company):
         .count()
     )
     sync_state = _sync_state(company, config)
+    open_invoices = Invoice.objects.filter(
+        company=company, status__in=[Invoice.Status.PENDING, Invoice.Status.OVERDUE]
+    )
     return {
         "company": company,
         "client_count": IXCCustomer.objects.filter(company=company).count(),
@@ -73,6 +77,8 @@ def _company_row(company):
         "cto_count": CTO.objects.filter(company=company).count(),
         "cable_km": _cable_km(company),
         "alert_count": alert_count,
+        "overdue_count": open_invoices.filter(status=Invoice.Status.OVERDUE).count(),
+        "pending_count": open_invoices.filter(status=Invoice.Status.PENDING).count(),
         "team_count": CompanyMembership.objects.filter(company=company, active=True).count(),
         "provider_name": config.get_provider_display() if config else "",
         "last_sync_at": config.last_sync_at if config else None,

@@ -3,11 +3,13 @@ import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.core.crypto import SecretCipher
 from apps.core.models import Company, CompanyMembership
+from apps.ixc_integration.models import IXCCustomer
 
 from . import services
 from .forms import CustomerForm, GatewaySettingsForm, PaymentRecordForm
@@ -88,10 +90,27 @@ def customer_list(request):
         ).count(),
     }
 
+    # Clientes já sincronizados do IXCSoft que ainda não têm nenhum
+    # cadastro financeiro — sem isso, uma empresa com ERP via Financeiro
+    # vazio mesmo já tendo milhares de clientes reais no sistema.
+    unconfigured = (
+        IXCCustomer.objects.filter(company=company, active=True, billing_customer__isnull=True)
+        .order_by("name")
+    )
+    if query:
+        unconfigured = unconfigured.filter(name__icontains=query)
+    unconfigured_page = Paginator(unconfigured, 25).get_page(request.GET.get("pagina_erp"))
+
     return render(
         request,
         "billing/customer_list.html",
-        {"company": company, "customers": customers, "query": query, "summary": summary},
+        {
+            "company": company,
+            "customers": customers,
+            "query": query,
+            "summary": summary,
+            "unconfigured_page": unconfigured_page,
+        },
     )
 
 
@@ -101,10 +120,27 @@ def customer_create(request):
     if company is None:
         return redirect("account-panel")
 
-    form = CustomerForm(request.POST or None, company=company)
+    ixc_customer = None
+    ixc_customer_id = request.GET.get("ixc_customer")
+    if ixc_customer_id:
+        ixc_customer = IXCCustomer.objects.filter(pk=ixc_customer_id, company=company).first()
+        if ixc_customer and hasattr(ixc_customer, "billing_customer"):
+            messages.info(request, "Este cliente do ERP já tem um cadastro financeiro.")
+            return redirect("billing-customer-detail", pk=ixc_customer.billing_customer.pk)
+
+    initial = None
+    if ixc_customer and request.method != "POST":
+        initial = {
+            "name": ixc_customer.name,
+            "document": ixc_customer.document,
+            "email": ixc_customer.email,
+            "phone": ixc_customer.phone,
+        }
+    form = CustomerForm(request.POST or None, company=company, initial=initial)
     if request.method == "POST" and form.is_valid():
         customer = form.save(commit=False)
         customer.company = company
+        customer.ixc_customer = ixc_customer
         customer.save()
         messages.success(request, f"Cliente {customer.name} cadastrado.")
         return redirect("billing-customer-detail", pk=customer.pk)

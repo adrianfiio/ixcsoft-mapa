@@ -24,6 +24,14 @@
             </a>
 
             <nav class="main-nav" aria-label="Navegação principal">
+                {% if request.user.is_superuser and not current_company %}
+                <a class="{% if request.resolver_match.url_name == 'platform-overview' %}active{% endif %}" href="{% url 'platform-overview' %}">
+                    <span class="nav-icon">◈</span><span class="nav-label">Visão da plataforma</span>
+                </a>
+                <a class="{% if request.resolver_match.url_name == 'platform-company-create' %}active{% endif %}" href="{% url 'platform-company-create' %}">
+                    <span class="nav-icon">＋</span><span class="nav-label">Nova empresa</span>
+                </a>
+                {% else %}
                 <a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                    href="{% url 'dashboard' %}">
                     <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg></span><span class="nav-label">Visão geral</span>
@@ -40,10 +48,10 @@
                 <a class="{% if request.resolver_match.url_name == 'company-alerts' %}active{% endif %}" href="{% url 'company-alerts' %}">
                     <span class="nav-icon">!</span><span class="nav-label">Alertas</span>
                 </a>
+                {% endif %}
                 <a class="{% if 'billing-customer' in request.resolver_match.url_name or request.resolver_match.url_name == 'billing-customers' %}active{% endif %}" href="{% url 'billing-customers' %}">
                     <span class="nav-icon">$</span><span class="nav-label">Financeiro</span>
                 </a>
-                {% endif %}
                 <a class="{% if request.resolver_match.url_name == 'account-panel' %}active{% endif %}" href="{% url 'account-panel' %}">
                     <span class="nav-icon">⚙</span><span class="nav-label">Minha administração</span>
                 </a>
@@ -51,6 +59,7 @@
                 <a class="{% if request.resolver_match.url_name == 'platform-overview' %}active{% endif %}" href="{% url 'platform-overview' %}">
                     <span class="nav-icon">◈</span><span class="nav-label">Visão da plataforma</span>
                 </a>
+                {% endif %}
                 {% endif %}
             </nav>
 

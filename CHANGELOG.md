@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.75.1] - 2026-08-02
+
+Hotfix de 3 problemas reais reportados logo depois da v0.75.0, com
+prints do provedor, do projetista e do Superadmin. **Com migration**
+(`apps.billing.0003_customer_ixc_customer`).
+
+### Corrigido
+
+- **Financeiro do projetista sumia por completo** — o item "Financeiro"
+  do menu lateral estava dentro do mesmo bloqueio de "Alertas"
+  (`{% if not current_company.is_designer %}`), então empresa
+  Projetista não via o ícone nem a página, mesmo tendo pedido
+  explicitamente esse acesso na especificação (só Alertas devia
+  continuar bloqueado pra Projetista, não Financeiro).
+- **Provedor com milhares de clientes reais e Financeiro vazio** —
+  `apps/billing.Customer` era um cadastro 100% manual, sem nenhuma
+  ligação com os clientes já sincronizados do IXCSoft
+  (`IXCCustomer` — a mesma tabela que mostra "2.965 clientes" na Visão
+  da plataforma). A lista de clientes agora mostra também os clientes
+  do ERP que ainda não têm financeiro configurado (paginado, 25 por
+  página, com busca), cada um com um botão "Configurar →" que já
+  pré-preenche nome/documento/e-mail/telefone a partir do cadastro do
+  ERP — sem precisar digitar os 2.965 na mão.
+- **Superadmin sem menu nenhum na Visão da plataforma** — a página
+  rodava com a barra lateral inteira escondida
+  (`hide_sidebar = True`, decisão da v0.68 que presumia "superusuário
+  só usa o Django Admin mesmo" — incorreta). Agora o Superadmin tem seu
+  próprio menu (Visão da plataforma, Nova empresa) sempre visível,
+  sem precisar passar pelo `/admin/`.
+- **Visão financeira "geral" pro Superadmin** — a tabela de empresas na
+  Visão da plataforma ganhou colunas "Atrasados"/"Pendentes" por
+  empresa (mesma contagem que já existia no Financeiro de cada
+  empresa), dando a visão consolidada pedida sem precisar de uma
+  página nova.
+
+### Verificação feita
+
+- `python -m py_compile` em todos os arquivos tocados.
+- Migration nova (`Customer.ixc_customer`, `OneToOneField` pra
+  `IXCCustomer`) revisada campo a campo; dependência ajustada pra
+  última migration real de `ixc_integration` (`0008_sync_progress`),
+  não a primeira, evitando qualquer risco de ordem entre migrations.
+- Chaves do `static/css/app.css` balanceadas (280/280); `{% if %}`/
+  `{% endif %}`/`{% for %}`/`{% endfor %}`/`{% block %}`/`{% endblock %}`
+  balanceados em `base.html`, `templates/billing/customer_list.html` e
+  `templates/platform_overview.html`.
+- Revisei que o link "Configurar →" não deixa configurar duas vezes o
+  mesmo cliente do ERP (se já existir um financeiro vinculado, redireciona
+  pro cadastro existente em vez de criar duplicado).
+
+**`manage.py check`, `manage.py migrate`, `manage.py test` e o teste
+visual real (abrir Financeiro como projetista, ver os clientes do ERP
+aparecendo pro provedor, abrir a Visão da plataforma como Superadmin e
+ver o menu) dependem de banco/GDAL/navegador reais — precisam ser
+feitos no servidor.**
+
 ## [0.75.0] - 2026-08-02
 
 ACL do financeiro por perfil de usuário e novas telas no painel

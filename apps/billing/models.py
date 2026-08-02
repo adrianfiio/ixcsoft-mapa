@@ -52,6 +52,15 @@ class Customer(CompanyScopedModel):
         verbose_name="Ponto de acesso vinculado",
         help_text="Opcional — vincula este cliente a um cadastro já existente no mapa/ERP.",
     )
+    ixc_customer = models.OneToOneField(
+        "ixc_integration.IXCCustomer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="billing_customer",
+        verbose_name="Cliente do ERP vinculado",
+        help_text="Vincula este cadastro financeiro a um cliente já sincronizado do IXCSoft.",
+    )
     monthly_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,

@@ -59,4 +59,36 @@
         </table>
     </div>
 </article>
+
+{% if unconfigured_page.paginator.count %}
+<article class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Clientes do ERP sem financeiro configurado</h2>
+        <span>{{ unconfigured_page.paginator.count }} no total</span>
+    </div>
+    <p>Já sincronizados do IXCSoft, mas ainda sem mensalidade/cobrança cadastrada aqui.</p>
+    <div class="overview-table-wrap">
+        <table class="overview-table">
+            <thead><tr><th>Cliente</th><th>Documento</th><th>Contato</th><th></th></tr></thead>
+            <tbody>
+                {% for ixc_customer in unconfigured_page %}
+                <tr>
+                    <td><strong>{{ ixc_customer.name }}</strong></td>
+                    <td>{{ ixc_customer.document|default:"—" }}</td>
+                    <td>{{ ixc_customer.phone|default:ixc_customer.email|default:"—" }}</td>
+                    <td><a href="{% url 'billing-customer-create' %}?empresa={{ company.id }}&ixc_customer={{ ixc_customer.pk }}">Configurar →</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if unconfigured_page.paginator.num_pages > 1 %}
+    <div class="billing-pagination">
+        {% if unconfigured_page.has_previous %}<a href="?q={{ query }}&empresa={{ company.id }}&pagina_erp={{ unconfigured_page.previous_page_number }}">← Anterior</a>{% endif %}
+        <span>Página {{ unconfigured_page.number }} de {{ unconfigured_page.paginator.num_pages }}</span>
+        {% if unconfigured_page.has_next %}<a href="?q={{ query }}&empresa={{ company.id }}&pagina_erp={{ unconfigured_page.next_page_number }}">Próxima →</a>{% endif %}
+    </div>
+    {% endif %}
+</article>
+{% endif %}
 {% endblock %}
