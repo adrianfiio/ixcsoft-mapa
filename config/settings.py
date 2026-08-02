@@ -13,7 +13,20 @@ WEB_URL = os.getenv("WEB_URL", "").strip().rstrip("/")
 WEB_HOST = urlparse(WEB_URL).hostname if WEB_URL else ""
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
-APP_VERSION = os.getenv("APP_VERSION", "0.76.0")
+
+# Duas versões independentes dentro do mesmo repositório/deploy: a
+# plataforma (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
+# usuários) e o mapa (editor cartográfico, Rack/Torre, Canvas 2D,
+# fusões, popups, SNMP/monitoramento visual, enlaces). Cada trilha tem
+# seu próprio changelog (CHANGELOG_PLATFORM.md/CHANGELOG_MAP.md), tag
+# (platform-vX.Y.Z/map-vX.Y.Z) e release — nunca mais uma tag vX.Y.Z
+# genérica. Ver VERSIONS.md. APP_VERSION continua existindo só por
+# compatibilidade com código legado que ainda lê essa variável — ela é
+# sempre igual a PLATFORM_VERSION, nunca uma versão própria.
+PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.76.0"))
+APP_VERSION = PLATFORM_VERSION
+MAP_VERSION = os.getenv("MAP_VERSION", "0.73.1")
+
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
