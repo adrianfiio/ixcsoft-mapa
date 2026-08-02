@@ -13,13 +13,14 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.79.0 |
+| Plataforma | v0.79.1 |
 | Mapa | v0.75.2 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
-  usuários): página "Clientes" dedicada no menu do Superadmin, com ações
-  de Editar/Financeiro/Gateway em ícone (tooltip no hover), separada da
-  Visão da plataforma. Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
+  usuários): polimento visual do Financeiro e Gateway por empresa — painéis
+  reagrupados (sem barra de rolagem desnecessária), botões de cabeçalho
+  compactos e checkboxes no tema escuro do site.
+  Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
   SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,
   CEOs, cabos, camadas operacionais e importação KML/KMZ. Changelog:

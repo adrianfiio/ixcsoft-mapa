@@ -15,6 +15,22 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.79.1] - 2026-08-02
+
+Polimento visual do Financeiro por empresa e do Gateway de pagamento.
+Ver [docs/releases/platform/platform-v0.79.1.md](docs/releases/platform/platform-v0.79.1.md).
+
+Resumo: os painéis do Financeiro por empresa (Assinatura, Status de
+acesso, Lançar cobrança manual, Faturas, Registrar pagamento) estavam
+todos espremidos numa única fileira de 4 colunas, forçando barra de
+rolagem horizontal em formulário e tabela sem necessidade real —
+reagrupados em fileiras de 2. Botões de cabeçalho "Editar empresa"/
+"Financeiro"/"Gateway" trocaram de botão sólido grande (`.primary-action`)
+por link discreto (`.panel-link`), removendo o exagero visual repetido
+em 3 telas. Checkboxes ganharam `accent-color` no tema escuro do site
+em vez do azul padrão do navegador. Nenhuma mudança de comportamento,
+só CSS/template.
+
 ## [platform-0.79.0] - 2026-08-02
 
 Página "Clientes" dedicada no menu do Superadmin — a tabela de

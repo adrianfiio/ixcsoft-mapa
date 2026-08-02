@@ -393,6 +393,7 @@ a.status-row:hover { background: rgba(255,255,255,.04); }
 }
 .platform-form input[type="file"]::file-selector-button:hover { opacity: .88; }
 .platform-form input[type="color"] { min-height: 42px; padding: 4px; cursor: pointer; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--primary); width: 17px; height: 17px; cursor: pointer; }
 .panel-danger { border: 1px solid rgba(243,93,109,.4); }
 .panel-danger .panel-title { color: var(--danger); }
 .cancel-link { color: var(--muted); font-size: 13px; font-weight: 700; }
