@@ -142,10 +142,12 @@
         const logo = qs(".map-brand img", content);
         const companyName = body.dataset.companyName || logo?.alt || "AFService Map";
         const companyMode = body.dataset.companyMode || "Plataforma de rede";
+        const mapVersion = body.dataset.mapVersion || "";
         company.innerHTML = `
             <div class="map-company-card-main">
                 ${logo ? `<img src="${escapeHtml(logo.src)}" alt="">` : ""}
                 <span><strong>${escapeHtml(companyName)}</strong><small>${escapeHtml(companyMode)}</small></span>
+                ${mapVersion ? `<small class="map-version-menu-v072" title="Versão instalada do MAPA">v${escapeHtml(mapVersion)}</small>` : ""}
             </div>
             <form method="post" action="${escapeHtml(body.dataset.urlLogout || "/sair/")}">
                 <input type="hidden" name="csrfmiddlewaretoken" value="${escapeHtml(csrfToken())}">

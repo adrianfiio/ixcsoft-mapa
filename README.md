@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.79.0 |
-| Mapa | v0.75.1 |
+| Mapa | v0.75.2 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): página "Clientes" dedicada no menu do Superadmin, com ações

@@ -929,11 +929,16 @@
         if (!svg) return;
         const links = state.container.data?.links || [];
         svg.innerHTML = links.map((link) => {
-            const start = portAnchor(link.source_port_id);
             const end = portAnchor(link.destination_port_id);
+            const start = link.source_port_id
+                ? portAnchor(link.source_port_id)
+                : (end ? { x: 24, y: end.y } : null);
             if (!start || !end) return "";
             const manual = state.container.layout.routes[String(link.id)] || [];
-            return `<path data-master-link="${link.id}" class="link-${link.link_type} ${state.container.selectedLink === String(link.id) ? "selected" : ""}" d="${orthogonalPath(start, end, manual)}"></path>`;
+            const external = !link.source_port_id
+                ? `<circle class="master-drop-entry" cx="${start.x}" cy="${start.y}" r="6"></circle><text class="master-drop-label" x="${start.x + 11}" y="${start.y - 9}">${escapeHtml(link.cable || "DROP")}</text>`
+                : "";
+            return `${external}<path data-master-link="${link.id}" class="link-${link.link_type} ${state.container.selectedLink === String(link.id) ? "selected" : ""}" d="${orthogonalPath(start, end, manual)}"></path>`;
         }).join("");
         qsa("[data-master-link]", svg).forEach((path) => {
             path.onclick = (event) => {
@@ -988,15 +993,8 @@
     async function selectCreatedLinkForEditing(linkId) {
         const link = (state.container.data?.links || []).find((item) => String(item.id) === String(linkId));
         if (!link) return;
-        const start = portAnchor(link.source_port_id);
-        const end = portAnchor(link.destination_port_id);
-        if (!start || !end) return;
-        const middle = start.x + (end.x - start.x) / 2;
         state.container.selectedLink = String(linkId);
-        state.container.layout.routes[String(linkId)] = [
-            { x: middle, y: start.y },
-            { x: middle, y: end.y },
-        ];
+        state.container.layout.routes[String(linkId)] = [];
         drawContainerLinks();
         await saveContainerLayout();
     }
@@ -1081,18 +1079,45 @@
         dialog = document.createElement("dialog");
         dialog.id = "map-master-equipment-create";
         dialog.className = "editor-dialog map-master-equipment-dialog";
-        dialog.innerHTML = `<form><header><h2>Novo equipamento</h2><button type="button" data-close>×</button></header><div class="master-form-grid"><label>Tipo<select name="equipment_type"></select></label><label>Nome<input name="name" required></label><label>Fabricante<input name="vendor"></label><label>Modelo<input name="model"></label><label>IP de gerência<input name="management_ip"></label><label>Portas LAN da ONU<input name="onu_lan_count" type="number" min="1" max="16" value="4"></label><label>Portas do DIO<select name="dio_port_capacity"><option>12</option><option selected>24</option><option>36</option><option>48</option><option>72</option><option>96</option><option>144</option><option>192</option><option>244</option></select></label><label>Conector<select name="connector_type"><option value="sc_apc">SC/APC</option><option value="sc_upc">SC/UPC</option><option value="lc_upc">LC/UPC</option><option value="lc_apc">LC/APC</option></select></label></div><p data-status></p><footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Adicionar</button></footer></form>`;
+        dialog.innerHTML = `<form><header><h2>Novo equipamento</h2><button type="button" data-close>×</button></header><div class="master-form-grid"><label>Tipo<select name="equipment_type"></select></label><label>Nome<input name="name" required></label><label>Fabricante<input name="vendor"></label><label>Modelo<input name="model"></label><label data-create-field="management">IP de gerência<input name="management_ip"></label><label data-create-field="onu-lan">Portas LAN da ONU<input name="onu_lan_count" type="number" min="1" max="16" value="4"></label><label data-create-field="drop">Cabo DROP ligado à torre<select name="drop_cable_id"></select><small>Opcional. Se escolhido, o DROP será conectado diretamente à porta óptica da ONU.</small></label><label data-create-field="dio-capacity">Portas do DIO<select name="dio_port_capacity"><option>12</option><option selected>24</option><option>36</option><option>48</option><option>72</option><option>96</option><option>144</option><option>192</option><option>244</option></select></label><label data-create-field="connector">Conector<select name="connector_type"><option value="sc_apc">SC/APC</option><option value="sc_upc">SC/UPC</option><option value="lc_upc">LC/UPC</option><option value="lc_apc">LC/APC</option></select></label></div><p data-status></p><footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Adicionar</button></footer></form>`;
         document.body.appendChild(dialog);
         dialog.querySelector("[data-close]").onclick = () => dialog.close();
         dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
         return dialog;
     }
 
+    function showEquipmentDialogWithFade(dialog) {
+        document.body.classList.add("tower-equipment-modal-open");
+        dialog.addEventListener("close", () => {
+            document.body.classList.remove("tower-equipment-modal-open");
+        }, { once: true });
+        dialog.showModal();
+    }
+
+    function configureEquipmentCreateForType(dialog) {
+        const form = qs("form", dialog);
+        const type = form.elements.equipment_type.value;
+        const show = (field, visible) => {
+            const wrapper = qs(`[data-create-field="${field}"]`, form);
+            if (wrapper) wrapper.hidden = !visible;
+        };
+        show("management", !["dio", "pto"].includes(type));
+        show("onu-lan", type === "onu");
+        show("drop", type === "onu");
+        show("dio-capacity", type === "dio");
+        show("connector", ["dio", "pto"].includes(type));
+    }
+
     function openEquipmentCreateDialog() {
         const dialog = equipmentCreateDialog();
         const types = (state.bootstrap?.equipment_types || []).filter(([value]) => value !== "server");
         dialog.querySelector("select[name='equipment_type']").innerHTML = types.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
+        const drops = (state.container.data?.cables || []).filter((cable) => cable.cable_type === "drop");
+        dialog.querySelector("select[name='drop_cable_id']").innerHTML = `<option value="">Adicionar sem conectar DROP</option>${drops.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count} FO</option>`).join("")}`;
         dialog.querySelector("form").reset();
+        const typeSelect = dialog.querySelector("select[name='equipment_type']");
+        typeSelect.onchange = () => configureEquipmentCreateForType(dialog);
+        configureEquipmentCreateForType(dialog);
         dialog.querySelector("form").onsubmit = async (event) => {
             event.preventDefault();
             const payload = Object.fromEntries(new FormData(event.currentTarget));
@@ -1102,7 +1127,7 @@
                 await loadContainerMaster(true); renderEquipmentList(); renderContainerCanvas(); renderConnectionMatrix();
             } catch (error) { dialog.querySelector("[data-status]").textContent = error.message; }
         };
-        dialog.showModal();
+        showEquipmentDialogWithFade(dialog);
     }
 
     function equipmentEditorDialog() {
@@ -1190,7 +1215,7 @@
                 notify("Equipamento atualizado.");
             } catch (error) { qs("[data-status]", dialog).textContent = error.message; }
         };
-        dialog.showModal();
+        showEquipmentDialogWithFade(dialog);
     }
 
     async function exportContainerPng() {

@@ -14,7 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r6"), 5)
+        self.assertEqual(template.count("{{ map_version }}-tower-r7"), 5)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
@@ -68,7 +68,8 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertIn('qs("i", port)', canvas)
         self.assertIn("configureEquipmentEditorForType", canvas)
         self.assertIn("allowedPorts", canvas)
-        self.assertIn("MAPA v{{ map_version }}", template)
+        self.assertIn('data-map-version="{{ map_version }}"', template)
+        self.assertNotIn('class="map-version-badge"', template)
         self.assertIn("Ficha técnica fluida", css)
         self.assertIn("elimina aparência nativa", css)
 
@@ -144,10 +145,30 @@ class MapV0750StaticTests(unittest.TestCase):
     def test_versions_are_independent(self):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
-        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.78.0"))', settings)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.1")', settings)
-        self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.78.0}', compose)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.1}', compose)
+        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.79.0"))', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.2")', settings)
+        self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.79.0}', compose)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.2}', compose)
+
+    def test_tower_r7_has_contextual_creation_drop_and_fade(self):
+        canvas = content("static/js/map-master-suite.js")
+        backend = content("apps/network_map/api/views.py")
+        css = content("static/css/map-v0750-tower-workspace.css")
+        sidebar = content("static/js/map-ui-v072.js")
+        for token in ('data-create-field="drop"', "configureEquipmentCreateForType", "drop_cable_id", "showEquipmentDialogWithFade"):
+            self.assertIn(token, canvas)
+        for token in ("DROP com conector direto na ONU / ONT", "source_port__equipment", "drop_cable_id"):
+            self.assertIn(token, backend)
+        self.assertIn("master-drop-entry", css)
+        self.assertIn("towerEquipmentFadeIn", css)
+        self.assertIn("map-version-menu-v072", sidebar)
+
+    def test_new_links_are_clean_and_edit_mode_can_finish(self):
+        canvas = content("static/js/map-master-suite.js")
+        toolbar = content("static/js/map-v0750-tower-workspace.js")
+        self.assertIn('state.container.layout.routes[String(linkId)] = [];', canvas)
+        self.assertIn('"Concluir e salvar"', toolbar)
+        self.assertIn('"Traçado concluído e salvo."', toolbar)
 
 
 if __name__ == "__main__":

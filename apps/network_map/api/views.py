@@ -982,6 +982,15 @@ def container_equipment(request, element_id):
         snmp_community = str(request.data.get("snmp_community", "")).strip()
         if snmp_community:
             metadata["snmp_community_encrypted"] = SecretCipher().encrypt(snmp_community)
+        drop_cable = None
+        drop_cable_id = request.data.get("drop_cable_id")
+        if is_onu and drop_cable_id:
+            drop_cable = get_object_or_404(
+                FiberCable.objects.filter(Q(origin=container) | Q(destination=container)),
+                pk=drop_cable_id,
+                company=container.company,
+                cable_type=FiberCable.CableType.DROP,
+            )
         with transaction.atomic():
             equipment = ContainerEquipment.objects.create(
                 company=container.company,
@@ -1011,6 +1020,18 @@ def container_equipment(request, element_id):
                 metadata=metadata,
             )
             _generate_container_equipment_ports(equipment)
+            if drop_cable:
+                pon_port = equipment.ports.filter(
+                    port_type=ContainerEquipmentPort.PortType.PON
+                ).first()
+                ContainerPortLink.objects.create(
+                    container=container,
+                    destination_port=pon_port,
+                    cable=drop_cable,
+                    link_type=ContainerPortLink.LinkType.FIBER,
+                    notes="DROP com conector direto na ONU / ONT",
+                    loss_db=Decimal("0.10"),
+                )
         return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
     return JsonResponse({
         "container": {"id": container.id, "name": container.name, "type": container.element_type},
@@ -1038,7 +1059,11 @@ def container_equipment(request, element_id):
             {
                 "id": link.id,
                 "source_port_id": link.source_port_id,
-                "source": f"{link.source_port.equipment.name} · {link.source_port.label}",
+                "source": (
+                    f"{link.source_port.equipment.name} · {link.source_port.label}"
+                    if link.source_port
+                    else f"DROP · {link.cable.name if link.cable else 'Entrada externa'}"
+                ),
                 "destination_port_id": link.destination_port_id,
                 "destination": f"{link.destination_port.equipment.name} · {link.destination_port.label}",
                 "cable_id": link.cable_id,
@@ -1046,7 +1071,7 @@ def container_equipment(request, element_id):
                 "link_type": link.link_type,
                 "link_type_label": link.get_link_type_display(),
             }
-            for link in container.internal_port_links.filter(source_port__isnull=False).select_related(
+            for link in container.internal_port_links.select_related(
                 "source_port__equipment", "destination_port__equipment", "cable"
             )
         ],
@@ -1118,8 +1143,20 @@ def _fusion_link(port):
     return next((link for link in port.incoming_links.all() if link.cable_fiber_id), None)
 
 
+def _external_cable_link(port):
+    """Terminação direta de um cabo externo na porta, como DROP -> PON da ONU."""
+    return next(
+        (
+            link
+            for link in port.incoming_links.all()
+            if link.source_port_id is None and link.cable_id
+        ),
+        None,
+    )
+
+
 def _linked_cable_name(port):
-    link = _cord_link(port)
+    link = _cord_link(port) or _external_cable_link(port)
     return link.cable.name if link and link.cable else None
 
 
@@ -1358,10 +1395,14 @@ def _container_equipment_payload(item):
                 "card_number": port.card_number,
                 "port_number": port.port_number,
                 "label": port.label,
-                "used": _cord_link(port) is not None,
+                "used": _cord_link(port) is not None or _external_cable_link(port) is not None,
                 "linked_cable": _linked_cable_name(port),
-                "link_id": getattr(_cord_link(port), "id", None),
-                "link_loss_db": float(_cord_link(port).loss_db) if _cord_link(port) else None,
+                "link_id": getattr(_cord_link(port) or _external_cable_link(port), "id", None),
+                "link_loss_db": (
+                    float((_cord_link(port) or _external_cable_link(port)).loss_db)
+                    if (_cord_link(port) or _external_cable_link(port))
+                    else None
+                ),
                 "fusion_used": _fusion_link(port) is not None,
                 "fusion_link_id": getattr(_fusion_link(port), "id", None),
                 "fusion_linked_cable": _fusion_cable_name(port),
