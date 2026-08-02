@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.79.1 |
-| Mapa | v0.75.2 |
+| Mapa | v0.75.3 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): polimento visual do Financeiro e Gateway por empresa — painéis

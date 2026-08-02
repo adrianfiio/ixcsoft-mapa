@@ -4,6 +4,11 @@
     const VERSION = "0.75.0";
     const qs = (selector, root = document) => root.querySelector(selector);
     const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
+    const escapeHtml = (value) => {
+        const span = document.createElement("span");
+        span.textContent = value == null ? "" : String(value);
+        return span.innerHTML;
+    };
     const state = {
         activeMenu: null,
         inspectorEquipmentId: "",
@@ -157,7 +162,7 @@
             equipment: "Inventário da estrutura",
             fibers: "Fibras e terminações",
             models: "Importar YAML / modelos",
-            matrix: "Matriz de conexões",
+            matrix: "Relatório de ligações",
             structure: "Estrutura principal",
             inspector: "Propriedades do equipamento",
         })[mode] || "Detalhes";
@@ -225,16 +230,19 @@
             info.className = "tower-structure-info-v0750";
             body.appendChild(info);
         }
+        const nodeItems = qsa(".master-canvas-node", root).map((node) => ({
+            id: node.dataset.equipmentNode,
+            name: qs("header strong", node)?.textContent || "Equipamento",
+            type: qs("header small", node)?.textContent || node.dataset.equipmentType || "",
+        }));
         info.innerHTML = `
-            <div class="tower-structure-hero-v0750">${icon("tower")}<div><strong>${dialog?.querySelector("h2")?.textContent || "Torre / Rack"}</strong><span>Elemento pai da estrutura interna</span></div></div>
-            <h3>Modelo recomendado para torre</h3>
-            <ol>
-                <li>1 D.I.O para entrada e distribuição das fibras.</li>
-                <li>1 PTO para terminações DROP.</li>
-                <li>Ativos: AP, PTP, Switch, Router e ONU/ONT.</li>
-                <li>Conecte as portas diretamente no Canvas 2D.</li>
-            </ol>
-            <p>A estrutura principal já é o próprio ponto Torre/Rack do mapa. Não é necessário criar outra torre dentro dela.</p>`;
+            <div class="tower-structure-hero-v0750">${icon("tower")}<div><strong>${escapeHtml(dialog?.querySelector("h2")?.textContent || "Torre / Rack")}</strong><span>Elemento pai da estrutura interna</span></div></div>
+            <h3>Equipamentos instalados</h3>
+            <div class="tower-structure-list-v0750">${nodeItems.map((item) => `<button type="button" data-structure-equipment="${item.id}"><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type)}</small></span><i>›</i></button>`).join("") || "<p>Nenhum equipamento instalado.</p>"}</div>`;
+        qsa("[data-structure-equipment]", info).forEach((button) => button.onclick = () => {
+            const node = qs(`[data-equipment-node="${CSS.escape(button.dataset.structureEquipment)}"]`, root);
+            if (node) openInspector(root, node);
+        });
         info.classList.add("active");
         qs("[data-drawer-title]", drawer).textContent = panelTitle("structure");
         qs("[data-drawer-subtitle]", drawer).textContent = "Hierarquia física e lógica da torre";
@@ -323,10 +331,12 @@
                     <button type="button" data-tower-menu aria-controls="tower-tools-menu-v0750" aria-expanded="false">${icon("menu")}<span>Ferramentas</span>${icon("chevron")}</button>
                     <div id="tower-tools-menu-v0750" class="tower-popover-v0750 tower-tools-menu-v0750" role="menu">
                         <button type="button" data-open-panel="equipment">${icon("inventory")}<span>Inventário</span></button>
-                        <button type="button" data-open-panel="matrix">${icon("connect")}<span>Matriz de conexões</span></button>
+                        <button type="button" data-open-panel="matrix">${icon("connect")}<span>Relatório de ligações</span></button>
                         <button type="button" data-open-panel="models">${icon("yaml")}<span>Importar YAML</span></button>
                         <button type="button" data-organize-canvas>${icon("organize")}<span>Organizar equipamentos</span></button>
                         <button type="button" data-fit-canvas>${icon("fit")}<span>Ajustar ao Canvas</span></button>
+                        <button type="button" data-export-canvas="png">${icon("sheet")}<span>Exportar PNG</span></button>
+                        <button type="button" data-export-canvas="pdf">${icon("sheet")}<span>Exportar PDF</span></button>
                         <button type="button" data-workspace-fullscreen>${icon("fullscreen")}<span>Tela cheia</span></button>
                     </div>
                 </div>
@@ -348,21 +358,31 @@
         qsa("[data-open-panel]", toolbar).forEach((button) => button.onclick = () => openPanel(root, button.dataset.openPanel));
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
-        function setLineMode(active, editing = false) {
+        qsa("[data-export-canvas]", toolbar).forEach((button) => button.onclick = () => {
+            closeActivePopover(root);
+            qs(button.dataset.exportCanvas === "pdf" ? "[data-container-export-pdf]" : "[data-container-export]", root)?.click();
+        });
+        function setLineMode(active, mode = "") {
             const native = qs("[data-container-lines]", root);
             if (!native) return notify("Editor de conexões não carregado.", true);
             if (native.classList.contains("active") !== active) native.click();
-            qsa("[data-connect-ports], [data-edit-lines]", toolbar).forEach((button) => button.classList.toggle("active", active));
+            qs("[data-connect-ports]", toolbar)?.classList.toggle("active", active && mode === "connect");
+            qs("[data-edit-lines]", toolbar)?.classList.toggle("active", active && mode === "edit");
             const editLabel = qs("[data-edit-lines] span", toolbar);
-            if (editLabel) editLabel.textContent = active && editing ? "Concluir e salvar" : "Editar linhas";
+            const connectLabel = qs("[data-connect-ports] span", toolbar);
+            if (editLabel) editLabel.textContent = active && mode === "edit" ? "Concluir e salvar" : "Editar linhas";
+            if (connectLabel) connectLabel.textContent = active && mode === "connect" ? "Concluir ligação" : "Ligar portas";
         }
         qs("[data-connect-ports]", toolbar).onclick = () => {
-            setLineMode(true, false);
-            notify("Clique no conector da porta de origem e depois no conector da porta de destino.");
+            const active = !qs("[data-connect-ports]", toolbar).classList.contains("active");
+            setLineMode(active, active ? "connect" : "");
+            notify(active
+                ? "Clique no conector da porta de origem e depois no conector da porta de destino."
+                : "Modo de ligação concluído.");
         };
         qs("[data-edit-lines]", toolbar).onclick = () => {
             const active = !qs("[data-edit-lines]", toolbar).classList.contains("active");
-            setLineMode(active, active);
+            setLineMode(active, active ? "edit" : "");
             notify(active
                 ? "Clique numa linha para selecionar. Dê dois cliques para criar um ponto e arraste-o."
                 : "Traçado concluído e salvo.");
@@ -389,12 +409,21 @@
         native.replaceWith(replacement);
     }
 
-    function toggleContainerFullscreen(root, force) {
+    async function toggleContainerFullscreen(root, force) {
         const dialog = dialogRoot();
         if (!dialog) return;
         const active = typeof force === "boolean" ? force : !dialog.classList.contains("master-container-fullscreen");
         dialog.classList.toggle("master-container-fullscreen", active);
         dialog.classList.toggle("map-v0750-css-fullscreen", active);
+        try {
+            if (active && document.fullscreenElement !== dialog && dialog.requestFullscreen) {
+                await dialog.requestFullscreen({ navigationUI: "hide" });
+            } else if (!active && document.fullscreenElement && document.exitFullscreen) {
+                await document.exitFullscreen();
+            }
+        } catch (_error) {
+            /* O CSS já mantém o modo tela cheia quando a API do navegador não estiver disponível. */
+        }
         const label = qs("[data-workspace-fullscreen] span", root);
         if (label) label.textContent = active ? "Desmaximizar" : "Tela cheia";
         window.setTimeout(() => {
@@ -474,8 +503,9 @@
             if (node.dataset.v0750Inspector === "1") return;
             node.dataset.v0750Inspector = "1";
             node.addEventListener("click", (event) => {
-                if (event.target.closest("[data-port-id]")) return;
-                openInspector(root, node);
+                if (event.target.closest("[data-port-id], [data-node-edit]")) return;
+                qsa(".master-canvas-node.selected-v0750", root).forEach((item) => item.classList.remove("selected-v0750"));
+                node.classList.add("selected-v0750");
             });
         });
         const nodes = qsa(".master-canvas-node", root);

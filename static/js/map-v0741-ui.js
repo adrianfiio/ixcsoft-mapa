@@ -202,6 +202,22 @@
                 applyCanvasView(root, state.scale + (event.deltaY < 0 ? 0.08 : -0.08), { userZoom: true });
             }, { passive: false });
             viewport.addEventListener("pointerdown", (event) => {
+                if (event.button !== 1) return;
+                event.preventDefault();
+                const origin = { x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
+                viewport.classList.add("canvas-panning-v0752");
+                const move = (moveEvent) => {
+                    viewport.scrollLeft = origin.left - (moveEvent.clientX - origin.x);
+                    viewport.scrollTop = origin.top - (moveEvent.clientY - origin.y);
+                };
+                const up = () => {
+                    viewport.classList.remove("canvas-panning-v0752");
+                    window.removeEventListener("pointermove", move);
+                };
+                window.addEventListener("pointermove", move);
+                window.addEventListener("pointerup", up, { once: true });
+            });
+            viewport.addEventListener("pointerdown", (event) => {
                 if (!event.target.closest(".master-canvas-node header")) return;
                 clearCanvasView(root);
                 const state = viewState(root);
