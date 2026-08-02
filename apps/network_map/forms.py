@@ -14,7 +14,6 @@ class NetworkElementForm(forms.ModelForm):
         max_value=90,
         widget=forms.NumberInput(
             attrs={
-                "class": "form-control",
                 "placeholder": "-23.5505000",
                 "step": "0.0000001",
             }
@@ -30,7 +29,6 @@ class NetworkElementForm(forms.ModelForm):
         max_value=180,
         widget=forms.NumberInput(
             attrs={
-                "class": "form-control",
                 "placeholder": "-46.6333000",
                 "step": "0.0000001",
             }
@@ -62,44 +60,27 @@ class NetworkElementForm(forms.ModelForm):
         }
 
         widgets = {
-            "project": forms.Select(
-                attrs={"class": "form-control"}
-            ),
+            "project": forms.Select(),
             "name": forms.TextInput(
                 attrs={
-                    "class": "form-control",
                     "placeholder": "Ex.: OLT AFService 01",
                     "autofocus": True,
                 }
             ),
             "code": forms.TextInput(
                 attrs={
-                    "class": "form-control",
                     "placeholder": "Ex.: OLT-001",
                 }
             ),
-            "element_type": forms.Select(
-                attrs={
-                    "class": "form-control",
-                }
-            ),
-            "status": forms.Select(
-                attrs={
-                    "class": "form-control",
-                }
-            ),
+            "element_type": forms.Select(),
+            "status": forms.Select(),
             "description": forms.Textarea(
                 attrs={
-                    "class": "form-control",
                     "rows": 4,
                     "placeholder": "Informações adicionais sobre o equipamento",
                 }
             ),
-            "enabled": forms.CheckboxInput(
-                attrs={
-                    "class": "checkbox-input",
-                }
-            ),
+            "enabled": forms.CheckboxInput(),
         }
 
     def __init__(self, *args, company_ids=None, **kwargs):

@@ -1,279 +1,114 @@
-{% extends "network_map/equipment/base.html" %}
+{% extends "base.html" %}
 
-{% block title %}Equipamentos{% endblock %}
-
-{% block extra_css %}
-<style>
-    .filters {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr auto;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .table-wrapper {
-        overflow-x: auto;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th,
-    td {
-        padding: 14px 12px;
-        border-bottom: 1px solid #334155;
-        text-align: left;
-        vertical-align: middle;
-    }
-
-    th {
-        color: #94a3b8;
-        font-size: 12px;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
-    }
-
-    tbody tr:hover {
-        background: rgba(15, 23, 42, 0.45);
-    }
-
-    .equipment-name {
-        font-weight: 700;
-    }
-
-    .equipment-code {
-        color: #94a3b8;
-        font-family: monospace;
-    }
-
-    .actions {
-        display: flex;
-        gap: 7px;
-        white-space: nowrap;
-    }
-
-    .empty-state {
-        padding: 45px 20px;
-        color: #94a3b8;
-        text-align: center;
-    }
-
-    .pagination {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 22px;
-    }
-    .bulk-toolbar { display:flex; align-items:center; gap:12px; margin:0 0 14px; }
-    .row-check { width:18px; height:18px; accent-color:#2dd4bf; }
-
-    @media (max-width: 1000px) {
-        .filters {
-            grid-template-columns: 1fr 1fr;
-        }
-    }
-
-    @media (max-width: 600px) {
-        .filters {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-{% endblock %}
+{% block title %}Equipamentos | AFService Map{% endblock %}
+{% block topbar_title %}Equipamentos{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<section class="page-heading">
     <div>
-        <h1 class="page-title">Equipamentos da rede</h1>
-
-        <p class="page-description">
-            Gerencie OLTs, CTOs, DIOs e demais elementos da infraestrutura. Novos equipamentos são cadastrados pelo mapa, já com projeto e posição.
-        </p>
+        <h1>Equipamentos da rede</h1>
+        <p>Gerencie OLTs, CTOs, DIOs e demais elementos da infraestrutura. Novos equipamentos são cadastrados pelo mapa, já com projeto e posição.</p>
     </div>
-</div>
+</section>
 
-<div class="card">
-    <form method="get" class="filters">
-        <input
-            class="form-control"
-            type="search"
-            name="q"
-            value="{{ filters.q }}"
-            placeholder="Buscar por nome, código ou descrição"
-        >
-
-        <select class="form-control" name="type">
+<article class="panel">
+    <form method="get" class="filter-bar">
+        <input type="search" name="q" value="{{ filters.q }}" placeholder="Buscar por nome, código ou descrição">
+        <select name="type">
             <option value="">Todos os tipos</option>
-
             {% for value, label in element_types %}
-                <option
-                    value="{{ value }}"
-                    {% if filters.type == value %}selected{% endif %}
-                >
-                    {{ label }}
-                </option>
+            <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-
-        <select class="form-control" name="status">
+        <select name="status">
             <option value="">Todos os status</option>
-
             {% for value, label in status_choices %}
-                <option
-                    value="{{ value }}"
-                    {% if filters.status == value %}selected{% endif %}
-                >
-                    {{ label }}
-                </option>
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-
-        <select class="form-control" name="enabled">
+        <select name="enabled">
             <option value="">Ativos e inativos</option>
-            <option value="1" {% if filters.enabled == "1" %}selected{% endif %}>
-                Somente ativos
-            </option>
-            <option value="0" {% if filters.enabled == "0" %}selected{% endif %}>
-                Somente inativos
-            </option>
+            <option value="1" {% if filters.enabled == "1" %}selected{% endif %}>Somente ativos</option>
+            <option value="0" {% if filters.enabled == "0" %}selected{% endif %}>Somente inativos</option>
         </select>
-
-        <button class="button" type="submit">
-            Filtrar
-        </button>
+        <button type="submit" class="primary-action">Filtrar</button>
     </form>
 
-    {% if can_edit_equipment %}<form id="bulk-form" method="post" class="bulk-toolbar"
-          onsubmit="return confirm('Excluir os equipamentos selecionados? Esta ação não pode ser desfeita.');">
+    {% if can_edit_equipment %}
+    <form id="bulk-form" method="post" class="team-actions" style="margin-bottom: 14px;" onsubmit="return confirm('Excluir os equipamentos selecionados? Esta ação não pode ser desfeita.');">
         {% csrf_token %}
         <input type="hidden" name="bulk_action" value="delete">
-        <button class="button button-small button-danger" type="submit">
-            Excluir selecionados
-        </button>
+        <button type="submit" class="danger-action">Excluir selecionados</button>
         <span id="selected-count">0 selecionados</span>
-    </form>{% endif %}
+    </form>
+    {% endif %}
 
-    <div class="table-wrapper">
-        <table>
+    <div class="overview-table-wrap">
+        <table class="overview-table">
             <thead>
                 <tr>
-                    {% if can_edit_equipment %}<th><input id="select-page" class="row-check" type="checkbox" aria-label="Selecionar todos desta página"></th>{% endif %}
+                    {% if can_edit_equipment %}<th><input id="select-page" type="checkbox" aria-label="Selecionar todos desta página"></th>{% endif %}
                     <th>Nome</th>
                     <th>Código</th>
                     <th>Tipo</th>
                     <th>Status</th>
                     <th>Localização</th>
                     <th>Ativo</th>
-                    <th>Ações</th>
+                    <th></th>
                 </tr>
             </thead>
-
             <tbody>
                 {% for item in equipments %}
-                    <tr>
-                        {% if can_edit_equipment %}<td><input class="row-check equipment-select" type="checkbox" name="selected" value="{{ item.pk }}" form="bulk-form" aria-label="Selecionar {{ item.name }}"></td>{% endif %}
-                        <td class="equipment-name">
-                            {{ item.name }}
-                        </td>
-
-                        <td class="equipment-code">
-                            {{ item.code|default:"—" }}
-                        </td>
-
-                        <td>
-                            {{ item.get_element_type_display }}
-                        </td>
-
-                        <td>
-                            <span class="badge badge-{{ item.status }}">
-                                {{ item.get_status_display }}
-                            </span>
-                        </td>
-
-                        <td>
-                            {% if item.point %}
-                                {{ item.point.y|floatformat:6 }},
-                                {{ item.point.x|floatformat:6 }}
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if item.enabled %}
-                                Sim
-                            {% else %}
-                                Não
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            <div class="actions">
-                                <a
-                                    class="button button-small button-secondary"
-                                    href="{% url 'equipment-detail' item.pk %}"
-                                >
-                                    Ver
-                                </a>
-
-                                {% if can_edit_equipment %}<a
-                                    class="button button-small button-secondary"
-                                    href="{% url 'equipment-update' item.pk %}"
-                                >
-                                    Editar
-                                </a>
-
-                                <a
-                                    class="button button-small button-danger"
-                                    href="{% url 'equipment-delete' item.pk %}"
-                                >
-                                    Excluir
-                                </a>{% endif %}
-                            </div>
-                        </td>
-                    </tr>
+                <tr>
+                    {% if can_edit_equipment %}<td><input class="equipment-select" type="checkbox" name="selected" value="{{ item.pk }}" form="bulk-form" aria-label="Selecionar {{ item.name }}"></td>{% endif %}
+                    <td><strong>{{ item.name }}</strong></td>
+                    <td>{{ item.code|default:"—" }}</td>
+                    <td>{{ item.get_element_type_display }}</td>
+                    <td>
+                        {% if item.status == "normal" %}<span class="sync-pill sync-ok">{{ item.get_status_display }}</span>
+                        {% elif item.status == "offline" %}<span class="sync-pill sync-danger">{{ item.get_status_display }}</span>
+                        {% elif item.status == "no_data" %}<span class="sync-pill sync-muted">{{ item.get_status_display }}</span>
+                        {% else %}<span class="sync-pill sync-warning">{{ item.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if item.point %}{{ item.point.y|floatformat:6 }}, {{ item.point.x|floatformat:6 }}{% else %}—{% endif %}</td>
+                    <td>{% if item.enabled %}Sim{% else %}Não{% endif %}</td>
+                    <td class="icon-actions">
+                        <a class="icon-action" href="{% url 'equipment-detail' item.pk %}" data-label="Ver" aria-label="Ver equipamento">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </a>
+                        {% if can_edit_equipment %}
+                        <a class="icon-action" href="{% url 'equipment-update' item.pk %}" data-label="Editar" aria-label="Editar equipamento">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                        </a>
+                        <a class="icon-action" href="{% url 'equipment-delete' item.pk %}" data-label="Excluir" aria-label="Excluir equipamento">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
                 {% empty %}
-                    <tr>
-                        <td colspan="{% if can_edit_equipment %}8{% else %}7{% endif %}">
-                            <div class="empty-state">
-                                Nenhum equipamento encontrado.
-                            </div>
-                        </td>
-                    </tr>
+                <tr><td colspan="{% if can_edit_equipment %}8{% else %}7{% endif %}" class="empty-state">Nenhum equipamento encontrado.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
     {% if is_paginated %}
-        <nav class="pagination">
-            {% if page_obj.has_previous %}
-                <a
-                    class="button button-small button-secondary"
-                    href="?q={{ filters.q|urlencode }}&type={{ filters.type|urlencode }}&status={{ filters.status|urlencode }}&enabled={{ filters.enabled|urlencode }}&page={{ page_obj.previous_page_number }}"
-                >
-                    Anterior
-                </a>
-            {% endif %}
-
-            <span>
-                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-            </span>
-
-            {% if page_obj.has_next %}
-                <a
-                    class="button button-small button-secondary"
-                    href="?q={{ filters.q|urlencode }}&type={{ filters.type|urlencode }}&status={{ filters.status|urlencode }}&enabled={{ filters.enabled|urlencode }}&page={{ page_obj.next_page_number }}"
-                >
-                    Próxima
-                </a>
-            {% endif %}
-        </nav>
+    <nav class="team-actions" style="margin-top: 20px; justify-content: center;">
+        {% if page_obj.has_previous %}
+        <a class="panel-link" href="?q={{ filters.q|urlencode }}&type={{ filters.type|urlencode }}&status={{ filters.status|urlencode }}&enabled={{ filters.enabled|urlencode }}&page={{ page_obj.previous_page_number }}">← Anterior</a>
+        {% endif %}
+        <span class="cancel-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a class="panel-link" href="?q={{ filters.q|urlencode }}&type={{ filters.type|urlencode }}&status={{ filters.status|urlencode }}&enabled={{ filters.enabled|urlencode }}&page={{ page_obj.next_page_number }}">Próxima →</a>
+        {% endif %}
+    </nav>
     {% endif %}
-</div>
+</article>
+{% endblock %}
+
+{% block scripts %}
 <script>
 (() => {
     const all = document.getElementById("select-page");

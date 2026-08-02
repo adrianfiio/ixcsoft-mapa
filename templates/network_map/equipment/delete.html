@@ -1,57 +1,29 @@
-{% extends "network_map/equipment/base.html" %}
+{% extends "base.html" %}
 
-{% block title %}Excluir equipamento{% endblock %}
+{% block title %}Excluir equipamento | AFService Map{% endblock %}
+{% block topbar_title %}Equipamentos{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<section class="page-heading">
     <div>
-        <h1 class="page-title">Excluir equipamento</h1>
-
-        <p class="page-description">
-            Esta ação não poderá ser desfeita.
-        </p>
+        <h1>Excluir equipamento</h1>
+        <p>Esta ação não poderá ser desfeita.</p>
     </div>
-</div>
+</section>
 
-<form method="post" class="card">
-    {% csrf_token %}
-
-    <h2 style="margin-top: 0;">
-        Confirma a exclusão de “{{ equipment.name }}”?
-    </h2>
-
-    <p style="color: #94a3b8; line-height: 1.6;">
-        O equipamento será removido permanentemente do sistema.
-        Dependências relacionadas também poderão ser afetadas.
-    </p>
-
-    <div class="detail-grid" style="margin-top: 20px;">
-        <div class="detail-item">
-            <span class="detail-label">Código</span>
-            <div class="detail-value">
-                {{ equipment.code|default:"—" }}
-            </div>
+<article class="panel">
+    <form method="post">
+        {% csrf_token %}
+        <div class="panel-header"><h2 class="panel-title">Confirma a exclusão de "{{ equipment.name }}"?</h2></div>
+        <p>O equipamento será removido permanentemente do sistema. Dependências relacionadas também poderão ser afetadas.</p>
+        <div class="info-list" style="margin-top: 16px;">
+            <div class="info-row"><span>Código</span><strong>{{ equipment.code|default:"—" }}</strong></div>
+            <div class="info-row"><span>Tipo</span><strong>{{ equipment.get_element_type_display }}</strong></div>
         </div>
-
-        <div class="detail-item">
-            <span class="detail-label">Tipo</span>
-            <div class="detail-value">
-                {{ equipment.get_element_type_display }}
-            </div>
+        <div class="platform-form-actions">
+            <a class="cancel-link" href="{% url 'equipment-detail' equipment.pk %}">Cancelar</a>
+            <button type="submit" class="danger-action">Excluir permanentemente</button>
         </div>
-    </div>
-
-    <div class="form-actions">
-        <a
-            class="button button-secondary"
-            href="{% url 'equipment-detail' equipment.pk %}"
-        >
-            Cancelar
-        </a>
-
-        <button class="button button-danger" type="submit">
-            Excluir permanentemente
-        </button>
-    </div>
-</form>
+    </form>
+</article>
 {% endblock %}
