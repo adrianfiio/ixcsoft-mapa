@@ -14,6 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
+        self.assertEqual(template.count("{{ map_version }}-tower-r2"), 2)
 
     def test_tower_opens_directly_in_canvas(self):
         runtime = content("static/js/map-v0750-tower-workspace.js")
@@ -24,8 +25,21 @@ class MapV0750StaticTests(unittest.TestCase):
         runtime = content("static/js/map-v0750-tower-workspace.js")
         for kind in ("dio", "pto", "access_point", "ptp", "switch", "router", "onu"):
             self.assertIn(f'data-quick-add="{kind}"', runtime)
-        for action in ('data-connect-ports', 'data-open-panel="matrix"', "data-organize-canvas", "data-fit-canvas", "data-zoom-out", "data-zoom-in"):
+        for action in ('data-connect-ports', 'data-open-panel="matrix"', "data-organize-canvas", "data-fit-canvas", "data-tower-menu"):
             self.assertIn(action, runtime)
+
+    def test_tower_uses_compact_menus_and_bottom_left_zoom(self):
+        runtime = content("static/js/map-v0750-tower-workspace.js")
+        css = content("static/css/map-v0750-tower-workspace.css")
+        zoom_runtime = content("static/js/map-v0741-ui.js")
+        self.assertIn("tower-add-menu-v0750", runtime)
+        self.assertIn("tower-tools-menu-v0750", runtime)
+        self.assertIn("toggleToolbarMenu", runtime)
+        self.assertIn('left: 12px !important;', css)
+        self.assertIn('[data-canvas-zoom-fit] { display: none !important; }', css)
+        self.assertIn('data-canvas-zoom-out', zoom_runtime)
+        self.assertIn('data-canvas-zoom-in', zoom_runtime)
+        self.assertIn('if (!event.ctrlKey) return;', zoom_runtime)
 
     def test_fullscreen_is_css_only_in_loaded_runtimes(self):
         paths = (
