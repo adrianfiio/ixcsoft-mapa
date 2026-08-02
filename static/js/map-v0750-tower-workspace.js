@@ -106,6 +106,21 @@
         if (section) section.scrollTop = 0;
     }
 
+    function resetWorkspaceForOpen() {
+        const dialog = dialogRoot();
+        if (!dialog?.open) return;
+        dialog.classList.remove("master-container-fullscreen", "map-v0750-css-fullscreen");
+        dialog.scrollTop = 0;
+        const root = workspaceRoot();
+        if (root) {
+            closeDrawer(root);
+            ensureWorkspace(root);
+        }
+        lockWorkspacePosition();
+        window.requestAnimationFrame(() => lockWorkspacePosition());
+        window.setTimeout(() => lockWorkspacePosition(), 120);
+    }
+
     function installWorkspacePositionLock() {
         const sidebar = qs("#map-sidebar");
         if (sidebar && !state.workspaceResizeObserver && window.ResizeObserver) {
@@ -301,7 +316,8 @@
                         <button type="button" data-quick-add="onu">${icon("active")}<span><strong>ONU / ONT</strong><small>Terminação óptica ativa</small></span></button>
                     </div>
                 </div>
-                <button type="button" data-connect-ports>${icon("connect")}<span>Conectar portas</span></button>
+                <button type="button" data-connect-ports>${icon("connect")}<span>Ligar portas</span></button>
+                <button type="button" data-edit-lines>${icon("edit")}<span>Editar linhas</span></button>
                 <button type="button" data-open-panel="fibers">${icon("fiber")}<span>Fibras</span></button>
                 <div class="tower-toolbar-menu-v0750">
                     <button type="button" data-tower-menu aria-controls="tower-tools-menu-v0750" aria-expanded="false">${icon("menu")}<span>Ferramentas</span>${icon("chevron")}</button>
@@ -332,16 +348,19 @@
         qsa("[data-open-panel]", toolbar).forEach((button) => button.onclick = () => openPanel(root, button.dataset.openPanel));
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
-        qs("[data-connect-ports]", toolbar).onclick = (event) => {
+        function setLineMode(active) {
             const native = qs("[data-container-lines]", root);
             if (!native) return notify("Editor de conexões não carregado.", true);
-            native.click();
-            const active = native.classList.contains("active");
-            event.currentTarget.classList.toggle("active", active);
-            event.currentTarget.querySelector("span").textContent = active ? "Concluir" : "Conectar";
-            notify(active
-                ? "Modo de conexão ativo: clique na porta de origem e depois na porta de destino."
-                : "Edição de conexões concluída.");
+            if (native.classList.contains("active") !== active) native.click();
+            qsa("[data-connect-ports], [data-edit-lines]", toolbar).forEach((button) => button.classList.toggle("active", active));
+        }
+        qs("[data-connect-ports]", toolbar).onclick = () => {
+            setLineMode(true);
+            notify("Clique no conector da porta de origem e depois no conector da porta de destino.");
+        };
+        qs("[data-edit-lines]", toolbar).onclick = () => {
+            setLineMode(true);
+            notify("Clique numa linha para selecionar. Dê dois cliques para criar um ponto e arraste os pontos brancos.");
         };
         qs("[data-workspace-fullscreen]", toolbar).onclick = () => toggleContainerFullscreen(root);
         document.addEventListener("click", (event) => {
@@ -543,6 +562,12 @@
                 event.preventDefault();
                 toggleContainerFullscreen(workspaceRoot(), false);
             });
+            container.addEventListener("close", () => {
+                container.classList.remove("master-container-fullscreen", "map-v0750-css-fullscreen");
+                container.scrollTop = 0;
+                const root = workspaceRoot();
+                if (root) closeDrawer(root);
+            });
         }
         const fusion = qs("#unifilar-dialog");
         if (fusion && fusion.dataset.v0750Guard !== "1") {
@@ -578,6 +603,7 @@
         document.addEventListener("map:container-rendered", () => {
             ensureWorkspace(workspaceRoot());
         });
+        document.addEventListener("map:container-opening", resetWorkspaceForOpen);
         wrapFusionLoader();
         window.setTimeout(() => ensureWorkspace(workspaceRoot()), 450);
         window.setTimeout(() => {

@@ -1,5 +1,29 @@
 # Changelog — Mapa
 
+## [map-0.75.1] - 2026-08-02
+
+Estabilização e polimento do editor técnico de Torre/Rack.
+
+### Adicionado
+
+- versão do MAPA visível na barra inferior;
+- ações separadas para ligar portas e editar o trajeto das linhas;
+- pontos de controle persistentes nas ligações internas.
+
+### Corrigido
+
+- workspace reposicionado corretamente em todas as aberturas;
+- linhas ancoradas no centro do conector real da porta;
+- formulários de equipamento orientados pelo tipo do ativo;
+- ficha técnica responsiva, sem textos escapando dos cards;
+- botões unificados com visual moderno e realce no hover.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.78.0`;
+- `MAP_VERSION` atualizada para `0.75.1`;
+- nenhuma migration.
+
 ## [map-0.75.0] - 2026-08-02
 
 Workspace estrutural de Torre/Rack com Canvas 2D direto.

@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-    <link rel="stylesheet" href="{% static 'css/map-editor.css' %}?v={{ app_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-editor.css' %}?v={{ map_version }}-tower-r6">
     <link rel="stylesheet" href="{% static 'css/kmz-import-wizard.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-fusion-polish.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v08-polish.css' %}?v={{ app_version }}">
@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/map-ui-v0722.css' %}?v={{ app_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v074.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v0741.css' %}?v={{ map_version }}">
-    <link rel="stylesheet" href="{% static 'css/map-v0750-tower-workspace.css' %}?v={{ map_version }}-tower-r5">
+    <link rel="stylesheet" href="{% static 'css/map-v0750-tower-workspace.css' %}?v={{ map_version }}-tower-r6">
     {% if current_company.brand_color %}<style>:root{--map-brand-accent:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
 <!-- IXCSOFT_MAP_UI_V072 -->
@@ -206,6 +206,7 @@
                 <input id="group-clients" type="checkbox" checked hidden>
                 <input id="group-equipment" type="checkbox" checked hidden>
                 <input id="layer-clients" type="checkbox" checked hidden>
+                <output class="map-version-badge" title="Versão instalada do componente MAPA">MAPA v{{ map_version }}</output>
             </div>
         </main>
     </div>
@@ -517,19 +518,19 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="{% static 'js/map-editor.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/map-editor.js' %}?v={{ map_version }}-tower-r6"></script>
     <script src="{% static 'js/map-fusion-polish.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/container-device-type.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-v092.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-optical-editor-v2.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-optical-editor-v3.js' %}?v={{ app_version }}"></script>
-    <script src="{% static 'js/map-master-suite.js' %}?v={{ app_version }}-workspace-r4"></script>
+    <script src="{% static 'js/map-master-suite.js' %}?v={{ map_version }}-tower-r6"></script>
     <script src="{% static 'js/map-link-monitoring-v074.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/map-ui-v072.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-ui-v0722.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-v074-ui.js' %}?v={{ map_version }}-workspace-r4"></script>
     <script src="{% static 'js/map-v0741-ui.js' %}?v={{ map_version }}"></script>
-    <script src="{% static 'js/map-v0750-tower-workspace.js' %}?v={{ map_version }}-tower-r5"></script>
+    <script src="{% static 'js/map-v0750-tower-workspace.js' %}?v={{ map_version }}-tower-r6"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
 </body>

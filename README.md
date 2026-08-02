@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.78.0 |
-| Mapa | v0.75.0 |
+| Mapa | v0.75.1 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): Superadmin agora edita o cadastro de qualquer empresa e

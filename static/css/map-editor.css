@@ -125,6 +125,11 @@ body { color: var(--text); background: var(--bg); font-family: Inter, system-ui,
 .drawing-bar button:first-of-type { background: var(--primary); }.drawing-bar button:last-of-type { color: white; background: #6b2130; }
 .map-group-control { position: absolute; z-index: 1100; bottom: 18px; left: 50%; display: flex; align-items: center; gap: 6px; padding: 6px; color: #dbeafe; background: rgba(7,17,31,.92); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 7px 24px rgba(0,0,0,.35); transform: translateX(-50%); font-size: 11px; }
 .map-group-divider { width: 1px; height: 22px; background: var(--border); }
+.map-version-badge {
+    padding: 4px 7px; border: 1px solid rgba(125,211,252,.24); border-radius: 7px;
+    color: #8ec8ea; background: rgba(14,42,67,.72); font-size: 9px; font-weight: 800;
+    letter-spacing: .04em; white-space: nowrap;
+}
 .map-icon-toggle {
     display: grid; place-items: center; width: 34px; height: 34px;
     color: #6b7c91; background: transparent; border: 0; border-radius: 8px; cursor: pointer;

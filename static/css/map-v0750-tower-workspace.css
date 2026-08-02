@@ -536,6 +536,67 @@ body.map-master-suite:has(#map-sidebar.master-minimized) #container-dialog.tower
 .map-v0750-toast.show { opacity: 1; transform: translate(-50%, 0); }
 .map-v0750-toast.error { border-color: rgba(248, 113, 113, .55); color: #fecaca; }
 
+/* Botões consistentes: elimina aparência nativa/legada em todo o editor. */
+.tower-workspace-dialog-v0750 button,
+.map-master-equipment-dialog button,
+.map-master-asset-sheet button,
+.map-master-asset-sheet a[data-qr] {
+    appearance: none;
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 1px solid rgba(125, 211, 252, .22);
+    border-radius: 8px;
+    color: #d9e9f7;
+    background: linear-gradient(180deg, rgba(20, 48, 74, .96), rgba(11, 32, 52, .96));
+    box-shadow: inset 0 1px rgba(255,255,255,.035);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color .16s ease, color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.tower-workspace-dialog-v0750 button:hover,
+.map-master-equipment-dialog button:hover,
+.map-master-asset-sheet button:hover,
+.map-master-asset-sheet a[data-qr]:hover {
+    border-color: color-mix(in srgb, var(--v0750-accent) 70%, transparent);
+    color: #fff;
+    background: color-mix(in srgb, var(--v0750-accent) 16%, #0b2034);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--v0750-accent) 24%, transparent);
+    transform: translateY(-1px);
+}
+.tower-workspace-dialog-v0750 button:disabled,
+.map-master-equipment-dialog button:disabled { opacity: .42; cursor: not-allowed; transform: none; box-shadow: none; }
+.tower-workspace-dialog-v0750 button.danger,
+.map-master-equipment-dialog button.danger { border-color: rgba(248,113,113,.35); color: #fecaca; background: rgba(127,29,29,.42); }
+
+/* Ficha técnica fluida, sem valores ou títulos escapando dos cards. */
+body.map-master-suite #map-master-asset-sheet.map-master-asset-sheet {
+    width: min(1040px, calc(100vw - 24px)) !important;
+    height: min(820px, calc(100dvh - 24px)) !important;
+    overflow: hidden !important;
+}
+#map-master-asset-sheet > section { min-width: 0; min-height: 0; overflow: hidden; }
+#map-master-asset-sheet > section > header { min-width: 0; flex-wrap: wrap; }
+#map-master-asset-sheet > section > header > div:first-child { min-width: 0; flex: 1 1 260px; }
+#map-master-asset-sheet [data-subtitle] { overflow-wrap: anywhere; }
+#map-master-asset-sheet .master-sheet-scroll { min-width: 0; min-height: 0; overflow: auto; }
+#map-master-asset-sheet [data-sheet-body] { display: block !important; max-height: none !important; min-width: 0; padding: 0 !important; }
+#map-master-asset-sheet .master-sheet-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }
+#map-master-asset-sheet .master-sheet-card,
+#map-master-asset-sheet .master-sheet-definition,
+#map-master-asset-sheet .master-sheet-definition > div,
+#map-master-asset-sheet .master-sheet-definition dd { min-width: 0; max-width: 100%; }
+#map-master-asset-sheet .master-sheet-definition dd,
+#map-master-asset-sheet .master-sheet-link,
+#map-master-asset-sheet .master-sheet-list article { overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+#map-master-asset-sheet .master-lifecycle-editor { margin: 12px 0 0; }
+
+@media (max-width: 760px) {
+    #map-master-asset-sheet .master-sheet-grid { grid-template-columns: 1fr; }
+    #map-master-asset-sheet .master-sheet-definition > div { grid-template-columns: 1fr; gap: 3px; }
+}
+
 @media (max-width: 1080px) {
     .tower-workspace-title-v0750 small { display: none; }
     .tower-workspace-actions-v0750 button span { display: none; }
