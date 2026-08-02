@@ -155,7 +155,10 @@
             document.querySelectorAll(`[data-port-id="${CSS.escape(id)}"]`).forEach((port) => {
                 [...port.classList].filter((name) => name.startsWith("monitor-status-")).forEach((name) => port.classList.remove(name));
                 port.classList.add("monitoring-port", statusClass(row.status));
-                port.title = `${port.title || port.textContent.trim()} · SNMP ${String(row.status).toUpperCase()}`;
+                // Sem o dataset abaixo, cada redecoração ia grudando outro
+                // " · SNMP ..." em cima do título já decorado antes.
+                const base = port.dataset.monitorBaseTitle ?? (port.dataset.monitorBaseTitle = port.title || port.textContent.trim());
+                port.title = `${base} · SNMP ${String(row.status).toUpperCase()}`;
             });
         });
     }
@@ -524,16 +527,40 @@
         if (window.L?.DomEvent) L.DomEvent.disableClickPropagation(button);
     }
 
+    let observerPending = false;
+    const observedRoots = [];
     const observer = new MutationObserver((mutations) => {
+        if (observerPending) return;
         const relevant = mutations.some((mutation) => [...mutation.addedNodes].some((node) => node.nodeType === 1 && (
             node.matches?.("article, .leaflet-popup-content, [data-equipment-node], [data-port-id]")
             || node.querySelector?.("[data-edit-equipment], [data-edit-container-equipment], .leaflet-popup-content, [data-equipment-node], [data-port-id]")
         )));
-        if (relevant) window.requestAnimationFrame(() => { injectEquipmentButtons(); injectCablePopupActions(); decorateEquipmentAndPorts(); });
+        if (!relevant) return;
+        observerPending = true;
+        window.requestAnimationFrame(() => {
+            // Evita reagir às próprias inserções (botão "Monitoramento",
+            // decorações de status) — sem isso, cada mutação nossa virava
+            // outra rodada do observer, e junto com outros scripts que
+            // também observam o mesmo diálogo isso já formou um laço bem
+            // rápido de mutação → reação → mutação.
+            observer.disconnect();
+            try {
+                injectEquipmentButtons();
+                injectCablePopupActions();
+                decorateEquipmentAndPorts();
+            } finally {
+                observedRoots.forEach((root) => observer.observe(root, { childList: true, subtree: true }));
+                observerPending = false;
+            }
+        });
     });
-    observer.observe(document.getElementById("map") || document.body, { childList: true, subtree: true });
+    observedRoots.push(document.getElementById("map") || document.body);
+    observer.observe(observedRoots[0], { childList: true, subtree: true });
     const containerDialog = document.getElementById("container-dialog");
-    if (containerDialog) observer.observe(containerDialog, { childList: true, subtree: true });
+    if (containerDialog) {
+        observedRoots.push(containerDialog);
+        observer.observe(containerDialog, { childList: true, subtree: true });
+    }
 
     projectSelect.addEventListener("change", () => {
         state.projectId = String(projectSelect.value || "");

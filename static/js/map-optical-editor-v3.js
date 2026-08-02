@@ -8,6 +8,8 @@
     let fusionStateElementId = null;
     let containerLayout = { positions: {}, routes: {} };
     let containerLayoutId = null;
+    let containerLayoutLoading = false;
+    let containerLayoutLoadedAt = 0;
     let movingNodes = false;
     let editingContainerLines = false;
     let selectedContainerLink = null;
@@ -418,11 +420,25 @@
         const id = containerDialog?.dataset.elementId;
         if (!id) return;
         if (!force && String(containerLayoutId) === String(id)) return;
-        const data = await request(`/api/map/elements/${id}/container-layout-v3/`);
-        containerLayout = { positions: {}, routes: {}, ...(data.layout || {}) };
-        containerLayout.positions ||= {};
-        containerLayout.routes ||= {};
-        containerLayoutId = id;
+        // `containerLayoutId` só é gravado depois que o fetch termina — sem
+        // essas duas travas, chamadas concorrentes disparadas mais rápido
+        // que o round-trip da rede (ex.: outro script mutando o DOM em
+        // loop) passavam todas pela checagem acima antes da primeira
+        // resposta voltar, e cada uma abria seu próprio fetch. Isso já
+        // chegou a gerar milhares de requisições por minuto em produção.
+        if (containerLayoutLoading) return;
+        if (!force && Date.now() - containerLayoutLoadedAt < 1000) return;
+        containerLayoutLoading = true;
+        containerLayoutLoadedAt = Date.now();
+        try {
+            const data = await request(`/api/map/elements/${id}/container-layout-v3/`);
+            containerLayout = { positions: {}, routes: {}, ...(data.layout || {}) };
+            containerLayout.positions ||= {};
+            containerLayout.routes ||= {};
+            containerLayoutId = id;
+        } finally {
+            containerLayoutLoading = false;
+        }
     }
 
     function scheduleContainerSave() {

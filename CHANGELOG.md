@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.71.1] - 2026-08-01
+
+Hotfix urgente a partir de report ao vivo em produção (print do DevTools
+mostrando ~8900 requisições em ~60s pra `container-layout-v3`, navegador
+travando com `net::ERR_INSUFFICIENT_RESOURCES`). Backup/ponto de
+rollback: tag `v0.71.0`.
+
+### Corrigido
+
+- **Laço de requisições ao abrir "Monitoramento" num equipamento dentro de Rack/Torre**: `loadContainerLayout()` (`map-optical-editor-v3.js`) só marcava a requisição como "já carregada" *depois* dela terminar — se algo disparasse a função de novo mais rápido que o tempo de resposta da rede (no caso, decorações de status do monitoramento de portas mexendo no DOM do mesmo diálogo, observadas por outro script), cada chamada concorrente passava pela checagem antes da primeira resposta voltar e abria sua própria requisição. Corrigido com uma trava de "já em andamento" (marcada antes do `await`, não depois) mais um intervalo mínimo de 1s entre buscas — nenhuma requisição concorrente escapa mais, não importa o que estiver disparando a função.
+- **Título da porta crescendo sem parar**: cada redecoração de status SNMP (`map-link-monitoring.js`) grudava mais um `· SNMP UP` em cima do título anterior em vez de substituir — inofensivo isoladamente, mas evidência do mesmo problema de raiz (a decoração rodando repetidas vezes sem necessidade). Corrigido pra guardar o título original uma vez e sempre montar a partir dele.
+- **Observador de mutações do monitoramento reagindo às próprias mudanças**: ao inserir o botão "Monitoramento" ou decorar portas/equipamentos, o próprio script gerava uma mutação no DOM que disparava seu próprio observador de novo (e o de outros scripts que observam a mesma área). Agora ele se desconecta antes de mexer no DOM e volta a observar só depois, cortando esse laço na origem.
+
 ## [0.71.0] - 2026-08-01
 
 Pacote "Monitoramento de portas e enlaces" preparado pelo ChatGPT,
