@@ -1,5 +1,42 @@
 # Changelog — Mapa
 
+## [map-0.74.0] - 2026-08-02
+
+Estabilização estrutural do editor cartográfico, Rack/Torre, Canvas, ficha
+técnica e monitoramento visual. Esta é uma release exclusiva da trilha do mapa;
+a plataforma permanece em `platform-v0.76.0`.
+
+### Corrigido
+
+- removido o ciclo de renderização que gerava chamadas repetidas para
+  `equipment/` e `container-layout-v3/`;
+- uma única carga simultânea por abertura de Rack/Torre;
+- observer do container deixa de observar filhos renderizados;
+- snapshot visual deixa de consultar a cada 15 segundos e passa a cinco minutos
+  quando existe monitoramento elegível;
+- requisições antigas são canceladas ao trocar o projeto;
+- DIO, PTO, servidor e OLT ficam fora do SNMP universal;
+- servidores existentes permanecem no banco, mas não aparecem no mapa;
+- fusões são centralizadas e limitadas à viewport;
+- ficha técnica responsiva com impressão/Salvar como PDF;
+- lateral sem barras visíveis, alternância de nomes e hover por ícone;
+- menu de botão direito com ações e ícones;
+- toolbar e Canvas compactados.
+
+### Regra definitiva do SNMP universal
+
+O equipamento precisa estar ativo, em tipo permitido, com
+`provisioning_mode=snmp` e perfil ativo. Tipos: switch, roteador, firewall,
+access point, PTP, ONU/ONT e outro ativo. OLT usa integração específica.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.76.0`;
+- `MAP_VERSION` atualizada de `0.73.1` para `0.74.0`;
+- tag futura: `map-v0.74.0`;
+- nenhuma migration.
+
+
 Cobre o editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups do
 mapa, ferramentas cartográficas, monitoramento visual, SNMP, enlaces e
 fichas técnicas abertas pelo mapa. Tags `map-vX.Y.Z`. Releases em
