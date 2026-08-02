@@ -14,11 +14,12 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r3"), 2)
+        self.assertEqual(template.count("{{ map_version }}-tower-r4"), 2)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
         editor = content("static/js/map-editor.js")
+        self.assertIn("#container-dialog.tower-workspace-dialog-v0750", css)
         self.assertIn("inset: 0 0 0 var(--v072-sidebar, 292px) !important", css)
         self.assertIn("#map-sidebar.v072-collapsed", css)
         self.assertIn("containerDialog.show()", editor)
@@ -34,6 +35,18 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertIn("refreshMapLabels", editor)
         self.assertIn("map-labels-hidden", css)
         self.assertIn("map-client-visibility-toggle.active", css)
+
+    def test_sidebar_does_not_duplicate_labels_and_created_link_stays_editable(self):
+        template = content("templates/map.html")
+        sidebar = content("static/js/map-v074-ui.js")
+        canvas = content("static/js/map-master-suite.js")
+        css = content("static/css/map-v0750-tower-workspace.css")
+        self.assertNotIn("nav.appendChild(labels)", sidebar)
+        self.assertIn("selectCreatedLinkForEditing", canvas)
+        self.assertIn("created.link?.id", canvas)
+        self.assertIn("top: auto !important", css)
+        self.assertIn("flex-direction: row !important", css)
+        self.assertEqual(template.count("workspace-r4"), 2)
 
     def test_tower_opens_directly_in_canvas(self):
         runtime = content("static/js/map-v0750-tower-workspace.js")

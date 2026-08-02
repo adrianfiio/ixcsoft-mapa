@@ -982,6 +982,22 @@
         });
     }
 
+    async function selectCreatedLinkForEditing(linkId) {
+        const link = (state.container.data?.links || []).find((item) => String(item.id) === String(linkId));
+        if (!link) return;
+        const start = portAnchor(link.source_port_id);
+        const end = portAnchor(link.destination_port_id);
+        if (!start || !end) return;
+        const middle = start.x + (end.x - start.x) / 2;
+        state.container.selectedLink = String(linkId);
+        state.container.layout.routes[String(linkId)] = [
+            { x: middle, y: start.y },
+            { x: middle, y: end.y },
+        ];
+        drawContainerLinks();
+        await saveContainerLayout();
+    }
+
     async function selectContainerPort(button) {
         if (button.dataset.busy === "true") return;
         const current = { id: Number(button.dataset.portId), type: button.dataset.portType, button };
@@ -1003,12 +1019,13 @@
         else if (source.type === "wireless" && current.type === "wireless") linkType = "wireless";
         if (!linkType) return notify("Portas incompatíveis.", true);
         try {
-            await request(`/api/map/elements/${state.container.elementId}/equipment-links/`, {
+            const created = await request(`/api/map/elements/${state.container.elementId}/equipment-links/`, {
                 method: "POST",
                 body: JSON.stringify({ source_port_id: source.id, destination_port_id: current.id, link_type: linkType }),
             });
             await loadContainerMaster(true); renderContainerCanvas(); renderConnectionMatrix();
-            notify("Ligação criada porta a porta.");
+            await selectCreatedLinkForEditing(created.link?.id);
+            notify("Ligação criada e selecionada. Arraste os pontos brancos para ajustar o caminho.");
         } catch (error) { notify(error.message, true); }
     }
 
