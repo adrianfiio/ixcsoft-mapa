@@ -273,11 +273,12 @@
         }
     });
 
-    const observer = new MutationObserver(() => {
-        if (dialog.open) window.setTimeout(refreshExtensions, 80);
+    document.addEventListener("map:container-rendered", (event) => {
+        if (!dialog.open || !event.detail?.data) return;
+        populateTermination(event.detail.data);
+        drawInternalLinks(event.detail.data);
     });
-    observer.observe(dialog, { attributes: true, attributeFilter: ["open", "data-element-id"] });
     window.addEventListener("resize", () => {
-        if (dialog.open) refreshExtensions();
+        if (dialog.open && containerData) drawInternalLinks(containerData);
     });
 }());

@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.77.0 |
-| Mapa | v0.74.1 |
+| Mapa | v0.75.0 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): sistema de financeiro completo do Superadmin — MRR, recebido/

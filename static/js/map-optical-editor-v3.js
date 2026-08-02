@@ -166,12 +166,9 @@
         if (!button || button.dataset.v3 === "true") return;
         const replacement = button.cloneNode(true);
         replacement.dataset.v3 = "true";
-        replacement.onclick = async (event) => {
+        replacement.onclick = (event) => {
             event.preventDefault();
             event.stopImmediatePropagation();
-            if (document.fullscreenElement) {
-                try { await document.exitFullscreen(); } catch (_error) {}
-            }
             const active = unifilarDialog.classList.toggle("is-fullscreen");
             replacement.textContent = active ? "Desmaximizar" : "Tela cheia";
             replacement.classList.toggle("active", active);
@@ -702,11 +699,6 @@
         containerObserver.observe(containerDialog, { childList: true, subtree: true, attributes: true, attributeFilter: ["open"] });
     }
 
-    document.addEventListener("fullscreenchange", () => {
-        if (document.fullscreenElement !== unifilarDialog && unifilarDialog?.classList.contains("is-fullscreen")) {
-            compactFusionToolbar();
-        }
-    });
     unifilarDialog?.addEventListener("close", () => { closeCablePanel(); fusionState = null; fusionStateElementId = null; });
     containerDialog?.addEventListener("close", () => {
         containerLayoutId = null; containerLayout = { positions: {}, routes: {} };
