@@ -1,5 +1,72 @@
 # Changelog
 
+## [0.73.1] - 2026-08-02
+
+Hotfix estrutural do runtime do mapa, preparado pelo ChatGPT como
+"v0.72.2" sobre o commit `16a125a` (v0.72.1) — antes do reskin dos
+dashboards (v0.73.0). Como não toca em nenhum arquivo do reskin
+(`templates/base.html`, `static/css/app.css`) nem nos hotfixes anteriores
+do mapa, apliquei sem conflito, só renomeando a versão final pra `0.73.1`
+em vez do `0.72.2` sugerido pelo pacote, pra manter a sequência do
+changelog em ordem cronológica (o pacote foi preparado antes da v0.73.0,
+mas chegou e foi aplicado depois). Aplicado via `apply_map_ui_v0722.py`
+(validado antes com `--dry-run`, checksums SHA-256 conferidos). Backup:
+branch `backup/mapa-pre-v0722-20260802`. Sem migration.
+
+### Corrigido
+
+- **Crescimento infinito de nome/código nos popups, piscar no hover, DOM
+  mudando entre clicar e soltar o mouse**: o runtime anterior (v0.72.1)
+  observava o conteúdo do popup com `MutationObserver` e, dentro do
+  próprio observador, reconstruía o popup de novo — cada reconstrução
+  disparava o observador de novo. Removido o observador por completo;
+  agora só duas checagens finitas (100ms e 420ms) depois de abrir o
+  popup, e a identidade (nome/tipo/código) é capturada uma única vez e
+  cacheada (`content._uiV0722Identity`), nunca recalculada por cima de um
+  DOM já reconstruído.
+- **Botões Editar, Fusões, Equipamentos, Rota do cabo, Monitorar enlace,
+  Adicionar reserva e Inserir caixa perdendo a ação**: a versão anterior
+  identificava cada botão do popup por uma lista fixa de nomes de atributo
+  (`showElementCables`, `manageContainer`, `editElement`, `deleteElement`,
+  `masterAssetSheet`, `showUnifilar`, `openMonitorLinks`) — qualquer botão
+  fora dessa lista caía num identificador por texto, que podia colidir com
+  outro botão e ser descartado na deduplicação. Agora o identificador usa
+  todos os atributos `data-*` do próprio botão, então nenhum botão real
+  se confunde com outro nem é descartado por engano.
+- **Próximo clique preso no mapa** ao trocar de ferramenta ou fechar um
+  diálogo no meio do desenho: a barra agora rastreia a ferramenta ativa
+  de verdade, mostra um botão "Cancelar [ferramenta]" enquanto uma
+  ferramenta está ativa, cancela com `Esc`, e cancela automaticamente ao
+  fechar os diálogos de elemento/cabo no meio da operação.
+- **Botão Excluir/ícones interceptando o clique**: ícones internos dos
+  botões do popup agora têm `pointer-events: none`, então o clique sempre
+  chega no botão real, não no `<span>` decorativo do ícone.
+- **Menu lateral recolhido, régua/área e busca**: mantidos como na
+  v0.72.1 (recolhimento real de 72px, régua que vira cabo, medição de
+  área, busca com atalho `Ctrl+K`), com pequenos ajustes de CSS pra
+  garantir que os `<b>⌄</b>` dos menus Caixas/Mais fiquem na mesma linha
+  do botão.
+
+### Verificação feita nesta rodada
+
+- Checksums SHA-256 do pacote conferidos, `BASE_COMMIT` (`16a125a`, v0.72.1)
+  confirmado batendo com o estado do `main` antes do reskin v0.73.0.
+- Confirmado por leitura do script e do `git diff` que o pacote só toca
+  em `templates/map.html` (troca as duas tags `v0721` por `v0722`),
+  `.gitignore` e nos arquivos novos — não mexe em `templates/base.html`
+  nem `static/css/app.css` (do reskin v0.73.0), nem em
+  `map-optical-editor-v3.js`, `map-link-monitoring.js`, `map-master-suite.js`
+  ou `map-ui-v072.js`/`.css` (hotfixes/base anteriores).
+- Li o `map-ui-v0722.js` inteiro e confirmei que o `MutationObserver` foi
+  mesmo removido (`schedulePopup` só usa `setTimeout` com atraso fixo) e
+  que `popupIdentity` cacheia o resultado por popup.
+- `--dry-run` limpo, `py_compile`, sintaxe do JS validada (esprima),
+  chaves do CSS balanceadas (74/74), `{% if %}`/`{% endif %}` do template
+  balanceados (10/10), YAML do `docker-compose.yml` válido.
+- Rodei manualmente as 6 asserções do teste estático incluído
+  (`test_map_ui_v0722_static.py`, sem dependência de banco): todas
+  passaram.
+
 ## [0.73.0] - 2026-08-02
 
 Reskin visual dos 3 dashboards (Visão geral do provedor, Projetista,
