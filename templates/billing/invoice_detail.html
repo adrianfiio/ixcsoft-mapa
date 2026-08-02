@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Fatura {{ invoice.reference_month|date:"m/Y" }} | {{ company.trade_name|default:company.name }}{% endblock %}
+{% block topbar_title %}Financeiro{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
+        <h1>Fatura — {{ invoice.reference_month|date:"m/Y" }}</h1>
+        <p>Resumo estruturado da fatura. Ainda não é um boleto bancário — sem código de barras nem linha digitável.</p>
+    </div>
+    <div class="page-heading-actions invoice-print-actions">
+        <a class="cancel-link" href="{% url 'billing-overview' %}">← Financeiro</a>
+        <button type="button" class="primary-action" onclick="window.print()">Imprimir / Salvar PDF</button>
+    </div>
+</section>
+
+<article class="panel">
+    <div class="panel-header"><h2 class="panel-title">Dados da fatura</h2></div>
+    <div class="info-list">
+        <div class="info-row"><span>Empresa</span><strong>{{ company.trade_name|default:company.name }}</strong></div>
+        <div class="info-row"><span>Mês de referência</span><strong>{{ invoice.reference_month|date:"m/Y" }}</strong></div>
+        <div class="info-row"><span>Valor</span><strong>R$ {{ invoice.amount }}</strong></div>
+        <div class="info-row"><span>Vencimento</span><strong>{{ invoice.due_date|date:"d/m/Y" }}</strong></div>
+        <div class="info-row"><span>Status</span><strong>{{ invoice.get_status_display }}</strong></div>
+        <div class="info-row"><span>Pago</span><strong>R$ {{ invoice.paid_amount }}</strong></div>
+        <div class="info-row"><span>Saldo</span><strong>R$ {{ invoice.balance }}</strong></div>
+        {% if invoice.notes %}
+        <div class="info-row"><span>Observações</span><strong>{{ invoice.notes }}</strong></div>
+        {% endif %}
+    </div>
+</article>
+
+<article class="panel">
+    <div class="panel-header"><h2 class="panel-title">Pagamentos registrados</h2></div>
+    <div class="overview-table-wrap">
+        <table class="overview-table overview-table--compact">
+            <thead><tr><th>Data</th><th>Valor</th><th>Método</th><th>Observação</th></tr></thead>
+            <tbody>
+                {% for payment in invoice.payments.all %}
+                <tr>
+                    <td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td>
+                    <td>R$ {{ payment.amount }}</td>
+                    <td>{{ payment.get_method_display }}</td>
+                    <td>{{ payment.note|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="empty-state">Nenhum pagamento registrado ainda.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}
+
+{% block scripts %}
+{% if auto_print %}
+<script>window.print();</script>
+{% endif %}
+{% endblock %}

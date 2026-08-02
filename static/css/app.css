@@ -195,7 +195,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
     position: relative; display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; border-radius: 8px; color: var(--muted);
     background: rgba(255,255,255,.04); border: 1px solid var(--border);
-    font-size: 12px; font-weight: 800;
+    font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
     transition: color .12s ease, border-color .12s ease;
 }
 .icon-action:hover, .icon-action:focus-visible { color: var(--primary); border-color: var(--primary); }
@@ -394,6 +394,14 @@ a.status-row:hover { background: rgba(255,255,255,.04); }
 .platform-form input[type="file"]::file-selector-button:hover { opacity: .88; }
 .platform-form input[type="color"] { min-height: 42px; padding: 4px; cursor: pointer; }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--primary); width: 17px; height: 17px; cursor: pointer; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+@media print {
+    .app-topbar, .menu-toggle, .page-messages, .invoice-print-actions { display: none !important; }
+    .app-main.sidebar-collapsed { margin: 0; width: 100%; }
+    body { background: #fff; color: #111; }
+}
 .panel-danger { border: 1px solid rgba(243,93,109,.4); }
 .panel-danger .panel-title { color: var(--danger); }
 .cancel-link { color: var(--muted); font-size: 13px; font-weight: 700; }

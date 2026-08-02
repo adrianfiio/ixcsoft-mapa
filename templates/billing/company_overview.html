@@ -53,7 +53,7 @@
         <div class="panel-header"><h2 class="panel-title">Faturas</h2></div>
         <div class="overview-table-wrap">
             <table class="overview-table overview-table--compact">
-                <thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pago</th></tr></thead>
+                <thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pago</th><th></th></tr></thead>
                 <tbody>
                     {% for invoice in invoices %}
                     <tr class="{% if invoice.status == 'overdue' %}overview-row-attention{% endif %}">
@@ -68,9 +68,20 @@
                             {% endif %}
                         </td>
                         <td>R$ {{ invoice.paid_amount }}</td>
+                        <td class="icon-actions">
+                            <a class="icon-action" href="{% url 'billing-invoice-detail' invoice.pk %}" target="_blank" data-label="Ver" aria-label="Ver fatura">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </a>
+                            <a class="icon-action" href="{% url 'billing-invoice-detail' invoice.pk %}?print=1" target="_blank" data-label="Imprimir" aria-label="Imprimir fatura">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            </a>
+                            <a class="icon-action" href="{% url 'billing-invoice-detail' invoice.pk %}?print=1" target="_blank" data-label="Salvar PDF" aria-label="Salvar fatura em PDF">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            </a>
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="empty-state">Nenhuma fatura ainda.</td></tr>
+                    <tr><td colspan="6" class="empty-state">Nenhuma fatura ainda.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

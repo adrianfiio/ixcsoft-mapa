@@ -15,6 +15,25 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.80.0] - 2026-08-02
+
+Cancelar fatura manual (com purga automática em 90 dias) + página de
+fatura imprimível/PDF pro cliente. Ver
+[docs/releases/platform/platform-v0.80.0.md](docs/releases/platform/platform-v0.80.0.md).
+
+Resumo: Superadmin agora cancela uma cobrança manual lançada por
+engano (`Invoice.Status.CANCELED`, já existia no enum, nunca tinha
+sido usado); uma task diária nova (`purge_old_canceled_invoices`)
+apaga de verdade do banco toda fatura cancelada há mais de 90 dias
+(único caso de exclusão física no módulo financeiro, igual ao já feito
+pra membro de equipe na v0.78.0). Cliente ganha uma página de fatura
+(`/painel/financeiro/faturas/<id>/`) com dados estruturados e histórico
+de pagamento, com "Imprimir/Salvar PDF" usando a impressão nativa do
+navegador — 3 botões-ícone com tooltip (ver/imprimir/salvar PDF) na
+tabela de faturas do Financeiro. Setinhas nativas de `<input type=number>`
+removidas em favor do visual flat do tema escuro. Nenhum model novo,
+nenhuma migration.
+
 ## [platform-0.79.1] - 2026-08-02
 
 Polimento visual do Financeiro por empresa e do Gateway de pagamento.
