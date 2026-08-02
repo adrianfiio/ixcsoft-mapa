@@ -1,0 +1,517 @@
+/* IXCSoft MAPA v0.74.0 FINAL
+ * Correção estrutural: zero loops de Rack/Torre, snapshot SNMP a cada 5 min,
+ * ficha responsiva, menus compactos e modais sempre dentro da viewport.
+ */
+:root {
+    --v074-dialog-bg: #071524;
+    --v074-panel: #0d2034;
+    --v074-panel-soft: #112941;
+    --v074-border: rgba(148, 163, 184, .22);
+    --v074-text: #eaf2fb;
+    --v074-muted: #8fa6bf;
+    --v074-accent: var(--map-brand-accent, #22d3ee);
+}
+
+/* --------------------------------------------------------------------------
+   Menu lateral: sem barra horizontal, conteúdo adaptável e hover por cor
+   -------------------------------------------------------------------------- */
+body.map-ui-v072 #map-sidebar,
+body.map-ui-v072 #map-sidebar * {
+    box-sizing: border-box;
+}
+body.map-ui-v072 #map-sidebar .sidebar-content {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    padding: 10px 11px 9px !important;
+    gap: 7px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+    overscroll-behavior: contain;
+}
+body.map-ui-v072 #map-sidebar .sidebar-content::-webkit-scrollbar { display: none !important; }
+body.map-ui-v072 #map-sidebar .sidebar-content > * { min-width: 0; max-width: 100%; }
+body.map-ui-v072 #map-sidebar .map-brand {
+    flex: 0 0 auto;
+    min-height: 56px !important;
+    padding: 5px !important;
+}
+body.map-ui-v072 #map-sidebar .map-brand img {
+    max-width: min(190px, 100%) !important;
+    max-height: 46px !important;
+}
+.map-nav-v072 {
+    flex: 0 0 auto;
+    gap: 2px !important;
+}
+.map-nav-v072 a,
+.map-nav-v072 button {
+    min-width: 0;
+    min-height: 36px !important;
+    padding: 6px 8px !important;
+    border-radius: 8px !important;
+    transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease !important;
+}
+.map-nav-v072 a svg,
+.map-nav-v072 button svg {
+    color: #aabed2;
+    transition: color .16s ease, filter .16s ease, transform .16s ease;
+}
+.map-nav-v072 a:hover,
+.map-nav-v072 button:hover,
+.map-nav-v072 button.active {
+    border-color: color-mix(in srgb, var(--v074-nav-color, var(--v074-accent)) 52%, transparent) !important;
+    color: #fff !important;
+    background: color-mix(in srgb, var(--v074-nav-color, var(--v074-accent)) 12%, transparent) !important;
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--v074-nav-color, var(--v074-accent)) 82%, white 8%);
+    transform: translateX(2px);
+}
+.map-nav-v072 a:hover svg,
+.map-nav-v072 button:hover svg,
+.map-nav-v072 button.active svg {
+    color: var(--v074-nav-color, var(--v074-accent));
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--v074-nav-color, var(--v074-accent)) 72%, transparent));
+    transform: scale(1.08);
+}
+body.map-ui-v072 #map-sidebar .v072-project-section {
+    order: 2 !important;
+    flex: 0 0 auto;
+    padding: 8px !important;
+    margin: 0 !important;
+}
+body.map-ui-v072 #map-sidebar .v072-project-section select { min-width: 0; width: 100%; }
+body.map-ui-v072 #map-sidebar #editor-message {
+    order: 1;
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 7px 9px;
+    margin: 0;
+}
+.map-company-card-v072 {
+    order: 3 !important;
+    flex: 0 0 auto;
+    margin-top: auto !important;
+    padding-top: 7px !important;
+    gap: 5px !important;
+}
+.map-company-card-main { padding: 6px !important; }
+.map-company-card-main img { width: 34px !important; height: 34px !important; }
+.map-company-card-v072 form button { min-height: 36px !important; }
+
+/* --------------------------------------------------------------------------
+   Barra superior: sem setas soltas e sem rolagem horizontal
+   -------------------------------------------------------------------------- */
+.map-toolbar-v072.map-toolbar-v0722 {
+    max-width: calc(100vw - var(--v072-sidebar, 292px) - 28px) !important;
+    min-width: 0;
+    gap: 3px !important;
+    padding: 4px !important;
+    overflow: visible !important;
+}
+body:has(#map-sidebar.v072-collapsed) .map-toolbar-v072.map-toolbar-v0722 {
+    max-width: calc(100vw - 94px) !important;
+}
+.map-toolbar-v0722 > button,
+.map-toolbar-v0722 .map-mode-switch-v0722 button,
+.map-toolbar-v0722 .map-tool-menu-v0722 > button {
+    min-height: 36px !important;
+    padding: 5px 8px !important;
+    gap: 5px !important;
+    font-size: 10px !important;
+}
+.map-toolbar-v0722 .map-tool-menu-v0722 > button {
+    grid-template-columns: 20px auto !important;
+}
+.map-toolbar-v0722 [data-v0722-menu-toggle] b { display: none !important; }
+.map-tool-menu-v0722 [data-v0722-menu] {
+    min-width: 168px !important;
+    padding: 6px !important;
+}
+.map-tool-menu-v0722 [data-v0722-menu] button {
+    min-height: 33px !important;
+    border-radius: 7px;
+}
+
+/* --------------------------------------------------------------------------
+   Rack/Torre: uma janela compacta, uma área de rolagem e ações secundárias
+   -------------------------------------------------------------------------- */
+body.map-master-suite #container-dialog:not(.master-container-fullscreen) {
+    position: fixed !important;
+    inset: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: min(880px, calc(100vw - 24px)) !important;
+    height: min(620px, calc(100dvh - 24px)) !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%) !important;
+    overflow: hidden !important;
+    border-radius: 14px !important;
+}
+body.map-master-suite #container-dialog > section {
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    min-width: 0;
+}
+body.map-master-suite #container-dialog > section > header {
+    min-height: 42px !important;
+    padding: 6px 9px !important;
+}
+body.map-master-suite #container-dialog h2 { font-size: 14px !important; }
+.map-master-container {
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    min-width: 0;
+}
+.master-container-tabs,
+.master-container-toolbar {
+    min-width: 0;
+    min-height: 34px !important;
+    padding: 4px 6px !important;
+    gap: 4px !important;
+    overflow: visible !important;
+    flex-wrap: wrap;
+}
+.master-container-tabs button,
+.master-container-toolbar button {
+    min-height: 27px !important;
+    padding: 3px 7px !important;
+    font-size: 9px !important;
+}
+.master-container-toolbar [data-panel-scope] { display: none; }
+.map-master-container[data-active-panel="canvas"] .master-container-toolbar [data-panel-scope="canvas"] { display: inline-flex; }
+.master-container-more { position: relative; margin-left: auto; }
+.master-container-more-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 5px);
+    right: 0;
+    display: none;
+    width: 190px;
+    padding: 5px;
+    border: 1px solid var(--v074-border);
+    border-radius: 9px;
+    background: #071524;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .42);
+}
+.master-container-more-menu.open { display: grid; gap: 3px; }
+.master-container-more-menu button { justify-content: flex-start; width: 100%; text-align: left; }
+.master-container-panel {
+    min-width: 0;
+    padding: 6px !important;
+    overflow: auto !important;
+    scrollbar-width: thin;
+}
+.master-equipment-summary,
+.master-matrix-head { padding: 5px 7px !important; margin-bottom: 5px !important; }
+.master-equipment-group { margin-bottom: 4px !important; }
+.master-equipment-group summary { padding: 5px 8px !important; font-size: 10px !important; }
+.master-equipment-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 6px !important;
+    min-height: 38px !important;
+    padding: 5px 7px !important;
+}
+.master-equipment-row > div:last-child { flex-wrap: nowrap !important; }
+.master-equipment-row button,
+.monitoring-button { min-height: 25px !important; padding: 2px 6px !important; font-size: 8px !important; }
+.master-canvas-scroll {
+    width: 100%;
+    height: 100% !important;
+    min-height: 360px !important;
+    overflow: auto !important;
+}
+.master-canvas {
+    width: max(100%, 720px) !important;
+    min-height: 470px !important;
+}
+.master-canvas-node {
+    width: 190px !important;
+    min-height: 88px !important;
+    border-radius: 8px !important;
+}
+.master-canvas-node > header { padding: 5px 6px !important; }
+.master-node-ports { gap: 3px 6px !important; padding: 5px !important; }
+.master-node-port { min-height: 22px !important; padding: 2px 4px !important; font-size: 8px !important; }
+.master-matrix-form { grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr) auto !important; gap: 5px !important; padding: 6px !important; }
+.master-matrix-links article { padding: 5px 7px !important; }
+
+/* --------------------------------------------------------------------------
+   Fusões: sempre centralizada; arrastar só depois de interação explícita
+   -------------------------------------------------------------------------- */
+body.map-master-suite #unifilar-dialog.map-master-fusion:not(.is-fullscreen):not([data-user-positioned="true"]) {
+    position: fixed !important;
+    inset: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: min(820px, calc(100vw - 24px)) !important;
+    height: min(560px, calc(100dvh - 24px)) !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%) !important;
+    overflow: hidden !important;
+    border-radius: 14px !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion[data-user-positioned="true"]:not(.is-fullscreen) {
+    position: fixed !important;
+    inset: auto !important;
+    width: min(820px, calc(100vw - 24px)) !important;
+    height: min(560px, calc(100dvh - 24px)) !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+    border-radius: 14px !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion > section > header {
+    min-height: 40px !important;
+    padding: 5px 8px !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion #unifilar-content {
+    min-width: 0;
+    padding: 5px !important;
+    overflow: auto !important;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion .fusion-toolbar,
+body.map-master-suite #unifilar-dialog.map-master-fusion .unifilar-zoom,
+body.map-master-suite #unifilar-dialog.map-master-fusion .ceo-instructions {
+    min-height: 28px !important;
+    padding: 2px 4px !important;
+    gap: 3px !important;
+    font-size: 9px !important;
+    flex-wrap: wrap;
+}
+body.map-master-suite #unifilar-dialog.map-master-fusion .fusion-toolbar button,
+body.map-master-suite #unifilar-dialog.map-master-fusion .unifilar-zoom button {
+    min-height: 24px !important;
+    padding: 2px 6px !important;
+    font-size: 8px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Ficha técnica moderna e responsiva: sem colunas esmagadas/nested scroll
+   -------------------------------------------------------------------------- */
+body.map-master-suite #map-master-asset-sheet {
+    position: fixed !important;
+    inset: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: min(920px, calc(100vw - 24px)) !important;
+    height: min(720px, calc(100dvh - 24px)) !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translate(-50%, -50%) !important;
+    overflow: hidden !important;
+    border: 1px solid var(--v074-border) !important;
+    border-radius: 15px !important;
+    color: var(--v074-text);
+    background: var(--v074-dialog-bg);
+}
+#map-master-asset-sheet > section {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100%;
+    min-width: 0;
+}
+#map-master-asset-sheet > section > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 13px;
+    border-bottom: 1px solid var(--v074-border);
+}
+#map-master-asset-sheet h2 { margin: 0; font-size: 18px; }
+#map-master-asset-sheet [data-subtitle] { margin: 3px 0 0; color: var(--v074-muted); font-size: 11px; }
+.master-sheet-header-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.master-sheet-header-actions button,
+.master-sheet-header-actions a,
+.master-lifecycle-editor button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 31px;
+    padding: 5px 9px;
+    border: 1px solid var(--v074-border);
+    border-radius: 8px;
+    color: var(--v074-text);
+    background: var(--v074-panel-soft);
+    text-decoration: none;
+    cursor: pointer;
+}
+.master-sheet-header-actions .primary { border-color: color-mix(in srgb, var(--v074-accent) 55%, transparent); background: color-mix(in srgb, var(--v074-accent) 18%, var(--v074-panel)); }
+.master-sheet-scroll {
+    min-width: 0;
+    overflow: auto;
+    padding: 12px;
+    scrollbar-width: thin;
+}
+.master-sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.master-sheet-card {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--v074-border);
+    border-radius: 11px;
+    background: var(--v074-panel);
+}
+.master-sheet-card.full { grid-column: 1 / -1; }
+.master-sheet-card h3 { margin: 0 0 8px; font-size: 13px; }
+.master-sheet-definition {
+    display: grid;
+    gap: 0;
+    margin: 0;
+}
+.master-sheet-definition > div {
+    display: grid;
+    grid-template-columns: minmax(125px, .34fr) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 6px 2px;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+}
+.master-sheet-definition > div:last-child { border-bottom: 0; }
+.master-sheet-definition dt {
+    color: var(--v074-muted);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.master-sheet-definition dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--v074-text);
+    font-size: 11px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+.master-sheet-definition dd > .master-sheet-definition,
+.master-sheet-definition dd > .master-sheet-list { grid-column: 1 / -1; margin-top: 4px; }
+.master-sheet-value-number,
+.master-sheet-value-coordinate { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.master-sheet-link { color: #67e8f9; text-decoration: none; }
+.master-sheet-list { display: grid; gap: 6px; }
+.master-sheet-list > article { min-width: 0; padding: 7px; border: 1px solid rgba(148, 163, 184, .14); border-radius: 8px; background: rgba(255, 255, 255, .02); }
+.master-lifecycle-editor {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--v074-border);
+    border-radius: 11px;
+    background: var(--v074-panel);
+}
+.master-lifecycle-editor h3 { margin: 0 0 8px; font-size: 13px; }
+.master-lifecycle-editor > div { display: grid; grid-template-columns: 180px minmax(0, 1fr) auto; gap: 7px; }
+.master-lifecycle-editor select,
+.master-lifecycle-editor input { min-width: 0; min-height: 32px; border: 1px solid var(--v074-border); border-radius: 8px; color: var(--v074-text); background: var(--v074-panel-soft); }
+
+/* --------------------------------------------------------------------------
+   Monitoramento: somente snapshot consolidado; sem animação em item sem SNMP
+   -------------------------------------------------------------------------- */
+.monitoring-dialog-v074 { width: min(720px, calc(100vw - 24px)) !important; max-height: calc(100dvh - 24px) !important; }
+.monitor-link-dialog-v074 { width: min(780px, calc(100vw - 24px)) !important; max-height: calc(100dvh - 24px) !important; }
+.monitoring-dialog-v074 > section,
+.monitor-link-dialog-v074 > section { max-height: calc(100dvh - 40px); overflow: auto; }
+.monitoring-dialog-v074 header small { color: var(--v074-muted); font-size: 9px; }
+.network-marker:not(.monitoring-enabled),
+.master-canvas-node:not(.monitoring-enabled) { animation: none !important; }
+
+/* --------------------------------------------------------------------------
+   Menu contextual do botão direito
+   -------------------------------------------------------------------------- */
+.map-context-v074 {
+    position: fixed;
+    z-index: 12000;
+    width: 220px;
+    padding: 0;
+    border: 1px solid var(--v074-border);
+    border-radius: 12px;
+    color: var(--v074-text);
+    background: rgba(7, 21, 36, .98);
+    box-shadow: 0 22px 55px rgba(0, 0, 0, .48);
+    backdrop-filter: blur(14px);
+}
+.map-context-v074[hidden] { display: none; }
+.map-context-v074 header { display: flex; align-items: center; justify-content: space-between; padding: 8px 9px; border-bottom: 1px solid var(--v074-border); }
+.map-context-v074 header strong { font-size: 11px; }
+.map-context-v074 header button { width: 27px; height: 27px; border: 0; color: var(--v074-muted); background: transparent; cursor: pointer; }
+.map-context-v074 > div { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px; }
+.map-context-v074 > div > button {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 6px 7px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #c5d5e6;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+.map-context-v074 > div > button:hover { border-color: color-mix(in srgb, var(--v074-accent) 50%, transparent); color: #fff; background: color-mix(in srgb, var(--v074-accent) 13%, transparent); }
+.map-context-v074 svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 1280px) {
+    .map-toolbar-v0722 > button span,
+    .map-toolbar-v0722 .map-tool-menu-v0722 > button span { display: none; }
+    .map-toolbar-v0722 > button,
+    .map-toolbar-v0722 .map-tool-menu-v0722 > button { grid-template-columns: 20px !important; padding: 5px 7px !important; }
+    .map-toolbar-v0722 .map-mode-switch-v0722 button span,
+    .map-toolbar-v0722 .map-cancel-tool-v0722 span { display: inline !important; }
+}
+@media (max-height: 760px) {
+    body.map-ui-v072 #map-sidebar .sidebar-content { padding-block: 7px !important; gap: 4px !important; }
+    body.map-ui-v072 #map-sidebar .map-brand { min-height: 46px !important; }
+    body.map-ui-v072 #map-sidebar .map-brand img { max-height: 38px !important; }
+    .map-nav-v072 a, .map-nav-v072 button { min-height: 32px !important; padding-block: 4px !important; }
+    .map-company-card-main { display: none !important; }
+}
+@media (max-width: 760px) {
+    body.map-master-suite #container-dialog:not(.master-container-fullscreen),
+    body.map-master-suite #unifilar-dialog.map-master-fusion:not(.is-fullscreen),
+    body.map-master-suite #map-master-asset-sheet {
+        width: calc(100vw - 10px) !important;
+        height: calc(100dvh - 10px) !important;
+        border-radius: 10px !important;
+    }
+    .master-sheet-grid { grid-template-columns: 1fr; }
+    .master-sheet-card.full { grid-column: auto; }
+    .master-sheet-definition > div { grid-template-columns: 1fr; gap: 2px; }
+    .master-lifecycle-editor > div { grid-template-columns: 1fr; }
+    .master-matrix-form { grid-template-columns: 1fr !important; }
+    .master-matrix-form > span { display: none; }
+    .master-canvas { width: 680px !important; }
+}
+
+@media print {
+    body > *:not(#map-master-asset-sheet) { display: none !important; }
+    #map-master-asset-sheet {
+        position: static !important;
+        display: block !important;
+        width: auto !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+        border: 0 !important;
+        color: #172033 !important;
+        background: #fff !important;
+        transform: none !important;
+    }
+    #map-master-asset-sheet > section > header { border-bottom: 2px solid #172033; }
+    .master-sheet-header-actions,
+    .master-lifecycle-editor { display: none !important; }
+    .master-sheet-scroll { overflow: visible !important; padding: 0 !important; }
+    .master-sheet-card { break-inside: avoid; border-color: #d8dee8; color: #172033; background: #fff; }
+    .master-sheet-definition dd { color: #172033; }
+}

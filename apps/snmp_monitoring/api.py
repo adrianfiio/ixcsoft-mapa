@@ -32,6 +32,20 @@ from .tasks import poll_snmp_status
 
 STATUS_LABELS = dict(OperationalStatus.choices)
 
+UNIVERSAL_SNMP_EQUIPMENT_TYPES = {
+    ContainerEquipment.EquipmentType.SWITCH,
+    ContainerEquipment.EquipmentType.ROUTER,
+    ContainerEquipment.EquipmentType.FIREWALL,
+    ContainerEquipment.EquipmentType.ACCESS_POINT,
+    ContainerEquipment.EquipmentType.PTP,
+    ContainerEquipment.EquipmentType.ONU,
+    ContainerEquipment.EquipmentType.OTHER,
+}
+
+
+def _is_universal_snmp_equipment(equipment: ContainerEquipment) -> bool:
+    return bool(equipment.enabled and equipment.equipment_type in UNIVERSAL_SNMP_EQUIPMENT_TYPES)
+
 
 def _as_bool(value, default=False):
     if value is None:
@@ -205,12 +219,12 @@ def _profile_for_equipment(equipment):
 @permission_classes([IsAuthenticated])
 def equipment_monitoring_profile(request, equipment_id):
     equipment = _equipment_for_user(request, equipment_id)
-    if str(equipment.equipment_type).lower() == "olt":
+    profile = _profile_for_equipment(equipment)
+    if not _is_universal_snmp_equipment(equipment):
         return JsonResponse(
-            {"detail": "OLT usa integração específica e não pode ser cadastrada no monitoramento universal."},
+            {"detail": "Este tipo não participa do monitoramento SNMP universal. DIO, PTO, servidor, OLT e elementos ópticos permanecem somente como inventário/topologia."},
             status=409,
         )
-    profile = _profile_for_equipment(equipment)
     if request.method == "GET":
         states = profile.interface_states.all() if profile else []
         bindings = profile.port_bindings.select_related("equipment_port", "profile__equipment", "profile__equipment__container") if profile else []
@@ -242,6 +256,9 @@ def equipment_monitoring_profile(request, equipment_id):
     if request.method == "DELETE":
         if profile:
             profile.delete()
+        if equipment.provisioning_mode != ContainerEquipment.ProvisioningMode.MANUAL:
+            equipment.provisioning_mode = ContainerEquipment.ProvisioningMode.MANUAL
+            equipment.save(update_fields=["provisioning_mode", "updated_at"])
         return JsonResponse({"success": True})
 
     data = request.data
@@ -273,9 +290,15 @@ def equipment_monitoring_profile(request, equipment_id):
             if community:
                 profile.set_community(community)
             profile.save()
+            equipment_fields = []
             if equipment.management_ip != management_ip:
                 equipment.management_ip = management_ip
-                equipment.save(update_fields=["management_ip", "updated_at"])
+                equipment_fields.append("management_ip")
+            if equipment.provisioning_mode != ContainerEquipment.ProvisioningMode.SNMP:
+                equipment.provisioning_mode = ContainerEquipment.ProvisioningMode.SNMP
+                equipment_fields.append("provisioning_mode")
+            if equipment_fields:
+                equipment.save(update_fields=[*equipment_fields, "updated_at"])
     except ValidationError as exc:
         return JsonResponse({"detail": _validation_detail(exc)}, status=400)
     return JsonResponse({"profile": _profile_payload(profile)})
@@ -362,7 +385,17 @@ def equipment_monitoring_poll_now(request, equipment_id):
 
 def _project_links_queryset(request, project):
     return scope_company_queryset(
-        MonitoredNetworkLink.objects.filter(project=project).select_related(
+        MonitoredNetworkLink.objects.filter(
+            project=project, enabled=True,
+            source_binding__profile__enabled=True,
+            source_binding__profile__equipment__enabled=True,
+            source_binding__profile__equipment__provisioning_mode=ContainerEquipment.ProvisioningMode.SNMP,
+            source_binding__profile__equipment__equipment_type__in=UNIVERSAL_SNMP_EQUIPMENT_TYPES,
+            destination_binding__profile__enabled=True,
+            destination_binding__profile__equipment__enabled=True,
+            destination_binding__profile__equipment__provisioning_mode=ContainerEquipment.ProvisioningMode.SNMP,
+            destination_binding__profile__equipment__equipment_type__in=UNIVERSAL_SNMP_EQUIPMENT_TYPES,
+        ).select_related(
             "project", "company", "cable__route", "source_element", "destination_element",
             "source_binding__profile__equipment__container", "source_binding__equipment_port",
             "destination_binding__profile__equipment__container", "destination_binding__equipment_port",
@@ -375,8 +408,10 @@ def _project_options(request, project):
     profiles = SNMPMonitoringProfile.objects.filter(
         company=project.company,
         enabled=True,
-    ).filter(
-        Q(equipment__container__project=project) | Q(element__project=project)
+        equipment__enabled=True,
+        equipment__provisioning_mode=ContainerEquipment.ProvisioningMode.SNMP,
+        equipment__equipment_type__in=UNIVERSAL_SNMP_EQUIPMENT_TYPES,
+        equipment__container__project=project,
     ).select_related("equipment__container", "element").prefetch_related("port_bindings__equipment_port")
     bindings = []
     equipment_statuses = []
@@ -397,9 +432,17 @@ def _project_options(request, project):
                     "status": binding.last_status,
                     "last_seen_at": binding.last_seen_at.isoformat() if binding.last_seen_at else None,
                 })
-    cables = FiberCable.objects.filter(project=project, company=project.company).order_by("name")
-    elements = NetworkElement.objects.filter(project=project, company=project.company).order_by("name")
+    cables = (
+        FiberCable.objects.filter(project=project, company=project.company).order_by("name")
+        if profiles else FiberCable.objects.none()
+    )
+    elements = (
+        NetworkElement.objects.filter(project=project, company=project.company).order_by("name")
+        if profiles else NetworkElement.objects.none()
+    )
     return {
+        "monitoring_enabled": bool(profiles),
+        "refresh_interval_seconds": 300,
         "bindings": bindings,
         "equipment_statuses": equipment_statuses,
         "port_statuses": port_statuses,

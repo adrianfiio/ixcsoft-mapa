@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "1.0.0";
+    const VERSION = "1.1.0";
     const state = {
         projectId: "",
         bootstrap: null,
@@ -25,6 +25,9 @@
             selectedPort: null,
             lineMode: false,
             selectedLink: null,
+            loadingPromise: null,
+            loadingElementId: "",
+            rendering: false,
         },
     };
 
@@ -598,6 +601,8 @@
         const header = qs(":scope > section > header", dialog);
         header?.addEventListener("pointerdown", (event) => {
             if (dialog.classList.contains("is-fullscreen") || event.target.closest("button, input, select")) return;
+            dialog.dataset.userPositioned = "true";
+            dialog.style.transform = "none";
             const rect = dialog.getBoundingClientRect();
             const offsetX = event.clientX - rect.left;
             const offsetY = event.clientY - rect.top;
@@ -677,17 +682,33 @@
     async function loadContainerMaster(force = false) {
         const dialog = containerDialog();
         const id = String(dialog?.dataset.elementId || "");
-        if (!id) return;
-        if (!force && state.container.elementId === id && state.container.data) return;
-        const [data, layout] = await Promise.all([
+        if (!id) return null;
+        if (!force && state.container.elementId === id && state.container.data) return state.container.data;
+        if (state.container.loadingPromise && state.container.loadingElementId === id) {
+            return state.container.loadingPromise;
+        }
+        state.container.loadingElementId = id;
+        const loading = Promise.all([
             request(`/api/map/elements/${id}/equipment/`),
             request(`/api/map/elements/${id}/container-layout-v3/`).catch(() => ({ layout: {} })),
-        ]);
-        state.container.elementId = id;
-        state.container.data = data;
-        state.container.layout = { positions: {}, routes: {}, zoom: 1, ...(layout.layout || {}) };
-        state.container.layout.positions ||= {};
-        state.container.layout.routes ||= {};
+        ]).then(([data, layout]) => {
+            if (String(containerDialog()?.dataset.elementId || "") !== id) return null;
+            state.container.elementId = id;
+            state.container.data = data;
+            state.container.layout = { positions: {}, routes: {}, zoom: 1, ...(layout.layout || {}) };
+            state.container.layout.positions ||= {};
+            state.container.layout.routes ||= {};
+            return data;
+        });
+        state.container.loadingPromise = loading;
+        try {
+            return await loading;
+        } finally {
+            if (state.container.loadingPromise === loading) {
+                state.container.loadingPromise = null;
+                state.container.loadingElementId = "";
+            }
+        }
     }
 
     function equipmentGroup(type, item) {
@@ -697,7 +718,6 @@
         if (type === "switch") return "Switches";
         if (type === "router") return "Roteadores";
         if (type === "firewall") return "Firewalls";
-        if (type === "server") return "Servidores";
         if (type === "ptp") return "Rádios PTP";
         if (type === "access_point") return "Access points";
         if (type === "onu" || subtype === "onu") return "ONUs / ONTs";
@@ -766,13 +786,20 @@
 
     async function enhanceContainer() {
         const dialog = containerDialog();
-        if (!dialog?.open || !dialog.dataset.elementId) return;
-        ensureContainerWorkspace();
-        await loadContainerMaster(true);
-        renderEquipmentList();
-        renderContainerCanvas();
-        renderConnectionMatrix();
-        attachLegacyPanels();
+        if (!dialog?.open || !dialog.dataset.elementId || state.container.rendering) return;
+        state.container.rendering = true;
+        try {
+            ensureContainerWorkspace();
+            const data = await loadContainerMaster(false);
+            if (!data || !dialog.open) return;
+            renderEquipmentList();
+            renderContainerCanvas();
+            renderConnectionMatrix();
+            attachLegacyPanels();
+            document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: dialog } }));
+        } finally {
+            state.container.rendering = false;
+        }
     }
 
     function attachLegacyPanels() {
@@ -800,11 +827,12 @@
                 <details class="master-equipment-group" open>
                     <summary>${escapeHtml(group)} <span>${items.length}</span></summary>
                     <div>${items.map((item) => `
-                        <article class="master-equipment-row">
+                        <article class="master-equipment-row" data-equipment-id="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-monitoring-configured="${item.monitoring_configured === true ? 'true' : 'false'}">
                             <div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}${item.vendor ? ` · ${escapeHtml(item.vendor)}` : ""}${item.model ? ` ${escapeHtml(item.model)}` : ""} · ${(item.ports || []).length} porta(s)</small></div>
                             <div><button type="button" data-equipment-sheet="${item.id}">Ficha</button><button type="button" data-edit-equipment="${item.id}">Editar</button><button type="button" class="danger" data-delete-equipment="${item.id}">Excluir</button></div>
                         </article>`).join("")}</div>
                 </details>`).join("") || "<p>Nenhum equipamento cadastrado.</p>");
+        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: panel } }));
         qsa("[data-equipment-sheet]", panel).forEach((button) => button.onclick = () => openAssetSheet("equipment", button.dataset.equipmentSheet).catch((error) => notify(error.message, true)));
         qsa("[data-edit-equipment]", panel).forEach((button) => button.onclick = () => openEquipmentEditor(button.dataset.editEquipment));
         qsa("[data-delete-equipment]", panel).forEach((button) => button.onclick = async () => {
@@ -815,7 +843,7 @@
     }
 
     function defaultNodePosition(item, index) {
-        const columns = { olt: 0, dio: 0, switch: 1, router: 1, firewall: 1, server: 1, onu: 2, access_point: 2, ptp: 2, pto: 2, other: 2 };
+        const columns = { olt: 0, dio: 0, switch: 1, router: 1, firewall: 1, onu: 2, access_point: 2, ptp: 2, pto: 2, other: 2 };
         const column = columns[item.type] ?? 2;
         const siblings = (state.container.data?.equipment || []).slice(0, index).filter((row) => (columns[row.type] ?? 2) === column).length;
         return { x: 40 + column * 340, y: 35 + siblings * 220 };
@@ -838,7 +866,7 @@
         const equipment = state.container.data.equipment || [];
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
-            return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+            return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
                 <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small></header>
                 <div class="master-node-ports">${(item.ports || []).map((port, portIndex) => {
                     const side = portSide(port, portIndex);
@@ -848,6 +876,7 @@
         }).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
         qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
+        document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root } }));
         drawContainerLinks();
     }
 
@@ -1042,7 +1071,7 @@
 
     function openEquipmentCreateDialog() {
         const dialog = equipmentCreateDialog();
-        const types = state.bootstrap?.equipment_types || [];
+        const types = (state.bootstrap?.equipment_types || []).filter(([value]) => value !== "server");
         dialog.querySelector("select[name='equipment_type']").innerHTML = types.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
         dialog.querySelector("form").reset();
         dialog.querySelector("form").onsubmit = async (event) => {
@@ -1144,26 +1173,71 @@
         dialog = document.createElement("dialog");
         dialog.id = "map-master-asset-sheet";
         dialog.className = "editor-dialog map-master-asset-sheet";
-        dialog.innerHTML = `<section><header><div><h2>Ficha técnica</h2><p data-subtitle></p></div><button type="button" data-close>×</button></header><div data-sheet-body></div><section class="master-lifecycle-editor"><h3>Estado de implantação</h3><div><select data-stage><option value="planning">Em projeto</option><option value="not_deployed">Não implantado</option><option value="deployed">Implantado</option><option value="certified">Certificado</option><option value="disabled">Desativado</option></select><input data-stage-note placeholder="Observação"><button type="button" data-stage-save>Registrar</button></div></section><footer><button type="button" data-print>Imprimir</button><a data-qr target="_blank" rel="noopener">Abrir QR Code</a><button type="button" data-close-footer>Fechar</button></footer></section>`;
+        dialog.innerHTML = `<section>
+            <header>
+                <div><h2>Ficha técnica</h2><p data-subtitle></p></div>
+                <div class="master-sheet-header-actions">
+                    <button type="button" class="primary" data-print>Imprimir / PDF</button>
+                    <a data-qr target="_blank" rel="noopener">QR Code</a>
+                    <button type="button" data-close>Fechar</button>
+                </div>
+            </header>
+            <div class="master-sheet-scroll">
+                <div data-sheet-body></div>
+                <section class="master-lifecycle-editor">
+                    <h3>Estado de implantação</h3>
+                    <div><select data-stage><option value="planning">Em projeto</option><option value="not_deployed">Não implantado</option><option value="deployed">Implantado</option><option value="certified">Certificado</option><option value="disabled">Desativado</option></select><input data-stage-note placeholder="Observação"><button type="button" data-stage-save>Registrar</button></div>
+                </section>
+            </div>
+        </section>`;
         document.body.appendChild(dialog);
-        qsa("[data-close], [data-close-footer]", dialog).forEach((button) => button.onclick = () => dialog.close());
+        dialog.querySelector("[data-close]").onclick = () => dialog.close();
         return dialog;
     }
 
+    function humanizeSheetKey(key) {
+        const labels = {
+            id: "ID", project_id: "ID do projeto", transmitter_id: "ID do transmissor",
+            latitude: "Latitude", longitude: "Longitude", updated_at: "Última atualização",
+            created_at: "Criado em", element_type: "Tipo", asset_type: "Tipo de ativo",
+            serial_number: "Número de série", management_ip: "IP de gerência",
+        };
+        if (labels[key]) return labels[key];
+        return String(key || "").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+
+    function sheetPrimitive(value, key = "") {
+        if (value == null || value === "") return '<span class="empty">Não informado</span>';
+        if (typeof value === "boolean") return value ? "Sim" : "Não";
+        const string = String(value);
+        if (/^https?:\/\//i.test(string)) return `<a class="master-sheet-link" href="${escapeHtml(string)}" target="_blank" rel="noopener">${escapeHtml(string)}</a>`;
+        if (/(_at|data|date)$/i.test(key) || /^\d{4}-\d{2}-\d{2}T/.test(string)) {
+            const parsed = new Date(string);
+            if (!Number.isNaN(parsed.getTime())) return escapeHtml(parsed.toLocaleString("pt-BR"));
+        }
+        const className = /latitude|longitude/i.test(key) ? "master-sheet-value-coordinate" : /^-?\d+(?:[.,]\d+)?$/.test(string) ? "master-sheet-value-number" : "";
+        return `<span class="${className}">${escapeHtml(string)}</span>`;
+    }
+
     function sheetRows(value, depth = 0) {
-        if (value == null || value === "") return "";
+        if (value == null || value === "") return '<span class="empty">Não informado</span>';
         if (Array.isArray(value)) {
             if (!value.length) return '<span class="empty">Nenhum registro</span>';
-            return `<div class="master-sheet-list">${value.map((item) => `<article>${typeof item === "object" ? sheetRows(item, depth + 1) : escapeHtml(item)}</article>`).join("")}</div>`;
+            return `<div class="master-sheet-list">${value.map((item) => `<article>${typeof item === "object" ? sheetRows(item, depth + 1) : sheetPrimitive(item)}</article>`).join("")}</div>`;
         }
         if (typeof value === "object") {
-            return `<dl>${Object.entries(value).filter(([, item]) => item != null && item !== "" && (!Array.isArray(item) || item.length)).map(([key, item]) => `<div><dt>${escapeHtml(key.replaceAll("_", " "))}</dt><dd>${typeof item === "object" ? sheetRows(item, depth + 1) : escapeHtml(item)}</dd></div>`).join("")}</dl>`;
+            const entries = Object.entries(value).filter(([, item]) => item != null && item !== "" && (!Array.isArray(item) || item.length));
+            if (!entries.length) return '<span class="empty">Nenhum dado</span>';
+            return `<dl class="master-sheet-definition">${entries.map(([key, item]) => `<div><dt>${escapeHtml(humanizeSheetKey(key))}</dt><dd>${typeof item === "object" ? sheetRows(item, depth + 1) : sheetPrimitive(item, key)}</dd></div>`).join("")}</dl>`;
         }
-        return escapeHtml(value);
+        return sheetPrimitive(value);
     }
 
     function printableSheetHtml(report, qrUrl) {
-        return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha técnica · ${escapeHtml(report.asset?.name || report.asset?.id)}</title><style>body{font:14px Arial,sans-serif;color:#172033;margin:28px}header{display:flex;justify-content:space-between;border-bottom:2px solid #172033;padding-bottom:12px}h1{font-size:22px;margin:0}h2{font-size:16px;margin-top:24px}dl>div{display:grid;grid-template-columns:180px 1fr;border-bottom:1px solid #ddd;padding:6px}dt{text-transform:capitalize;font-weight:700}dd{margin:0;word-break:break-word}article{border:1px solid #ddd;padding:8px;margin:6px 0;border-radius:6px}.qr{width:130px;height:130px}@media print{button{display:none}}</style></head><body><header><div><h1>${escapeHtml(report.asset?.name || "Ativo")}</h1><p>${escapeHtml(report.project.name)} · ${escapeHtml(report.project.code)} · ${escapeHtml(report.asset_type)}</p></div><img class="qr" src="${escapeHtml(qrUrl)}"></header><h2>Dados do ativo</h2>${sheetRows(report.asset)}<h2>Histórico</h2>${sheetRows(report.lifecycle)}<script>window.onload=()=>window.print()<\/script></body></html>`;
+        const asset = report.asset || {};
+        return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ficha técnica · ${escapeHtml(asset.name || asset.id)}</title><style>
+            *{box-sizing:border-box}body{font:13px Inter,Arial,sans-serif;color:#172033;margin:24px;background:#fff}header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:2px solid #172033;padding-bottom:12px;margin-bottom:18px}h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:20px 0 8px}.qr{width:112px;height:112px;object-fit:contain}.master-sheet-definition{margin:0}.master-sheet-definition>div{display:grid;grid-template-columns:170px minmax(0,1fr);gap:12px;padding:7px 2px;border-bottom:1px solid #e2e8f0}.master-sheet-definition dt{font-weight:700;color:#526174}.master-sheet-definition dd{min-width:0;margin:0;overflow-wrap:anywhere}.master-sheet-list{display:grid;gap:6px}.master-sheet-list article{border:1px solid #d8dee8;padding:8px;border-radius:7px}.empty{color:#8a96a7}@media(max-width:680px){header{display:block}.qr{margin-top:12px}.master-sheet-definition>div{grid-template-columns:1fr}}@media print{body{margin:12mm}header{break-inside:avoid}article,.master-sheet-definition>div{break-inside:avoid}}
+        </style></head><body><header><div><h1>${escapeHtml(asset.name || "Ativo")}</h1><p>${escapeHtml(report.project?.name || "")} · ${escapeHtml(report.project?.code || "")} · ${escapeHtml(report.asset_type || "")}</p></div><img class="qr" src="${escapeHtml(qrUrl)}" alt="QR Code"></header><h2>Dados do ativo</h2>${sheetRows(asset)}<h2>Histórico de implantação</h2>${sheetRows(report.lifecycle || [])}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
     }
 
     async function openAssetSheet(assetType, assetId) {
@@ -1172,12 +1246,30 @@
         const report = await request(`/api/map/master/projects/${id}/asset-report/?asset_type=${encodeURIComponent(assetType)}&asset_id=${encodeURIComponent(assetId)}`);
         const dialog = assetSheetDialog();
         const qrUrl = `/api/map/master/projects/${id}/asset-qr/?asset_type=${encodeURIComponent(assetType)}&asset_id=${encodeURIComponent(assetId)}`;
-        qs("[data-subtitle]", dialog).textContent = `${report.project.name} · ${report.asset_type} #${report.asset.id}`;
-        qs("[data-sheet-body]", dialog).innerHTML = `<section><h3>Dados</h3>${sheetRows(report.asset)}</section><section><h3>Histórico de implantação</h3>${sheetRows(report.lifecycle)}</section>`;
+        const asset = report.asset || {};
+        const identityKeys = new Set(["id", "name", "code", "description", "element_type", "type", "status", "enabled"]);
+        const locationKeys = new Set(["latitude", "longitude", "address", "city", "state", "cep"]);
+        const identity = {};
+        const location = {};
+        const technical = {};
+        Object.entries(asset).forEach(([key, value]) => {
+            if (identityKeys.has(key)) identity[key] = value;
+            else if (locationKeys.has(key)) location[key] = value;
+            else technical[key] = value;
+        });
+        qs("[data-subtitle]", dialog).textContent = `${report.project?.name || "Projeto"} · ${report.asset_type} #${asset.id}`;
+        qs("[data-sheet-body]", dialog).innerHTML = `<div class="master-sheet-grid">
+            <section class="master-sheet-card"><h3>Identificação</h3>${sheetRows(identity)}</section>
+            <section class="master-sheet-card"><h3>Localização</h3>${sheetRows(location)}</section>
+            <section class="master-sheet-card full"><h3>Dados técnicos</h3>${sheetRows(technical)}</section>
+            <section class="master-sheet-card full"><h3>Histórico de implantação</h3>${sheetRows(report.lifecycle || [])}</section>
+        </div>`;
         qs("[data-qr]", dialog).href = qrUrl;
         qs("[data-print]", dialog).onclick = () => {
-            const popup = window.open("", "_blank", "noopener,noreferrer");
-            if (!popup) return notify("O navegador bloqueou a janela de impressão.", true);
+            const popup = window.open("", "_blank", "width=1000,height=820,scrollbars=yes");
+            if (!popup) return notify("O navegador bloqueou a janela de impressão/PDF.", true);
+            try { popup.opener = null; } catch (_error) {}
+            popup.document.open();
             popup.document.write(printableSheetHtml(report, new URL(qrUrl, window.location.origin).href));
             popup.document.close();
         };
@@ -1289,6 +1381,11 @@
         if (fusion) {
             new MutationObserver(() => requestAnimationFrame(enhanceFusion)).observe(fusion, { childList: true, subtree: true, attributes: true, attributeFilter: ["open"] });
             fusion.addEventListener("close", () => {
+                fusion.removeAttribute("data-user-positioned");
+                fusion.style.removeProperty("left");
+                fusion.style.removeProperty("top");
+                fusion.style.removeProperty("margin");
+                fusion.style.removeProperty("transform");
                 if (Date.now() < state.fusionKeepOpenUntil && fusion.dataset.elementId) {
                     window.setTimeout(() => window.networkMap?.showUnifilar?.(fusion.dataset.elementId), 40);
                 }
@@ -1296,9 +1393,15 @@
         }
         const container = containerDialog();
         if (container) {
+            let scheduledContainer = false;
             new MutationObserver(() => {
-                if (container.open && container.dataset.elementId) enhanceContainer().catch((error) => notify(error.message, true));
-            }).observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["open", "data-element-id"] });
+                if (!container.open || !container.dataset.elementId || scheduledContainer) return;
+                scheduledContainer = true;
+                requestAnimationFrame(() => {
+                    scheduledContainer = false;
+                    enhanceContainer().catch((error) => notify(error.message, true));
+                });
+            }).observe(container, { attributes: true, attributeFilter: ["open", "data-element-id"] });
         }
     }
 

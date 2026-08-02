@@ -917,7 +917,6 @@ def container_equipment(request, element_id):
                 ContainerEquipment.EquipmentType.SWITCH,
                 ContainerEquipment.EquipmentType.ROUTER,
                 ContainerEquipment.EquipmentType.FIREWALL,
-                ContainerEquipment.EquipmentType.SERVER,
                 ContainerEquipment.EquipmentType.ONU,
                 ContainerEquipment.EquipmentType.PTO,
                 ContainerEquipment.EquipmentType.OTHER,
@@ -931,7 +930,6 @@ def container_equipment(request, element_id):
                 ContainerEquipment.EquipmentType.DIO,
                 ContainerEquipment.EquipmentType.ROUTER,
                 ContainerEquipment.EquipmentType.FIREWALL,
-                ContainerEquipment.EquipmentType.SERVER,
                 ContainerEquipment.EquipmentType.ONU,
                 ContainerEquipment.EquipmentType.PTO,
                 ContainerEquipment.EquipmentType.OTHER,
@@ -1020,7 +1018,7 @@ def container_equipment(request, element_id):
             _container_equipment_payload(item)
             for item in container.internal_equipments.prefetch_related(
                 "cards", "ports__incoming_links", "ports__outgoing_link"
-            ).all()
+            ).exclude(equipment_type=ContainerEquipment.EquipmentType.SERVER)
         ],
         "cables": [
             {
@@ -1317,6 +1315,19 @@ def _container_equipment_payload(item):
         ),
         "management_ip": item.management_ip,
         "provisioning_mode": item.provisioning_mode,
+        "monitoring_eligible": item.enabled and item.equipment_type in {
+            ContainerEquipment.EquipmentType.SWITCH,
+            ContainerEquipment.EquipmentType.ROUTER,
+            ContainerEquipment.EquipmentType.FIREWALL,
+            ContainerEquipment.EquipmentType.ACCESS_POINT,
+            ContainerEquipment.EquipmentType.PTP,
+            ContainerEquipment.EquipmentType.ONU,
+            ContainerEquipment.EquipmentType.OTHER,
+        },
+        "monitoring_configured": (
+            item.provisioning_mode == ContainerEquipment.ProvisioningMode.SNMP
+            and bool(item.management_ip)
+        ),
         "tx_power_dbm": float(item.tx_power_dbm) if item.tx_power_dbm is not None else None,
         "vendor": item.vendor,
         "model": item.model,

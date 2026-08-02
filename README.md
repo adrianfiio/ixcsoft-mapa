@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.76.0 |
-| Mapa | v0.73.1 |
+| Mapa | v0.74.0 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): correção de arquitetura do financeiro — quem é cobrado é a
