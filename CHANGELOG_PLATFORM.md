@@ -15,6 +15,21 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.81.1] - 2026-08-03
+
+Correção visual: o dropdown "Alertas ativos" (sino no topo) ficava
+parcialmente atrás dos cards da Visão geral (dashboard com GridStack).
+Ver [docs/releases/platform/platform-v0.81.1.md](docs/releases/platform/platform-v0.81.1.md).
+
+Resumo: `.app-topbar` não tinha `position`/`z-index` próprios, então o
+`z-index: 60` do dropdown era resolvido contra o contexto de
+empilhamento errado (o do `body`), e os widgets do dashboard (que o
+GridStack posiciona de forma própria) acabavam desenhando por cima de
+parte do dropdown. `.app-topbar` agora tem `position: relative; z-index: 45`,
+criando um contexto de empilhamento só dela — daí o dropdown sempre
+desenha por cima de qualquer conteúdo da página, em qualquer tela.
+Nenhuma mudança de comportamento, só CSS.
+
 ## [platform-0.81.0] - 2026-08-02
 
 Página de Equipamentos modernizada — sai do shell próprio e antigo,
