@@ -1,11 +1,19 @@
 (function () {
     "use strict";
 
-    const VERSION = "0.75.8";
+    const VERSION = "0.75.9";
     const state = {
         containerData: null,
         activeElementMenu: null,
     };
+
+    // Criado vazio já na primeira linha executável do arquivo: se qualquer
+    // erro acontecer mais adiante na inicialização, window.mapV0758 continua
+    // existindo (mesmo que incompleto) em vez de ficar undefined pro resto
+    // da sessão da página — isso importa porque o handler de contextmenu dos
+    // markers (map-editor.js) depende de window.mapV0758?.openElementMenu
+    // existir pra decidir se deve interceptar o clique.
+    window.mapV0758 = window.mapV0758 || {};
 
     const qs = (selector, root = document) => root.querySelector(selector);
     const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -441,12 +449,12 @@
         nested.close();
     }, true);
 
-    window.mapV0758 = {
+    Object.assign(window.mapV0758, {
         VERSION,
         confirmAction,
         editLongText,
         reviewCableDirection,
         openElementMenu,
         updateContainerIdentity,
-    };
+    });
 }());

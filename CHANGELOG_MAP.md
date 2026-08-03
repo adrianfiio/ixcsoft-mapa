@@ -1,5 +1,65 @@
 # Changelog — Mapa
 
+## [map-0.75.9] - 2026-08-03
+
+### Hotfix: elimina renderização duplicada e restaura o Canvas
+
+Investigação confirmou (com dados reais do banco, sem duplicidade de
+registro em nenhum dos pontos testados) que os problemas relatados na
+homologação da v0.75.8 eram todos de frontend, não de dado:
+
+- **Rack/Torre** tinham DOIS renderers reagindo à mesma abertura: o
+  `manageContainer()` legado (lista antiga) fazia sua própria chamada
+  `equipment/`, e um `MutationObserver` observando `#container-dialog`
+  disparava `enhanceContainer()` por baixo, fazendo uma SEGUNDA chamada
+  `equipment/` + `container-layout-v3/` — daí o Canvas às vezes ficar
+  vazio (condição de corrida entre os dois) e o Network mostrar
+  `equipment/` duas vezes.
+- O mesmo observer, reagindo cegamente a qualquer mudança de atributo
+  no dialog, causava chamadas "stale" de `equipment/`/`container-layout-v3/`
+  também ao abrir CTO/CDO — que nunca deveriam tocar nesse dialog.
+- `canonicalElementFeatures()` escondia markers pelo critério errado
+  (menor ID, ignorando se aquele ID tinha equipamentos/layout reais) —
+  removido; a partir de agora cada `NetworkElement` real sempre aparece
+  no mapa, e a deduplicação só elimina o mesmo ID repetido na mesma
+  resposta da API (nunca por nome/tipo/coordenada).
+- O menu de botão direito do marker só cortava a propagação do evento
+  DEPOIS de checar modo de edição/disponibilidade do menu — se qualquer
+  checagem falhasse, o clique vazava pro menu global "Adicionar ao
+  mapa". Corte de propagação agora roda antes de qualquer `return`.
+
+### Corrigido
+
+- único fluxo de abertura de Rack/Torre: `openContainerWorkspace()`
+  (map-master-suite.js), chamado direto pelo clique/menu do marker —
+  1 chamada `equipment/`, 1 chamada `container-layout-v3/`, dialog só
+  abre depois que o Canvas já foi desenhado com dado real;
+- `MutationObserver` que disparava carregamento de dado removido —
+  carregamento agora é sempre por chamada de função explícita;
+- guarda de geração (`openGeneration`) contra resposta atrasada
+  sobrescrever o editor de um elemento diferente;
+- ao fechar o dialog: geração avança, `dataset.elementId` e estado
+  temporário são limpos, sem disparar novo carregamento;
+- Rack/Torre abrem direto na aba Canvas 2D (não mais na lista
+  "Equipamentos");
+- registro central de markers por ID real (`elementMarkers`), nunca
+  duas instâncias do mesmo ID na mesma camada;
+- `window.mapV0758` criado vazio já na primeira linha do arquivo — um
+  erro de inicialização posterior não deixa mais o objeto inteiro
+  `undefined` pro resto da sessão da página;
+- segunda camada de proteção no menu global: ignora cliques sobre
+  `.leaflet-marker-icon`, `.leaflet-interactive`, `.map-element-marker`
+  e qualquer elemento com `data-element-id`.
+
+### Preservado
+
+- `PLATFORM_VERSION` em `0.82.0`, intacta;
+- `${DOCKER_SOCK_GID:-999}` intacto no `docker-compose.yml`;
+- nenhuma migration;
+- nenhum dado excluído ou alterado no banco;
+- `map-v0757-field-usability.js`/`.css` continuam removidos (não
+  reintroduzidos).
+
 ## [map-0.75.8] - 2026-08-03
 
 ### Hotfix estrutural

@@ -14,7 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r13"), 5)
+        self.assertEqual(template.count("{{ map_version }}-tower-r14"), 5)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
@@ -149,9 +149,9 @@ class MapV0750StaticTests(unittest.TestCase):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
         self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.82.0"))', settings)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.8")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.9")', settings)
         self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.82.0}', compose)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.8}', compose)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.9}', compose)
 
     def test_tower_r7_has_contextual_creation_drop_and_fade(self):
         canvas = content("static/js/map-master-suite.js")
@@ -239,12 +239,14 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertIn("EquipmentType.SERVER", rack_block)
         self.assertIn('"duplicate": True', backend)
         self.assertIn("select_for_update", backend)
-        for token in ("elementSubmitLock", "reviewCableDirection", "Salvar nova posição?", "map-v0758-optical-workspace", "openElementMenu", "elementDuplicateKey", "canonicalElementFeatures"):
+        for token in ("elementSubmitLock", "reviewCableDirection", "Salvar nova posição?", "map-v0758-optical-workspace", "openElementMenu", "elementDuplicateKey"):
             self.assertIn(token, editor)
+        # v0.75.9 removeu o dedup silencioso por nome/coordenada.
+        self.assertNotIn("canonicalElementFeatures", editor)
         for token in ("containerCanvasMidpoint", "side-right-v0758", "syncCableVisualSide", "allowed.has(value)", 'if (type === "server") return "Servidores";'):
             self.assertIn(token, canvas)
         self.assertIn(".master-canvas-note", view)
-        self.assertIn('const VERSION = "0.75.8"', workspace)
+        self.assertIn('const VERSION = "0.75.9"', workspace)
         for token in ("editLongText", "confirmAction", "reviewCableDirection", "updateContainerIdentity", "openDuplicateResolver"):
             self.assertIn(token, runtime)
         self.assertNotIn("MutationObserver", runtime)
@@ -256,7 +258,68 @@ class MapV0750StaticTests(unittest.TestCase):
         self.assertNotIn("map-v0757-field-usability", template)
         self.assertIn("MAP v0.75.8", release)
 
+    def test_map_v0759_single_flow_no_duplicate_render(self):
+        editor = content("static/js/map-editor.js")
+        canvas = content("static/js/map-master-suite.js")
+        view = content("static/js/map-v074-ui.js")
+        runtime = content("static/js/map-v0758-core-ui.js")
+        template = content("templates/map.html")
+        release = content("docs/releases/map/map-v0.75.9.md")
 
+        # map-v0757-field-usability continua ausente (não reintroduzido).
+        self.assertNotIn("map-v0757-field-usability", template)
+        self.assertNotIn("map-v0757-field-usability", editor)
+        self.assertNotIn("map-v0757-field-usability", canvas)
+
+        # Nenhum runtime paralelo novo foi criado — só os arquivos já
+        # existentes (map-editor.js, map-master-suite.js, map-v074-ui.js,
+        # map-v0758-core-ui.js, map-v0750-tower-workspace.js) foram tocados.
+        self.assertNotIn("map-v0759", template)
+
+        # Fluxo único de abertura de Rack/Torre: uma função pública só,
+        # chamada direto pelo marker — não mais o manageContainer legado
+        # como primeiro passo.
+        self.assertIn("function openContainerWorkspace(id)", editor)
+        self.assertIn("async function openContainerWorkspace(id)", canvas)
+        self.assertIn("? openContainerWorkspace(p.id)", editor)
+        self.assertIn("openContainerWorkspace,", canvas)
+
+        # MutationObserver não dispara mais carregamento de dado do
+        # container — o observer específico do #container-dialog (que
+        # reagia a mudança de "open"/"data-element-id" chamando
+        # enhanceContainer/loadContainerMaster) foi removido.
+        self.assertNotIn('attributeFilter: ["open", "data-element-id"]', canvas)
+
+        # Guarda de geração contra resposta atrasada.
+        self.assertIn("openGeneration", canvas)
+        self.assertIn("generation !== state.container.openGeneration", canvas)
+
+        # Registro central de markers por ID real — nunca dedup por
+        # nome/tipo/coordenada na hora de desenhar.
+        self.assertIn("elementMarkers", editor)
+        self.assertIn("seenElementIds", editor)
+        self.assertNotIn("canonicalElementFeatures", editor)
+
+        # contextmenu do marker corta a propagação ANTES de qualquer
+        # checagem de modo de edição/disponibilidade do menu (nunca deixa
+        # o clique vazar pro menu global mesmo no caminho de erro).
+        stop_index = editor.index("event.originalEvent.stopImmediatePropagation")
+        guard_index = editor.index("if (!editing || !unifiedEditor || !window.mapV0758?.openElementMenu) return;")
+        self.assertLess(stop_index, guard_index)
+
+        # Segunda camada: o menu global ignora o marker Leaflet.
+        self.assertIn(".leaflet-marker-icon", view)
+        self.assertIn(".leaflet-interactive", view)
+        self.assertIn("[data-element-id]", view)
+
+        # window.mapV0758 nunca fica undefined por um erro de inicialização
+        # tardio no arquivo.
+        self.assertIn("window.mapV0758 = window.mapV0758 || {};", runtime)
+        self.assertIn("Object.assign(window.mapV0758,", runtime)
+        self.assertNotIn("window.mapV0758 = {\n        VERSION,", runtime)
+
+        self.assertIn("MAP v0.75.9", release)
+        self.assertIn("67077444659639bec037a56632c95a611fe566a8", release)
 
 
 if __name__ == "__main__":

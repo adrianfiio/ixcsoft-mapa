@@ -34,6 +34,9 @@
         lightSourceId: null, lastAnnouncedLightSourceId: undefined, lightAnimationGeneration: 0, mapMode: "view",
         containerId: null, editingContainerEquipmentId: null, topologyZoom: 1,
         openingElementId: null, elementSubmitLock: false,
+        // Controle central: 1 registro por ID real de NetworkElement, nunca
+        // por nome/coordenada. Ver loadStructure().
+        elementMarkers: new Map(),
     };
 
     const googleConfigElement = document.getElementById("google-maps-config");
@@ -196,17 +199,13 @@
             Number(coordinates[1]).toFixed(7),
         ].join("|");
     }
-    function canonicalElementFeatures(features) {
-        const seen = new Set();
-        return [...(features || [])]
-            .sort((first, second) => Number(first?.properties?.id || 0) - Number(second?.properties?.id || 0))
-            .filter((feature) => {
-                const key = elementDuplicateKey(feature);
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-    }
+    // v0.75.9: a função de dedup-por-nome/coordenada foi removida — ela
+    // escondia do Canvas o NetworkElement de maior ID sempre que dois
+    // registros tinham o mesmo tipo/nome/coordenada, mesmo quando esse ID
+    // escondido era o que tinha equipamentos/layout de verdade.
+    // elementDuplicateKey() continua existindo só pro resolvedor manual
+    // (menu de botão direito → "Resolver duplicados"), que mostra os IDs
+    // reais e deixa o usuário decidir.
     function offsetWithin(el, container) {
         let x = 0, y = 0, node = el;
         while (node && node !== container) {
@@ -601,6 +600,19 @@
             : type === "access_point" ? "Ex.: AP setor norte"
             : type === "onu" ? "Ex.: ONU interna da torre"
             : "Ex.: Enlace PTP prefeitura";
+    }
+    // Ponto de entrada único (v0.75.9) pra abrir o editor de Rack/Torre a
+    // partir de um clique novo (marker/menu de botão direito). Delega pro
+    // Canvas novo (map-master-suite.js), que faz sozinho: 1 chamada
+    // equipment/, 1 chamada container-layout-v3/, desenha o Canvas, e só
+    // então abre o dialog — nunca o renderer legado de lista (manageContainer
+    // abaixo continua existindo só como refresh interno de formulários
+    // legados já ocultos, não é mais chamado ao abrir um Rack/Torre do zero).
+    function openContainerWorkspace(id) {
+        if (!window.mapMasterSuite?.openContainerWorkspace) {
+            return Promise.reject(new Error("Editor de estrutura (Canvas) ainda não carregou — recarregue a página."));
+        }
+        return window.mapMasterSuite.openContainerWorkspace(id);
     }
     async function manageContainer(id) {
         const data = await api(`/api/map/elements/${id}/equipment/`);
@@ -1747,6 +1759,7 @@
         const lightGeneration = state.lightAnimationGeneration;
         cableLayer.clearLayers();
         Object.values(structureLayers).forEach((pair) => { pair.cluster.clearLayers(); pair.plain.clearLayers(); });
+        state.elementMarkers.clear();
         if (!state.projectId) {
             state.elements = [];
             state.cables = [];
@@ -1785,7 +1798,19 @@
         state.lightSourceId = lightSelect.value || null;
         populateConnectionSelects();
         const bounds = [];
-        canonicalElementFeatures(elements.features).forEach((feature) => {
+        const seenElementIds = new Set();
+        elements.features.forEach((feature) => {
+            // Dedup só por ID real repetido na MESMA resposta da API — nunca
+            // por nome/tipo/coordenada. Dois NetworkElement distintos são
+            // dois markers de verdade; esconder um deles pelo "menor ID"
+            // já causou Rack/Torre vazios quando o ID escondido era o que
+            // tinha os equipamentos de verdade.
+            const elementId = String(feature?.properties?.id ?? "");
+            if (elementId && seenElementIds.has(elementId)) {
+                console.error(`map-editor: ID ${elementId} apareceu duas vezes na mesma resposta de /api/map/elements/ — segunda ocorrência ignorada no desenho (nenhum registro foi alterado).`);
+                return;
+            }
+            if (elementId) seenElementIds.add(elementId);
             if (window.mapV092 && !window.mapV092.isElementVisible(feature)) return;
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
@@ -1806,7 +1831,7 @@
                         if (String(state.openingElementId || "") === String(p.id)) return;
                         state.openingElementId = p.id;
                         const opening = ["rack", "tower"].includes(p.tipo)
-                            ? manageContainer(p.id)
+                            ? openContainerWorkspace(p.id)
                             : showUnifilar(p.id);
                         opening
                             .catch((error) => notify(error.message, true))
@@ -1832,11 +1857,17 @@
                     openNewCableDialog();
                 });
                 marker.on("contextmenu", (event) => {
-                    if (!editing || !unifiedEditor || !window.mapV0758?.openElementMenu) return;
+                    // O evento nunca pode vazar pro menu global "Adicionar ao
+                    // mapa" quando ocorreu sobre um marker — por isso o corte
+                    // de propagação roda ANTES de qualquer checagem/return,
+                    // não só no caminho feliz. Ver map-v074-ui.js:openContextMenu
+                    // (exclusão por seletor) como segunda camada de proteção.
                     if (event.originalEvent) {
-                        L.DomEvent.stopPropagation(event.originalEvent);
                         L.DomEvent.preventDefault(event.originalEvent);
+                        L.DomEvent.stopPropagation(event.originalEvent);
+                        event.originalEvent.stopImmediatePropagation?.();
                     }
+                    if (!editing || !unifiedEditor || !window.mapV0758?.openElementMenu) return;
                     map.closePopup();
                     const currentFeature = {
                         geometry: { coordinates: [longitude, latitude] },
@@ -1858,7 +1889,7 @@
                         edit: () => editElement(p.id).catch((error) => notify(error.message, true)),
                         fusions: ["cto", "splice_box"].includes(p.tipo)
                             ? () => showUnifilar(p.id).catch((error) => notify(error.message, true))
-                            : () => manageContainer(p.id).catch((error) => notify(error.message, true)),
+                            : () => openContainerWorkspace(p.id).catch((error) => notify(error.message, true)),
                         remove: async () => {
                             try {
                                 await removeById(p.id);
@@ -1870,7 +1901,7 @@
                     popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-manage-pole="${p.id}"]`, () => managePole(p.id).catch((error) => notify(error.message, true)));
-                    popupAction(`[data-manage-container="${p.id}"]`, () => manageContainer(p.id).catch((error) => notify(error.message, true)));
+                    popupAction(`[data-manage-container="${p.id}"]`, () => openContainerWorkspace(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-delete-element="${p.id}"]`, () => deleteElement(p.id).catch((error) => notify(error.message, true)));
                 });
                 if (editing) marker.on("dragend", async () => {
@@ -1896,8 +1927,23 @@
                 return marker;
             };
             const structureCategory = ["cto", "splice_box"].includes(p.tipo) ? p.tipo : "other";
-            createMarker().addTo(structureLayers[structureCategory].cluster);
-            createMarker().addTo(structureLayers[structureCategory].plain);
+            if (state.elementMarkers.has(elementId)) {
+                // Proteção estrutural: nunca duas entradas no controle
+                // central pro mesmo ID (não deveria acontecer, já que
+                // seenElementIds acima cobre a mesma resposta — isso só
+                // pegaria uma regressão futura no código, não dado real).
+                console.error(`map-editor: ID ${elementId} já tinha marker registrado nesta carga — ignorando recriação.`);
+                return;
+            }
+            // Uma instância de marker por camada (plain/cluster), mas nunca
+            // as duas camadas visíveis ao mesmo tempo — refreshEquipmentLayer()
+            // é quem decide qual delas fica no mapa. Registradas juntas em
+            // elementMarkers pra nunca perder o vínculo com o ID real.
+            const clusterMarker = createMarker();
+            const plainMarker = createMarker();
+            clusterMarker.addTo(structureLayers[structureCategory].cluster);
+            plainMarker.addTo(structureLayers[structureCategory].plain);
+            if (elementId) state.elementMarkers.set(elementId, { plain: plainMarker, cluster: clusterMarker, category: structureCategory });
             bounds.push([latitude, longitude]);
         });
         refreshEquipmentLayer();
