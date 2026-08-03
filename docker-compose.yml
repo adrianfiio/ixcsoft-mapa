@@ -4,8 +4,8 @@
 x-common-environment: &common-environment
   APP_NAME: ${APP_NAME:-AFService Map}
   APP_ENV: ${APP_ENV:-production}
-  APP_VERSION: ${APP_VERSION:-0.81.2}
-  PLATFORM_VERSION: ${PLATFORM_VERSION:-0.81.2}
+  APP_VERSION: ${APP_VERSION:-0.81.3}
+  PLATFORM_VERSION: ${PLATFORM_VERSION:-0.81.3}
   MAP_VERSION: ${MAP_VERSION:-0.75.5}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
@@ -95,10 +95,14 @@ services:
     # pra recarregar o Telegraf (SIGHUP) quando um equipamento SNMP é
     # cadastrado/editado. NUNCA monte isso no `web` (fica exposto a
     # requisições HTTP direto da internet). Isso dá ao worker controle
-    # sobre o Docker do host; se o GID do socket no servidor não for 999,
-    # ajuste `group_add` para o GID real (rode `stat -c '%g' /var/run/docker.sock`).
+    # sobre o Docker do host. O GID do grupo dono do socket varia por
+    # servidor (rode `stat -c '%g' /var/run/docker.sock` pra descobrir o
+    # real) — por isso é configurável via DOCKER_SOCK_GID no `.env`, em vez
+    # de cravado; sem essa variável, o reload do Telegraf falha em
+    # silêncio com PermissionError e o worker segue rodando normalmente,
+    # sem erro visível no site.
     group_add:
-      - "999"
+      - "${DOCKER_SOCK_GID:-999}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./equipamentos_ativos_snmp:/app/equipamentos_ativos_snmp

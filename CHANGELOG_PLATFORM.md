@@ -15,6 +15,21 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.81.3] - 2026-08-03
+
+Corrige o GID cravado do socket do Docker no `worker`, que fazia o
+recarregamento do Telegraf falhar silenciosamente. Ver
+[docs/releases/platform/platform-v0.81.3.md](docs/releases/platform/platform-v0.81.3.md).
+
+Resumo: `docker-compose.yml` assumia GID `999` pro grupo dono de
+`/var/run/docker.sock` (`group_add`), mas no servidor de produção o GID
+real é `989` — então o worker nunca conseguia falar com o Docker pra
+mandar o SIGHUP no Telegraf depois de criar/editar/remover um
+monitoramento SNMP. O `.conf` era escrito/apagado certinho, só o aviso
+pro Telegraf recarregar é que nunca chegava (erro só visível no log do
+worker, nunca no site). Agora o GID é configurável via `DOCKER_SOCK_GID`
+no `.env` (com `999` como default, mantendo compatibilidade).
+
 ## [platform-0.81.2] - 2026-08-03
 
 Nova tela "Escolha um cliente" antes de abrir o mapa operacional, pro
