@@ -1,5 +1,17 @@
 # Changelog — Mapa
 
+## [map-0.75.8] - 2026-08-03
+
+### Hotfix estrutural
+
+- remove o runtime complementar da v0.75.7 que interceptava cliques, notas e workspaces;
+- mantém um único renderer para marcadores, Canvas e fusões;
+- volta a abrir CTO/CEO/CDO como workspace modal, sem vazamento para o menu global;
+- adiciona resolvedor manual de registros sobrepostos, exibindo IDs antes da exclusão;
+- preserva notas multilinha, confirmação de movimento, cabos laterais, direção óptica e coordenadas negativas;
+- Rack continua com OLT/DIO/Switch/Router/Firewall/PTO/Outros e sem AP/PTP/ONU;
+- `PLATFORM_VERSION=0.82.0`, `MAP_VERSION=0.75.8`, sem migration.
+
 ## [map-0.75.7] - 2026-08-03
 
 ### Adicionado

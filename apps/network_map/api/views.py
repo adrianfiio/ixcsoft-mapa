@@ -562,6 +562,7 @@ def network_elements_geojson(request):
     project_id = request.GET.get("project_id")
     if project_id:
         queryset = queryset.filter(project_id=project_id)
+    queryset = queryset.order_by("id")
 
     for element in queryset:
 
@@ -917,6 +918,7 @@ def container_equipment(request, element_id):
                 ContainerEquipment.EquipmentType.SWITCH,
                 ContainerEquipment.EquipmentType.ROUTER,
                 ContainerEquipment.EquipmentType.FIREWALL,
+                ContainerEquipment.EquipmentType.SERVER,
                 ContainerEquipment.EquipmentType.PTO,
                 ContainerEquipment.EquipmentType.OTHER,
             }

@@ -186,6 +186,27 @@
         item.textContent = value == null ? "" : String(value);
         return item.innerHTML;
     }
+    function elementDuplicateKey(feature) {
+        const properties = feature?.properties || {};
+        const coordinates = feature?.geometry?.coordinates || [];
+        return [
+            String(properties.tipo || ""),
+            String(properties.nome || "").trim().toLocaleLowerCase("pt-BR"),
+            Number(coordinates[0]).toFixed(7),
+            Number(coordinates[1]).toFixed(7),
+        ].join("|");
+    }
+    function canonicalElementFeatures(features) {
+        const seen = new Set();
+        return [...(features || [])]
+            .sort((first, second) => Number(first?.properties?.id || 0) - Number(second?.properties?.id || 0))
+            .filter((feature) => {
+                const key = elementDuplicateKey(feature);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    }
     function offsetWithin(el, container) {
         let x = 0, y = 0, node = el;
         while (node && node !== container) {
@@ -202,8 +223,8 @@
             const nodeX = parseFloat(cableNode.style.left) || 0;
             const middle = Math.max(container.scrollWidth, container.clientWidth, 900) / 2;
             const sideRight = nodeX + cableNode.offsetWidth / 2 >= middle;
-            cableNode.classList.toggle("side-right-v0757", sideRight);
-            cableNode.classList.toggle("side-left-v0757", !sideRight);
+            cableNode.classList.toggle("side-right-v0758", sideRight);
+            cableNode.classList.toggle("side-left-v0758", !sideRight);
             return { x: sideRight ? x : x + el.offsetWidth, y: y + el.offsetHeight / 2 };
         }
         return { x: x + el.offsetWidth / 2, y: y + el.offsetHeight / 2 };
@@ -592,7 +613,7 @@
             ? "OLT e DIO instalados neste rack"
             : "OLT, switches, APs, DIOs, ONUs e rádios PTP instalados nesta torre";
         const types = data.container.type === "rack"
-            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["router", "Roteador"], ["firewall", "Firewall"], ["pto", "PTO"], ["other", "Outro"]]
+            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["router", "Roteador"], ["firewall", "Firewall"], ["server", "Servidor"], ["pto", "PTO"], ["other", "Outro"]]
             : [["olt", "OLT"], ["switch", "Switch"], ["router", "Roteador"], ["firewall", "Firewall"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["onu", "ONU / ONT"], ["pto", "PTO"], ["other", "Outro"]];
         containerEquipmentForm.reset();
         state.editingContainerEquipmentId = null;
@@ -782,8 +803,8 @@
         document.getElementById("unifilar-title").textContent = "Carregando fusões...";
         document.getElementById("unifilar-subtitle").textContent = "Consultando cabos, fibras e layout";
         content.innerHTML = '<div class="fusion-loading"><span class="fusion-spinner"></span><strong>Preparando diagrama óptico</strong></div>';
-        unifilarDialog.classList.add("map-v0757-optical-workspace");
-        if (!unifilarDialog.open) unifilarDialog.show();
+        unifilarDialog.classList.add("map-v0758-optical-workspace");
+        if (!unifilarDialog.open) unifilarDialog.showModal();
         const data = await api(`/api/map/elements/${id}/`);
         const element = data.element;
         document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
@@ -1195,7 +1216,7 @@
             canvasMenu.querySelector('[data-canvas-action="add-note"]').onclick = async () => {
                 canvasMenu.hidden = true;
                 if (!canvasMenuPoint) return;
-                const text = await askValue({ title: "Adicionar nota", label: "Texto" });
+                const text = await window.mapV0758?.editLongText?.({ title: "Adicionar nota", label: "Texto da nota" });
                 if (!text) return;
                 layout.notes = [...notes, { id: `n${Date.now()}`, x: Math.round(canvasMenuPoint.x), y: Math.round(canvasMenuPoint.y), text }];
                 await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
@@ -1203,7 +1224,14 @@
             };
             content.querySelectorAll("[data-delete-note]").forEach((button) => {
                 button.onclick = async () => {
-                    if (!confirm("Excluir esta nota?")) return;
+                    const accepted = await window.mapV0758?.confirmAction?.({
+                        title: "Excluir nota",
+                        message: "A nota será removida do diagrama de fusões.",
+                        confirmLabel: "Excluir nota",
+                        cancelLabel: "Cancelar",
+                        danger: true,
+                    });
+                    if (!accepted) return;
                     layout.notes = notes.filter((note) => String(note.id) !== String(button.dataset.deleteNote));
                     await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Nota excluída.");
@@ -1212,7 +1240,7 @@
             content.querySelectorAll("[data-note-id]").forEach((textEl) => {
                 textEl.onclick = async () => {
                     const note = notes.find((item) => String(item.id) === String(textEl.dataset.noteId));
-                    const text = await askValue({ title: "Editar nota", label: "Texto", value: note?.text || "" });
+                    const text = await window.mapV0758?.editLongText?.({ title: "Editar nota", label: "Texto da nota", value: note?.text || "" });
                     if (text === null || text === undefined) return;
                     layout.notes = notes.map((item) => String(item.id) === String(textEl.dataset.noteId) ? { ...item, text } : item);
                     await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
@@ -1239,8 +1267,8 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter excluído.");
                 };
             });
-            unifilarDialog.classList.add("map-v0757-optical-workspace");
-        if (!unifilarDialog.open) unifilarDialog.show();
+            unifilarDialog.classList.add("map-v0758-optical-workspace");
+            if (!unifilarDialog.open) unifilarDialog.showModal();
             requestAnimationFrame(redrawOpticalLinks);
             setTimeout(redrawOpticalLinks, 150);
             window.addEventListener("resize", redrawOpticalLinks);
@@ -1253,8 +1281,8 @@
         }
         if (element.element_type === "rack") {
             await renderRackFusionDiagram(element, content);
-            unifilarDialog.classList.add("map-v0757-optical-workspace");
-        if (!unifilarDialog.open) unifilarDialog.show();
+            unifilarDialog.classList.add("map-v0758-optical-workspace");
+            if (!unifilarDialog.open) unifilarDialog.showModal();
             return;
         }
         const splitters = element.cto?.splitters || [];
@@ -1269,8 +1297,8 @@
                     <div class="port-grid">${splitter.ports.map((port) => `<div class="port ${escapeHtml(port.status)}">P${port.number}<br>${escapeHtml(port.status_label)}</div>`).join("")}</div>
                 </div>
             </article>`).join("") : '<p class="help-text">Nenhum splitter configurado.</p>';
-        unifilarDialog.classList.add("map-v0757-optical-workspace");
-        if (!unifilarDialog.open) unifilarDialog.show();
+        unifilarDialog.classList.add("map-v0758-optical-workspace");
+        if (!unifilarDialog.open) unifilarDialog.showModal();
     }
     async function renderRackFusionDiagram(element, content) {
         document.getElementById("unifilar-subtitle").textContent = "Fusão de fibras nas portas do DIO";
@@ -1436,7 +1464,7 @@
         rackCanvasMenu.querySelector('[data-canvas-action="add-note"]').onclick = async () => {
             rackCanvasMenu.hidden = true;
             if (!rackCanvasMenuPoint) return;
-            const text = await askValue({ title: "Adicionar nota", label: "Texto" });
+            const text = await window.mapV0758?.editLongText?.({ title: "Adicionar nota", label: "Texto da nota" });
             if (!text) return;
             layout.notes = [...notes, { id: `n${Date.now()}`, x: Math.round(rackCanvasMenuPoint.x), y: Math.round(rackCanvasMenuPoint.y), text }];
             await saveLayout();
@@ -1444,7 +1472,14 @@
         };
         content.querySelectorAll("[data-delete-note]").forEach((button) => {
             button.onclick = async () => {
-                if (!confirm("Excluir esta nota?")) return;
+                const accepted = await window.mapV0758?.confirmAction?.({
+                        title: "Excluir nota",
+                        message: "A nota será removida do diagrama de fusões.",
+                        confirmLabel: "Excluir nota",
+                        cancelLabel: "Cancelar",
+                        danger: true,
+                    });
+                    if (!accepted) return;
                 layout.notes = notes.filter((note) => String(note.id) !== String(button.dataset.deleteNote));
                 await saveLayout();
                 unifilarDialog.close(); await showUnifilar(element.id); notify("Nota excluída.");
@@ -1454,7 +1489,7 @@
             button.onclick = async () => {
                 const note = notes.find((item) => String(item.id) === String(button.dataset.editFusionNote));
                 if (!note) return;
-                const text = await askValue({ title: "Editar nota", label: "Texto", value: note.text || "" });
+                const text = await window.mapV0758?.editLongText?.({ title: "Editar nota", label: "Texto da nota", value: note.text || "" });
                 if (!text?.trim()) return;
                 layout.notes = notes.map((item) => String(item.id) === String(note.id) ? { ...item, text: text.trim() } : item);
                 await saveLayout();
@@ -1464,7 +1499,7 @@
         content.querySelectorAll("[data-note-id]").forEach((textEl) => {
             textEl.onclick = async () => {
                 const note = notes.find((item) => String(item.id) === String(textEl.dataset.noteId));
-                const text = await askValue({ title: "Editar nota", label: "Texto", value: note?.text || "" });
+                const text = await window.mapV0758?.editLongText?.({ title: "Editar nota", label: "Texto da nota", value: note?.text || "" });
                 if (text === null) return;
                 layout.notes = notes.map((item) => String(item.id) === String(textEl.dataset.noteId) ? { ...item, text } : item);
                 await saveLayout();
@@ -1750,7 +1785,7 @@
         state.lightSourceId = lightSelect.value || null;
         populateConnectionSelects();
         const bounds = [];
-        elements.features.forEach((feature) => {
+        canonicalElementFeatures(elements.features).forEach((feature) => {
             if (window.mapV092 && !window.mapV092.isElementVisible(feature)) return;
             const p = feature.properties;
             const [longitude, latitude] = feature.geometry.coordinates;
@@ -1797,24 +1832,36 @@
                     openNewCableDialog();
                 });
                 marker.on("contextmenu", (event) => {
-                    if (!editing || !unifiedEditor || !window.mapV0757?.openElementMenu) return;
+                    if (!editing || !unifiedEditor || !window.mapV0758?.openElementMenu) return;
                     if (event.originalEvent) {
                         L.DomEvent.stopPropagation(event.originalEvent);
                         L.DomEvent.preventDefault(event.originalEvent);
                     }
                     map.closePopup();
-                    window.mapV0757.openElementMenu({
+                    const currentFeature = {
+                        geometry: { coordinates: [longitude, latitude] },
+                        properties: p,
+                    };
+                    const duplicates = state.elements.filter(
+                        (feature) => elementDuplicateKey(feature) === elementDuplicateKey(currentFeature),
+                    );
+                    const removeById = async (elementId) => {
+                        await api(`/api/map/elements/${elementId}/`, { method: "DELETE" });
+                        await loadStructure();
+                        notify(`Registro ID ${elementId} excluído.`);
+                    };
+                    window.mapV0758.openElementMenu({
                         originalEvent: event.originalEvent,
                         element: p,
+                        duplicates,
+                        removeById,
                         edit: () => editElement(p.id).catch((error) => notify(error.message, true)),
                         fusions: ["cto", "splice_box"].includes(p.tipo)
                             ? () => showUnifilar(p.id).catch((error) => notify(error.message, true))
                             : () => manageContainer(p.id).catch((error) => notify(error.message, true)),
                         remove: async () => {
                             try {
-                                await api(`/api/map/elements/${p.id}/`, { method: "DELETE" });
-                                await loadStructure();
-                                notify("Elemento excluído.");
+                                await removeById(p.id);
                             } catch (error) { notify(error.message, true); }
                         },
                     });
@@ -1829,7 +1876,7 @@
                 if (editing) marker.on("dragend", async () => {
                     const position = marker.getLatLng();
                     const original = L.latLng(latitude, longitude);
-                    const accepted = await window.mapV0757?.confirmAction?.({
+                    const accepted = await window.mapV0758?.confirmAction?.({
                         title: "Salvar nova posição?",
                         message: `O ponto ${p.nome} foi movido. Deseja gravar a nova posição e atualizar as pontas dos cabos?`,
                         confirmLabel: "Salvar posição",
@@ -2308,7 +2355,7 @@
             payload.generate_fibers = Boolean(payload.cable_model_id);
             const origin = state.elements.find((feature) => String(feature.properties.id) === String(payload.origin_id || state.cableOriginId));
             const destination = state.elements.find((feature) => String(feature.properties.id) === String(payload.destination_id || state.cableDestinationId));
-            const invert = await window.mapV0757?.reviewCableDirection?.({ origin, destination });
+            const invert = await window.mapV0758?.reviewCableDirection?.({ origin, destination });
             if (invert) {
                 const oldOrigin = payload.origin_id || state.cableOriginId;
                 payload.origin_id = payload.destination_id || state.cableDestinationId;

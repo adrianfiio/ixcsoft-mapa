@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "0.75.7";
+    const VERSION = "0.75.8";
     const qs = (selector, root = document) => root.querySelector(selector);
     const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
     const escapeHtml = (value) => {
