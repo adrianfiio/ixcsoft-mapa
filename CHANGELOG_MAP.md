@@ -1,5 +1,36 @@
 # Changelog — Mapa
 
+## [map-0.75.7] - 2026-08-03
+
+### Adicionado
+
+- confirmação ao mover pontos, com restauração da posição original ao cancelar;
+- editor próprio de notas multilinha para Canvas e diagramas de fusão;
+- menu contextual por botão direito em Rack, Torre, CTO, CEO e CDO;
+- aviso de direção óptica possivelmente invertida ao finalizar um cabo.
+
+### Alterado
+
+- Rack e Torre passam a ter identidade visual e regras de equipamentos distintas;
+- CTO, CEO e CDO usam o editor óptico em workspace amplo;
+- cabos trocam automaticamente o lado visual ao cruzar o centro do Canvas;
+- Canvas e fusões aceitam coordenadas negativas, sem parede invisível;
+- auto-fit passa a considerar também as notas.
+
+### Corrigido
+
+- cabeçalho/menu duplicado no editor técnico;
+- criação repetida por duplo envio do formulário;
+- `Esc` fechando todo o Canvas ao sair de uma janela interna;
+- Rack permitindo ONU/ONT e omitindo Router, Firewall, PTO e Outros;
+- fundo e título de Torre aparecendo ao abrir um Rack.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.82.0`;
+- `MAP_VERSION` atualizada para `0.75.7`;
+- nenhuma migration.
+
 ## [map-0.75.6] - 2026-08-03
 
 ### Adicionado

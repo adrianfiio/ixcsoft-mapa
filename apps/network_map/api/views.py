@@ -917,7 +917,6 @@ def container_equipment(request, element_id):
                 ContainerEquipment.EquipmentType.SWITCH,
                 ContainerEquipment.EquipmentType.ROUTER,
                 ContainerEquipment.EquipmentType.FIREWALL,
-                ContainerEquipment.EquipmentType.ONU,
                 ContainerEquipment.EquipmentType.PTO,
                 ContainerEquipment.EquipmentType.OTHER,
             }
@@ -1791,13 +1790,39 @@ def create_network_element(request):
                 status=403,
             )
 
-        element = serializer.save()
+        # Serializa criações do mesmo projeto e torna o envio idempotente para
+        # o mesmo tipo/nome/coordenada. Evita que duplo clique ou dupla
+        # submissão gere dois ícones sobrepostos no mapa.
+        with transaction.atomic():
+            NetworkProject.objects.select_for_update().get(pk=project.pk)
+            latitude = serializer.validated_data.get("latitude")
+            longitude = serializer.validated_data.get("longitude")
+            duplicate = None
+            if latitude is not None and longitude is not None:
+                duplicate = NetworkElement.objects.filter(
+                    project=project,
+                    element_type=serializer.validated_data.get("element_type"),
+                    name__iexact=str(serializer.validated_data.get("name") or "").strip(),
+                    point=Point(float(longitude), float(latitude), srid=4326),
+                ).order_by("id").first()
+            if duplicate is not None:
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "id": duplicate.id,
+                        "nome": duplicate.name,
+                        "duplicate": True,
+                    },
+                    status=200,
+                )
+            element = serializer.save()
 
         return JsonResponse(
             {
                 "success": True,
                 "id": element.id,
                 "nome": element.name,
+                "duplicate": False,
             },
             status=201,
         )

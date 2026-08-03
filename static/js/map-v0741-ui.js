@@ -96,7 +96,7 @@
     }
 
     function canvasBounds(root) {
-        const nodes = qsa(".master-canvas-node, .master-cable-node", root);
+        const nodes = qsa(".master-canvas-node, .master-cable-node, .master-canvas-note", root);
         if (!nodes.length) return null;
         let minX = Infinity;
         let minY = Infinity;
