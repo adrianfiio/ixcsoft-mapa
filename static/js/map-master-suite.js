@@ -866,6 +866,26 @@
         return state.container.layout.cablePositions?.[String(cable.id)] || defaultCablePosition(cable, index);
     }
 
+    function containerCanvasMidpoint() {
+        const rows = state.container.data?.equipment || [];
+        if (!rows.length) return 600;
+        const positions = rows.map((item, index) => nodePosition(item, index).x);
+        return (Math.min(...positions) + Math.max(...positions) + 220) / 2;
+    }
+
+    function cableVisualSide(position) {
+        return Number(position?.x || 0) + 105 >= containerCanvasMidpoint() ? "right" : "left";
+    }
+
+    function syncCableVisualSide(node) {
+        if (!node) return "left";
+        const side = cableVisualSide({ x: Number(node.dataset.posX || 0) });
+        node.dataset.cableSide = side;
+        node.classList.toggle("side-right-v0757", side === "right");
+        node.classList.toggle("side-left-v0757", side === "left");
+        return side;
+    }
+
     function portSide(port, index) {
         return index % 2 === 0 ? "left" : "right";
     }
@@ -904,8 +924,9 @@
         }).join("") + cables.map((cable, index) => {
             const position = cablePosition(cable, index);
             const relation = cable.relation === "output" ? "Saída" : "Entrada";
-            return `<article class="master-cable-node ${cable.relation === "output" ? "output" : "input"}" data-cable-node="${cable.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
-                <header><span><strong>${escapeHtml(cable.name)}</strong><small>${relation} · ${cable.fiber_count} FO</small></span><b>${relation === "Entrada" ? "→" : "←"}</b></header>
+            const visualSide = cableVisualSide(position);
+            return `<article class="master-cable-node ${cable.relation === "output" ? "output" : "input"} side-${visualSide}-v0757" data-cable-side="${visualSide}" data-cable-node="${cable.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+                <header><span><strong>${escapeHtml(cable.name)}</strong><small>${relation} · ${cable.fiber_count} FO</small></span><b>→</b></header>
                 <div class="master-cable-fibers">${(cable.fibers || []).map((fiber) => `<button type="button" class="master-cable-fiber ${fiber.used ? "used" : ""}" data-cable-fiber="${fiber.id}" data-link-id="${fiber.link_id || ""}" style="--fiber-color:${escapeHtml(fiber.color_hex || "#94a3b8")}" title="F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used_by ? ` · ${escapeHtml(fiber.used_by)}` : ""}"><i></i><span>${fiber.number}</span></button>`).join("") || '<small>Gere as fibras deste cabo.</small>'}</div>
             </article>`;
         }).join("") + (state.container.layout.notes || []).map((note, index) => `
@@ -914,7 +935,7 @@
                 <p>${escapeHtml(note.text)}</p>
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
-        qsa("[data-cable-node]", nodes).forEach((node) => installCableDrag(node));
+        qsa("[data-cable-node]", nodes).forEach((node) => { installCableDrag(node); syncCableVisualSide(node); });
         qsa("[data-cable-fiber]", nodes).forEach((button) => button.onclick = () => selectCableFiber(button));
         qsa("[data-dio-page]", nodes).forEach((select) => select.onchange = () => {
             state.container.layout.dioPages ||= {};
@@ -928,11 +949,17 @@
         });
         qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
         qsa("[data-canvas-note]", nodes).forEach((note) => installNoteDrag(note));
-        qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = (event) => {
+        qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
-            if (!window.confirm("Excluir esta nota?")) return;
+            const accepted = await window.mapV0757?.confirmAction?.({
+                title: "Excluir nota",
+                message: "A nota será removida deste Canvas.",
+                confirmLabel: "Excluir nota",
+                danger: true,
+            });
+            if (!accepted) return;
             state.container.layout.notes.splice(Number(button.dataset.deleteNote), 1);
-            saveContainerLayout(); renderContainerCanvas();
+            await saveContainerLayout(); renderContainerCanvas();
         });
         qsa("[data-node-delete]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
@@ -941,13 +968,13 @@
             await loadContainerMaster(true); renderEquipmentList(); renderContainerCanvas(); renderConnectionMatrix();
             notify("Equipamento excluído.");
         });
-        qsa("[data-edit-note]", nodes).forEach((button) => button.onclick = (event) => {
+        qsa("[data-edit-note]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
             const note = state.container.layout.notes[Number(button.dataset.editNote)];
-            const text = window.prompt("Editar nota técnica:", note?.text || "");
-            if (text === null || !text.trim()) return;
-            note.text = text.trim();
-            saveContainerLayout(); renderContainerCanvas();
+            const text = await window.mapV0757?.editLongText?.({ title: "Editar nota técnica", value: note?.text || "" });
+            if (text === null || text === undefined) return;
+            note.text = text;
+            await saveContainerLayout(); renderContainerCanvas();
         });
         if (canvas.dataset.notesReady !== "1") {
             canvas.dataset.notesReady = "1";
@@ -967,13 +994,13 @@
                 menu.style.top = `${menuPoint.y}px`;
                 menu.hidden = false;
             });
-            menu.querySelector("[data-add-canvas-note]").onclick = () => {
+            menu.querySelector("[data-add-canvas-note]").onclick = async () => {
                 menu.hidden = true;
-                const text = window.prompt("Nota técnica da estrutura:");
-                if (!text?.trim()) return;
+                const text = await window.mapV0757?.editLongText?.({ title: "Nova nota técnica" });
+                if (text === null || text === undefined) return;
                 state.container.layout.notes ||= [];
-                state.container.layout.notes.push({ text: text.trim(), x: menuPoint.x, y: menuPoint.y });
-                saveContainerLayout(); renderContainerCanvas();
+                state.container.layout.notes.push({ id: `n${Date.now()}`, text, x: menuPoint.x, y: menuPoint.y });
+                await saveContainerLayout(); renderContainerCanvas();
             };
             document.addEventListener("click", (event) => { if (!event.target.closest(".master-note-context")) menu.hidden = true; });
         }
@@ -992,8 +1019,8 @@
             const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
             const origin = { x: event.clientX, y: event.clientY, left: Number(item.x || 0), top: Number(item.y || 0) };
             const move = (moveEvent) => {
-                item.x = Math.max(0, origin.left + (moveEvent.clientX - origin.x) / scale);
-                item.y = Math.max(0, origin.top + (moveEvent.clientY - origin.y) / scale);
+                item.x = origin.left + (moveEvent.clientX - origin.x) / scale;
+                item.y = origin.top + (moveEvent.clientY - origin.y) / scale;
                 note.style.transform = `translate(${item.x}px,${item.y}px)`;
             };
             const up = () => { window.removeEventListener("pointermove", move); saveContainerLayout(); };
@@ -1017,7 +1044,7 @@
             const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
             const origin = { x: event.clientX, y: event.clientY, left: position.x, top: position.y };
             const move = (moveEvent) => {
-                const next = { x: Math.max(0, origin.left + (moveEvent.clientX - origin.x) / scale), y: Math.max(0, origin.top + (moveEvent.clientY - origin.y) / scale) };
+                const next = { x: origin.left + (moveEvent.clientX - origin.x) / scale, y: origin.top + (moveEvent.clientY - origin.y) / scale };
                 state.container.layout.positions[id] = next;
                 node.dataset.posX = String(next.x); node.dataset.posY = String(next.y);
                 node.style.transform = `translate(${next.x}px,${next.y}px)`;
@@ -1048,14 +1075,15 @@
             const origin = { x: event.clientX, y: event.clientY, left: current.x, top: current.y };
             const move = (moveEvent) => {
                 const next = {
-                    x: Math.max(0, origin.left + (moveEvent.clientX - origin.x) / scale),
-                    y: Math.max(0, origin.top + (moveEvent.clientY - origin.y) / scale),
+                    x: origin.left + (moveEvent.clientX - origin.x) / scale,
+                    y: origin.top + (moveEvent.clientY - origin.y) / scale,
                 };
                 state.container.layout.cablePositions ||= {};
                 state.container.layout.cablePositions[id] = next;
                 node.dataset.posX = String(next.x);
                 node.dataset.posY = String(next.y);
                 node.style.transform = `translate(${next.x}px,${next.y}px)`;
+                syncCableVisualSide(node);
                 drawContainerLinks();
             };
             const up = () => {
@@ -1089,9 +1117,9 @@
         const canvasRect = canvas.getBoundingClientRect();
         const rect = fiber.getBoundingClientRect();
         const scale = Number(canvas.dataset.v0741Scale || 1) || 1;
-        const output = fiber.closest(".master-cable-node")?.classList.contains("output");
+        const sideRight = fiber.closest(".master-cable-node")?.classList.contains("side-right-v0757");
         return {
-            x: ((output ? rect.left : rect.right) - canvasRect.left) / scale,
+            x: ((sideRight ? rect.left : rect.right) - canvasRect.left) / scale,
             y: (rect.top + rect.height / 2 - canvasRect.top) / scale,
         };
     }
@@ -1381,7 +1409,11 @@
 
     function openEquipmentCreateDialog() {
         const dialog = equipmentCreateDialog();
-        const types = (state.bootstrap?.equipment_types || []).filter(([value]) => value !== "server");
+        const containerType = String(state.container.data?.container?.type || "tower");
+        const allowed = containerType === "rack"
+            ? new Set(["olt", "dio", "switch", "router", "firewall", "pto", "other"])
+            : new Set(["olt", "dio", "switch", "router", "firewall", "pto", "other", "access_point", "ptp", "onu"]);
+        const types = (state.bootstrap?.equipment_types || []).filter(([value]) => value !== "server" && allowed.has(value));
         dialog.querySelector("select[name='equipment_type']").innerHTML = types.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
         const drops = (state.container.data?.cables || []).filter((cable) => cable.cable_type === "drop");
         dialog.querySelector("select[name='drop_cable_id']").innerHTML = `<option value="">Adicionar sem conectar DROP</option>${drops.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count} FO</option>`).join("")}`;

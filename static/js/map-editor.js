@@ -33,6 +33,7 @@
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lastAnnouncedLightSourceId: undefined, lightAnimationGeneration: 0, mapMode: "view",
         containerId: null, editingContainerEquipmentId: null, topologyZoom: 1,
+        openingElementId: null, elementSubmitLock: false,
     };
 
     const googleConfigElement = document.getElementById("google-maps-config");
@@ -196,6 +197,15 @@
     }
     function centerWithin(el, container) {
         const { x, y } = offsetWithin(el, container);
+        const cableNode = el.closest?.("[data-cable-node-id]");
+        if (cableNode) {
+            const nodeX = parseFloat(cableNode.style.left) || 0;
+            const middle = Math.max(container.scrollWidth, container.clientWidth, 900) / 2;
+            const sideRight = nodeX + cableNode.offsetWidth / 2 >= middle;
+            cableNode.classList.toggle("side-right-v0757", sideRight);
+            cableNode.classList.toggle("side-left-v0757", !sideRight);
+            return { x: sideRight ? x : x + el.offsetWidth, y: y + el.offsetHeight / 2 };
+        }
         return { x: x + el.offsetWidth / 2, y: y + el.offsetHeight / 2 };
     }
     const BALANCED_SPLITTER_LOSS_DB = { "1:2": 3.6, "1:4": 7.2, "1:8": 10.5, "1:16": 13.8, "1:32": 17.1, "1:64": 20.5 };
@@ -575,13 +585,15 @@
         const data = await api(`/api/map/elements/${id}/equipment/`);
         state.containerId = id;
         containerDialog.dataset.elementId = String(id);
+        containerDialog.dataset.containerType = String(data.container.type || "tower");
+        containerDialog.dataset.containerName = String(data.container.name || "Estrutura");
         document.getElementById("container-dialog-title").textContent = `Estrutura · ${data.container.name}`;
         document.getElementById("container-dialog-subtitle").textContent = data.container.type === "rack"
             ? "OLT e DIO instalados neste rack"
             : "OLT, switches, APs, DIOs, ONUs e rádios PTP instalados nesta torre";
         const types = data.container.type === "rack"
-            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["onu", "ONU / ONT"]]
-            : [["olt", "OLT"], ["switch", "Switch"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["onu", "ONU / ONT"]];
+            ? [["olt", "OLT"], ["dio", "DIO"], ["switch", "Switch"], ["router", "Roteador"], ["firewall", "Firewall"], ["pto", "PTO"], ["other", "Outro"]]
+            : [["olt", "OLT"], ["switch", "Switch"], ["router", "Roteador"], ["firewall", "Firewall"], ["access_point", "Access point"], ["ptp", "Rádio PTP"], ["dio", "DIO"], ["onu", "ONU / ONT"], ["pto", "PTO"], ["other", "Outro"]];
         containerEquipmentForm.reset();
         state.editingContainerEquipmentId = null;
         containerEquipmentForm.elements.equipment_type.disabled = false;
@@ -770,7 +782,8 @@
         document.getElementById("unifilar-title").textContent = "Carregando fusões...";
         document.getElementById("unifilar-subtitle").textContent = "Consultando cabos, fibras e layout";
         content.innerHTML = '<div class="fusion-loading"><span class="fusion-spinner"></span><strong>Preparando diagrama óptico</strong></div>';
-        if (!unifilarDialog.open) unifilarDialog.showModal();
+        unifilarDialog.classList.add("map-v0757-optical-workspace");
+        if (!unifilarDialog.open) unifilarDialog.show();
         const data = await api(`/api/map/elements/${id}/`);
         const element = data.element;
         document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
@@ -1115,8 +1128,8 @@
                     grip.setPointerCapture(event.pointerId);
                     const isNote = node.dataset.nodeKey.startsWith("note-");
                     grip.onpointermove = (move) => {
-                        const candidateX = Math.max(0, originX + (move.clientX - startX) / graphZoom);
-                        const candidateY = Math.max(0, originY + (move.clientY - startY) / graphZoom);
+                        const candidateX = originX + (move.clientX - startX) / graphZoom;
+                        const candidateY = originY + (move.clientY - startY) / graphZoom;
                         const width = node.offsetWidth, height = node.offsetHeight;
                         const collides = !isNote && [...content.querySelectorAll(".graph-node")].some((other) => {
                             if (other === node || other.dataset.nodeKey.startsWith("note-")) return false;
@@ -1226,7 +1239,8 @@
                     unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter excluído.");
                 };
             });
-            if (!unifilarDialog.open) unifilarDialog.showModal();
+            unifilarDialog.classList.add("map-v0757-optical-workspace");
+        if (!unifilarDialog.open) unifilarDialog.show();
             requestAnimationFrame(redrawOpticalLinks);
             setTimeout(redrawOpticalLinks, 150);
             window.addEventListener("resize", redrawOpticalLinks);
@@ -1239,7 +1253,8 @@
         }
         if (element.element_type === "rack") {
             await renderRackFusionDiagram(element, content);
-            if (!unifilarDialog.open) unifilarDialog.showModal();
+            unifilarDialog.classList.add("map-v0757-optical-workspace");
+        if (!unifilarDialog.open) unifilarDialog.show();
             return;
         }
         const splitters = element.cto?.splitters || [];
@@ -1254,7 +1269,8 @@
                     <div class="port-grid">${splitter.ports.map((port) => `<div class="port ${escapeHtml(port.status)}">P${port.number}<br>${escapeHtml(port.status_label)}</div>`).join("")}</div>
                 </div>
             </article>`).join("") : '<p class="help-text">Nenhum splitter configurado.</p>';
-        if (!unifilarDialog.open) unifilarDialog.showModal();
+        unifilarDialog.classList.add("map-v0757-optical-workspace");
+        if (!unifilarDialog.open) unifilarDialog.show();
     }
     async function renderRackFusionDiagram(element, content) {
         document.getElementById("unifilar-subtitle").textContent = "Fusão de fibras nas portas do DIO";
@@ -1311,9 +1327,10 @@
             content.querySelectorAll(".fiber-port[data-link-id]").forEach((fiberChip) => {
                 const portButton = content.querySelector(`.dio-fusion-port[data-link-id="${fiberChip.dataset.linkId}"]`);
                 if (!portButton) return;
-                const a = offsetWithin(fiberChip, graphNodesEl), b = offsetWithin(portButton, graphNodesEl);
-                const x1 = a.x + fiberChip.offsetWidth, y1 = a.y + fiberChip.offsetHeight / 2;
-                const x2 = b.x, y2 = b.y + portButton.offsetHeight / 2;
+                const start = centerWithin(fiberChip, graphNodesEl);
+                const end = centerWithin(portButton, graphNodesEl);
+                const x1 = start.x, y1 = start.y;
+                const x2 = end.x, y2 = end.y;
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`);
                 path.setAttribute("stroke", fiberChip.style.getPropertyValue("--fiber-color") || "#94a3b8");
@@ -1369,8 +1386,8 @@
                 grip.setPointerCapture(event.pointerId);
                 const isNote = node.dataset.nodeKey.startsWith("note-");
                 grip.onpointermove = (move) => {
-                    const candidateX = Math.max(0, originX + (move.clientX - startX) / graphZoom);
-                    const candidateY = Math.max(0, originY + (move.clientY - startY) / graphZoom);
+                    const candidateX = originX + (move.clientX - startX) / graphZoom;
+                    const candidateY = originY + (move.clientY - startY) / graphZoom;
                     const width = node.offsetWidth, height = node.offsetHeight;
                     const collides = !isNote && [...content.querySelectorAll(".graph-node")].some((other) => {
                         if (other === node || other.dataset.nodeKey.startsWith("note-")) return false;
@@ -1751,10 +1768,16 @@
                         if (!unifiedEditor) return;
                         if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
                         map.closePopup();
+                        if (String(state.openingElementId || "") === String(p.id)) return;
+                        state.openingElementId = p.id;
                         const opening = ["rack", "tower"].includes(p.tipo)
                             ? manageContainer(p.id)
                             : showUnifilar(p.id);
-                        opening.catch((error) => notify(error.message, true));
+                        opening
+                            .catch((error) => notify(error.message, true))
+                            .finally(() => window.setTimeout(() => {
+                                if (String(state.openingElementId || "") === String(p.id)) state.openingElementId = null;
+                            }, 220));
                         return;
                     }
                     if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
@@ -1773,6 +1796,29 @@
                     state.drawingLine.addLatLng(exactPoint);
                     openNewCableDialog();
                 });
+                marker.on("contextmenu", (event) => {
+                    if (!editing || !unifiedEditor || !window.mapV0757?.openElementMenu) return;
+                    if (event.originalEvent) {
+                        L.DomEvent.stopPropagation(event.originalEvent);
+                        L.DomEvent.preventDefault(event.originalEvent);
+                    }
+                    map.closePopup();
+                    window.mapV0757.openElementMenu({
+                        originalEvent: event.originalEvent,
+                        element: p,
+                        edit: () => editElement(p.id).catch((error) => notify(error.message, true)),
+                        fusions: ["cto", "splice_box"].includes(p.tipo)
+                            ? () => showUnifilar(p.id).catch((error) => notify(error.message, true))
+                            : () => manageContainer(p.id).catch((error) => notify(error.message, true)),
+                        remove: async () => {
+                            try {
+                                await api(`/api/map/elements/${p.id}/`, { method: "DELETE" });
+                                await loadStructure();
+                                notify("Elemento excluído.");
+                            } catch (error) { notify(error.message, true); }
+                        },
+                    });
+                });
                 marker.on("popupopen", () => {
                     popupAction(`[data-edit-element="${p.id}"]`, () => editElement(p.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-unifilar="${p.id}"]`, () => showUnifilar(p.id).catch((error) => notify(error.message, true)));
@@ -1782,11 +1828,23 @@
                 });
                 if (editing) marker.on("dragend", async () => {
                     const position = marker.getLatLng();
+                    const original = L.latLng(latitude, longitude);
+                    const accepted = await window.mapV0757?.confirmAction?.({
+                        title: "Salvar nova posição?",
+                        message: `O ponto ${p.nome} foi movido. Deseja gravar a nova posição e atualizar as pontas dos cabos?`,
+                        confirmLabel: "Salvar posição",
+                        cancelLabel: "Voltar ao local anterior",
+                    });
+                    if (!accepted) {
+                        marker.setLatLng(original);
+                        notify("Movimento cancelado; o ponto voltou à posição anterior.");
+                        return;
+                    }
                     try {
                         await api(`/api/map/elements/${p.id}/position/`, { method: "PATCH", body: JSON.stringify({ latitude: position.lat, longitude: position.lng }) });
                         await loadStructure();
                         notify("Posição e pontas dos cabos atualizadas.");
-                    } catch (error) { notify(error.message, true); loadStructure(); }
+                    } catch (error) { marker.setLatLng(original); notify(error.message, true); loadStructure(); }
                 });
                 return marker;
             };
@@ -2098,6 +2156,10 @@
     };
     elementForm.onsubmit = async (event) => {
         event.preventDefault();
+        if (state.elementSubmitLock) return;
+        state.elementSubmitLock = true;
+        const submitButton = elementForm.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
         const payload = Object.fromEntries(new FormData(event.target));
         const cpdFields = document.getElementById("cpd-structure-fields-v092");
         if (cpdFields && !cpdFields.hidden) payload.element_type = payload.structure_profile || "other";
@@ -2113,6 +2175,10 @@
             elementDialog.close(); state.editingElementId = null; clearTool(); await loadStructure();
             notify(editing ? "Elemento atualizado." : "Elemento adicionado ao projeto.");
         } catch (error) { notify(error.message, true); }
+        finally {
+            state.elementSubmitLock = false;
+            if (submitButton) submitButton.disabled = false;
+        }
     };
     containerEquipmentForm.elements.equipment_type.onchange = updateContainerEquipmentFields;
     containerEquipmentForm.elements.provisioning_mode.onchange = updateContainerEquipmentFields;
@@ -2240,6 +2306,23 @@
         if (!editing) {
             payload.project_id = state.projectId; payload.coordinates = state.cableCoordinates;
             payload.generate_fibers = Boolean(payload.cable_model_id);
+            const origin = state.elements.find((feature) => String(feature.properties.id) === String(payload.origin_id || state.cableOriginId));
+            const destination = state.elements.find((feature) => String(feature.properties.id) === String(payload.destination_id || state.cableDestinationId));
+            const invert = await window.mapV0757?.reviewCableDirection?.({ origin, destination });
+            if (invert) {
+                const oldOrigin = payload.origin_id || state.cableOriginId;
+                payload.origin_id = payload.destination_id || state.cableDestinationId;
+                payload.destination_id = oldOrigin;
+                payload.coordinates = [...state.cableCoordinates].reverse();
+                state.cableCoordinates = payload.coordinates;
+                state.cableOriginId = payload.origin_id;
+                state.cableDestinationId = payload.destination_id;
+                cableForm.elements.origin_id.value = String(payload.origin_id || "");
+                cableForm.elements.destination_id.value = String(payload.destination_id || "");
+                const originName = destination?.properties?.nome || "ORIGEM";
+                const destinationName = origin?.properties?.nome || "DESTINO";
+                if (/^CABO\s/i.test(payload.name || "")) payload.name = `CABO ${originName} → ${destinationName}`;
+            }
         }
         try {
             await api(editing ? `/api/map/cables/${state.editingCableId}/` : "/api/map/cables/create/", { method: editing ? "PATCH" : "POST", body: JSON.stringify(payload) });
