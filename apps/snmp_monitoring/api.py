@@ -22,6 +22,7 @@ from apps.network_map.models import (
     NetworkProject,
 )
 from .models import (
+    CompanySNMPDefaults,
     MonitoredNetworkLink,
     SNMPInterfaceState,
     SNMPMonitoringProfile,
@@ -264,7 +265,10 @@ def equipment_monitoring_profile(request, equipment_id):
     data = request.data
     community = str(data.get("community") or "").strip()
     if profile is None and not community:
-        return JsonResponse({"detail": "Informe a community SNMP na criação."}, status=400)
+        defaults = CompanySNMPDefaults.objects.filter(company_id=equipment.company_id).first()
+        community = defaults.get_community() if defaults else ""
+        if not community:
+            return JsonResponse({"detail": "Informe a community SNMP na criação."}, status=400)
     management_ip = str(data.get("management_ip") or equipment.management_ip or "").strip()
     if not management_ip:
         return JsonResponse({"detail": "Informe o IP de gerência."}, status=400)

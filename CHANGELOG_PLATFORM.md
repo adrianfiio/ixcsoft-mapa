@@ -15,6 +15,25 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.82.0] - 2026-08-03
+
+Community SNMP padrão por empresa — evita pedir a community de novo em
+cada equipamento novo. Ver
+[docs/releases/platform/platform-v0.82.0.md](docs/releases/platform/platform-v0.82.0.md).
+
+Resumo: novo modelo `CompanySNMPDefaults` (criptografado, mesmo padrão
+de `CompanyEmailConfiguration`) e uma tela de autoatendimento
+("Community SNMP padrão", em `/painel/snmp/`, só pra membros EDIT).
+Quando o formulário de ativação do mapa é enviado sem community pra um
+equipamento novo, o backend (`apps/snmp_monitoring/api.py`) busca a
+community padrão da empresa como reserva antes de recusar — se a
+empresa já tiver uma configurada, o equipamento ativa sem pedir de
+novo; se digitar uma community específica na hora, essa continua tendo
+prioridade. Nenhum arquivo do mapa foi tocado (nem
+`apps/network_map/`, nem `static/js/map-*`, nem `templates/map.html`)
+— a tela de ativação continua exatamente igual, só o comportamento por
+trás dela muda quando o campo fica em branco.
+
 ## [platform-0.81.3] - 2026-08-03
 
 Corrige o GID cravado do socket do Docker no `worker`, que fazia o

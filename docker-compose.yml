@@ -4,8 +4,8 @@
 x-common-environment: &common-environment
   APP_NAME: ${APP_NAME:-AFService Map}
   APP_ENV: ${APP_ENV:-production}
-  APP_VERSION: ${APP_VERSION:-0.81.3}
-  PLATFORM_VERSION: ${PLATFORM_VERSION:-0.81.3}
+  APP_VERSION: ${APP_VERSION:-0.82.0}
+  PLATFORM_VERSION: ${PLATFORM_VERSION:-0.82.0}
   MAP_VERSION: ${MAP_VERSION:-0.75.6}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
