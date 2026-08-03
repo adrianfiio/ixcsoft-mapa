@@ -23,7 +23,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
 # genérica. Ver VERSIONS.md. APP_VERSION continua existindo só por
 # compatibilidade com código legado que ainda lê essa variável — ela é
 # sempre igual a PLATFORM_VERSION, nunca uma versão própria.
-PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.81.1"))
+PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.81.2"))
 APP_VERSION = PLATFORM_VERSION
 MAP_VERSION = os.getenv("MAP_VERSION", "0.75.5")
 

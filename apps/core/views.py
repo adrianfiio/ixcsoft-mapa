@@ -357,6 +357,21 @@ class DashboardLayoutListView(LoginRequiredMixin, TemplateView):
         return context
 
 
+@login_required
+def map_client_picker(request):
+    """Tela intermediária pro Superadmin escolher qual cliente tem em mente
+    antes de abrir o mapa operacional — hoje o mapa em si ainda não filtra
+    por empresa pra superusuário (mostra todos os projetos juntos), então
+    isso só organiza a navegação; a filtragem de verdade fica pra uma etapa
+    futura, quando mexer no mapa em si não correr risco de colidir com
+    quem estiver trabalhando nele."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    return render(request, "map_client_picker.html", {
+        "companies": Company.objects.filter(active=True).order_by("name"),
+    })
+
+
 class DashboardLayoutEditorView(DashboardView):
     """Editor visual (admin-only) da ordem/visibilidade dos widgets e da
     mensagem no topo do dashboard de UMA empresa escolhida. Reaproveita o
