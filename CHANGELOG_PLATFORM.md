@@ -15,6 +15,21 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.81.2] - 2026-08-03
+
+Nova tela "Escolha um cliente" antes de abrir o mapa operacional, pro
+Superadmin. Ver
+[docs/releases/platform/platform-v0.81.2.md](docs/releases/platform/platform-v0.81.2.md).
+
+Resumo: o botão "Abrir mapa" da Visão da plataforma agora leva primeiro
+pra uma lista de clientes cadastrados (`/mapa/clientes/`), em vez de
+abrir o mapa direto. É um primeiro passo de organização — o mapa em si
+ainda não filtra por cliente pra Superadmin (continua mostrando todos
+os projetos juntos, com permissão de edição), isso fica pra uma etapa
+futura, quando não houver risco de colidir com trabalho em andamento
+no mapa. Nenhum arquivo de `apps/network_map/` ou `templates/map.html`
+foi tocado.
+
 ## [platform-0.81.1] - 2026-08-03
 
 Correção visual: o dropdown "Alertas ativos" (sino no topo) ficava

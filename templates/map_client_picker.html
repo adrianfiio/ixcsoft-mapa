@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Mapa operacional | AFService Map{% endblock %}
+{% block topbar_title %}Mapa operacional{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Ferramenta da plataforma</p>
+        <h1>Escolha um cliente</h1>
+        <p>Selecione o cliente que você quer visualizar antes de abrir o mapa.</p>
+    </div>
+    <div class="page-heading-actions">
+        <a class="cancel-link" href="{% url 'platform-overview' %}">← Visão da plataforma</a>
+    </div>
+</section>
+
+<article class="panel">
+    <div class="overview-table-wrap">
+        <table class="overview-table overview-table--compact">
+            <thead><tr><th>Empresa</th><th>Tipo</th><th></th></tr></thead>
+            <tbody>
+                {% for company in companies %}
+                <tr>
+                    <td><strong>{{ company.trade_name|default:company.name }}</strong></td>
+                    <td>{{ company.get_company_type_display|default:"—" }}</td>
+                    <td class="icon-actions">
+                        <a class="icon-action" href="{% url 'map' %}" target="_blank" data-label="Abrir mapa" aria-label="Abrir mapa">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="empty-state">Nenhum cliente cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="empty-state" style="margin-top: 16px; text-align: left; padding: 0;">
+        Por enquanto o mapa ainda abre com todos os clientes juntos — a
+        filtragem por cliente individual (e o modo só-visualização, sem
+        poder editar nada) fica pra uma próxima etapa.
+    </p>
+</article>
+{% endblock %}
