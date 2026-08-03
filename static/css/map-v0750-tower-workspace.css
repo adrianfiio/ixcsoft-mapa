@@ -754,3 +754,119 @@ body.map-master-suite #map-master-asset-sheet.map-master-asset-sheet {
     .tower-drawer-v0750 { top: 74px; width: calc(100% - 16px); min-width: 0; }
     .tower-structure-backdrop-v0750 { width: 260px; height: 370px; }
 }
+
+/* MAP_V0756_CABLE_CARDS */
+.master-dio-page {
+    width: auto;
+    max-width: 96px;
+    min-height: 23px;
+    padding: 2px 5px;
+    border: 1px solid #31536e;
+    border-radius: 6px;
+    color: #bfe8fa;
+    background: #0a1c2e;
+    font-size: 7px;
+}
+
+.master-cable-node {
+    position: absolute;
+    z-index: 7;
+    width: 210px;
+    overflow: hidden;
+    border: 1px solid rgba(56, 189, 248, .46);
+    border-radius: 10px;
+    color: #e8f5ff;
+    background: rgba(7, 24, 40, .97);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .34);
+    pointer-events: auto;
+    user-select: none;
+}
+
+.master-cable-node.output { border-color: rgba(52, 211, 153, .5); }
+.master-cable-node > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #28445d;
+    cursor: move;
+}
+.master-cable-node > header span { display: grid; min-width: 0; }
+.master-cable-node > header strong {
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.master-cable-node > header small { color: #8faec3; font-size: 7px; }
+.master-cable-node > header b { color: #38bdf8; font-size: 17px; }
+.master-cable-node.output > header b { color: #34d399; }
+
+.master-cable-fibers {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 4px;
+    max-height: 190px;
+    padding: 9px;
+    overflow: auto;
+    scrollbar-width: none;
+}
+.master-cable-fibers::-webkit-scrollbar { width: 0; height: 0; }
+.master-cable-fiber {
+    position: relative;
+    display: grid;
+    width: 12px !important;
+    min-width: 0 !important;
+    height: 19px !important;
+    min-height: 19px !important;
+    padding: 0 !important;
+    place-items: center;
+    border: 1px solid var(--fiber-color);
+    border-color: color-mix(in srgb, var(--fiber-color) 72%, #fff);
+    border-radius: 5px;
+    color: #fff;
+    background: #0d2133;
+    background: color-mix(in srgb, var(--fiber-color) 34%, #071525);
+    font-size: 6px !important;
+    cursor: crosshair;
+}
+.master-cable-fiber i {
+    position: absolute;
+    top: 50%;
+    right: -5px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    background: var(--fiber-color);
+    transform: translateY(-50%);
+}
+.master-cable-node.output .master-cable-fiber i { right: auto; left: -5px; }
+.master-cable-fiber.used { opacity: .72; box-shadow: inset 0 0 0 1px #22c55e; }
+.master-cable-fiber.selected { outline: 2px solid #facc15; box-shadow: 0 0 12px rgba(250, 204, 21, .45); }
+
+.tower-workspace-dialog-v0750 .master-canvas-node > header strong {
+    min-width: 0;
+    margin-right: auto;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tower-workspace-dialog-v0750 .master-canvas-node > header small {
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.master-node-actions { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+
+.fiber-focus-v0756 .master-canvas-node:not([data-equipment-type="dio"]) {
+    opacity: .34;
+    filter: saturate(.55);
+}
+.fiber-focus-v0756 .master-cable-node,
+.fiber-focus-v0756 .master-canvas-node[data-equipment-type="dio"] {
+    box-shadow: 0 0 0 1px rgba(56, 189, 248, .34), 0 14px 34px rgba(0, 0, 0, .42);
+}

@@ -1,5 +1,36 @@
 # Changelog — Mapa
 
+## [map-0.75.6] - 2026-08-03
+
+### Adicionado
+
+- cards técnicos dos cabos conectados diretamente no Canvas 2D de Rack/Torre;
+- fibras individuais com as cores reais do catálogo óptico;
+- terminação de fibra na porta traseira do DIO sem abrir painel legado;
+- paginação de DIOs em bandejas visuais de 24 portas;
+- cabos e fibras incluídos na exportação PNG/PDF do Canvas.
+
+### Alterado
+
+- cabos de entrada ficam à esquerda e cabos de saída à direita;
+- botão **Fibras** apenas destaca cabos e DIOs no Canvas unificado;
+- Rack, Torre, CTO e CEO abrem diretamente seus editores técnicos;
+- organização e auto-fit passam a considerar também os cards de cabos;
+- linhas e pontos de controle usam coordenadas lógicas corretas sob zoom.
+
+### Corrigido
+
+- perda/alinhamento incorreto do traçado após zoom, organização ou inclusão de equipamento;
+- coluna interminável de portas em DIOs de alta capacidade;
+- criação de DIO maior que 24 portas em Torre;
+- exportação que ignorava os cabos ópticos conectados.
+
+### Versionamento
+
+- `PLATFORM_VERSION` preservada em `0.81.3`;
+- `MAP_VERSION` atualizada para `0.75.6`;
+- nenhuma migration.
+
 ## [map-0.75.5] - 2026-08-02
 
 ### Adicionado

@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "0.75.0";
+    const VERSION = "0.75.6";
     const qs = (selector, root = document) => root.querySelector(selector);
     const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
     const escapeHtml = (value) => {
@@ -368,11 +368,12 @@
         const fibersButton = qs('[data-open-panel="fibers"]', toolbar);
         if (fibersButton) fibersButton.onclick = () => {
             closeActivePopover(root);
-            const dialog = dialogRoot();
-            const elementId = Number(dialog?.dataset.elementId || 0);
-            if (!elementId || !window.networkMap?.showUnifilar) return openPanel(root, "fibers");
-            dialog.close();
-            window.networkMap.showUnifilar(elementId).catch((error) => notify(error.message, true));
+            qs('[data-tab="canvas"]', root)?.click();
+            root.classList.toggle("fiber-focus-v0756");
+            fibersButton.classList.toggle("active", root.classList.contains("fiber-focus-v0756"));
+            notify(root.classList.contains("fiber-focus-v0756")
+                ? "Fibras destacadas. Clique numa fibra e depois na porta traseira do DIO."
+                : "Destaque de fibras desativado.");
         };
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
