@@ -953,6 +953,15 @@ def container_equipment(request, element_id):
             12, 24, 36, 48, 72, 96, 144, 192, 244,
         }:
             return JsonResponse({"detail": "Escolha uma capacidade padrão para o DIO."}, status=400)
+        if (
+            container.element_type == NetworkElement.ElementType.TOWER
+            and equipment_type == ContainerEquipment.EquipmentType.DIO
+            and dio_capacity > 24
+        ):
+            return JsonResponse(
+                {"detail": "Na Torre, o Canvas 2D aceita DIO de até 24 portas. Use um Rack para DIOs maiores."},
+                status=400,
+            )
         connector_type = str(request.data.get("connector_type", "")).strip()
         if connector_type and connector_type not in dict(ContainerEquipment.ConnectorType.choices):
             return JsonResponse({"detail": "Tipo de conector inválido."}, status=400)
@@ -1048,6 +1057,7 @@ def container_equipment(request, element_id):
                 "fiber_count": cable.fiber_count,
                 "cable_type": cable.cable_type,
                 "cable_type_label": cable.get_cable_type_display(),
+                "relation": "input" if cable.destination_id == container.id else "output",
                 "fibers": [_fiber_payload(fiber) for fiber in cable.fibers.select_related("color").all()],
             }
             for cable in FiberCable.objects.filter(company=container.company)
@@ -1067,6 +1077,7 @@ def container_equipment(request, element_id):
                 "destination_port_id": link.destination_port_id,
                 "destination": f"{link.destination_port.equipment.name} · {link.destination_port.label}",
                 "cable_id": link.cable_id,
+                "cable_fiber_id": link.cable_fiber_id,
                 "cable": link.cable.name if link.cable else "",
                 "link_type": link.link_type,
                 "link_type_label": link.get_link_type_display(),

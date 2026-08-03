@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.81.3 |
-| Mapa | v0.75.5 |
+| Mapa | v0.75.6 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): página de Equipamentos modernizada — sai do layout próprio
@@ -22,9 +22,10 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
   do site, com o menu lateral sempre visível.
   Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
-  SNMP/monitoramento visual, enlaces): editor de projetos com postes, CTOs,
-  CEOs, cabos, camadas operacionais e importação KML/KMZ. Changelog:
-  [CHANGELOG_MAP.md](CHANGELOG_MAP.md).
+  SNMP/monitoramento visual, enlaces): Canvas unificado com equipamentos,
+  cabos de entrada/saída, fibras coloridas, DIO paginado e terminação óptica
+  direta; também mantém postes, CTOs, CEOs, camadas operacionais e importação
+  KML/KMZ. Changelog: [CHANGELOG_MAP.md](CHANGELOG_MAP.md).
 
 ## Funcionalidades implementadas
 

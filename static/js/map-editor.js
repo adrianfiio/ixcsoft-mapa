@@ -1741,12 +1741,22 @@
             const actions = editing ? `<br><button type="button" data-edit-element="${p.id}">Editar</button>${["cto", "splice_box", "rack"].includes(p.tipo) ? `<button type="button" data-unifilar="${p.id}">Fusões</button>` : ""}${p.tipo === "pole" ? `<button type="button" data-manage-pole="${p.id}">Infraestrutura</button>` : ""}${["rack", "tower"].includes(p.tipo) ? `<button type="button" data-manage-container="${p.id}">Equipamentos</button>` : ""}<button class="danger" type="button" data-delete-element="${p.id}">Excluir</button>` : "";
             const createMarker = () => {
                 const marker = L.marker([latitude, longitude], { icon: networkIcon(p.tipo, p.subtype), draggable: editing });
+                const unifiedEditor = ["rack", "tower", "cto", "splice_box"].includes(p.tipo);
                 const typeLabel = ["cpd", "pop"].includes(String(p.subtype || "").toLowerCase())
                     ? "CPD/POP" : p.tipo === "splice_box" && p.subtype === "cdo" ? "CDO" : p.tipo.toUpperCase();
-                marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
+                if (!unifiedEditor) marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
                 marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
                 marker.on("click", (event) => {
-                    if (state.tool !== "cable") return;
+                    if (state.tool !== "cable") {
+                        if (!unifiedEditor) return;
+                        if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+                        map.closePopup();
+                        const opening = ["rack", "tower"].includes(p.tipo)
+                            ? manageContainer(p.id)
+                            : showUnifilar(p.id);
+                        opening.catch((error) => notify(error.message, true));
+                        return;
+                    }
                     if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
                     map.closePopup();
                     const exactPoint = L.latLng(latitude, longitude);

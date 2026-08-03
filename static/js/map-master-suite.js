@@ -21,8 +21,9 @@
         container: {
             elementId: "",
             data: null,
-            layout: { positions: {}, routes: {}, zoom: 1 },
+            layout: { positions: {}, cablePositions: {}, dioPages: {}, routes: {}, zoom: 1 },
             selectedPort: null,
+            selectedFiber: null,
             lineMode: false,
             selectedLink: null,
             loadingPromise: null,
@@ -694,8 +695,10 @@
             if (String(containerDialog()?.dataset.elementId || "") !== id) return null;
             state.container.elementId = id;
             state.container.data = data;
-            state.container.layout = { positions: {}, routes: {}, zoom: 1, ...(layout.layout || {}) };
+            state.container.layout = { positions: {}, cablePositions: {}, dioPages: {}, routes: {}, zoom: 1, ...(layout.layout || {}) };
             state.container.layout.positions ||= {};
+            state.container.layout.cablePositions ||= {};
+            state.container.layout.dioPages ||= {};
             state.container.layout.routes ||= {};
             return data;
         });
@@ -855,6 +858,14 @@
         return state.container.layout.positions[String(item.id)] || defaultNodePosition(item, index);
     }
 
+    function defaultCablePosition(cable, index) {
+        return { x: cable.relation === "output" ? 1010 : 25, y: 35 + index * 205 };
+    }
+
+    function cablePosition(cable, index) {
+        return state.container.layout.cablePositions?.[String(cable.id)] || defaultCablePosition(cable, index);
+    }
+
     function portSide(port, index) {
         return index % 2 === 0 ? "left" : "right";
     }
@@ -865,12 +876,21 @@
         const canvas = qs(".master-canvas", root);
         const nodes = qs(".master-canvas-nodes", canvas);
         const equipment = state.container.data.equipment || [];
+        const cables = state.container.data.cables || [];
         root.classList.toggle("line-mode-active", state.container.lineMode);
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
+            const ports = item.ports || [];
+            const pageCount = item.type === "dio" ? Math.max(1, Math.ceil(ports.length / 24)) : 1;
+            const savedPage = Number(state.container.layout.dioPages?.[String(item.id)] || 0);
+            const page = Math.max(0, Math.min(pageCount - 1, savedPage));
+            const visiblePorts = item.type === "dio" ? ports.slice(page * 24, page * 24 + 24) : ports;
+            const pager = pageCount > 1
+                ? `<select class="master-dio-page" data-dio-page="${item.id}" title="Bandeja visível">${Array.from({ length: pageCount }, (_, number) => `<option value="${number}" ${number === page ? "selected" : ""}>B${number + 1} · ${number * 24 + 1}-${Math.min((number + 1) * 24, ports.length)}</option>`).join("")}</select>`
+                : "";
             return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
-                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><span class="master-node-actions"><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="master-node-delete" data-node-delete="${item.id}" title="Excluir equipamento" aria-label="Excluir ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
-                <div class="master-node-ports">${(item.ports || []).map((port, portIndex) => {
+                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small>${pager}<span class="master-node-actions"><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="master-node-delete" data-node-delete="${item.id}" title="Excluir equipamento" aria-label="Excluir ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
+                <div class="master-node-ports">${visiblePorts.map((port, portIndex) => {
                     if (item.type === "dio") {
                         const rearLink = port.fusion_link_id || "";
                         const frontLink = port.link_id || "";
@@ -881,12 +901,27 @@
                     return `<button type="button" class="master-node-port ${side} ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`;
                 }).join("") || '<small class="empty">Sem portas</small>'}</div>
             </article>`;
+        }).join("") + cables.map((cable, index) => {
+            const position = cablePosition(cable, index);
+            const relation = cable.relation === "output" ? "Saída" : "Entrada";
+            return `<article class="master-cable-node ${cable.relation === "output" ? "output" : "input"}" data-cable-node="${cable.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+                <header><span><strong>${escapeHtml(cable.name)}</strong><small>${relation} · ${cable.fiber_count} FO</small></span><b>${relation === "Entrada" ? "→" : "←"}</b></header>
+                <div class="master-cable-fibers">${(cable.fibers || []).map((fiber) => `<button type="button" class="master-cable-fiber ${fiber.used ? "used" : ""}" data-cable-fiber="${fiber.id}" data-link-id="${fiber.link_id || ""}" style="--fiber-color:${escapeHtml(fiber.color_hex || "#94a3b8")}" title="F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used_by ? ` · ${escapeHtml(fiber.used_by)}` : ""}"><i></i><span>${fiber.number}</span></button>`).join("") || '<small>Gere as fibras deste cabo.</small>'}</div>
+            </article>`;
         }).join("") + (state.container.layout.notes || []).map((note, index) => `
             <article class="master-canvas-note" data-canvas-note="${index}" style="transform:translate(${Number(note.x || 40)}px,${Number(note.y || 40)}px)">
                 <div class="master-note-actions"><button type="button" data-edit-note="${index}" title="Editar nota" aria-label="Editar nota"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" data-delete-note="${index}" title="Excluir nota" aria-label="Excluir nota"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></div>
                 <p>${escapeHtml(note.text)}</p>
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
+        qsa("[data-cable-node]", nodes).forEach((node) => installCableDrag(node));
+        qsa("[data-cable-fiber]", nodes).forEach((button) => button.onclick = () => selectCableFiber(button));
+        qsa("[data-dio-page]", nodes).forEach((select) => select.onchange = () => {
+            state.container.layout.dioPages ||= {};
+            state.container.layout.dioPages[String(select.dataset.dioPage)] = Number(select.value);
+            saveContainerLayout();
+            renderContainerCanvas();
+        });
         qsa("[data-node-edit]", nodes).forEach((button) => button.onclick = (event) => {
             event.stopPropagation();
             openEquipmentEditor(button.dataset.nodeEdit);
@@ -970,7 +1005,7 @@
     function installNodeDrag(node) {
         const header = qs("header", node);
         header.onpointerdown = (event) => {
-            if (event.button !== 0 || event.target.closest("button")) return;
+            if (event.button !== 0 || event.target.closest("button, select")) return;
             event.preventDefault();
             event.stopPropagation();
             header.setPointerCapture?.(event.pointerId);
@@ -997,6 +1032,41 @@
         };
     }
 
+
+    function installCableDrag(node) {
+        const header = qs("header", node);
+        header.onpointerdown = (event) => {
+            if (event.button !== 0 || event.target.closest("button, select")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const id = String(node.dataset.cableNode);
+            const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
+            const current = state.container.layout.cablePositions?.[id] || {
+                x: Number(node.dataset.posX || 0),
+                y: Number(node.dataset.posY || 0),
+            };
+            const origin = { x: event.clientX, y: event.clientY, left: current.x, top: current.y };
+            const move = (moveEvent) => {
+                const next = {
+                    x: Math.max(0, origin.left + (moveEvent.clientX - origin.x) / scale),
+                    y: Math.max(0, origin.top + (moveEvent.clientY - origin.y) / scale),
+                };
+                state.container.layout.cablePositions ||= {};
+                state.container.layout.cablePositions[id] = next;
+                node.dataset.posX = String(next.x);
+                node.dataset.posY = String(next.y);
+                node.style.transform = `translate(${next.x}px,${next.y}px)`;
+                drawContainerLinks();
+            };
+            const up = () => {
+                window.removeEventListener("pointermove", move);
+                saveContainerLayout();
+            };
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", up, { once: true });
+        };
+    }
+
     function portAnchor(portId, role = "front") {
         const canvas = qs("#map-master-container .master-canvas");
         const port = qs(`[data-port-id="${portId}"][data-port-role="${role}"]`, canvas)
@@ -1005,9 +1075,24 @@
         const canvasRect = canvas.getBoundingClientRect();
         const socket = qs("i", port);
         const rect = (socket || port).getBoundingClientRect();
+        const scale = Number(canvas.dataset.v0741Scale || 1) || 1;
         return {
-            x: rect.left + rect.width / 2 - canvasRect.left,
-            y: rect.top + rect.height / 2 - canvasRect.top,
+            x: (rect.left + rect.width / 2 - canvasRect.left) / scale,
+            y: (rect.top + rect.height / 2 - canvasRect.top) / scale,
+        };
+    }
+
+    function fiberAnchor(fiberId) {
+        const canvas = qs("#map-master-container .master-canvas");
+        const fiber = qs(`[data-cable-fiber="${fiberId}"]`, canvas);
+        if (!fiber) return null;
+        const canvasRect = canvas.getBoundingClientRect();
+        const rect = fiber.getBoundingClientRect();
+        const scale = Number(canvas.dataset.v0741Scale || 1) || 1;
+        const output = fiber.closest(".master-cable-node")?.classList.contains("output");
+        return {
+            x: ((output ? rect.left : rect.right) - canvasRect.left) / scale,
+            y: (rect.top + rect.height / 2 - canvasRect.top) / scale,
         };
     }
 
@@ -1022,15 +1107,16 @@
         if (!svg) return;
         const links = state.container.data?.links || [];
         svg.innerHTML = links.map((link) => {
-            const destinationRole = !link.source_port_id && link.cable_id ? "rear" : "front";
+            const destinationRole = !link.source_port_id && (link.cable_id || link.cable_fiber_id) ? "rear" : "front";
             const end = portAnchor(link.destination_port_id, destinationRole);
             const externalPosition = state.container.layout.externalLinks?.[String(link.id)];
+            const fiberStart = link.cable_fiber_id ? fiberAnchor(link.cable_fiber_id) : null;
             const start = link.source_port_id
                 ? portAnchor(link.source_port_id, "front")
-                : (end ? externalPosition || { x: 24, y: end.y } : null);
+                : fiberStart || (end ? externalPosition || { x: 24, y: end.y } : null);
             if (!start || !end) return "";
             const manual = state.container.layout.routes[String(link.id)] || [];
-            const external = !link.source_port_id
+            const external = !link.source_port_id && !fiberStart
                 ? `<circle data-drop-entry="${link.id}" class="master-drop-entry" cx="${start.x}" cy="${start.y}" r="7"></circle><text class="master-drop-label" x="${start.x + 11}" y="${start.y - 9}">${escapeHtml(link.cable || "DROP")}</text>`
                 : "";
             return `${external}<path data-master-link="${link.id}" class="link-${link.link_type} ${state.container.selectedLink === String(link.id) ? "selected" : ""}" d="${orthogonalPath(start, end, manual)}"></path>`;
@@ -1046,8 +1132,9 @@
                 if (!state.container.lineMode) return;
                 event.preventDefault();
                 const rect = svg.getBoundingClientRect();
+                const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
                 const points = state.container.layout.routes[String(path.dataset.masterLink)] || [];
-                points.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+                points.push({ x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale });
                 state.container.layout.routes[String(path.dataset.masterLink)] = points;
                 saveContainerLayout(); drawContainerLinks();
             };
@@ -1066,11 +1153,12 @@
                 event.preventDefault(); event.stopPropagation();
                 const id = String(handle.dataset.dropEntry);
                 const rect = svg.getBoundingClientRect();
+                const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
                 const move = (moveEvent) => {
                     state.container.layout.externalLinks ||= {};
                     state.container.layout.externalLinks[id] = {
-                        x: moveEvent.clientX - rect.left,
-                        y: moveEvent.clientY - rect.top,
+                        x: (moveEvent.clientX - rect.left) / scale,
+                        y: (moveEvent.clientY - rect.top) / scale,
                     };
                     drawContainerLinks();
                 };
@@ -1093,8 +1181,9 @@
             circle.onpointerdown = (event) => {
                 event.preventDefault(); event.stopPropagation();
                 const rect = svg.getBoundingClientRect();
+                const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
                 const move = (moveEvent) => {
-                    points[index] = { x: moveEvent.clientX - rect.left, y: moveEvent.clientY - rect.top };
+                    points[index] = { x: (moveEvent.clientX - rect.left) / scale, y: (moveEvent.clientY - rect.top) / scale };
                     state.container.layout.routes[state.container.selectedLink] = points;
                     drawContainerLinks();
                 };
@@ -1121,6 +1210,35 @@
         await saveContainerLayout();
     }
 
+    async function selectCableFiber(button) {
+        const fiberId = Number(button.dataset.cableFiber);
+        const existingLinkId = String(button.dataset.linkId || "");
+        if (existingLinkId) {
+            if (!window.confirm("Esta fibra já está ligada. Deseja excluir a terminação?")) return;
+            try {
+                await request(`/api/map/elements/${state.container.elementId}/equipment-links/${existingLinkId}/`, { method: "DELETE" });
+                state.container.selectedFiber = null;
+                await loadContainerMaster(true);
+                renderContainerCanvas();
+                renderConnectionMatrix();
+                notify("Terminação removida.");
+            } catch (error) {
+                notify(error.message, true);
+            }
+            return;
+        }
+        if (state.container.selectedFiber?.id === fiberId) {
+            button.classList.remove("selected");
+            state.container.selectedFiber = null;
+            notify("Seleção da fibra cancelada.");
+            return;
+        }
+        qsa(".master-cable-fiber.selected", qs("#map-master-container")).forEach((item) => item.classList.remove("selected"));
+        state.container.selectedFiber = { id: fiberId, button };
+        button.classList.add("selected");
+        notify("Fibra selecionada. Clique no conector TRÁS da porta do DIO.");
+    }
+
     async function selectContainerPort(button) {
         if (button.dataset.busy === "true") return;
         const existingLinkId = String(button.dataset.linkId || "");
@@ -1134,7 +1252,26 @@
             return;
         }
         if (button.dataset.portRole === "rear") {
-            notify("Use Fibras para terminar o cabo na traseira desta porta do DIO.");
+            if (!state.container.selectedFiber) {
+                notify("Selecione primeiro uma fibra colorida do cabo de entrada.");
+                return;
+            }
+            const fiber = state.container.selectedFiber;
+            fiber.button?.classList.remove("selected");
+            state.container.selectedFiber = null;
+            try {
+                const created = await request(`/api/map/elements/${state.container.elementId}/equipment-links/`, {
+                    method: "POST",
+                    body: JSON.stringify({ cable_fiber_id: fiber.id, destination_port_id: Number(button.dataset.portId) }),
+                });
+                await loadContainerMaster(true);
+                renderContainerCanvas();
+                renderConnectionMatrix();
+                await selectCreatedLinkForEditing(created.link?.id);
+                notify("Fibra terminada no DIO. A linha ficou selecionada para ajuste.");
+            } catch (error) {
+                notify(error.message, true);
+            }
             return;
         }
         const current = { id: Number(button.dataset.portId), type: button.dataset.portType, button };
@@ -1175,8 +1312,12 @@
 
     function organizeContainerNodes() {
         state.container.layout.positions = {};
+        state.container.layout.cablePositions = {};
         (state.container.data?.equipment || []).forEach((item, index) => {
             state.container.layout.positions[String(item.id)] = defaultNodePosition(item, index);
+        });
+        (state.container.data?.cables || []).forEach((cable, index) => {
+            state.container.layout.cablePositions[String(cable.id)] = defaultCablePosition(cable, index);
         });
         saveContainerLayout(); renderContainerCanvas();
     }
@@ -1227,6 +1368,15 @@
         show("drop", type === "onu");
         show("dio-capacity", type === "dio");
         show("connector", ["dio", "pto"].includes(type));
+        const capacity = form.elements.dio_port_capacity;
+        if (capacity) {
+            const tower = state.container.data?.container?.type === "tower";
+            [...capacity.options].forEach((option) => {
+                option.hidden = tower && Number(option.value) > 24;
+                option.disabled = tower && Number(option.value) > 24;
+            });
+            if (tower && Number(capacity.value) > 24) capacity.value = "24";
+        }
     }
 
     function openEquipmentCreateDialog() {
@@ -1360,8 +1510,20 @@
             }).join("");
             return `<g><rect x="${position.x}" y="${position.y}" width="${cardWidth}" height="${cardHeight}" rx="10" fill="#091d30" stroke="#24506f" stroke-width="2"/><text x="${position.x + 14}" y="${position.y + 25}" fill="#f8fafc" font-size="13" font-weight="700" font-family="Arial">${escapeHtml(item.name)}</text><text x="${position.x + cardWidth - 12}" y="${position.y + 25}" text-anchor="end" fill="#94a3b8" font-size="9" font-family="Arial">${escapeHtml(item.type_label)}</text>${portRows}</g>`;
         }).join("");
+        const cables = (state.container.data?.cables || []).map((cable, index) => {
+            const position = cablePosition(cable, index);
+            const fibers = cable.fibers || [];
+            const cardWidth = 218;
+            const cardHeight = 54 + Math.max(1, fibers.length) * 18;
+            const fiberRows = fibers.map((fiber, fiberIndex) => {
+                const color = fiber.color_hex || "#38bdf8";
+                const y = position.y + 48 + fiberIndex * 18;
+                return `<circle cx="${position.x + 16}" cy="${y - 3}" r="5" fill="${escapeHtml(color)}" stroke="#e2e8f0" stroke-width="1.5"/><text x="${position.x + 28}" y="${y}" fill="#dbeafe" font-size="9" font-family="Arial">F${escapeHtml(fiber.number)} · ${escapeHtml(fiber.color_name || "Fibra")}</text>`;
+            }).join("");
+            return `<g><rect x="${position.x}" y="${position.y}" width="${cardWidth}" height="${cardHeight}" rx="10" fill="#091d30" stroke="#0ea5e9" stroke-width="2"/><text x="${position.x + 14}" y="${position.y + 23}" fill="#f8fafc" font-size="12" font-weight="700" font-family="Arial">${escapeHtml(cable.name)}</text><text x="${position.x + cardWidth - 12}" y="${position.y + 23}" text-anchor="end" fill="#7dd3fc" font-size="8" font-family="Arial">${cable.relation === "output" ? "SAÍDA" : "ENTRADA"}</text>${fiberRows}</g>`;
+        }).join("");
         const notes = (state.container.layout.notes || []).map((note) => `<g><rect x="${Number(note.x || 40)}" y="${Number(note.y || 40)}" width="190" height="64" rx="9" fill="#42300a" stroke="#facc15"/><text x="${Number(note.x || 40) + 12}" y="${Number(note.y || 40) + 25}" fill="#fef3c7" font-size="10" font-family="Arial">${escapeHtml(note.text)}</text></g>`).join("");
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#07111f"/><style>.master-canvas-links path{fill:none;stroke:#38bdf8;stroke-width:3}.master-canvas-links circle{fill:#fff;stroke:#38bdf8;stroke-width:2}.master-drop-label{fill:#e2e8f0;font:10px Arial}</style><g class="master-canvas-links">${links}</g>${cards}${notes}</svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#07111f"/><style>.master-canvas-links path{fill:none;stroke:#38bdf8;stroke-width:3}.master-canvas-links circle{fill:#fff;stroke:#38bdf8;stroke-width:2}.master-drop-label{fill:#e2e8f0;font:10px Arial}</style><g class="master-canvas-links">${links}</g>${cables}${cards}${notes}</svg>`;
     }
 
     async function exportContainerPng() {
