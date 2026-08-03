@@ -9,6 +9,7 @@ from apps.olt_integration.models import OLT
 from apps.optical.models import DIO
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.services.configuration import encrypt_secret
+from apps.snmp_monitoring.models import CompanySNMPDefaults
 from django.contrib.gis.geos import Point
 
 
@@ -350,6 +351,32 @@ class CompanyEmailConfigurationForm(forms.ModelForm):
             instance.password_encrypted = SecretCipher().encrypt(password)
         if commit:
             instance.save()
+        return instance
+
+
+class CompanySNMPDefaultsForm(forms.Form):
+    community = forms.CharField(
+        label="Community SNMP padrão",
+        required=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "off"}, render_value=False),
+        help_text="Usada automaticamente ao ativar o monitoramento de um "
+        "equipamento novo sem informar uma community específica. "
+        "Armazenada criptografada.",
+    )
+
+    def __init__(self, *args, instance=None, **kwargs):
+        self.instance = instance
+        super().__init__(*args, **kwargs)
+        if instance and instance.pk and instance.community_encrypted:
+            self.fields["community"].widget.attrs["placeholder"] = "Deixe em branco para manter a community atual"
+
+    def save(self, company):
+        community = self.cleaned_data.get("community", "").strip()
+        instance = self.instance or CompanySNMPDefaults(company=company)
+        if community:
+            instance.set_community(community)
+        instance.full_clean()
+        instance.save()
         return instance
 
 

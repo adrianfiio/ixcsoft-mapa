@@ -52,6 +52,7 @@ from apps.core.forms import (
     CompanyEmailConfigurationForm,
     CompanyOnboardingForm,
     CompanyProviderModeForm,
+    CompanySNMPDefaultsForm,
     CompanyTeamMemberForm,
     DIOPlatformForm,
     ERPOnboardingForm,
@@ -61,6 +62,7 @@ from apps.core.forms import (
     SuperadminCompanyForm,
     TeamPasswordResetForm,
 )
+from apps.snmp_monitoring.models import CompanySNMPDefaults
 from apps.ixc_integration.models import IXCConfiguration
 from apps.ixc_integration.fiber_models import IXCFiberAssignment
 from apps.ixc_integration.clients.ixc_client import IXCClient
@@ -849,6 +851,41 @@ def company_email_settings(request):
         request,
         "company_email_settings.html",
         {"form": form, "company": company, "configuration": configuration},
+    )
+
+
+@login_required
+def company_snmp_defaults(request):
+    membership = (
+        CompanyMembership.objects.filter(
+            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+        )
+        .select_related("company")
+        .first()
+    )
+    if request.user.is_superuser or membership is None:
+        messages.info(
+            request,
+            "Somente um usuário com permissão de edição pode configurar a community SNMP padrão.",
+        )
+        return redirect("account-panel")
+    company = membership.company
+    defaults = CompanySNMPDefaults.objects.filter(company=company).first()
+
+    if request.method == "POST":
+        form = CompanySNMPDefaultsForm(request.POST, instance=defaults)
+        if form.is_valid():
+            form.save(company)
+            messages.success(request, "Community SNMP padrão salva com sucesso.")
+            return redirect("company-snmp-defaults")
+        messages.error(request, "Não foi possível salvar — confira os dados.")
+    else:
+        form = CompanySNMPDefaultsForm(instance=defaults)
+
+    return render(
+        request,
+        "company_snmp_defaults.html",
+        {"form": form, "company": company, "community_set": bool(defaults and defaults.community_encrypted)},
     )
 
 

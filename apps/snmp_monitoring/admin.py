@@ -2,6 +2,7 @@ from django import forms
 from django.contrib import admin
 
 from .models import (
+    CompanySNMPDefaults,
     MonitoredNetworkLink,
     SNMPInterfaceState,
     SNMPMonitoringProfile,
@@ -37,6 +38,35 @@ class SNMPMonitoringProfileForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class CompanySNMPDefaultsForm(forms.ModelForm):
+    community = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="Deixe em branco para manter a community atual.",
+    )
+
+    class Meta:
+        model = CompanySNMPDefaults
+        fields = ("company",)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        raw_community = self.cleaned_data.get("community")
+        if raw_community:
+            instance.set_community(raw_community)
+        if commit:
+            instance.save()
+        return instance
+
+
+@admin.register(CompanySNMPDefaults)
+class CompanySNMPDefaultsAdmin(admin.ModelAdmin):
+    form = CompanySNMPDefaultsForm
+    list_display = ("company", "updated_at")
+    search_fields = ("company__name", "company__trade_name")
+    autocomplete_fields = ("company",)
 
 
 class SNMPPortBindingInline(admin.TabularInline):

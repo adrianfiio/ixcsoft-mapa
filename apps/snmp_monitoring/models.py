@@ -10,7 +10,7 @@ from django.db.models import Q
 
 from apps.core.crypto import SecretCipher
 from apps.core.enums import OperationalStatus, Severity
-from apps.core.models import CompanyScopedModel
+from apps.core.models import CompanyScopedModel, TimeStampedModel
 
 
 _HEX_COLOR = RegexValidator(
@@ -167,6 +167,32 @@ class SNMPMonitoringProfile(CompanyScopedModel):
     @property
     def conf_filename(self):
         return f"element_{self.influx_id}.conf"
+
+
+class CompanySNMPDefaults(TimeStampedModel):
+    """Community SNMP padrão da empresa (ISP) — evita pedir a community de
+    novo em cada equipamento; usada só como fallback quando o formulário de
+    ativação é enviado sem community (ver `apps/snmp_monitoring/api.py`)."""
+
+    company = models.OneToOneField(
+        "core.Company",
+        on_delete=models.CASCADE,
+        related_name="snmp_defaults",
+    )
+    community_encrypted = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Community SNMP padrão"
+        verbose_name_plural = "Communities SNMP padrão"
+
+    def set_community(self, raw_value):
+        self.community_encrypted = SecretCipher().encrypt(raw_value) if raw_value else ""
+
+    def get_community(self):
+        return SecretCipher().decrypt(self.community_encrypted) if self.community_encrypted else ""
+
+    def __str__(self):
+        return f"Community SNMP padrão · {self.company}"
 
 
 class SNMPInterfaceState(CompanyScopedModel):
