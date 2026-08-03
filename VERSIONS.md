@@ -6,7 +6,7 @@ compartilham o mesmo número de release.
 
 | Componente | Versão vigente | Variável de ambiente | Changelog | Tags |
 |---|---:|---|---|---|
-| Plataforma | v0.81.2 | `PLATFORM_VERSION` | [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md) | `platform-vX.Y.Z` |
+| Plataforma | v0.81.3 | `PLATFORM_VERSION` | [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md) | `platform-vX.Y.Z` |
 | Mapa | v0.75.5 | `MAP_VERSION` | [CHANGELOG_MAP.md](CHANGELOG_MAP.md) | `map-vX.Y.Z` |
 
 ## O que pertence a cada trilha

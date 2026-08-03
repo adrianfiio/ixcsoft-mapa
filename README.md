@@ -13,7 +13,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.81.2 |
+| Plataforma | v0.81.3 |
 | Mapa | v0.75.5 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
