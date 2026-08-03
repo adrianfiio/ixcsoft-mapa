@@ -29,6 +29,10 @@
             loadingPromise: null,
             loadingElementId: "",
             rendering: false,
+            // Incrementada a cada abertura/fechamento; qualquer await em voo
+            // que resolver depois da geração ter mudado é descartado (evita
+            // resposta atrasada sobrescrever o editor de um elemento novo).
+            openGeneration: 0,
         },
     };
 
@@ -737,8 +741,8 @@
         root.className = "map-master-container";
         root.innerHTML = `
             <nav class="master-container-tabs">
-                <button type="button" data-tab="equipment" class="active">Equipamentos</button>
-                <button type="button" data-tab="canvas">Canvas 2D</button>
+                <button type="button" data-tab="equipment">Equipamentos</button>
+                <button type="button" data-tab="canvas" class="active">Canvas 2D</button>
                 <button type="button" data-tab="matrix">Matriz de manobra</button>
                 <button type="button" data-tab="fibers">Fibras e terminações</button>
                 <button type="button" data-tab="models">YAML / modelos</button>
@@ -752,8 +756,8 @@
                 <button type="button" data-container-revision>Salvar versão</button>
                 <button type="button" data-container-fullscreen>Tela cheia</button>
             </div>
-            <section data-panel="equipment" class="master-container-panel active"></section>
-            <section data-panel="canvas" class="master-container-panel"><div class="master-canvas-scroll"><div class="master-canvas"><svg class="master-canvas-links"></svg><div class="master-canvas-nodes"></div></div></div></section>
+            <section data-panel="equipment" class="master-container-panel"></section>
+            <section data-panel="canvas" class="master-container-panel active"><div class="master-canvas-scroll"><div class="master-canvas"><svg class="master-canvas-links"></svg><div class="master-canvas-nodes"></div></div></div></section>
             <section data-panel="matrix" class="master-container-panel"></section>
             <section data-panel="fibers" class="master-container-panel"></section>
             <section data-panel="models" class="master-container-panel"></section>`;
@@ -803,6 +807,58 @@
             renderConnectionMatrix();
             attachLegacyPanels();
             document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: dialog, data } }));
+        } finally {
+            state.container.rendering = false;
+        }
+    }
+
+    // Função pública única pra abrir o editor de Rack/Torre (v0.75.9).
+    // Chamada direto pelo clique no marker (map-editor.js) — não existe mais
+    // nenhum caminho paralelo (nem manageContainer legado, nem
+    // MutationObserver): só ela decide quando o container-dialog abre, e só
+    // abre depois que equipment/ + container-layout-v3/ já chegaram e o
+    // Canvas já foi desenhado — nunca mostra o dialog vazio esperando dado.
+    async function openContainerWorkspace(id) {
+        const dialog = containerDialog();
+        if (!dialog) return null;
+        if (state.container.rendering) return null;
+        state.container.openGeneration += 1;
+        const generation = state.container.openGeneration;
+        dialog.dataset.elementId = String(id);
+        dialog.dataset.containerType = "";
+        dialog.dataset.containerName = "";
+        state.container.rendering = true;
+        try {
+            let data;
+            try {
+                data = await loadContainerMaster(true);
+            } catch (error) {
+                if (generation === state.container.openGeneration) notify(error.message, true);
+                throw error;
+            }
+            // Resposta atrasada de uma abertura anterior (ou o usuário já
+            // fechou/trocou de elemento enquanto a requisição estava em
+            // voo): descarta em silêncio, sem sobrescrever o editor atual.
+            if (generation !== state.container.openGeneration) return null;
+            if (!data) return null;
+            const root = ensureContainerWorkspace();
+            // Sempre abre na aba Canvas 2D, mesmo que o workspace já existisse
+            // de uma abertura anterior nesta mesma página (o template já nasce
+            // com "canvas" ativo, mas isso garante o mesmo resultado em toda
+            // reabertura, não só na primeira vez).
+            if (root) {
+                qsa("[data-tab]", root).forEach((button) => button.classList.toggle("active", button.dataset.tab === "canvas"));
+                qsa("[data-panel]", root).forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === "canvas"));
+            }
+            renderEquipmentList();
+            renderContainerCanvas();
+            renderConnectionMatrix();
+            attachLegacyPanels();
+            if (generation !== state.container.openGeneration) return null;
+            if (!dialog.open) dialog.show();
+            document.dispatchEvent(new CustomEvent("map:container-opening", { detail: { dialog, elementId: id } }));
+            document.dispatchEvent(new CustomEvent("map:container-rendered", { detail: { root: dialog, data } }));
+            return data;
         } finally {
             state.container.rendering = false;
         }
@@ -1831,17 +1887,32 @@
                 }
             });
         }
+        // v0.75.9: nada de MutationObserver aqui. O carregamento do Rack/Torre
+        // (equipment/ + container-layout-v3/) só acontece por chamada
+        // explícita de openContainerWorkspace() (ver map-editor.js, clique no
+        // marker) — nunca reagindo "por tabela" a uma mudança de atributo do
+        // dialog, que era o que causava a segunda chamada de equipment/ e,
+        // pra CTO/CDO, chamadas stale vindas de uma abertura anterior de
+        // Rack/Torre na mesma sessão.
         const container = containerDialog();
-        if (container) {
-            let scheduledContainer = false;
-            new MutationObserver(() => {
-                if (!container.open || !container.dataset.elementId || scheduledContainer) return;
-                scheduledContainer = true;
-                requestAnimationFrame(() => {
-                    scheduledContainer = false;
-                    enhanceContainer().catch((error) => notify(error.message, true));
-                });
-            }).observe(container, { attributes: true, attributeFilter: ["open", "data-element-id"] });
+        if (container && container.dataset.v0759CloseGuard !== "1") {
+            container.dataset.v0759CloseGuard = "1";
+            container.addEventListener("close", () => {
+                // Ao fechar: nova geração (qualquer resposta em voo de uma
+                // abertura anterior deixa de valer), limpa o id do elemento e
+                // o estado temporário do container — sem disparar novo
+                // carregamento.
+                state.container.openGeneration += 1;
+                container.dataset.elementId = "";
+                container.dataset.containerType = "";
+                container.dataset.containerName = "";
+                state.container.elementId = "";
+                state.container.data = null;
+                state.container.selectedPort = null;
+                state.container.selectedFiber = null;
+                state.container.selectedLink = null;
+                state.container.lineMode = false;
+            });
         }
     }
 
@@ -1864,6 +1935,7 @@
             openReserve,
             openCableRoute,
             enhanceContainer,
+            openContainerWorkspace,
         };
     }
 

@@ -104,7 +104,11 @@
 
     function openContextMenu(event) {
         if (!canEdit || !qs("#project-select")?.value) return;
-        if (event.target.closest("dialog, button, a, input, select, textarea, .leaflet-popup, .map-toolbar-v072, #map-sidebar")) return;
+        // Segunda camada de proteção: mesmo que o handler de contextmenu do
+        // próprio marker (map-editor.js) não pare a propagação por algum
+        // motivo, o menu global nunca deve abrir sobre um marker/ícone real
+        // do mapa — só em área vazia.
+        if (event.target.closest("dialog, button, a, input, select, textarea, .leaflet-popup, .leaflet-marker-icon, .leaflet-interactive, .map-element-marker, [data-element-id], .map-toolbar-v072, #map-sidebar")) return;
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
