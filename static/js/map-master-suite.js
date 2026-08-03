@@ -720,6 +720,7 @@
         if (type === "switch") return "Switches";
         if (type === "router") return "Roteadores";
         if (type === "firewall") return "Firewalls";
+        if (type === "server") return "Servidores";
         if (type === "ptp") return "Rádios PTP";
         if (type === "access_point") return "Access points";
         if (type === "onu" || subtype === "onu") return "ONUs / ONTs";
@@ -881,8 +882,8 @@
         if (!node) return "left";
         const side = cableVisualSide({ x: Number(node.dataset.posX || 0) });
         node.dataset.cableSide = side;
-        node.classList.toggle("side-right-v0757", side === "right");
-        node.classList.toggle("side-left-v0757", side === "left");
+        node.classList.toggle("side-right-v0758", side === "right");
+        node.classList.toggle("side-left-v0758", side === "left");
         return side;
     }
 
@@ -951,7 +952,7 @@
         qsa("[data-canvas-note]", nodes).forEach((note) => installNoteDrag(note));
         qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
-            const accepted = await window.mapV0757?.confirmAction?.({
+            const accepted = await window.mapV0758?.confirmAction?.({
                 title: "Excluir nota",
                 message: "A nota será removida deste Canvas.",
                 confirmLabel: "Excluir nota",
@@ -971,7 +972,7 @@
         qsa("[data-edit-note]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
             const note = state.container.layout.notes[Number(button.dataset.editNote)];
-            const text = await window.mapV0757?.editLongText?.({ title: "Editar nota técnica", value: note?.text || "" });
+            const text = await window.mapV0758?.editLongText?.({ title: "Editar nota técnica", value: note?.text || "" });
             if (text === null || text === undefined) return;
             note.text = text;
             await saveContainerLayout(); renderContainerCanvas();
@@ -996,7 +997,7 @@
             });
             menu.querySelector("[data-add-canvas-note]").onclick = async () => {
                 menu.hidden = true;
-                const text = await window.mapV0757?.editLongText?.({ title: "Nova nota técnica" });
+                const text = await window.mapV0758?.editLongText?.({ title: "Nova nota técnica" });
                 if (text === null || text === undefined) return;
                 state.container.layout.notes ||= [];
                 state.container.layout.notes.push({ id: `n${Date.now()}`, text, x: menuPoint.x, y: menuPoint.y });
@@ -1117,7 +1118,7 @@
         const canvasRect = canvas.getBoundingClientRect();
         const rect = fiber.getBoundingClientRect();
         const scale = Number(canvas.dataset.v0741Scale || 1) || 1;
-        const sideRight = fiber.closest(".master-cable-node")?.classList.contains("side-right-v0757");
+        const sideRight = fiber.closest(".master-cable-node")?.classList.contains("side-right-v0758");
         return {
             x: ((sideRight ? rect.left : rect.right) - canvasRect.left) / scale,
             y: (rect.top + rect.height / 2 - canvasRect.top) / scale,
@@ -1411,9 +1412,9 @@
         const dialog = equipmentCreateDialog();
         const containerType = String(state.container.data?.container?.type || "tower");
         const allowed = containerType === "rack"
-            ? new Set(["olt", "dio", "switch", "router", "firewall", "pto", "other"])
+            ? new Set(["olt", "dio", "switch", "router", "firewall", "server", "pto", "other"])
             : new Set(["olt", "dio", "switch", "router", "firewall", "pto", "other", "access_point", "ptp", "onu"]);
-        const types = (state.bootstrap?.equipment_types || []).filter(([value]) => value !== "server" && allowed.has(value));
+        const types = (state.bootstrap?.equipment_types || []).filter(([value]) => allowed.has(value));
         dialog.querySelector("select[name='equipment_type']").innerHTML = types.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
         const drops = (state.container.data?.cables || []).filter((cable) => cable.cable_type === "drop");
         dialog.querySelector("select[name='drop_cable_id']").innerHTML = `<option value="">Adicionar sem conectar DROP</option>${drops.map((cable) => `<option value="${cable.id}">${escapeHtml(cable.name)} · ${cable.fiber_count} FO</option>`).join("")}`;

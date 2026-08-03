@@ -14,7 +14,7 @@ class MapV0750StaticTests(unittest.TestCase):
         template = content("templates/map.html")
         for asset in ("map-v0750-tower-workspace.css", "map-v0750-tower-workspace.js"):
             self.assertIn(f"{asset}' %}}?v={{{{ map_version }}}}", template)
-        self.assertEqual(template.count("{{ map_version }}-tower-r12"), 5)
+        self.assertEqual(template.count("{{ map_version }}-tower-r13"), 5)
 
     def test_tower_workspace_fills_area_beside_sidebar_without_locking_it(self):
         css = content("static/css/map-v0750-tower-workspace.css")
@@ -149,9 +149,9 @@ class MapV0750StaticTests(unittest.TestCase):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
         self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.82.0"))', settings)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.7")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.8")', settings)
         self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.82.0}', compose)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.7}', compose)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.8}', compose)
 
     def test_tower_r7_has_contextual_creation_drop_and_fade(self):
         canvas = content("static/js/map-master-suite.js")
@@ -223,34 +223,39 @@ class MapV0750StaticTests(unittest.TestCase):
             self.assertIn(token, css)
         self.assertIn("MAP v0.75.6", release)
 
-    def test_map_v0757_field_usability_rack_notes_and_fusions(self):
+    def test_map_v0758_single_runtime_duplicate_resolver_and_workspaces(self):
         backend = content("apps/network_map/api/views.py")
         editor = content("static/js/map-editor.js")
         canvas = content("static/js/map-master-suite.js")
         view = content("static/js/map-v0741-ui.js")
         workspace = content("static/js/map-v0750-tower-workspace.js")
-        runtime = content("static/js/map-v0757-field-usability.js")
-        css = content("static/css/map-v0757-field-usability.css")
+        runtime = content("static/js/map-v0758-core-ui.js")
+        css = content("static/css/map-v0758-core-ui.css")
         template = content("templates/map.html")
-        release = content("docs/releases/map/map-v0.75.7.md")
+        release = content("docs/releases/map/map-v0.75.8.md")
 
         rack_block = backend.split("if container.element_type == NetworkElement.ElementType.RACK", 1)[0].rsplit("{", 1)[-1]
         self.assertNotIn("EquipmentType.ONU", rack_block)
+        self.assertIn("EquipmentType.SERVER", rack_block)
         self.assertIn('"duplicate": True', backend)
         self.assertIn("select_for_update", backend)
-        for token in ("elementSubmitLock", "reviewCableDirection", "Salvar nova posição?", "map-v0757-optical-workspace", "openElementMenu"):
+        for token in ("elementSubmitLock", "reviewCableDirection", "Salvar nova posição?", "map-v0758-optical-workspace", "openElementMenu", "elementDuplicateKey", "canonicalElementFeatures"):
             self.assertIn(token, editor)
-        for token in ("containerCanvasMidpoint", "side-right-v0757", "syncCableVisualSide", "allowed.has(value)"):
+        for token in ("containerCanvasMidpoint", "side-right-v0758", "syncCableVisualSide", "allowed.has(value)", 'if (type === "server") return "Servidores";'):
             self.assertIn(token, canvas)
         self.assertIn(".master-canvas-note", view)
-        self.assertIn('const VERSION = "0.75.7"', workspace)
-        for token in ("editLongText", "confirmAction", "reviewCableDirection", "updateContainerIdentity", "addFusionNote"):
+        self.assertIn('const VERSION = "0.75.8"', workspace)
+        for token in ("editLongText", "confirmAction", "reviewCableDirection", "updateContainerIdentity", "openDuplicateResolver"):
             self.assertIn(token, runtime)
-        for token in ("MAP_V0757_FIELD_USABILITY", "map-v0757-optical-workspace", "white-space: pre-wrap", "tower-workspace-close-v0757"):
+        self.assertNotIn("MutationObserver", runtime)
+        self.assertNotIn("/api/map/", runtime)
+        for token in ("MAP_V0758_CORE_UI", "map-v0758-optical-workspace", "white-space: pre-wrap", "tower-workspace-close-v0758", "map-v0758-duplicate-dialog"):
             self.assertIn(token, css)
-        self.assertIn("map-v0757-field-usability.js", template)
-        self.assertIn("map-v0757-field-usability.css", template)
-        self.assertIn("MAP v0.75.7", release)
+        self.assertIn("map-v0758-core-ui.js", template)
+        self.assertIn("map-v0758-core-ui.css", template)
+        self.assertNotIn("map-v0757-field-usability", template)
+        self.assertIn("MAP v0.75.8", release)
+
 
 
 
