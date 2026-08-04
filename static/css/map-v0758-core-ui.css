@@ -818,3 +818,25 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
     border-color: #22c55e !important;
     background: rgba(34, 197, 94, .14) !important;
 }
+
+/* MAP_V07522_CTO_LEFT_RIGHT: reforça a aparência do Rack/Torre com
+   !important, pra não depender da ordem de carregamento entre
+   map-editor.css (.graph-splitter-node/.fiber-cable-node antigos) e
+   map-master-suite.css (.master-canvas-node) — garante que o visual
+   novo apareça mesmo se algo mudar essa ordem no futuro.
+   Splitter passa a ter ENT fixo à esquerda e as saídas em grade de
+   2 colunas à direita (mesma leitura esquerda=entra/direita=sai do
+   DIO), em vez da lista vertical única de antes. */
+.master-canvas-node.master-splitter-node-v07519,
+.master-canvas-node.master-cable-node-v07519 {
+    background: rgba(13, 26, 42, .96) !important;
+    border: 1px solid rgba(56, 189, 248, .35) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .35) !important;
+}
+.master-splitter-node-v07519 .splitter-output-grid {
+    grid-template-columns: repeat(2, minmax(40px, 1fr));
+}
+.master-splitter-node-v07519 .splitter-input-port {
+    align-self: start;
+}
