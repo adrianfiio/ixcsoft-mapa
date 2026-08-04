@@ -1,3 +1,11 @@
+## [0.75.18] - 2026-08-04
+
+### Adicionado
+- editor de fusões da CTO/CDO/CEO ganha zoom com Ctrl+roda do mouse e pan arrastando o fundo — mesma sensação de navegação do Canvas 2D do Rack/Torre. Nenhuma lógica de clique-para-ligar (cabo/splitter/porta), arraste de nó ou zoom por botão foi alterada — só um jeito a mais de navegar no mesmo `.optical-graph`.
+
+### Nota sobre "restringir a splitter padrão"
+- Confirmado por leitura do código: o editor de fusões **nunca** permitiu adicionar equipamento arbitrário — o menu de contexto do fundo só tem "+ Adicionar splitter" e "+ Adicionar nota". Essa parte do pedido já era o comportamento existente, não precisou de mudança.
+
 ## [0.75.17] - 2026-08-04
 
 ### Corrigido

@@ -766,3 +766,12 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
     stroke-width: 5px !important;
     filter: drop-shadow(0 0 7px currentColor) !important;
 }
+
+/* MAP_V07518_OPTICAL_CANVAS_PARITY: mesma sensação de arrastar o fundo do
+   Canvas 2D de Rack/Torre — cursor de "mão" no editor de fusões da CTO/CDO. */
+.optical-graph {
+    cursor: grab;
+}
+.optical-graph.panning-v07518 {
+    cursor: grabbing;
+}

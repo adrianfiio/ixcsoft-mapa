@@ -1140,6 +1140,40 @@
                 graphZoom = fitZoom(); applyGraphZoom(); saveZoom();
             };
             applyGraphZoom();
+            // MAP_V07518_OPTICAL_CANVAS_PARITY: zoom com Ctrl+roda do mouse e
+            // pan arrastando o fundo — mesma sensação do Canvas 2D de
+            // Rack/Torre. Não mexe no zoom por botão nem no clique-para-ligar
+            // (cabo/splitter/porta) que já existe; só soma outro jeito de
+            // navegar no mesmo `.optical-graph`.
+            const opticalGraph = content.querySelector(".optical-graph");
+            if (opticalGraph) {
+                opticalGraph.addEventListener("wheel", (event) => {
+                    if (!event.ctrlKey) return;
+                    event.preventDefault();
+                    graphZoom = Math.max(.4, Math.min(1.6, graphZoom + (event.deltaY < 0 ? .1 : -.1)));
+                    applyGraphZoom();
+                    saveZoom();
+                }, { passive: false });
+                opticalGraph.addEventListener("pointerdown", (event) => {
+                    if (event.button !== 0 || event.target.closest(".graph-node, button, select, input, textarea, a")) return;
+                    opticalGraph.setPointerCapture?.(event.pointerId);
+                    const startX = event.clientX;
+                    const startY = event.clientY;
+                    const scrollStartX = opticalGraph.scrollLeft;
+                    const scrollStartY = opticalGraph.scrollTop;
+                    opticalGraph.classList.add("panning-v07518");
+                    const move = (moveEvent) => {
+                        opticalGraph.scrollLeft = scrollStartX - (moveEvent.clientX - startX);
+                        opticalGraph.scrollTop = scrollStartY - (moveEvent.clientY - startY);
+                    };
+                    const up = () => {
+                        opticalGraph.removeEventListener("pointermove", move);
+                        opticalGraph.classList.remove("panning-v07518");
+                    };
+                    opticalGraph.addEventListener("pointermove", move);
+                    opticalGraph.addEventListener("pointerup", up, { once: true });
+                });
+            }
             content.querySelectorAll("[data-expand-cable]").forEach((button) => {
                 button.onclick = async () => {
                     const cableId = String(button.dataset.expandCable);
