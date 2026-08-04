@@ -1,3 +1,20 @@
+## [0.75.12] - 2026-08-03
+
+### Corrigido
+- rotas internas deixam de reutilizar pontos antigos incompatíveis com o layout atual e passam a usar caminhos ortogonais arredondados;
+- notas do Canvas passam a salvar corretamente arraste, edição e exclusão;
+- cliques em portas e ligações ganham área útil maior sem engrossar o desenho;
+- cargas concorrentes do mapa deixam de tentar registrar os mesmos markers duas vezes.
+
+### Adicionado
+- placas PON da OLT em linhas horizontais com canaletas entre placas para passagem dos cordões;
+- tooltip de porta mostrando status livre ou o destino conectado;
+- conector visual SC/APC verde e SC/UPC azul nas terminações ópticas;
+- terminação direta de DROP em DIO, PTO e porta PON de ONU/ONT;
+- enlace PTP guiado entre torres e linha tracejada persistida no mapa;
+- busca automática por latitude e longitude digitadas;
+- atualização do equipamento dentro do editor, sem recarregar a página inteira.
+
 ## [0.75.10] - 2026-08-03
 
 ### Corrigido

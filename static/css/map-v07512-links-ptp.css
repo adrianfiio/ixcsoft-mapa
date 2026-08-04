@@ -1,0 +1,210 @@
+/* MAP v0.75.12 — ligações, PTP, GPS, OLT/DIO e notas */
+
+/* Placas PON da OLT em linhas horizontais, com canaleta entre placas. */
+.master-olt-slots-v07510 {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+}
+.master-olt-board-v07512 {
+    position: relative;
+    display: grid !important;
+    grid-template-columns: 150px minmax(0, 1fr) !important;
+    align-items: stretch;
+    min-height: 54px;
+    overflow: visible !important;
+    margin: 0 !important;
+    border-radius: 7px !important;
+    background: #e8eef5 !important;
+}
+.master-olt-board-v07512 > header {
+    display: grid !important;
+    align-content: center;
+    gap: 3px;
+    min-height: 52px !important;
+    padding: 8px 12px !important;
+    border: 0 !important;
+    border-right: 1px solid rgba(30, 64, 91, .24) !important;
+    color: #10233a !important;
+    background: transparent !important;
+}
+.master-olt-board-v07512 > header strong {
+    font-size: 10px;
+    white-space: normal;
+}
+.master-olt-board-v07512 > header span {
+    color: #557086;
+    font-size: 8px;
+}
+.master-olt-board-v07512 .master-olt-slot-ports-v07510 {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)) !important;
+    align-items: center;
+    gap: 7px !important;
+    min-width: 0;
+    padding: 8px 12px !important;
+}
+.master-olt-board-v07512 .master-node-port {
+    min-height: 34px !important;
+    color: #dceefa !important;
+    background: #11243a !important;
+}
+.master-olt-cable-guide-v07512 {
+    position: relative;
+    height: 32px;
+    margin: 8px 0 14px;
+    overflow: hidden;
+    border: 1px solid #38516a;
+    border-radius: 5px;
+    background:
+        repeating-linear-gradient(45deg, #263c53, #263c53 10px, #172a40 10px, #172a40 20px);
+    box-shadow: inset 0 5px 14px rgba(0, 0, 0, .35);
+    opacity: .82;
+}
+.master-olt-cable-guide-v07512::before,
+.master-olt-cable-guide-v07512::after {
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 8px;
+    background: repeating-linear-gradient(90deg, #435d76, #435d76 14px, transparent 14px, transparent 24px);
+    content: "";
+}
+.master-olt-cable-guide-v07512::before { top: 0; }
+.master-olt-cable-guide-v07512::after { bottom: 0; }
+
+/* Área de clique maior que o pequeno conector visual. */
+#map-master-container .master-port-hit-v07512 {
+    position: relative !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    overflow: visible !important;
+    cursor: pointer;
+}
+#map-master-container .master-port-hit-v07512::before {
+    position: absolute;
+    z-index: 4;
+    inset: -7px;
+    border-radius: 8px;
+    content: "";
+}
+#map-master-container .master-port-hit-v07512:hover {
+    border-color: #fde047 !important;
+    box-shadow: 0 0 0 2px rgba(253, 224, 71, .2), 0 0 13px rgba(253, 224, 71, .28) !important;
+}
+#map-master-container .port-compatible-v07512 {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, .2), 0 0 12px rgba(34, 197, 94, .24) !important;
+}
+#map-master-container .port-incompatible-v07512 {
+    opacity: .48;
+}
+
+#map-v07512-port-tooltip {
+    position: fixed;
+    z-index: 20050;
+    display: grid;
+    gap: 5px;
+    max-width: 330px;
+    padding: 9px 12px;
+    pointer-events: none;
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    color: #eef8ff;
+    background: rgba(7, 22, 37, .97);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
+    font-size: 11px;
+    line-height: 1.35;
+}
+#map-v07512-port-tooltip[hidden] { display: none !important; }
+#map-v07512-port-tooltip strong { color: #7dd3fc; }
+#map-v07512-port-tooltip .free { color: #4ade80; }
+#map-v07512-port-tooltip .occupied { color: #facc15; }
+
+/* Clique confortável no fio sem engrossar visualmente a ligação. */
+.master-link-hit-v07512 {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 20px;
+    pointer-events: stroke;
+    cursor: crosshair;
+}
+.master-link-handle-v07512 {
+    fill: #f8fafc;
+    stroke: #0284c7;
+    stroke-width: 3px;
+    cursor: move;
+    pointer-events: all;
+}
+.master-link-connector-apc-v07512,
+.master-link-connector-upc-v07512 {
+    pointer-events: none;
+    stroke: rgba(255, 255, 255, .8);
+    stroke-width: 1.5px;
+}
+.master-link-connector-apc-v07512 { fill: #16a34a; }
+.master-link-connector-upc-v07512 { fill: #2563eb; }
+
+/* Notas: o card inteiro é área de arraste, exceto os botões. */
+#map-master-container .master-canvas-note {
+    cursor: grab !important;
+    touch-action: none;
+}
+#map-master-container .master-canvas-note.dragging-v07512 {
+    z-index: 90;
+    cursor: grabbing !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .38), 0 0 0 2px rgba(250, 204, 21, .28);
+}
+#map-master-container [data-refresh-node-v07512] svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.map-v07512-ptp-dialog {
+    width: min(620px, calc(100vw - 36px));
+    border: 1px solid #31536e;
+    border-radius: 14px;
+    color: #e5f2ff;
+    background: #091b2d;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .58);
+}
+.map-v07512-ptp-dialog::backdrop {
+    background: rgba(1, 8, 16, .68);
+    backdrop-filter: blur(3px);
+}
+.map-v07512-ptp-dialog form {
+    display: grid;
+    gap: 15px;
+    padding: 18px;
+}
+.map-v07512-ptp-dialog header,
+.map-v07512-ptp-dialog footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.map-v07512-ptp-dialog header div { display: grid; gap: 4px; }
+.map-v07512-ptp-dialog header small,
+.map-v07512-ptp-dialog [data-status] { color: #8ea9bd; }
+.map-v07512-ptp-dialog label { display: grid; gap: 7px; }
+.map-v07512-ptp-dialog select {
+    min-height: 42px;
+    border: 1px solid #31536e;
+    border-radius: 9px;
+    padding: 7px 10px;
+    color: #e5f2ff;
+    background: #071827;
+}
+.map-v07512-ptp-dialog footer { justify-content: flex-end; }
+
+.map-ptp-link-v07512 {
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, .35));
+}
+.map-ptp-tooltip-v07512 {
+    border-color: #f59e0b !important;
+    color: #fff7ed !important;
+    background: rgba(31, 20, 8, .94) !important;
+}

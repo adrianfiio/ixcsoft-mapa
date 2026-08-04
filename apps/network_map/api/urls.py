@@ -29,6 +29,7 @@ from apps.network_map.api.views import (
     update_cable_geometry,
 )
 from apps.network_map.api.device_type_views import import_container_device_type_yaml
+from apps.network_map.api.ptp_links import ptp_link_candidates, ptp_link_detail, ptp_links
 from apps.network_map.api.optical_editor_v2 import register_cable_passage
 from apps.network_map.api.topology_actions import cut_cable_at_element
 from apps.network_map.api.optical_editor_v3 import (
@@ -109,6 +110,9 @@ urlpatterns = [
     path("elements/<int:element_id>/equipment/<int:equipment_id>/ports/", container_equipment_ports, name="container-equipment-ports"),
     path("elements/<int:element_id>/equipment-links/", container_port_links, name="container-port-links"),
     path("elements/<int:element_id>/equipment-links/<int:link_id>/", container_port_link_detail, name="container-port-link-detail"),
+    path("ptp-links/", ptp_links, name="ptp-links"),
+    path("ptp-links/candidates/", ptp_link_candidates, name="ptp-link-candidates"),
+    path("ptp-links/<int:link_id>/", ptp_link_detail, name="ptp-link-detail"),
     path("routes/", project_routes_geojson, name="project-routes"),
     path("projects/<int:project_id>/", project_detail, name="project-detail"),
     path(

@@ -33,7 +33,7 @@
         geometryCableId: null, geometryHandles: [], reserveCableId: null, insertCableId: null,
         lightSourceId: null, lastAnnouncedLightSourceId: undefined, lightAnimationGeneration: 0, mapMode: "view",
         containerId: null, editingContainerEquipmentId: null, topologyZoom: 1,
-        openingElementId: null, elementSubmitLock: false,
+        openingElementId: null, elementSubmitLock: false, structureLoadGeneration: 0,
         // Controle central: 1 registro por ID real de NetworkElement, nunca
         // por nome/coordenada. Ver loadStructure().
         elementMarkers: new Map(),
@@ -1755,6 +1755,7 @@
         notify("Movendo o traçado do cabo.");
     }
     async function loadStructure(fit = false) {
+        const structureLoadGeneration = ++state.structureLoadGeneration;
         state.lightAnimationGeneration += 1;
         const lightGeneration = state.lightAnimationGeneration;
         cableLayer.clearLayers();
@@ -1770,6 +1771,7 @@
         }
         const query = `?project_id=${encodeURIComponent(state.projectId)}`;
         const [elements, cables, routes] = await Promise.all([api(`/api/map/elements/${query}`), api(`/api/map/cables/${query}`), api(`/api/map/routes/${query}`)]);
+        if (structureLoadGeneration !== state.structureLoadGeneration) return;
         state.elements = elements.features;
         state.cables = cables.features;
         window.mapV092?.setData?.({
@@ -1932,7 +1934,6 @@
                 // central pro mesmo ID (não deveria acontecer, já que
                 // seenElementIds acima cobre a mesma resposta — isso só
                 // pegaria uma regressão futura no código, não dado real).
-                console.error(`map-editor: ID ${elementId} já tinha marker registrado nesta carga — ignorando recriação.`);
                 return;
             }
             // Uma instância de marker por camada (plain/cluster), mas nunca
