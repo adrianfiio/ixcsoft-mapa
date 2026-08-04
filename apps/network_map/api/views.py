@@ -899,18 +899,10 @@ def element_detail_payload(element):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def container_equipment(request, element_id):
-    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: o endpoint fornece o shell
-    # comum também para CEO/CDO (splice_box). A camada visual óptica
-    # continua escondendo equipamento genérico nas três caixas.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type__in=[
-            NetworkElement.ElementType.RACK,
-            NetworkElement.ElementType.TOWER,
-            NetworkElement.ElementType.CTO,
-            NetworkElement.ElementType.SPLICE_BOX,
-        ],
+        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
     )
     if request.method == "POST":
         if not can_edit_company(request.user, container.company_id):
@@ -1052,12 +1044,7 @@ def container_equipment(request, element_id):
                 )
         return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
     return JsonResponse({
-        "container": {
-            "id": container.id,
-            "name": container.name,
-            "type": container.element_type,
-            "subtype": container.metadata.get("import_subtype", ""),
-        },
+        "container": {"id": container.id, "name": container.name, "type": container.element_type},
         "equipment": [
             _container_equipment_payload(item)
             for item in container.internal_equipments.prefetch_related(
@@ -1630,17 +1617,10 @@ def container_equipment_ports(request, element_id, equipment_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def container_port_links(request, element_id):
-    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: mesma liberação do shell para
-    # CTO/CEO/CDO. Rack/Torre mantêm o comportamento anterior.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type__in=[
-            NetworkElement.ElementType.RACK,
-            NetworkElement.ElementType.TOWER,
-            NetworkElement.ElementType.CTO,
-            NetworkElement.ElementType.SPLICE_BOX,
-        ],
+        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
     )
     if not can_edit_company(request.user, container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
@@ -1668,7 +1648,7 @@ def container_port_links(request, element_id):
             pk=cable_fiber.cable_id,
             company=container.company,
         ).exists():
-            return JsonResponse({"detail": "Fibra não pertence a um cabo desta estrutura."}, status=400)
+            return JsonResponse({"detail": "Fibra não pertence a um cabo deste rack/torre."}, status=400)
         if ContainerPortLink.objects.filter(cable_fiber=cable_fiber).exists():
             return JsonResponse({"detail": "Esta fibra já está em uso."}, status=409)
         cable = cable_fiber.cable

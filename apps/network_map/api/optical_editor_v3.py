@@ -213,17 +213,10 @@ def fusion_cable_membership(request, element_id, cable_id):
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def container_layout_v3(request, element_id):
-    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: salva o layout do mesmo Canvas
-    # para CTO, CEO e CDO (splice_box), preservando Rack/Torre.
     element = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type__in=[
-            NetworkElement.ElementType.RACK,
-            NetworkElement.ElementType.TOWER,
-            NetworkElement.ElementType.CTO,
-            NetworkElement.ElementType.SPLICE_BOX,
-        ],
+        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
     )
     metadata = _metadata(element)
     if request.method == "GET":
@@ -297,17 +290,10 @@ def container_equipment_details_v3(request, element_id, equipment_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_passive_endpoint_v3(request, element_id):
-    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: mantém a API do shell comum
-    # coerente para CTO/CEO/CDO, sem alterar o fluxo de Rack/Torre.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type__in=[
-            NetworkElement.ElementType.RACK,
-            NetworkElement.ElementType.TOWER,
-            NetworkElement.ElementType.CTO,
-            NetworkElement.ElementType.SPLICE_BOX,
-        ],
+        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
     )
     if not can_edit_company(request.user, container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
