@@ -289,3 +289,215 @@ body:has(#map-sidebar.v072-collapsed) #unifilar-dialog.map-v0758-optical-workspa
 .master-canvas-links {
     overflow: visible !important;
 }
+
+/* MAP_V07510_DIO_OLT_YAML_CANVAS */
+#container-dialog.tower-workspace-dialog-v0750 > section {
+    grid-template-rows: minmax(0, 1fr) !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+}
+#container-dialog.tower-workspace-dialog-v0750 > section > #map-master-container {
+    grid-row: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+}
+#container-dialog.tower-workspace-dialog-v0750 > section > .container-workspace,
+#container-dialog.tower-workspace-dialog-v0750 > section > #container-optical-links,
+#container-dialog.tower-workspace-dialog-v0750 > section > .container-extension-grid,
+#container-dialog.tower-workspace-dialog-v0750 > section > #container-extension-message,
+#container-dialog.tower-workspace-dialog-v0750 > section > #container-equipment-form {
+    display: none !important;
+}
+
+.master-canvas-node.master-dio-large-v07510 {
+    width: 760px !important;
+    min-height: 0 !important;
+}
+.master-dio-trays-v07510 {
+    display: grid;
+    gap: 24px;
+    padding: 12px;
+}
+.master-dio-tray-v07510 {
+    position: relative;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid rgba(100, 116, 139, .34);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, .56);
+}
+.master-dio-tray-v07510::after {
+    position: absolute;
+    right: 10px;
+    bottom: -14px;
+    left: 52px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, .28), transparent);
+    content: "";
+    pointer-events: none;
+}
+.master-dio-tray-v07510:last-child::after { display: none; }
+.master-dio-tray-label-v07510 {
+    display: grid;
+    place-items: center;
+    border-right: 1px solid rgba(34, 211, 238, .24);
+    color: #22d3ee;
+    font-size: 9px;
+    font-weight: 900;
+}
+.master-dio-tray-ports-v07510 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(42px, 1fr));
+    gap: 5px;
+}
+.master-dio-position-v07510 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 15px;
+    min-width: 0;
+    min-height: 34px;
+    overflow: visible;
+    border: 1px solid rgba(71, 85, 105, .5);
+    border-radius: 5px;
+    background: #111827;
+}
+.master-dio-position-v07510 .master-node-port {
+    position: relative !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    padding: 3px !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+.master-dio-position-v07510 .dio-rear span { font-size: 8px; }
+.master-dio-position-v07510 .dio-front span { display: none; }
+.master-dio-position-v07510 .dio-front i {
+    position: static !important;
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin: auto;
+}
+
+.master-canvas-node.master-olt-chassis-v07510 {
+    width: 730px !important;
+    min-height: 0 !important;
+    border-color: rgba(34, 211, 238, .72) !important;
+}
+.master-olt-chassis-body-v07510 { display: grid; gap: 10px; padding: 12px; }
+.master-olt-chassis-meta-v07510 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #8fb3cc;
+    font-size: 9px;
+}
+.master-olt-utility-grid-v07510,
+.master-olt-slots-v07510 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+.master-olt-utility-v07510,
+.master-olt-slot-v07510 {
+    overflow: hidden;
+    border: 1px solid rgba(71, 113, 145, .48);
+    border-radius: 8px;
+    background: rgba(12, 33, 54, .78);
+}
+.master-olt-utility-v07510 > header,
+.master-olt-slot-v07510 > header {
+    display: flex;
+    justify-content: space-between;
+    min-height: 30px;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(71, 113, 145, .3);
+    color: #d8edf9;
+    background: rgba(20, 52, 78, .78);
+    font-size: 9px;
+}
+.master-olt-slot-ports-v07510 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 7px;
+}
+.master-olt-slot-ports-v07510 .master-node-port {
+    position: relative !important;
+    min-width: 0 !important;
+    min-height: 31px !important;
+    padding: 4px 15px 4px 5px !important;
+    font-size: 8px !important;
+}
+.master-olt-empty-slot-v07510 { padding: 10px; color: #68839a; font-size: 9px; }
+
+.master-cable-node.vertical-v07510 {
+    width: 175px !important;
+    min-height: 250px;
+}
+.master-cable-node.vertical-v07510 > header { align-items: flex-start; }
+.master-cable-node.vertical-v07510 .master-cable-fibers {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-auto-flow: row !important;
+    align-content: start;
+    gap: 4px;
+    padding: 8px;
+}
+.master-cable-node.vertical-v07510 .master-cable-fiber {
+    display: grid !important;
+    grid-template-columns: 14px minmax(0, 1fr);
+    justify-content: stretch !important;
+    width: 100% !important;
+    min-height: 24px;
+}
+
+body.map-master-suite #unifilar-dialog.map-v0758-optical-workspace,
+body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
+    position: fixed !important;
+    inset: 0 0 0 var(--v072-sidebar, 292px) !important;
+    width: auto !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-left: 1px solid #203b52 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+}
+#unifilar-dialog.map-v07510-optical-workspace > section {
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+}
+#unifilar-dialog.map-v07510-optical-workspace #unifilar-content {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+#unifilar-dialog.map-v07510-optical-workspace .optical-graph {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+}
+#unifilar-dialog.map-v07510-optical-workspace .graph-node[data-cable-node-id] {
+    width: 180px !important;
+    min-height: 280px;
+}
+#unifilar-dialog.map-v07510-optical-workspace .graph-node[data-cable-node-id] .fiber-list,
+#unifilar-dialog.map-v07510-optical-workspace .graph-node[data-cable-node-id] [data-fiber-list] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-auto-flow: row !important;
+}

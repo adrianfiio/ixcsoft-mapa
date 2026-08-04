@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "1.1.0";
+    const VERSION = "1.2.0";
     const state = {
         projectId: "",
         bootstrap: null,
@@ -904,11 +904,24 @@
         });
     }
 
+    function estimatedNodeHeightV07510(item) {
+        const ports = item?.ports || [];
+        if (item?.type === "dio" && ports.length > 24) return 90 + Math.ceil(ports.length / 12) * 72;
+        if (item?.type === "olt" && Object.keys(item?.metadata?.device_type || {}).length) {
+            const definitions = item.metadata.device_type.interfaces || [];
+            const groups = new Set(definitions.map((row) => row.group_name || row.description || "Interfaces"));
+            const utilities = (item.metadata.device_type.module_bays || []).length + (item.metadata.device_type.power_ports || []).length;
+            return 120 + Math.ceil(Math.max(1, groups.size) / 2) * 150 + Math.ceil(utilities / 2) * 82;
+        }
+        return 180;
+    }
+
     function defaultNodePosition(item, index) {
         const columns = { olt: 0, dio: 0, switch: 1, router: 1, firewall: 1, onu: 2, access_point: 2, ptp: 2, pto: 2, other: 2 };
         const column = columns[item.type] ?? 2;
-        const siblings = (state.container.data?.equipment || []).slice(0, index).filter((row) => (columns[row.type] ?? 2) === column).length;
-        return { x: 40 + column * 340, y: 35 + siblings * 220 };
+        const previous = (state.container.data?.equipment || []).slice(0, index).filter((row) => (columns[row.type] ?? 2) === column);
+        const y = 35 + previous.reduce((total, row) => total + estimatedNodeHeightV07510(row) + 55, 0);
+        return { x: 40 + column * 380, y };
     }
 
     function nodePosition(item, index) {
@@ -947,6 +960,87 @@
         return index % 2 === 0 ? "left" : "right";
     }
 
+    function chunkV07510(items, size) {
+        const chunks = [];
+        for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
+        return chunks;
+    }
+
+    function equipmentDeviceTypeV07510(item) {
+        return item?.metadata?.device_type || {};
+    }
+
+    function renderDioPortPairV07510(port, compact = false) {
+        const rearLink = port.fusion_link_id || "";
+        const frontLink = port.link_id || "";
+        if (!compact) {
+            return `<button type="button" class="master-node-port left dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · entrada do cabo"><span>${escapeHtml(port.label)}</span><i></i></button>
+                <button type="button" class="master-node-port right dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · cordão para equipamento"><span>${escapeHtml(port.label)}</span><i></i></button>`;
+        }
+        return `<div class="master-dio-position-v07510">
+            <button type="button" class="master-node-port dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
+            <button type="button" class="master-node-port dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
+        </div>`;
+    }
+
+    function renderDioTraysV07510(ports) {
+        if (ports.length <= 24) {
+            return `<div class="master-node-ports">${ports.map((port) => renderDioPortPairV07510(port)).join("") || '<small class="empty">Sem portas</small>'}</div>`;
+        }
+        return `<div class="master-dio-trays-v07510">${chunkV07510(ports, 12).map((tray, index) => `
+            <section class="master-dio-tray-v07510" data-dio-tray="${index + 1}">
+                <strong class="master-dio-tray-label-v07510">T${index + 1}</strong>
+                <div class="master-dio-tray-ports-v07510">${tray.map((port) => renderDioPortPairV07510(port, true)).join("")}</div>
+            </section>`).join("")}</div>`;
+    }
+
+    function renderGenericPortsV07510(ports) {
+        return `<div class="master-node-ports">${ports.map((port, portIndex) => {
+            const side = portSide(port, portIndex);
+            return `<button type="button" class="master-node-port ${side} ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`;
+        }).join("") || '<small class="empty">Sem portas</small>'}</div>`;
+    }
+
+    function oltInterfaceGroupsV07510(item, ports) {
+        const metadata = equipmentDeviceTypeV07510(item);
+        const definitions = Array.isArray(metadata.interfaces) ? metadata.interfaces : [];
+        const portByLabel = new Map(ports.map((port) => [String(port.label || ""), port]));
+        const used = new Set();
+        const groups = new Map();
+        definitions.forEach((definition, index) => {
+            const port = portByLabel.get(String(definition.name || ""));
+            if (!port) return;
+            used.add(port.id);
+            const name = definition.group_name || definition.description || "Interfaces";
+            if (!groups.has(name)) groups.set(name, { name, order: Number(definition.group_order ?? 9999), kind: definition.group_kind || "interface", ports: [] });
+            groups.get(name).ports.push(port);
+        });
+        const unmatched = ports.filter((port) => !used.has(port.id));
+        if (unmatched.length) groups.set("Outras interfaces", { name: "Outras interfaces", order: 9999, kind: "interface", ports: unmatched });
+        return [...groups.values()].sort((first, second) => first.order - second.order || first.name.localeCompare(second.name));
+    }
+
+    function renderOltChassisV07510(item, ports) {
+        const metadata = equipmentDeviceTypeV07510(item);
+        const groups = oltInterfaceGroupsV07510(item, ports);
+        const moduleBays = Array.isArray(metadata.module_bays) ? metadata.module_bays : [];
+        const powerPorts = Array.isArray(metadata.power_ports) ? metadata.power_ports : [];
+        return `<div class="master-olt-chassis-body-v07510">
+            <div class="master-olt-chassis-meta-v07510"><span>${escapeHtml(metadata.manufacturer || item.vendor || "OLT")} · ${escapeHtml(metadata.model || item.model || item.name)}</span><span>${metadata.u_height ? `${metadata.u_height}U` : "Chassi modular"}</span></div>
+            ${(moduleBays.length || powerPorts.length) ? `<div class="master-olt-utility-grid-v07510">
+                ${moduleBays.map((bay) => `<section class="master-olt-utility-v07510"><header><strong>${escapeHtml(bay.name)}</strong><span>MÓDULO</span></header><div class="master-olt-empty-slot-v07510">Slot físico do chassi</div></section>`).join("")}
+                ${powerPorts.map((power) => `<section class="master-olt-utility-v07510"><header><strong>${escapeHtml(power.name)}</strong><span>PWR</span></header><div class="master-olt-empty-slot-v07510">${escapeHtml(power.source_type || "alimentação")}</div></section>`).join("")}
+            </div>` : ""}
+            <div class="master-olt-slots-v07510">${groups.map((group) => `<section class="master-olt-slot-v07510" data-slot-kind="${escapeHtml(group.kind)}"><header><strong>${escapeHtml(group.name)}</strong><span>${group.ports.length} porta(s)</span></header><div class="master-olt-slot-ports-v07510">${group.ports.map((port) => `<button type="button" class="master-node-port right olt-port-v07510 ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`).join("")}</div></section>`).join("")}</div>
+        </div>`;
+    }
+
+    function renderEquipmentBodyV07510(item, ports) {
+        if (item.type === "dio") return renderDioTraysV07510(ports);
+        if (item.type === "olt" && Object.keys(equipmentDeviceTypeV07510(item)).length) return renderOltChassisV07510(item, ports);
+        return renderGenericPortsV07510(ports);
+    }
+
     function renderContainerCanvas() {
         const root = qs("#map-master-container");
         if (!root || !state.container.data) return;
@@ -958,33 +1052,20 @@
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
             const ports = item.ports || [];
-            const pageCount = item.type === "dio" ? Math.max(1, Math.ceil(ports.length / 24)) : 1;
-            const savedPage = Number(state.container.layout.dioPages?.[String(item.id)] || 0);
-            const page = Math.max(0, Math.min(pageCount - 1, savedPage));
-            const visiblePorts = item.type === "dio" ? ports.slice(page * 24, page * 24 + 24) : ports;
-            const pager = pageCount > 1
-                ? `<select class="master-dio-page" data-dio-page="${item.id}" title="Bandeja visível">${Array.from({ length: pageCount }, (_, number) => `<option value="${number}" ${number === page ? "selected" : ""}>B${number + 1} · ${number * 24 + 1}-${Math.min((number + 1) * 24, ports.length)}</option>`).join("")}</select>`
-                : "";
-            return `<article class="master-canvas-node" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
-                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small>${pager}<span class="master-node-actions"><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="master-node-delete" data-node-delete="${item.id}" title="Excluir equipamento" aria-label="Excluir ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
-                <div class="master-node-ports">${visiblePorts.map((port, portIndex) => {
-                    if (item.type === "dio") {
-                        const rearLink = port.fusion_link_id || "";
-                        const frontLink = port.link_id || "";
-                        return `<button type="button" class="master-node-port left dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · entrada do cabo"><span>${escapeHtml(port.label)}</span><i></i></button>
-                            <button type="button" class="master-node-port right dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · cordão para equipamento"><span>${escapeHtml(port.label)}</span><i></i></button>`;
-                    }
-                    const side = portSide(port, portIndex);
-                    return `<button type="button" class="master-node-port ${side} ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`;
-                }).join("") || '<small class="empty">Sem portas</small>'}</div>
+            const nodeClasses = ["master-canvas-node"];
+            if (item.type === "dio" && ports.length > 24) nodeClasses.push("master-dio-large-v07510");
+            if (item.type === "olt" && Object.keys(equipmentDeviceTypeV07510(item)).length) nodeClasses.push("master-olt-chassis-v07510");
+            return `<article class="${nodeClasses.join(" ")}" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+                <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><span class="master-node-actions"><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="master-node-delete" data-node-delete="${item.id}" title="Excluir equipamento" aria-label="Excluir ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
+                ${renderEquipmentBodyV07510(item, ports)}
             </article>`;
         }).join("") + cables.map((cable, index) => {
             const position = cablePosition(cable, index);
             const relation = cable.relation === "output" ? "Saída" : "Entrada";
             const visualSide = cableVisualSide(position);
-            return `<article class="master-cable-node ${cable.relation === "output" ? "output" : "input"} side-${visualSide}-v0757" data-cable-side="${visualSide}" data-cable-node="${cable.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+            return `<article class="master-cable-node vertical-v07510 ${cable.relation === "output" ? "output" : "input"} side-${visualSide}-v0757" data-cable-side="${visualSide}" data-cable-node="${cable.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
                 <header><span><strong>${escapeHtml(cable.name)}</strong><small>${relation} · ${cable.fiber_count} FO</small></span><b>→</b></header>
-                <div class="master-cable-fibers">${(cable.fibers || []).map((fiber) => `<button type="button" class="master-cable-fiber ${fiber.used ? "used" : ""}" data-cable-fiber="${fiber.id}" data-link-id="${fiber.link_id || ""}" style="--fiber-color:${escapeHtml(fiber.color_hex || "#94a3b8")}" title="F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used_by ? ` · ${escapeHtml(fiber.used_by)}` : ""}"><i></i><span>${fiber.number}</span></button>`).join("") || '<small>Gere as fibras deste cabo.</small>'}</div>
+                <div class="master-cable-fibers">${(cable.fibers || []).map((fiber) => `<button type="button" class="master-cable-fiber ${fiber.used ? "used" : ""}" data-cable-fiber="${fiber.id}" data-link-id="${fiber.link_id || ""}" style="--fiber-color:${escapeHtml(fiber.color_hex || "#94a3b8")}" title="F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used_by ? ` · ${escapeHtml(fiber.used_by)}` : ""}"><i></i><span>F${fiber.number} · ${escapeHtml(fiber.color_name || "")}</span></button>`).join("") || '<small>Gere as fibras deste cabo.</small>'}</div>
             </article>`;
         }).join("") + (state.container.layout.notes || []).map((note, index) => `
             <article class="master-canvas-note" data-canvas-note="${index}" style="transform:translate(${Number(note.x || 40)}px,${Number(note.y || 40)}px)">
