@@ -131,9 +131,11 @@ def ptp_links(request):
     source_tower = source.equipment.container
     destination_tower = destination.equipment.container
 
-    if not can_edit_company(request.user, source.company_id):
+    # MAP_V07517_PTP_COMPANY_ID_FIX: mesmo bug do candidates — port não tem
+    # company_id próprio.
+    if not can_edit_company(request.user, source.equipment.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-    if source.company_id != destination.company_id:
+    if source.equipment.company_id != destination.equipment.company_id:
         return JsonResponse({"detail": "As duas pontas precisam pertencer à mesma empresa."}, status=400)
     if source_tower.project_id != destination_tower.project_id:
         return JsonResponse({"detail": "As torres precisam pertencer ao mesmo projeto."}, status=400)
@@ -182,14 +184,18 @@ def ptp_link_candidates(request):
         port_type=ContainerEquipmentPort.PortType.WIRELESS,
     )
     source_tower = source.equipment.container
-    if not can_view_company(request.user, source.company_id):
+    # MAP_V07517_PTP_COMPANY_ID_FIX: ContainerEquipmentPort não tem
+    # `company`/`company_id` próprio (só ContainerEquipment tem, via
+    # CompanyScopedModel) — o acesso direto derrubava este endpoint com
+    # HTTP 500 (AttributeError) toda vez que se tentava listar candidatos.
+    if not can_view_company(request.user, source.equipment.company_id):
         return JsonResponse({"detail": "Sem permissão para visualizar esta empresa."}, status=403)
 
     busy = _busy_port_ids(source_tower.project_id)
     candidates = (
         ContainerEquipmentPort.objects.select_related("equipment__container")
         .filter(
-            company_id=source.company_id,
+            equipment__company_id=source.equipment.company_id,
             equipment__container__project_id=source_tower.project_id,
             equipment__container__element_type=NetworkElement.ElementType.TOWER,
             equipment__enabled=True,
@@ -231,7 +237,9 @@ def ptp_link_detail(request, link_id):
         pk=link_id,
         link_type=ContainerPortLink.LinkType.WIRELESS,
     )
-    if not can_edit_company(request.user, link.company_id):
+    # MAP_V07517_PTP_COMPANY_ID_FIX: ContainerPortLink também não tem
+    # company_id próprio — só via container (NetworkElement).
+    if not can_edit_company(request.user, link.container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
     link.delete()
     return HttpResponse(status=204)
