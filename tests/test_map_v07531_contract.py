@@ -8,11 +8,8 @@ class MapV07531ContractTests(unittest.TestCase):
     def read(self, relative):
         return (ROOT / relative).read_text(encoding="utf-8")
 
-    def test_versions(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.31")', self.read("config/settings.py"))
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.31}', self.read("docker-compose.yml"))
-        self.assertIn("| Mapa | v0.75.31 |", self.read("README.md"))
-        self.assertIn("| Mapa | v0.75.31 |", self.read("VERSIONS.md"))
+    def test_release_documentation_is_preserved(self):
+        self.assertIn("MAP v0.75.31", self.read("docs/releases/map/map-v0.75.31.md"))
 
     def test_all_shared_endpoints_accept_splice_box(self):
         checks = (
@@ -68,7 +65,7 @@ class MapV07531ContractTests(unittest.TestCase):
 
     def test_widget_has_cto_and_splice_box_modes(self):
         core = self.read("static/js/map-v0758-core-ui.js")
-        self.assertIn("portas (clientes/DROPs)", core)
+        self.assertIn("element?.cto?.splitters", core)
         self.assertIn("fusões · ${splitters.length} splitter(s)", core)
 
     def test_no_migrations(self):

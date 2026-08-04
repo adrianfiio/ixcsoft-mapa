@@ -1,3 +1,19 @@
+## [0.75.32] - 2026-08-04
+
+### Corrigido — Canvas óptico abre repetidamente sem quebrar
+- Corrige `Cannot read properties of null (reading 'value')` em `redrawOpticalLinks`: controles de estilo e zoom agora são procurados dentro do Canvas da sessão atual, nunca globalmente no documento.
+- Cada abertura/renderização de CTO, CEO ou CDO agora cria uma sessão própria, invalida a anterior e remove listeners de `window`, `document`, Canvas e gráfico ao fechar, trocar de caixa ou atualizar.
+- Respostas assíncronas atrasadas são descartadas por geração; uma caixa fechada não consegue mais sobrescrever a caixa aberta depois.
+- O `#container-dialog` encerra explicitamente a sessão óptica ao fechar.
+
+### Corrigido — portas de atendimento da CTO
+- O contador da CTO não confunde mais saída de splitter fusionada com cliente atendido. Agora mostra separadamente `atendimentos/capacidade` (portas legadas vinculadas a `access_point_id`) e `saídas fusionadas/saídas ópticas`.
+
+### Interface
+- Estado próprio de carregamento e erro dentro do Canvas óptico, sem janela antiga sobreposta.
+- Rack e Torre não tiveram seu motor alterado.
+- Sem migrations e sem endpoint novo.
+
 ## [0.75.31] - 2026-08-04
 
 ### Alterado — CTO, CEO e CDO no mesmo editor 2D do Rack/Torre

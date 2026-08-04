@@ -16,12 +16,56 @@
 (function () {
     "use strict";
 
-    // MAP_V07530_CTO_EMBEDDED_CANVAS: pointer pro listener de "resize" da
-    // última renderização -- sem isso, cada refresh (splitter novo, fusão
-    // criada, etc.) empilharia mais um listener de "resize" sem nunca
-    // remover o anterior, já que no modo embutido não existe mais o evento
-    // "close" do #unifilar-dialog pra fazer essa limpeza sozinho.
-    let activeResizeHandler = null;
+    // MAP_V07532_OPTICAL_BOX_SESSION: cada abertura/renderização da
+    // CTO/CEO/CDO possui uma sessão exclusiva. Fechar, trocar de caixa ou
+    // atualizar invalida a sessão anterior e remove TODOS os listeners
+    // globais/locais registrados por ela. Isso evita o segundo open usar DOM
+    // removido, listeners antigos ou respostas assíncronas atrasadas.
+    let activeSession = null;
+    let renderGeneration = 0;
+
+    function dispose() {
+        const session = activeSession;
+        if (!session) return;
+        session.disposed = true;
+        session.cleanups.splice(0).reverse().forEach((cleanup) => {
+            try { cleanup(); } catch (_error) {}
+        });
+        if (session.content?.dataset.opticalBoxSession === String(session.generation)) {
+            delete session.content.dataset.opticalBoxSession;
+        }
+        if (activeSession === session) activeSession = null;
+    }
+
+    function createSession(content, elementId) {
+        dispose();
+        const session = {
+            generation: ++renderGeneration,
+            elementId: String(elementId),
+            content,
+            cleanups: [],
+            disposed: false,
+        };
+        content.dataset.opticalBoxSession = String(session.generation);
+        activeSession = session;
+        return session;
+    }
+
+    function isActive(session) {
+        return Boolean(
+            session
+            && !session.disposed
+            && activeSession === session
+            && session.content?.isConnected
+            && session.content.dataset.opticalBoxSession === String(session.generation)
+        );
+    }
+
+    function listen(session, target, type, handler, options) {
+        if (!target) return;
+        target.addEventListener(type, handler, options);
+        session.cleanups.push(() => target.removeEventListener(type, handler, options));
+    }
 
     async function render(element, content, options = {}) {
         const deps = window.networkMap || {};
@@ -30,32 +74,38 @@
             formatBudgetTooltip, splitterLossLabel, openRouteInfoDialog,
             showUnifilar, unifilarDialog,
         } = deps;
-        if (!api || !unifilarDialog) {
+        if (!api || (!options.embedded && !unifilarDialog)) {
             throw new Error("map-cto-suite: dependências de map-editor.js ainda não carregaram (window.networkMap incompleto).");
         }
-        if (activeResizeHandler) {
-            window.removeEventListener("resize", activeResizeHandler);
-            activeResizeHandler = null;
-        }
+        const session = createSession(content, element.id);
+        const ensureActive = () => isActive(session);
         // MAP_V07530_CTO_EMBEDDED_CANVAS: quando embutido no Canvas do
         // Rack/Torre (options.embedded), o refresh depois de qualquer ação
         // não pode fechar/reabrir #unifilar-dialog (era isso que abria a
         // janela flutuante "Editor técnico" antiga por cima do Canvas --
         // bug reportado pelo usuário). Em vez disso, chama de volta
         // options.onRefresh, que re-renderiza no mesmo lugar.
-        const refreshCtoView = options.onRefresh
-            ? options.onRefresh
-            : async () => { unifilarDialog.close(); await showUnifilar(element.id); };
-            const [optical, savedLayout] = await Promise.all([
-                api(`/api/map/elements/${element.id}/splices/`),
-                api(`/api/map/elements/${element.id}/layout/`),
-            ]);
-            const layout = savedLayout.layout || {};
+        const refreshCtoView = async () => {
+            if (!ensureActive()) return;
+            if (options.onRefresh) {
+                await options.onRefresh();
+                return;
+            }
+            if (unifilarDialog?.open) unifilarDialog.close();
+            await showUnifilar?.(element.id);
+        };
+        const [optical, savedLayout] = await Promise.all([
+            api(`/api/map/elements/${element.id}/splices/`),
+            api(`/api/map/elements/${element.id}/layout/`),
+        ]);
+        if (!ensureActive()) return;
+        const layout = savedLayout.layout || {};
             const notes = layout.notes || [];
             const fiberById = new Map(optical.cables.flatMap((cable) => cable.fibers.map((fiber) => [String(fiber.id), fiber])));
             const trayId = element.splice_box.trays[0]?.id || null;
             const allSplitters = element.splice_box.trays.flatMap((tray) => tray.splitters);
-            document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · ${allSplitters.length} splitter(s)`;
+            const legacySubtitle = options.embedded ? null : document.getElementById("unifilar-subtitle");
+            if (legacySubtitle) legacySubtitle.textContent = `${element.code || "Sem código"} · ${allSplitters.length} splitter(s)`;
             const splitterRatioOptions = [
                 { value: "1:2", label: "1:2 (balanceado)" }, { value: "1:4", label: "1:4 (balanceado)" },
                 { value: "1:8", label: "1:8 (balanceado)" }, { value: "1:16", label: "1:16 (balanceado)" },
@@ -157,7 +207,11 @@
                 </div>
             </div>
                 <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div><div class="map-context-menu link-action-menu" hidden><button type="button" data-link-action="info">Informações de rota</button><button type="button" class="danger" data-link-action="delete">Excluir</button></div></div>`;
-            content.querySelector("[data-cto-close-v07527]").onclick = () => unifilarDialog.close();
+            const localCloseButton = content.querySelector("[data-cto-close-v07527]");
+            if (localCloseButton) {
+                localCloseButton.hidden = Boolean(options.embedded);
+                localCloseButton.onclick = () => unifilarDialog?.close();
+            }
             content.querySelector("[data-cto-structure-v07523]").onclick = () => {
                 content.querySelector(".cto-structure-drawer-v07523").hidden = false;
             };
@@ -183,7 +237,7 @@
                 await refreshCtoView(); notify("Dados atualizados.");
             };
             const ctoToolsToggle = content.querySelector("[data-cto-tools-toggle-v07523]");
-            const ctoToolsMenu = document.getElementById("cto-tools-menu-v07523");
+            const ctoToolsMenu = content.querySelector("#cto-tools-menu-v07523");
             ctoToolsToggle.onclick = (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -197,10 +251,7 @@
                 ctoToolsMenu.classList.remove("open");
                 ctoToolsToggle.setAttribute("aria-expanded", "false");
             };
-            document.addEventListener("click", closeCtoToolsMenu);
-            unifilarDialog.addEventListener("close", () => {
-                document.removeEventListener("click", closeCtoToolsMenu);
-            }, { once: true });
+            listen(session, document, "click", closeCtoToolsMenu);
             let draggedFiber = null;
             let selectedFiber = null;
             let selectedSplitterPort = null;
@@ -305,6 +356,7 @@
             });
             const budgetByLink = new Map();
             const redrawOpticalLinks = () => {
+                if (!ensureActive()) return;
                 budgetByLink.clear();
                 const graphNodesEl = content.querySelector(".graph-nodes");
                 const svg = content.querySelector(".optical-links");
@@ -314,7 +366,9 @@
                 svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
                 svg.style.width = `${width}px`;
                 svg.style.height = `${height}px`;
-                const lineStyle = document.getElementById("connection-style").value;
+                const lineStyle = content.querySelector("#connection-style")?.value
+                    || layout.connectionStyle
+                    || "curve";
                 let gradientIndex = 0;
                 const drawLink = (source, target, colors, action = null, budget = null) => {
                     if (!source || !target) return;
@@ -403,10 +457,11 @@
                 linkActionMenu.hidden = true;
                 if (activeLinkPath) await removeActiveLink();
             };
-            content.addEventListener("click", (event) => {
+            listen(session, content, "click", (event) => {
                 if (!event.target.closest(".link-action-menu") && !event.target.closest("[data-link-type]")) linkActionMenu.hidden = true;
             });
-            const styleSelect = document.getElementById("connection-style");
+            const styleSelect = content.querySelector("#connection-style");
+            if (!styleSelect) throw new Error("Canvas óptico sem seletor local de estilo de linha.");
             styleSelect.value = layout.connectionStyle || "curve";
             styleSelect.onchange = async () => {
                 layout.connectionStyle = styleSelect.value;
@@ -416,7 +471,7 @@
                 });
             };
             const graphNodes = content.querySelector(".graph-nodes");
-            const zoomOutput = document.getElementById("unifilar-zoom-value");
+            const zoomOutput = content.querySelector("#unifilar-zoom-value");
             const fitZoom = () => {
                 const graph = content.querySelector(".optical-graph");
                 const widthZoom = (graph.clientWidth - 48) / Math.max(1, graphNodes.scrollWidth);
@@ -431,7 +486,7 @@
                 if (graphZoom === null) graphZoom = fitZoom();
                 graphNodes.style.transform = `scale(${graphZoom})`;
                 graphNodes.style.transformOrigin = "top left";
-                zoomOutput.value = `${Math.round(graphZoom * 100)}%`;
+                if (zoomOutput) zoomOutput.value = `${Math.round(graphZoom * 100)}%`;
                 requestAnimationFrame(redrawOpticalLinks);
             };
             const saveZoom = () => {
@@ -440,13 +495,16 @@
                     method: "PATCH", body: JSON.stringify({ layout }),
                 });
             };
-            document.getElementById("unifilar-zoom-out").onclick = () => {
+            const zoomOutButton = content.querySelector("#unifilar-zoom-out");
+            const zoomInButton = content.querySelector("#unifilar-zoom-in");
+            const zoomResetButton = content.querySelector("#unifilar-zoom-reset");
+            if (zoomOutButton) zoomOutButton.onclick = () => {
                 graphZoom = Math.max(.5, graphZoom - .1); applyGraphZoom(); saveZoom();
             };
-            document.getElementById("unifilar-zoom-in").onclick = () => {
+            if (zoomInButton) zoomInButton.onclick = () => {
                 graphZoom = Math.min(1.6, graphZoom + .1); applyGraphZoom(); saveZoom();
             };
-            document.getElementById("unifilar-zoom-reset").onclick = () => {
+            if (zoomResetButton) zoomResetButton.onclick = () => {
                 graphZoom = fitZoom(); applyGraphZoom(); saveZoom();
             };
             applyGraphZoom();
@@ -457,14 +515,14 @@
             // navegar no mesmo `.optical-graph`.
             const opticalGraph = content.querySelector(".optical-graph");
             if (opticalGraph) {
-                opticalGraph.addEventListener("wheel", (event) => {
+                listen(session, opticalGraph, "wheel", (event) => {
                     if (!event.ctrlKey) return;
                     event.preventDefault();
                     graphZoom = Math.max(.4, Math.min(1.6, graphZoom + (event.deltaY < 0 ? .1 : -.1)));
                     applyGraphZoom();
                     saveZoom();
                 }, { passive: false });
-                opticalGraph.addEventListener("pointerdown", (event) => {
+                listen(session, opticalGraph, "pointerdown", (event) => {
                     if (event.button !== 0 || event.target.closest(".graph-node, button, select, input, textarea, a")) return;
                     opticalGraph.setPointerCapture?.(event.pointerId);
                     const startX = event.clientX;
@@ -539,7 +597,7 @@
             const graphEl = content.querySelector(".optical-graph");
             const canvasMenu = content.querySelector(".ceo-canvas-menu");
             let canvasMenuPoint = null;
-            graphEl.addEventListener("contextmenu", (event) => {
+            listen(session, graphEl, "contextmenu", (event) => {
                 if (event.target.closest(".graph-node") || event.target.closest(".ceo-canvas-menu")) return;
                 event.preventDefault();
                 const graphRect = graphEl.getBoundingClientRect();
@@ -551,7 +609,7 @@
                 canvasMenu.style.top = `${event.clientY - graphRect.top}px`;
                 canvasMenu.hidden = false;
             });
-            content.addEventListener("click", (event) => {
+            listen(session, content, "click", (event) => {
                 if (!event.target.closest(".ceo-canvas-menu")) canvasMenu.hidden = true;
             });
             canvasMenu.querySelector('[data-canvas-action="add-splitter"]').onclick = async () => {
@@ -644,17 +702,12 @@
                 if (!unifilarDialog.open) unifilarDialog.showModal();
             }
             requestAnimationFrame(redrawOpticalLinks);
-            setTimeout(redrawOpticalLinks, 150);
-            activeResizeHandler = redrawOpticalLinks;
-            window.addEventListener("resize", activeResizeHandler);
-            graphEl.addEventListener("scroll", redrawOpticalLinks);
-            content.addEventListener("scroll", redrawOpticalLinks);
-            if (!options.embedded) {
-                unifilarDialog.addEventListener("close", () => {
-                    window.removeEventListener("resize", redrawOpticalLinks);
-                }, { once: true });
-            }
+            window.setTimeout(redrawOpticalLinks, 150);
+            listen(session, window, "resize", redrawOpticalLinks);
+            listen(session, graphEl, "scroll", redrawOpticalLinks);
+            listen(session, content, "scroll", redrawOpticalLinks);
+            if (!options.embedded) listen(session, unifilarDialog, "close", dispose, { once: true });
     }
 
-    window.mapCtoSuite = { render };
+    window.mapCtoSuite = Object.freeze({ render, dispose });
 })();

@@ -6,6 +6,9 @@
         containerData: null,
         activeElementMenu: null,
     };
+    // MAP_V07532_OPTICAL_BOX_SESSION: invalida fetch/render atrasado quando
+    // o usuário fecha ou troca de CTO/CEO/CDO.
+    let opticalBoxRenderGeneration = 0;
 
     // Criado vazio já na primeira linha executável do arquivo: se qualquer
     // erro acontecer mais adiante na inicialização, window.mapV0758 continua
@@ -393,6 +396,8 @@
             }
             ensureCtoEmbeddedCanvas(root, dialog);
         } else {
+            opticalBoxRenderGeneration += 1;
+            window.mapCtoSuite?.dispose?.();
             if (actionsBar) {
                 qsa("[data-cto-quick-add-v07529]", actionsBar).forEach((button) => button.remove());
                 qs(".tower-cto-ports-widget-v07529", actionsBar)?.remove();
@@ -409,21 +414,45 @@
     // que re-renderiza no mesmo lugar em vez de abrir #unifilar-dialog.
     async function ensureCtoEmbeddedCanvas(root, dialog) {
         const panel = qs('[data-panel="canvas"]', root);
-        const elementId = dialog?.dataset.elementId;
+        const elementId = String(dialog?.dataset.elementId || "");
         if (!panel || !elementId || !window.mapCtoSuite?.render) return;
+        const generation = ++opticalBoxRenderGeneration;
         let embedded = qs(".cto-embedded-canvas-v07530", panel);
         if (!embedded) {
             embedded = document.createElement("div");
             embedded.className = "cto-embedded-canvas-v07530";
             panel.appendChild(embedded);
         }
+        const isCurrent = () => Boolean(
+            generation === opticalBoxRenderGeneration
+            && String(dialog.dataset.elementId || "") === elementId
+            && embedded.isConnected
+        );
+        embedded.dataset.renderState = "loading";
+        embedded.innerHTML = '<div class="optical-box-canvas-state-v07532"><strong>Carregando Canvas óptico…</strong><span>Cabos, fibras, fusões e splitters</span></div>';
         const rerender = async () => {
+            if (!isCurrent()) return;
             const fresh = await window.networkMap?.fetchElement?.(elementId);
+            if (!isCurrent()) return;
             if (fresh) await window.mapCtoSuite.render(fresh, embedded, { embedded: true, onRefresh: rerender });
+            if (!isCurrent()) return;
+            embedded.dataset.renderState = "ready";
             updateCtoPortsWidget(root, elementId);
         };
-        const element = await window.networkMap?.fetchElement?.(elementId);
-        if (element) await window.mapCtoSuite.render(element, embedded, { embedded: true, onRefresh: rerender });
+        try {
+            const element = await window.networkMap?.fetchElement?.(elementId);
+            if (!isCurrent()) return;
+            if (element) await window.mapCtoSuite.render(element, embedded, { embedded: true, onRefresh: rerender });
+            if (!isCurrent()) return;
+            embedded.dataset.renderState = "ready";
+            updateCtoPortsWidget(root, elementId);
+        } catch (error) {
+            if (!isCurrent()) return;
+            window.mapCtoSuite?.dispose?.();
+            embedded.dataset.renderState = "error";
+            embedded.innerHTML = `<div class="optical-box-canvas-state-v07532 error"><strong>Não foi possível abrir o Canvas óptico</strong><span>${escapeHtml(error.message || "Erro inesperado")}</span></div>`;
+            notify(error.message || "Erro ao abrir Canvas óptico.", true);
+        }
     }
 
     function triggerCtoAction(root, action) {
@@ -446,14 +475,14 @@
             const element = await window.networkMap?.fetchElement?.(elementId);
             const trays = element?.splice_box?.trays || [];
             const splitters = trays.flatMap((tray) => tray.splitters || []);
-            const capacity = Number(element?.cto?.capacity || 0);
+            const servicePorts = (element?.cto?.splitters || []).flatMap((splitter) => splitter.ports || []);
+            const capacity = Number(element?.cto?.capacity || servicePorts.length || 0);
             if (capacity) {
-                const used = splitters.reduce(
-                    (total, splitter) => total + (splitter.ports || []).filter((port) => port.output_fiber_id).length,
-                    0,
-                );
+                const occupiedServices = servicePorts.filter((port) => port.access_point_id).length;
+                const opticalOutputs = splitters.flatMap((splitter) => splitter.ports || []);
+                const fusedOutputs = opticalOutputs.filter((port) => port.output_fiber_id).length;
                 widget.hidden = false;
-                widget.textContent = `${used}/${capacity} portas (clientes/DROPs)`;
+                widget.textContent = `${occupiedServices}/${capacity} atendimentos · ${fusedOutputs}/${opticalOutputs.length} saídas fusionadas`;
                 return;
             }
             const spliceCount = trays.reduce((total, tray) => total + Number(tray.splice_count || 0), 0);
@@ -591,6 +620,14 @@
             });
             if (accepted) remove?.();
         };
+    }
+
+    const opticalBoxContainerDialog = qs("#container-dialog");
+    if (opticalBoxContainerDialog) {
+        opticalBoxContainerDialog.addEventListener("close", () => {
+            opticalBoxRenderGeneration += 1;
+            window.mapCtoSuite?.dispose?.();
+        });
     }
 
     document.addEventListener("map:container-rendered", (event) => {
