@@ -1,3 +1,16 @@
+## [0.75.22] - 2026-08-04
+
+### Corrigido
+- visual "formato antigo" reportado nas telas de CTO/CDO/CEO: o herdeiro visual do Canvas 2D (`master-canvas-node`, feito na v0.75.20) só usava propriedades sem `!important`, dependendo da ordem de carregamento entre `map-editor.css` e `map-master-suite.css` pra vencer o CSS antigo (`.fiber-cable-node`/`.graph-splitter-node`). Reforçado com `!important` pra garantir a aparência do Rack/Torre (fundo, borda, sombra) independente disso.
+- saídas do splitter (F1, F2, ...) agora ficam em uma grade de 2 colunas do lado direito, em vez de uma lista vertical única — mesma leitura visual esquerda=entra/direita=sai do DIO.
+
+### Confirmado (já existia, não é novo)
+- CTOs já recebem splitter e portas de atendimento ao cliente automaticamente na criação (`apps/network_map/cto_defaults.py::ensure_cto_default_splitters`, chamado tanto na criação manual quanto na importação KMZ).
+- nós de cabo já invertem o lado da porta (esquerda/direita) automaticamente conforme a posição em que são arrastados no diagrama (`side-left-v0758`/`side-right-v0758`, calculado em `centerWithin()` de `map-editor.js`), inclusive nas linhas de fusão e nos handles de rota.
+
+### Nota técnica (o que ainda falta pra paridade completa)
+- Ainda não existe uma "caixa" física de CTO/CDO no diagrama (equivalente ao chassi do DIO) hospedando os cabos à esquerda/direita — hoje splitter e cabos são nós independentes conectados por linha. Construir essa caixa é a próxima fatia grande dessa frente de trabalho.
+
 ## [0.75.21] - 2026-08-04
 
 ### Adicionado
