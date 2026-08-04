@@ -1,3 +1,17 @@
+## [0.75.25] - 2026-08-04
+
+### Corrigido
+- **Bug real de "2 ícones sobrepostos"**: encontrado em `map-optical-editor-v3.css` — pra CTO/CEO/RACK existiam DOIS sistemas de ícone ativos ao mesmo tempo no mesmo marcador: o SVG normal (`networkIcon()`, `map-editor.js`) e um ícone `::before` em máscara (hardcoded nesse CSS), que ficava escondendo o SVG normal via `display:none` só nesses 3 tipos. Removido o sistema `::before` — agora só existe 1 ícone por marcador, igual pra todos os tipos.
+- **Texto "CDO" duplicado**: `map-v092.css` tinha `small::after { content: "CDO"; }`, que acrescentava um segundo "CDO" ao lado do rótulo que o próprio ícone já mostra — removido.
+
+### Alterado
+- **Ícones do mapa substituídos** pelo kit SVG fornecido pelo usuário (CTO, PTO, CDO, CEO, RACK, TORRE, POSTE, RESERVA técnica, POP/CPD) — `networkIcon()` em `map-editor.js` e o marcador de reserva técnica. OLT/DIO não tinham ícone novo no kit, mantidos como estavam (usados só dentro do Rack/Torre, não no kit fornecido).
+- Caixa do ícone no mapa (`.network-marker svg`) ajustada de 21×17px pra 22×22px — os ícones novos usam viewBox quadrado (32×32) e ficavam espremidos no tamanho retangular antigo.
+- **"Organizar equipamentos" removido da CTO/CDO/CEO**: o botão "Organizar" que `map-fusion-polish.js` injeta na barra de linhas continua existindo pro Rack (faz sentido lá, com DIO/cabo), mas é removido quando o editor é de CTO/CDO/CEO (detectado pela barra `.ceo-quick-toolbar-v07521`, feita na v0.75.23) — pedido explícito do usuário.
+
+### Confirmado (sem mudança de código)
+- CTO/CDO/CEO só aceitam splitter, cabo e nota — nunca existiu opção de adicionar equipamento genérico nessas seções (não é algo que precisou ser "removido", nunca esteve lá).
+
 ## [0.75.24] - 2026-08-04
 
 ### Corrigido
