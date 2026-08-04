@@ -1664,36 +1664,93 @@ def container_port_links(request, element_id):
     link_type = str(request.data.get("link_type", "fiber"))
     link_notes = ""
     if source is None:
-        # Cabo comum termina somente em DIO. Cabo DROP também pode terminar
-        # em SFP/SFP+, desde que o operador informe PTO ou conector direto.
-        sfp_destinations = {
-            ContainerEquipmentPort.PortType.SFP_1G,
-            ContainerEquipmentPort.PortType.SFP_PLUS_10G,
-        }
-        if destination.port_type == ContainerEquipmentPort.PortType.DIO:
-            link_notes = "Terminação óptica no DIO"
-        elif cable and cable.cable_type == FiberCable.CableType.DROP and destination.port_type in sfp_destinations:
-            termination_method = str(request.data.get("termination_method") or "").strip()
-            method_labels = {
-                "pto": "DROP via PTO",
-                "direct_connector": "DROP com conector direto no transceiver",
+        # MAP v0.75.12 R4: a fibra de qualquer cabo alimentador/distribuição
+        # continua terminando exclusivamente no conector TRASEIRO do DIO.
+        # DROP também pode terminar diretamente em PTO ou na PON de ONU/ONT.
+        # O termination_method permanece explícito para preservar o contrato
+        # da API e classificar corretamente cada forma de terminação.
+        destination_equipment = destination.equipment
+        destination_subtype = str(
+            (destination_equipment.metadata or {}).get("equipment_subtype", "")
+        ).lower()
+        is_dio_target = (
+            destination_equipment.equipment_type == ContainerEquipment.EquipmentType.DIO
+            and destination.port_type == ContainerEquipmentPort.PortType.DIO
+        )
+        is_pto_target = (
+            destination_equipment.equipment_type == ContainerEquipment.EquipmentType.PTO
+            and destination.port_type in {
+                ContainerEquipmentPort.PortType.DIO,
+                ContainerEquipmentPort.PortType.SC_APC,
+                ContainerEquipmentPort.PortType.SC_UPC,
+                ContainerEquipmentPort.PortType.LC,
             }
-            if termination_method not in method_labels:
+        )
+        is_onu_pon_target = (
+            destination.port_type == ContainerEquipmentPort.PortType.PON
+            and (
+                destination_equipment.equipment_type == ContainerEquipment.EquipmentType.ONU
+                or destination_subtype in {"onu", "ont"}
+            )
+        )
+        termination_method = str(
+            request.data.get("termination_method") or ""
+        ).strip().lower()
+
+        if cable.cable_type == FiberCable.CableType.DROP:
+            if not (is_dio_target or is_pto_target or is_onu_pon_target):
                 return JsonResponse(
-                    {"detail": "Para ligar um DROP em SFP/SFP+, escolha PTO ou conector direto."},
+                    {"detail": "DROP só pode terminar no fundo do DIO, em PTO ou porta PON de ONU/ONT."},
                     status=400,
                 )
-            link_notes = method_labels[termination_method]
+
+            if is_dio_target:
+                allowed_methods = {"", "fusion", "dio_rear"}
+                normalized_method = "dio_rear"
+            elif is_pto_target:
+                # O frontend atual envia direct_connector tanto para PTO quanto
+                # para ONU/ONT. No backend, PTO é normalizado para o método pto.
+                allowed_methods = {"", "pto", "direct_connector"}
+                normalized_method = "pto"
+            else:
+                allowed_methods = {"", "direct_connector"}
+                normalized_method = "direct_connector"
+
+            if termination_method not in allowed_methods:
+                return JsonResponse(
+                    {"detail": "Método de terminação incompatível com o destino selecionado."},
+                    status=400,
+                )
+            termination_method = normalized_method
+
+            connector_type = str(
+                request.data.get("connector_type")
+                or destination_equipment.connector_type
+                or (destination_equipment.metadata or {}).get("pon_connector")
+                or "SC/APC"
+            ).strip().upper().replace("_", "/")
+            if connector_type not in {"SC/APC", "SC/UPC", "LC/APC", "LC/UPC"}:
+                connector_type = "SC/APC"
+
+            method_labels = {
+                "dio_rear": "DROP fundido no fundo do DIO",
+                "pto": "DROP terminado em PTO",
+                "direct_connector": "DROP com conector direto na ONU/ONT",
+            }
+            link_notes = f"{method_labels[termination_method]} · {connector_type}"
         else:
-            return JsonResponse(
-                {
-                    "detail": (
-                        "Cabos alimentadores/distribuição terminam somente em DIO. "
-                        "Somente cabo DROP pode seguir para SFP/SFP+, usando PTO ou conector direto."
-                    )
-                },
-                status=400,
-            )
+            if not is_dio_target:
+                return JsonResponse(
+                    {"detail": "Cabo alimentador/distribuição só pode ser fundido no fundo de uma porta DIO."},
+                    status=400,
+                )
+            if termination_method not in {"", "fusion", "dio_rear"}:
+                return JsonResponse(
+                    {"detail": "Cabo alimentador/distribuição deve usar fusão traseira no DIO."},
+                    status=400,
+                )
+            termination_method = "fusion"
+            link_notes = "Fusão traseira no DIO"
         link_type = ContainerPortLink.LinkType.FIBER
     else:
         optical_ports = {

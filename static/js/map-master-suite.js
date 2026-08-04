@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "1.2.1";
+    const VERSION = "1.3.0";
     const state = {
         projectId: "",
         bootstrap: null,
@@ -1113,6 +1113,7 @@
         editNoteDialogV07511(note.text || "").then((text) => {
             if (!text) return;
             note.text = text;
+            saveContainerLayout();
             renderContainerCanvas();
         });
     }
@@ -1122,6 +1123,7 @@
         if (!notes[index]) return;
         if (!window.confirm("Excluir esta nota técnica?")) return;
         notes.splice(index, 1);
+        saveContainerLayout();
         renderContainerCanvas();
     }
 
@@ -1159,6 +1161,7 @@
             node.classList.remove("dragging-v07511");
             window.removeEventListener("pointermove", pointerMove);
             window.removeEventListener("pointerup", pointerUp);
+            saveContainerLayout();
         };
 
         node.addEventListener("pointerdown", (event) => {
@@ -1223,7 +1226,8 @@
                 <p>${escapeHtml(note.text)}</p>
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
-        qsa("[data-canvas-note]", nodes).forEach((node) => installNoteDragV07511(node));        qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
+        qsa("[data-canvas-note]", nodes).forEach((node) => installNoteDragV07511(node));
+        qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
         qsa("[data-cable-node]", nodes).forEach((node) => { installCableDrag(node); syncCableVisualSide(node); });
         qsa("[data-cable-fiber]", nodes).forEach((button) => button.onclick = () => selectCableFiber(button));
         qsa("[data-dio-page]", nodes).forEach((select) => select.onchange = () => {
@@ -1237,7 +1241,6 @@
             openEquipmentEditor(button.dataset.nodeEdit);
         });
         qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
-        qsa("[data-canvas-note]", nodes).forEach((note) => installNoteDrag(note));
         qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
             const accepted = await window.mapV0758?.confirmAction?.({
