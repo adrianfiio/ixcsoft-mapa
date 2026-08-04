@@ -1,3 +1,9 @@
+## [0.75.24] - 2026-08-04
+
+### Corrigido
+- Confirmado com print real do usuário: o nó de cabo da CTO/CDO/CEO já tinha o contorno do Canvas 2D (`master-canvas-node`, desde a v0.75.20/22), mas as fibras **dentro** dele ainda apareciam como lista vertical simples (uma por linha, sem borda) — a v0.75.22 só tinha dado o visual em pílula às portas do splitter (`.master-node-port`), nunca às fibras do cabo (`.fiber-port`). Agora as fibras também ficam em grade de 2 colunas com borda/fundo em pílula, igual às portas do splitter e do Rack/Torre.
+- Mudança **só em CSS**, escopada a `.master-cable-node-v07519 .fiber-port` — não afeta o card de fusão do Rack (`renderRackFusionDiagram`), que reaproveita `.fiber-port` sem essa classe.
+
 ## [0.75.23] - 2026-08-04
 
 ### Alterado
