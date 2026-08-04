@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "1.2.0";
+    const VERSION = "1.2.1";
     const state = {
         projectId: "",
         bootstrap: null,
@@ -1041,6 +1041,155 @@
         return renderGenericPortsV07510(ports);
     }
 
+
+    function noteStoreV07511() {
+        state.container = state.container || {};
+        state.container.layout = state.container.layout || {};
+        if (!Array.isArray(state.container.layout.notes)) state.container.layout.notes = [];
+        return state.container.layout.notes;
+    }
+
+    function clampV07511(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function ensureNoteDialogV07511() {
+        let dialog = document.querySelector("#master-v07511-note-dialog");
+        if (dialog) return dialog;
+        dialog = document.createElement("dialog");
+        dialog.id = "master-v07511-note-dialog";
+        dialog.className = "master-v07511-note-dialog";
+        dialog.innerHTML = `
+            <form method="dialog">
+                <header><strong>Nota técnica</strong><small>Escreva livremente. Você pode arrastar, editar e excluir depois.</small></header>
+                <textarea name="text" rows="12" maxlength="20000" required></textarea>
+                <footer>
+                    <button type="button" data-note-cancel>Cancelar</button>
+                    <button type="submit" class="primary-button">Salvar nota</button>
+                </footer>
+            </form>`;
+        document.body.appendChild(dialog);
+        return dialog;
+    }
+
+    function editNoteDialogV07511(value) {
+        const dialog = ensureNoteDialogV07511();
+        const textarea = dialog.querySelector("textarea");
+        textarea.value = value || "";
+        if (!dialog.open) dialog.showModal();
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }, 20);
+        return new Promise((resolve) => {
+            let done = false;
+            const finish = (result) => {
+                if (done) return;
+                done = true;
+                if (dialog.open) dialog.close();
+                resolve(result);
+            };
+            dialog.querySelector("form").onsubmit = (event) => {
+                event.preventDefault();
+                const text = textarea.value.trim();
+                if (!text) {
+                    textarea.focus();
+                    return;
+                }
+                finish(text);
+            };
+            dialog.querySelector("[data-note-cancel]").onclick = () => finish(null);
+            dialog.oncancel = (event) => {
+                event.preventDefault();
+                finish(null);
+            };
+        });
+    }
+
+    function openEditNoteV07511(index) {
+        const notes = noteStoreV07511();
+        const note = notes[index];
+        if (!note) return;
+        editNoteDialogV07511(note.text || "").then((text) => {
+            if (!text) return;
+            note.text = text;
+            renderContainerCanvas();
+        });
+    }
+
+    function openDeleteNoteV07511(index) {
+        const notes = noteStoreV07511();
+        if (!notes[index]) return;
+        if (!window.confirm("Excluir esta nota técnica?")) return;
+        notes.splice(index, 1);
+        renderContainerCanvas();
+    }
+
+    function installNoteDragV07511(node) {
+        if (!node || node.dataset.dragReadyV07511 === "true") return;
+        node.dataset.dragReadyV07511 = "true";
+        const index = Number(node.dataset.canvasNote);
+        const notes = noteStoreV07511();
+        const note = notes[index];
+        const workspace = node.closest("#map-master-container") || document.querySelector("#map-master-container");
+        const canvas = workspace?.querySelector("[data-panel='canvas'] .master-canvas") || workspace?.querySelector(".master-canvas");
+        let startX = 0;
+        let startY = 0;
+        let originX = Number(note?.x || 40);
+        let originY = Number(note?.y || 40);
+
+        const apply = (x, y) => {
+            node.style.transform = `translate(${x}px,${y}px)`;
+            if (note) {
+                note.x = x;
+                note.y = y;
+            }
+        };
+
+        const pointerMove = (event) => {
+            const rect = canvas?.getBoundingClientRect();
+            const x = originX + (event.clientX - startX);
+            const y = originY + (event.clientY - startY);
+            const maxX = Math.max(40, (rect?.width || 1800) - node.offsetWidth - 16);
+            const maxY = Math.max(40, (rect?.height || 1200) - node.offsetHeight - 16);
+            apply(clampV07511(x, 12, maxX), clampV07511(y, 12, maxY));
+        };
+
+        const pointerUp = () => {
+            node.classList.remove("dragging-v07511");
+            window.removeEventListener("pointermove", pointerMove);
+            window.removeEventListener("pointerup", pointerUp);
+        };
+
+        node.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0) return;
+            if (event.target.closest("button")) return;
+            event.preventDefault();
+            startX = event.clientX;
+            startY = event.clientY;
+            originX = Number(note?.x || 40);
+            originY = Number(note?.y || 40);
+            node.classList.add("dragging-v07511");
+            window.addEventListener("pointermove", pointerMove);
+            window.addEventListener("pointerup", pointerUp, { once: true });
+        });
+
+        node.addEventListener("dblclick", () => openEditNoteV07511(index));
+        node.querySelector("[data-edit-note]")?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openEditNoteV07511(index);
+        });
+        node.querySelector("[data-delete-note]")?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openDeleteNoteV07511(index);
+        });
+    }
+
+    function cableAccentV07511(cable) {
+        return ((cable.fibers || []).find((fiber) => fiber.color_hex)?.color_hex) || "#22d3ee";
+    }
     function renderContainerCanvas() {
         const root = qs("#map-master-container");
         if (!root || !state.container.data) return;
@@ -1063,7 +1212,8 @@
             const position = cablePosition(cable, index);
             const relation = cable.relation === "output" ? "Saída" : "Entrada";
             const visualSide = cableVisualSide(position);
-            return `<article class="master-cable-node vertical-v07510 ${cable.relation === "output" ? "output" : "input"} side-${visualSide}-v0757" data-cable-side="${visualSide}" data-cable-node="${cable.id}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+            const accent = cableAccentV07511(cable);
+            return `<article class="master-cable-node vertical-v07510 ${cable.relation === "output" ? "output" : "input"} side-${visualSide}-v0757" data-cable-side="${visualSide}" data-cable-node="${cable.id}" data-fiber-count="${cable.fiber_count || 0}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="--cable-accent:${escapeHtml(accent)};transform:translate(${position.x}px,${position.y}px)">
                 <header><span><strong>${escapeHtml(cable.name)}</strong><small>${relation} · ${cable.fiber_count} FO</small></span><b>→</b></header>
                 <div class="master-cable-fibers">${(cable.fibers || []).map((fiber) => `<button type="button" class="master-cable-fiber ${fiber.used ? "used" : ""}" data-cable-fiber="${fiber.id}" data-link-id="${fiber.link_id || ""}" style="--fiber-color:${escapeHtml(fiber.color_hex || "#94a3b8")}" title="F${fiber.number} · ${escapeHtml(fiber.color_name)}${fiber.used_by ? ` · ${escapeHtml(fiber.used_by)}` : ""}"><i></i><span>F${fiber.number} · ${escapeHtml(fiber.color_name || "")}</span></button>`).join("") || '<small>Gere as fibras deste cabo.</small>'}</div>
             </article>`;
@@ -1073,6 +1223,7 @@
                 <p>${escapeHtml(note.text)}</p>
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
+        qsa("[data-canvas-note]", nodes).forEach((node) => installNoteDragV07511(node));        qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
         qsa("[data-cable-node]", nodes).forEach((node) => { installCableDrag(node); syncCableVisualSide(node); });
         qsa("[data-cable-fiber]", nodes).forEach((button) => button.onclick = () => selectCableFiber(button));
         qsa("[data-dio-page]", nodes).forEach((select) => select.onchange = () => {

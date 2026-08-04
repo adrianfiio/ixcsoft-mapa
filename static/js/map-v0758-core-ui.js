@@ -481,4 +481,71 @@
         requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
     });
 
+
+
+    // MAP_V07511_WORKSPACE_FIT
+    function enforceWorkspaceFitV07511() {
+        const dialog = document.querySelector("#container-dialog.tower-workspace-dialog-v0750");
+        const section = dialog?.querySelector(":scope > section");
+        const root = document.querySelector("#map-master-container");
+        const panel = root?.querySelector('[data-panel="canvas"]');
+        if (!dialog || !section || !root || !panel) return;
+        section.style.setProperty("position", "relative", "important");
+        section.style.setProperty("display", "block", "important");
+        section.style.setProperty("width", "100%", "important");
+        section.style.setProperty("height", "100%", "important");
+        section.style.setProperty("min-height", "0", "important");
+        section.style.setProperty("overflow", "hidden", "important");
+        root.style.setProperty("position", "absolute", "important");
+        root.style.setProperty("inset", "0", "important");
+        root.style.setProperty("width", "auto", "important");
+        root.style.setProperty("height", "auto", "important");
+        root.style.setProperty("min-height", "0", "important");
+        panel.style.setProperty("display", "block", "important");
+        panel.style.setProperty("min-height", "0", "important");
+        panel.style.setProperty("overflow", "hidden", "important");
+    }
+
+    let fitQueuedV07511 = false;
+    let workspaceResizeObserverV07511 = null;
+    let observedSectionV07511 = null;
+    let observedRootV07511 = null;
+
+    function installWorkspaceResizeObserverV07511() {
+        if (typeof ResizeObserver === "undefined") return;
+        const dialog = document.querySelector("#container-dialog.tower-workspace-dialog-v0750");
+        const section = dialog?.querySelector(":scope > section");
+        const root = document.querySelector("#map-master-container");
+        if (!section || !root) return;
+        if (!workspaceResizeObserverV07511) {
+            workspaceResizeObserverV07511 = new ResizeObserver(() => queueWorkspaceFitV07511());
+        }
+        if (observedSectionV07511 !== section) {
+            if (observedSectionV07511) workspaceResizeObserverV07511.unobserve(observedSectionV07511);
+            workspaceResizeObserverV07511.observe(section);
+            observedSectionV07511 = section;
+        }
+        if (observedRootV07511 !== root) {
+            if (observedRootV07511) workspaceResizeObserverV07511.unobserve(observedRootV07511);
+            workspaceResizeObserverV07511.observe(root);
+            observedRootV07511 = root;
+        }
+    }
+
+    function queueWorkspaceFitV07511() {
+        if (fitQueuedV07511) return;
+        fitQueuedV07511 = true;
+        requestAnimationFrame(() => {
+            fitQueuedV07511 = false;
+            enforceWorkspaceFitV07511();
+            installWorkspaceResizeObserverV07511();
+        });
+    }
+
+    window.addEventListener("resize", queueWorkspaceFitV07511);
+    document.addEventListener("map:container-opening", queueWorkspaceFitV07511);
+    document.addEventListener("map:container-rendered", queueWorkspaceFitV07511);
+    document.addEventListener("DOMContentLoaded", queueWorkspaceFitV07511);
+    queueWorkspaceFitV07511();
+
 }());
