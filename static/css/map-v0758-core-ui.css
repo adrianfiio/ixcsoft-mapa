@@ -840,3 +840,56 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 .master-splitter-node-v07519 .splitter-input-port {
     align-self: start;
 }
+
+/* MAP_V07523_CTO_TOWER_TOOLBAR: a barra de ferramentas da CTO/CDO/CEO
+   reaproveita as MESMAS classes CSS do Rack/Torre (.tower-workspace-*,
+   .tower-popover-v0750, .tower-drawer-v0750, .tower-structure-*), sem
+   duplicar nenhuma regra — só o que é específico daqui (drawer de
+   estrutura ancorado no diálogo certo, destaque de fibra livre/usada)
+   é novo. Nenhum arquivo do Rack/Torre foi tocado. */
+#unifilar-dialog.map-v0758-optical-workspace #unifilar-content {
+    position: relative;
+}
+.cto-structure-drawer-v07523 {
+    top: 62px;
+}
+#cto-tools-menu-v07523 .cto-tools-line-style-v07523 {
+    display: grid;
+    gap: 4px;
+    padding: 8px 8px 4px;
+    color: var(--v0750-muted);
+    font-size: 10px;
+}
+#cto-tools-menu-v07523 .cto-tools-line-style-v07523 select {
+    min-height: 34px;
+    padding: 4px 8px;
+    color: var(--v0750-text);
+    background: var(--v0750-panel-soft);
+    border: 1px solid var(--v0750-border);
+    border-radius: 7px;
+}
+#unifilar-feedback.cto-feedback-v07523 {
+    padding: 7px 14px;
+    color: var(--v0750-muted);
+    font-size: 11px;
+    border-bottom: 1px solid var(--v0750-border);
+    background: rgba(12, 33, 54, .6);
+}
+#unifilar-feedback.cto-feedback-v07523.error {
+    color: #fda4af;
+}
+.optical-graph.fiber-focus-v07523 .fiber-port.used,
+.optical-graph.fiber-focus-v07523 .splitter-output-port.used,
+.optical-graph.fiber-focus-v07523 .splitter-input-port.used {
+    opacity: .32;
+}
+.optical-graph.fiber-focus-v07523 .fiber-port:not(.used),
+.optical-graph.fiber-focus-v07523 .splitter-output-port:not(.used),
+.optical-graph.fiber-focus-v07523 .splitter-input-port:not(.used) {
+    outline: 2px solid #facc15;
+    outline-offset: -2px;
+}
+.structure-highlight-v07523 {
+    outline: 3px solid #22d3ee !important;
+    outline-offset: 2px;
+}

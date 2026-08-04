@@ -1,3 +1,19 @@
+## [0.75.23] - 2026-08-04
+
+### Alterado
+- **Barra de ferramentas da CTO/CDO/CEO reescrita para reaproveitar as mesmas classes CSS do Rack/Torre** (`.tower-workspace-toolbar-v0750`, `.tower-workspace-actions-v0750`, `.tower-popover-v0750`, `.tower-drawer-v0750`, `.tower-structure-*`), a pedido explícito do usuário ("copie da torre a mesma função"). Botões novos: **Estrutura** (mostra os splitters e cabos já cadastrados, sem poder adicionar equipamento genérico — a CTO/CDO/CEO não tem esse conceito), **Fibras** (destaca portas livres/ocupadas), **Atualizar** (recarrega). **Ferramentas** ficou só com o que faz sentido aqui (estilo de linha) — sem "Importar YAML"/"Organizar equipamentos", que são conceitos de equipamento genérico que não existem na CTO/CDO.
+- "+ Splitter"/"+ Nota" (da v0.75.21) foram mantidos — não são "equipamento" no sentido do Rack/Torre (switch/DIO/AP/etc.), são o próprio conteúdo da CTO/CDO, e o usuário pediu explicitamente pra manter a parte de cabo/splitter sem alteração.
+- **Nenhuma linha da lógica de clique-para-ligar fibra/splitter foi tocada** — só a moldura ao redor. Confirmado por `tests/test_map_v07523_contract.py`.
+
+### Segurança
+- Backup dos 2 arquivos alterados (`map-editor.js`, `map-v0758-core-ui.css`) feito em `.map-v074-backup/` antes de editar, a pedido do usuário.
+- **Nenhum arquivo do Rack/Torre foi alterado** (`map-master-suite.js`, `map-v0750-tower-workspace.js` intactos) — a reutilização foi só de classes CSS já publicadas e reaproveitáveis, não de código/endpoint.
+- **O endpoint de equipamento do Rack/Torre (`/api/map/elements/<id>/equipment/`) não foi tocado nem estendido** para aceitar CTO/CDO — ele continua restrito a `rack`/`tower`. Ver nota técnica abaixo.
+
+### Nota técnica (por que não é literalmente o mesmo componente)
+- O pedido original era "copie da torre" o componente inteiro (`openContainerWorkspace`/Canvas de equipamento do Rack/Torre). Investigando o código, esse componente depende de um endpoint de backend (`/api/map/elements/<id>/equipment/`) hoje filtrado para `element_type in (rack, tower)` — CTO/CDO nunca tiveram o conceito de "equipamento genérico" (`ContainerEquipment`), só splitter/cabo (modelos completamente diferentes). Estender esse endpoint pra aceitar CTO/CDO tocaria o mesmo código que serve o Rack/Torre em produção — risco desnecessário, já que o pedido explícito era justamente **não** ter equipamento genérico na CTO/CDO.
+- Em vez disso: a barra de ferramentas (visual) foi reconstruída com as mesmas classes CSS, mas o conteúdo abaixo dela continua sendo o editor de fusões já existente (splitter + cabo), sem mudar nenhuma chamada de API. Resultado prático pro usuário é o mesmo pedido — visual igual ao Rack/Torre, sem opção de adicionar equipamento — sem o risco de tocar o backend compartilhado.
+
 ## [0.75.22] - 2026-08-04
 
 ### Corrigido
