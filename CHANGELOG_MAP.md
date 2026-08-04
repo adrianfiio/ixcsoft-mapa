@@ -1,3 +1,18 @@
+## [0.75.28] - 2026-08-04
+
+### Alterado — mudança de arquitetura (só CTO)
+- Pedido direto do usuário: "não pensa só faz, copia geral da torre pra CTO... identico, toda função." A CTO agora abre **o mesmo motor/janela do Rack/Torre** (`openContainerWorkspace`/`map-master-suite.js`), não uma cópia visual — o mesmo Canvas de equipamento, o mesmo "+ Adicionar", "Ligar portas", "Editar linhas", "Ferramentas" (Inventário, Relatório, Importar YAML, Organizar, Exportar PNG/PDF), tudo. CDO/CEO continuam no editor próprio (`map-cto-suite.js`) — pedido foi só CTO por enquanto.
+- **Backend**: 5 endpoints que antes só aceitavam `rack`/`tower` agora também aceitam `cto`: `container_equipment` (criar/listar equipamento), `container_port_links` (cordões internos), `container_layout_v3` (posição dos nós no Canvas), `create_passive_endpoint_v3` (criar PTO), `import_container_device_type_yaml` (Importar YAML). Corrigido também um `KeyError` real que teria derrubado a importação de YAML numa CTO (`ALLOWED_BY_CONTAINER[container.element_type]` sem chave pra `cto`).
+- **Frontend**: clicar numa CTO no mapa agora abre `openContainerWorkspace` (antes abria `showUnifilar`). A CTO ganhou identidade própria no Canvas (título "Editor técnico da CTO", ícone da CTO, texto do estado vazio) — antes qualquer coisa que não fosse "rack" caía no rótulo de "Torre" por padrão, o que teria feito uma CTO aberta por esse motor aparecer com título/ícone de Torre.
+- O botão **"Fibras"** do toolbar (que na Torre/Rack só destaca fibra) agora, na CTO, abre direto o editor de splitter/cabo (`map-cto-suite.js`) por cima do Canvas — mesmo padrão que o Rack usa pra abrir a fusão de DIO clicando na porta traseira (janela flutuante arrastável, feita por `enhanceFusion()` em `map-master-suite.js`, sem nenhuma mudança nela).
+
+### Segurança
+- Toda mudança em código compartilhado com Rack/Torre foi feita como **extensão aditiva de 2 vias pra 3 vias** (`tipo === "rack" ? X : tipo === "cto" ? Y : Z`) — o comportamento de rack e tower não muda em nenhum dos pontos tocados, só foi adicionado um terceiro branch pra "cto". Verificado em cada um dos ~13 pontos de decisão encontrados por busca em `map-master-suite.js`/`map-v0758-core-ui.js`/`map-v0750-tower-workspace.js`.
+- Sem migrations.
+
+### Nota técnica (limitação conhecida, não é bug)
+- Quando a CTO abre o editor de splitter/cabo por cima do Canvas (via "Fibras"), a janela flutuante fica sem o cabeçalho nativo visível (mesma regra da v0.75.27, que esconde esse cabeçalho pra CTO) — isso significa que **arrastar a janela flutuante pela barra de título não funciona** nesse caso específico (o Rack, que usa o cabeçalho nativo pra isso, não tem esse problema). A janela abre, funciona e fecha normalmente — só não é arrastável nesse fluxo aninhado. Ajustável numa próxima rodada se incomodar.
+
 ## [0.75.27] - 2026-08-04
 
 ### Corrigido

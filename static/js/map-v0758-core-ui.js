@@ -184,17 +184,20 @@
         });
     }
 
+    // MAP_V07528_CTO_TORRE_ENGINE: CTO ganha ícone/identidade próprios em
+    // vez de cair no "senão" genérico da Torre (o que a fazia aparecer
+    // com título/ícone de Torre quando aberta por este mesmo Canvas).
     function structureIcon(type) {
-        return type === "rack"
-            ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"></rect><path d="M4 9h16M4 15h16M8 6h8M8 12h8M8 18h8"></path></svg>'
-            : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="2"></circle><path d="M12 9 7 22m5-13 5 13M9 16h6M7 5a7 7 0 0 0 0 5m10-5a7 7 0 0 1 0 5M4 3a11 11 0 0 0 0 9m16-9a11 11 0 0 1 0 9"></path></svg>';
+        if (type === "rack") return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"></rect><path d="M4 9h16M4 15h16M8 6h8M8 12h8M8 18h8"></path></svg>';
+        if (type === "cto") return '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="4"></rect><path d="M10 4v3m12-3v3M10 28v2m12-2v2"></path><circle cx="12" cy="12" r="1" fill="currentColor"></circle><circle cx="16" cy="12" r="1" fill="currentColor"></circle><circle cx="20" cy="12" r="1" fill="currentColor"></circle><path d="M9 18h14"></path></svg>';
+        return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="2"></circle><path d="M12 9 7 22m5-13 5 13M9 16h6M7 5a7 7 0 0 0 0 5m10-5a7 7 0 0 1 0 5M4 3a11 11 0 0 0 0 9m16-9a11 11 0 0 1 0 9"></path></svg>';
     }
 
     function containerIdentity(data = state.containerData) {
         const dialog = qs("#container-dialog");
         const type = String(data?.container?.type || dialog?.dataset.containerType || "tower").toLowerCase();
         const name = data?.container?.name || dialog?.dataset.containerName || "Estrutura";
-        return { type: type === "rack" ? "rack" : "tower", name };
+        return { type: type === "rack" ? "rack" : type === "cto" ? "cto" : "tower", name };
     }
 
     function updateContainerIdentity(data = state.containerData) {
@@ -206,6 +209,22 @@
         dialog.dataset.containerName = identity.name;
         dialog.classList.toggle("map-v0758-rack", identity.type === "rack");
         dialog.classList.toggle("map-v0758-tower", identity.type === "tower");
+        dialog.classList.toggle("map-v0758-cto", identity.type === "cto");
+
+        // MAP_V07528_CTO_TORRE_ENGINE: textos próprios pra CTO, em vez de
+        // cair no rótulo de Torre.
+        const editorTitle = { rack: "Editor técnico do Rack", cto: "Editor técnico da CTO", tower: "Editor técnico da Torre" }[identity.type];
+        const structureLabel = { rack: "ESTRUTURA DO RACK", cto: "ESTRUTURA DA CTO", tower: "ESTRUTURA DA TORRE" }[identity.type];
+        const emptyHeading = {
+            rack: "Monte o rack diretamente no Canvas 2D",
+            cto: "Monte a CTO diretamente no Canvas 2D",
+            tower: "Monte a torre diretamente no Canvas 2D",
+        }[identity.type];
+        const emptyParagraph = {
+            rack: "Comece adicionando uma OLT, um DIO ou os equipamentos internos permitidos no rack.",
+            cto: "Comece adicionando os equipamentos desta CTO.",
+            tower: "Comece adicionando um DIO, uma PTO ou os equipamentos ativos da torre.",
+        }[identity.type];
 
         const title = qs(".tower-workspace-title-v0750", root);
         if (title) {
@@ -213,7 +232,7 @@
             const small = qs("small", title);
             const icon = qs(":scope > svg", title);
             if (icon) icon.outerHTML = structureIcon(identity.type);
-            if (strong) strong.textContent = identity.type === "rack" ? "Editor técnico do Rack" : "Editor técnico da Torre";
+            if (strong) strong.textContent = editorTitle;
             if (small) small.textContent = `${identity.name} · Canvas 2D, portas, cabos e conexões`;
         }
 
@@ -233,7 +252,7 @@
         const backdrop = qs(".tower-structure-backdrop-v0750", root);
         if (backdrop) {
             backdrop.classList.toggle("rack", identity.type === "rack");
-            backdrop.innerHTML = `${structureIcon(identity.type)}<span>${identity.type === "rack" ? "ESTRUTURA DO RACK" : "ESTRUTURA DA TORRE"}</span>`;
+            backdrop.innerHTML = `${structureIcon(identity.type)}<span>${structureLabel}</span>`;
         }
 
         const empty = qs(".tower-empty-v0750", root);
@@ -242,16 +261,8 @@
             const paragraph = qs("p", empty);
             const emptyIcon = qs(":scope > svg", empty);
             if (emptyIcon) emptyIcon.outerHTML = structureIcon(identity.type);
-            if (heading) {
-                heading.textContent = identity.type === "rack"
-                    ? "Monte o rack diretamente no Canvas 2D"
-                    : "Monte a torre diretamente no Canvas 2D";
-            }
-            if (paragraph) {
-                paragraph.textContent = identity.type === "rack"
-                    ? "Comece adicionando uma OLT, um DIO ou os equipamentos internos permitidos no rack."
-                    : "Comece adicionando um DIO, uma PTO ou os equipamentos ativos da torre.";
-            }
+            if (heading) heading.textContent = emptyHeading;
+            if (paragraph) paragraph.textContent = emptyParagraph;
         }
 
         const addMenu = qs("#tower-add-menu-v0750", root);
