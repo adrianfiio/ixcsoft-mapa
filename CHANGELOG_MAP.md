@@ -1,3 +1,11 @@
+## [0.75.27] - 2026-08-04
+
+### Corrigido
+- Usuário apontou que só o conteúdo interno da CTO/CDO/CEO tinha ficado igual ao Rack/Torre — a **janela em si** (como abre, borda, sombra, z-index, cabeçalho) continuava diferente. Corrigido:
+  - A janela da CTO/CDO/CEO (`#unifilar-dialog`) agora usa os **mesmos valores literais** de borda, sombra e z-index que a janela do Rack/Torre (`#container-dialog`) — não só "parecido", copiado direto do CSS da Torre.
+  - Offset da barra lateral recolhida corrigido pra bater com a Torre (72px/54px, antes era 66px e não tratava o modo "minimizado" da sidebar).
+  - **Cabeçalho nativo duplicado removido**: a CTO/CDO/CEO mostrava o título nativo do `<dialog>` ("Fusões · NOME" + X) E a barra de ferramentas nova por baixo — duas barras empilhadas, diferente da Torre (que esconde o cabeçalho nativo e usa só a barra de ferramentas). Agora, só quando é CTO/CDO/CEO, o cabeçalho nativo fica escondido e a barra de ferramentas ganhou seu próprio botão fechar (mesmo estilo `.tower-workspace-close-v0758` que a Torre usa). O Rack (fusão de DIO/cabo) e o fallback continuam com o cabeçalho nativo normal — não usam a barra nova, não tinham esse problema.
+
 ## [0.75.26] - 2026-08-04
 
 ### Alterado — mudança de arquitetura

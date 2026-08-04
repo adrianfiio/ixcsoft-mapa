@@ -120,6 +120,7 @@
                         </div>
                     </div>
                     <span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span>
+                    <button type="button" class="tower-workspace-close-v0758" data-cto-close-v07527 title="Fechar editor técnico" aria-label="Fechar editor técnico"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
             </div>
             <div id="unifilar-feedback" class="cto-feedback-v07523">Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir.</div>
@@ -136,6 +137,7 @@
                 </div>
             </div>
                 <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div><div class="map-context-menu link-action-menu" hidden><button type="button" data-link-action="info">Informações de rota</button><button type="button" class="danger" data-link-action="delete">Excluir</button></div></div>`;
+            content.querySelector("[data-cto-close-v07527]").onclick = () => unifilarDialog.close();
             content.querySelector("[data-cto-structure-v07523]").onclick = () => {
                 content.querySelector(".cto-structure-drawer-v07523").hidden = false;
             };

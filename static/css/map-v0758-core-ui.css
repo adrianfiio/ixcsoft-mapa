@@ -218,6 +218,12 @@
     color: #8ea9bd;
 }
 
+/* MAP_V07527_CTO_WINDOW_PARITY: janela idêntica à do Rack/Torre --
+   mesmos valores de posição/borda/sombra/z-index de
+   #container-dialog.tower-workspace-dialog-v0750 em
+   map-v0750-tower-workspace.css (linhas 12-32), não só o conteúdo de
+   dentro. Pedido explícito do usuário: "quero identico da torre, como
+   abre a janela tudo, não só a interna". */
 #unifilar-dialog.map-v0758-optical-workspace {
     position: fixed !important;
     inset: 0 0 0 var(--v072-sidebar, 292px) !important;
@@ -228,13 +234,22 @@
     margin: 0 !important;
     transform: none !important;
     border: 0 !important;
-    border-left: 1px solid #203b52 !important;
+    border-left: 1px solid rgba(56, 189, 248, .2) !important;
     border-radius: 0 !important;
     background: #061626 !important;
+    box-shadow: -18px 0 55px rgba(0, 0, 0, .38) !important;
+    z-index: 1800 !important;
+}
+#unifilar-dialog.map-v0758-optical-workspace::backdrop {
+    background: transparent !important;
+    backdrop-filter: none !important;
 }
 
 body:has(#map-sidebar.v072-collapsed) #unifilar-dialog.map-v0758-optical-workspace {
-    left: var(--v072-sidebar-collapsed, 66px) !important;
+    left: 72px !important;
+}
+body:has(#map-sidebar.master-minimized) #unifilar-dialog.map-v0758-optical-workspace {
+    left: 54px !important;
 }
 
 #unifilar-dialog.map-v0758-optical-workspace > section {
@@ -252,6 +267,13 @@ body:has(#map-sidebar.v072-collapsed) #unifilar-dialog.map-v0758-optical-workspa
     z-index: 20;
     border-bottom: 1px solid #203b52;
     background: #0a2034;
+}
+/* Só a CTO/CDO/CEO esconde o cabeçalho nativo -- ela tem título e botão
+   fechar próprios na barra de ferramentas (map-cto-suite.js), igual o
+   Rack/Torre faz com #container-dialog. O Rack (fusão DIO/cabo) e o
+   fallback continuam com o cabeçalho nativo, sem essa classe. */
+#unifilar-dialog.map-v0758-optical-workspace.map-cto-suite-active-v07527 > section > header {
+    display: none !important;
 }
 
 #unifilar-dialog.map-v0758-optical-workspace #unifilar-content {

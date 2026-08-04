@@ -826,6 +826,14 @@
         const element = data.element;
         document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
+        // MAP_V07527_CTO_WINDOW_PARITY: só a CTO/CDO/CEO (element.splice_box)
+        // esconde o cabeçalho nativo do diálogo -- ela tem seu próprio título
+        // e botão fechar dentro da barra de ferramentas (map-cto-suite.js),
+        // igual o Rack/Torre faz com o header nativo de #container-dialog.
+        // O Rack (renderRackFusionDiagram) e o fallback continuam usando o
+        // cabeçalho nativo normalmente, por isso essa classe é sempre
+        // reajustada aqui, nunca deixada "grudada" de uma abertura anterior.
+        unifilarDialog.classList.toggle("map-cto-suite-active-v07527", Boolean(element.splice_box));
         // MAP_V07526_CTO_SUITE: renderização extraída para
         // map-cto-suite.js (arquivo próprio da CTO/CDO/CEO, mesma ideia
         // do map-master-suite.js pro Rack/Torre). Nenhum comportamento
