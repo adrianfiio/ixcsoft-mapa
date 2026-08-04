@@ -1,3 +1,13 @@
+## [0.75.14] - 2026-08-04
+
+### Corrigido
+- alça de dobra do fio: bolinha visual volta ao tamanho pequeno, mas o clique/arraste passa a usar uma área de clique invisível maior por cima dela — não precisa mais mirar o pixel exato nem inflar o desenho;
+- enlace PTP: rádio PTP e Access Point recém-criados não vinham com nenhuma porta, então clicar "Ligar PTP?" não tinha porta wireless nenhuma pra clicar — agora já nascem com uma porta wireless padrão; o aviso de "nenhum destino disponível" também deixou de ser um toast discreto e virou um diálogo que não passa despercebido;
+- orientação do DIO no Canvas 2D: porta da esquerda passa a ser a frente (cordão pro equipamento/OLT) e a da direita a traseira (fusão com o cabo) — estava invertido; o roteamento automático do cordão OLT→DIO também passou a escolher o lado do canal de acordo com onde a porta de destino realmente está, em vez de sempre sair pela direita.
+
+### Atualizado
+- editor de fusões de CTO/CDO/CEO (cabo, splitter, portas): a estrutura de nós arrastáveis e clique-para-ligar já existia e já funciona (não é um formulário antigo) — a aparência foi modernizada para a mesma linguagem visual do Canvas 2D de Rack/Torre (cores, raio de borda, sombra), sem alterar nenhuma lógica de conexão.
+
 ## [0.75.13] - 2026-08-04
 
 ### Corrigido

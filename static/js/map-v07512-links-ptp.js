@@ -235,16 +235,33 @@
             const guideY = boardRect
                 ? (boardRect.bottom - canvasRect.top) / scale + 20 + lane / 3
                 : source.y + 32 + lane / 3;
-            const rightChannel = Math.max(
-                source.x,
-                destination.x,
-                sourceNodeRect ? (sourceNodeRect.right - canvasRect.left) / scale : source.x,
-            ) + 48 + lane;
+            // MAP_V07514_DIO_ORIENTATION: a porta "frente" do DIO (destino
+            // deste cordão) pode estar do lado esquerdo ou direito da
+            // bandeja — não é mais sempre a direita. O canal lateral agora
+            // escolhe o lado mais perto de onde a porta de destino
+            // realmente está, em vez de sempre sair pela direita, senão o
+            // cordão atravessaria o DIO inteiro por dentro pra entrar numa
+            // porta do lado esquerdo.
+            const boardCenterX = sourceNodeRect
+                ? ((sourceNodeRect.left + sourceNodeRect.right) / 2 - canvasRect.left) / scale
+                : source.x;
+            const approachFromRight = destination.x >= boardCenterX;
+            const sideChannel = approachFromRight
+                ? Math.max(
+                    source.x,
+                    destination.x,
+                    sourceNodeRect ? (sourceNodeRect.right - canvasRect.left) / scale : source.x,
+                ) + 48 + lane
+                : Math.min(
+                    source.x,
+                    destination.x,
+                    sourceNodeRect ? (sourceNodeRect.left - canvasRect.left) / scale : source.x,
+                ) - 48 - lane;
             return [
                 source,
                 { x: source.x, y: guideY },
-                { x: rightChannel, y: guideY },
-                { x: rightChannel, y: destination.y },
+                { x: sideChannel, y: guideY },
+                { x: sideChannel, y: destination.y },
                 destination,
             ];
         }
@@ -342,7 +359,7 @@
     function renderPluginHandles() {
         const svg = svgElement();
         if (!svg) return;
-        qsa(".master-link-handle-v07512", svg).forEach((element) => element.remove());
+        qsa(".master-link-handle-v07512, .master-link-handle-hit-v07514", svg).forEach((element) => element.remove());
         if (!state.selectedLinkId) return;
         const points = state.layout?.routes?.[String(state.selectedLinkId)] || [];
         points.forEach((point, index) => {
@@ -350,11 +367,21 @@
             circle.classList.add("master-link-handle-v07512");
             circle.setAttribute("cx", point.x);
             circle.setAttribute("cy", point.y);
-            // MAP_V07513_HANDLE_HITBOX: r=8 exigia mirar o pixel exato pra
-            // reselecionar o ponto depois de movido; 13 dá folga real sem
-            // ficar visualmente estranho.
-            circle.setAttribute("r", "13");
-            circle.addEventListener("pointerdown", (event) => {
+            // MAP_V07514_HANDLE_HITBOX: a bolinha volta ao tamanho pequeno
+            // (visual), mas o clique/arraste é tratado por um círculo maior
+            // e invisível por cima dela (mesma técnica já usada no fio: uma
+            // "hit-area" maior que o desenho visível), então não precisa
+            // mais mirar o pixel exato.
+            circle.setAttribute("r", "6");
+            circle.style.pointerEvents = "none";
+            const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            hit.classList.add("master-link-handle-hit-v07514");
+            hit.setAttribute("cx", point.x);
+            hit.setAttribute("cy", point.y);
+            hit.setAttribute("r", "14");
+            hit.style.fill = "transparent";
+            hit.style.cursor = "move";
+            hit.addEventListener("pointerdown", (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 const move = (moveEvent) => {
@@ -364,6 +391,8 @@
                     point.y = (moveEvent.clientY - rect.top) / scale;
                     circle.setAttribute("cx", point.x);
                     circle.setAttribute("cy", point.y);
+                    hit.setAttribute("cx", point.x);
+                    hit.setAttribute("cy", point.y);
                     rewriteLinks();
                 };
                 const up = async () => {
@@ -373,13 +402,14 @@
                 window.addEventListener("pointermove", move);
                 window.addEventListener("pointerup", up, { once: true });
             });
-            circle.addEventListener("contextmenu", async (event) => {
+            hit.addEventListener("contextmenu", async (event) => {
                 event.preventDefault();
                 points.splice(index, 1);
                 await saveLayout();
                 rewriteLinks();
             });
             svg.appendChild(circle);
+            svg.appendChild(hit);
         });
     }
 
@@ -706,7 +736,18 @@
             : window.confirm("Ligar PTP entre esta torre e outra torre?");
         if (!accepted) return;
         const data = await request(`/api/map/ptp-links/candidates/?source_port_id=${encodeURIComponent(sourcePortId)}`);
-        if (!data.candidates.length) return notify("Nenhuma porta wireless livre foi encontrada em outra torre deste projeto.", true);
+        if (!data.candidates.length) {
+            // MAP_V07514_PTP_NO_CANDIDATES_ALERT: um toast passa despercebido
+            // — se não há candidato, o usuário só via "nada acontecer" depois
+            // de confirmar. Isso deixa explícito por que a ligação não abriu.
+            const message = "Nenhuma porta wireless livre foi encontrada em outra torre deste projeto. Cadastre um rádio PTP (ou Access Point) com interface wireless em outra torre antes de tentar o enlace.";
+            if (window.mapV0758?.confirmAction) {
+                await window.mapV0758.confirmAction({ title: "Nenhum destino disponível", message, confirmLabel: "Entendi", cancelLabel: "Fechar" });
+            } else {
+                window.alert(message);
+            }
+            return;
+        }
         const dialog = ensurePtpDialog();
         const form = dialog.querySelector("form");
         const towerSelect = form.elements.tower_id;
