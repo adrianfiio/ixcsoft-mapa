@@ -899,10 +899,17 @@ def element_detail_payload(element):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def container_equipment(request, element_id):
+    # MAP_V07528_CTO_TORRE_ENGINE: CTO liberada pra abrir o mesmo Canvas
+    # de equipamento do Rack/Torre (pedido explícito do usuário: "cópia
+    # geral da torre pra CTO"). Nada muda pro Rack/Torre.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
+        element_type__in=[
+            NetworkElement.ElementType.RACK,
+            NetworkElement.ElementType.TOWER,
+            NetworkElement.ElementType.CTO,
+        ],
     )
     if request.method == "POST":
         if not can_edit_company(request.user, container.company_id):
@@ -1617,10 +1624,16 @@ def container_equipment_ports(request, element_id, equipment_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def container_port_links(request, element_id):
+    # MAP_V07528_CTO_TORRE_ENGINE: mesma liberação de container_equipment
+    # acima -- CTO precisa poder criar cordões internos igual Rack/Torre.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
-        element_type__in=[NetworkElement.ElementType.RACK, NetworkElement.ElementType.TOWER],
+        element_type__in=[
+            NetworkElement.ElementType.RACK,
+            NetworkElement.ElementType.TOWER,
+            NetworkElement.ElementType.CTO,
+        ],
     )
     if not can_edit_company(request.user, container.company_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)

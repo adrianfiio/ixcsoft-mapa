@@ -1383,7 +1383,12 @@
                         map.closePopup();
                         if (String(state.openingElementId || "") === String(p.id)) return;
                         state.openingElementId = p.id;
-                        const opening = ["rack", "tower"].includes(p.tipo)
+                        // MAP_V07528_CTO_TORRE_ENGINE: só a CTO ("cto") abre o
+                        // mesmo Canvas do Rack/Torre agora -- CDO/CEO
+                        // (splice_box) continuam no editor próprio
+                        // (map-cto-suite.js), pedido explícito do usuário foi
+                        // só a CTO por enquanto.
+                        const opening = ["rack", "tower", "cto"].includes(p.tipo)
                             ? openContainerWorkspace(p.id)
                             : showUnifilar(p.id);
                         opening
