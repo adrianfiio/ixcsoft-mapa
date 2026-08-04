@@ -1,3 +1,16 @@
+## [0.75.26] - 2026-08-04
+
+### Alterado — mudança de arquitetura
+- **Canvas 2D da CTO/CDO/CEO ganhou arquivo próprio**: `static/js/map-cto-suite.js`, extraído do bloco `if (element.splice_box)` que vivia dentro de `showUnifilar()` em `map-editor.js` (~600 linhas movidas, não reescritas). Mesma lógica de arquitetura do Rack/Torre, que já tem seu próprio dono (`map-master-suite.js`). Pedido explícito do usuário: separar o código da CTO/CDO/CEO num sistema com nome próprio, pra poder adicionar/remover funções dela sem nenhum risco de afetar o Rack/Torre (e vice-versa).
+- Extração **mecânica** (recorte e cola): nenhuma linha de lógica foi reescrita, só relocada. Mesmos IDs/classes DOM preservados (`.unifilar-zoom`, `#unifilar-feedback`, `.optical-links`, `.ceo-quick-toolbar-v07521` etc.), então os 3 scripts decoradores que dependem dessa estrutura (`map-fusion-polish.js`, `map-optical-editor-v2.js`, `map-optical-editor-v3.js`) continuam funcionando sem nenhuma mudança.
+- Dependências que o novo arquivo precisa de `map-editor.js` (`api`, `notify`, `escapeHtml`, `askValue`, `centerWithin`, `formatBudgetTooltip`, `splitterLossLabel`, `openRouteInfoDialog`, `unifilarDialog`) são expostas via `window.networkMap`, lidas em tempo de chamada — não importa a ordem de carregamento entre os dois arquivos.
+- `map-editor.js` agora só chama `window.mapCtoSuite.render(element, content)` no lugar do bloco antigo.
+
+### Segurança
+- **Nenhum arquivo do Rack/Torre tocado.**
+- **Nenhum endpoint de API mudou** — o novo arquivo chama exatamente as mesmas rotas de sempre (`/api/map/elements/<id>/splices/`, `/layout/`, `/splitters/...`).
+- Verificação rigorosa da extração: catalogados programaticamente TODOS os identificadores externos usados dentro do bloco extraído (via regex sobre chamadas de função e acesso de propriedade), confirmando que a lista de dependências passadas via `window.networkMap` está completa.
+
 ## [0.75.25] - 2026-08-04
 
 ### Corrigido
