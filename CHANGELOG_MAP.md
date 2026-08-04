@@ -1,3 +1,11 @@
+## [0.75.20] - 2026-08-04
+
+### Adicionado
+- **Primeira fatia real do "sistema próprio" da CTO/CDO/CEO** (decisão do usuário: construir isolado do código do Rack/Torre, sem risco de quebrar o que já funciona lá): nós de splitter e cabo do editor de fusões ganham as classes visuais do Canvas 2D (`master-canvas-node`/`master-node-port`) — mesma borda, sombra, raio e estilo de porta em pílula do Rack/Torre. Porta do splitter usada fica verde. Nenhuma lógica de clique-para-ligar, arraste ou dado foi tocada — só herança visual, isolada dentro de `#unifilar-dialog` (nunca usado pelo Rack/Torre).
+
+### Nota sobre o caminho escolhido
+- Avaliadas 2 arquiteturas: (a) sistema próprio isolado, mesmo visual — **escolhida**; (b) reaproveitar literalmente o mesmo painel/endpoints do Rack/Torre, fingindo splitter como equipamento — descartada por risco real de quebrar Rack/Torre em produção caso a tradução de dados saísse errada. Trabalho continua em fatias pequenas e testáveis, como todas as versões anteriores.
+
 ## [0.75.19] - 2026-08-04
 
 ### Corrigido
