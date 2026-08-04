@@ -25,7 +25,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
 # sempre igual a PLATFORM_VERSION, nunca uma versão própria.
 PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.82.0"))
 APP_VERSION = PLATFORM_VERSION
-MAP_VERSION = os.getenv("MAP_VERSION", "0.75.14")
+MAP_VERSION = os.getenv("MAP_VERSION", "0.75.15")
 
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 

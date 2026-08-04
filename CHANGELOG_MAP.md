@@ -1,3 +1,18 @@
+## [0.75.15] - 2026-08-04
+
+### Corrigido
+- alça do fio: o círculo de clique maior (fill transparente) podia não responder no centro exato em alguns navegadores — forçado `pointer-events: all` explicitamente, sem depender da cor de preenchimento;
+- cordão OLT → DIO: a descida reta a partir da porta de origem podia atravessar outra porta da mesma placa numa linha abaixo (ex.: PON 13/1 descendo por cima de PON 13/9) — agora desvia lateralmente até achar uma coluna livre antes de descer;
+- OLT: a grade de portas de cada placa deixou de ser fixa em 2 colunas e passa a ser fluida — quantas cabem lado a lado depende só da largura disponível.
+
+### Adicionado
+- OLT: alça de redimensionar (arrastar a lateral do card) para aumentar a largura do chassi — mais portas passam a caber lado a lado automaticamente, sem precisar editar nada; largura fica salva por equipamento.
+- OLT: os slots utilitários do chassi (módulos vazios, fonte de alimentação) do YAML do fabricante deixaram de ser desenhados — só as placas de serviço (PON/uplink) aparecem.
+
+### Investigado, não resolvido nesta versão
+- **Enlace PTP retorna erro 500** ao abrir a lista de torres/rádios de destino (`GET /api/map/ptp-links/candidates/`). Revisão completa do código do endpoint (`apps/network_map/api/ptp_links.py`) e das funções relacionadas não encontrou causa aparente — todos os campos, imports e permissões conferem. Preciso do traceback real do servidor (`docker logs` do container web no momento do erro) para diagnosticar com segurança, em vez de arriscar uma mudança sem prova.
+- **CTO/CDO/CEO ainda com a mesma tela**: a modernização visual da v0.75.14 (CSS) foi aplicada, mas não é o que foi pedido — o usuário quer o mesmo tipo de Canvas 2D usado no Rack/Torre, não uma repintura do editor de fusões existente. Isso exige reescrever a renderização interna de `showUnifilar()` e todos os seletores que dependem dela em pelo menos 5 arquivos (`map-editor.js`, `map-optical-editor-v2.js`, `map-optical-editor-v3.js`, `map-fusion-polish.js`, `map-v0750-tower-workspace.js`) — escopo do tamanho de uma versão inteira, não uma correção pontual.
+
 ## [0.75.14] - 2026-08-04
 
 ### Corrigido
