@@ -943,3 +943,33 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
     border-color: #22c55e !important;
     background: rgba(34, 197, 94, .14) !important;
 }
+
+/* MAP_V07529_CTO_STRIP_EQUIPMENT: contador de portas de cliente/DROP da
+   CTO, mostrado na barra de ferramentas do Canvas (mesmo motor do
+   Rack/Torre, só que sem os botões de equipamento genérico). */
+.tower-cto-ports-widget-v07529 {
+    display: inline-flex;
+    align-items: center;
+    min-height: 31px;
+    padding: 4px 10px;
+    border: 1px solid var(--v0750-border, rgba(148, 163, 184, .22));
+    border-radius: 8px;
+    color: var(--v0750-text, #e7f1fb);
+    background: var(--v0750-panel-soft, #102a43);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.tower-cto-ports-widget-v07529[hidden] {
+    display: none;
+}
+/* Reforço defensivo: .tower-workspace-actions-v0750 button/.tower-popover-v0750
+   button têm display:inline-flex sem !important, que vence o [hidden] do
+   UA stylesheet por origem de cascata (autor > UA, mesmo sem !important).
+   Sem isso, esconder um botão desses via button.hidden=true não some
+   visualmente -- afeta tanto os toggles novos da CTO quanto o filtro
+   antigo de tipo de equipamento por rack/tower. */
+.tower-workspace-actions-v0750 [hidden],
+.tower-popover-v0750 [hidden] {
+    display: none !important;
+}

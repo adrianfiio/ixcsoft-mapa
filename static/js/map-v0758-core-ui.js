@@ -222,7 +222,7 @@
         }[identity.type];
         const emptyParagraph = {
             rack: "Comece adicionando uma OLT, um DIO ou os equipamentos internos permitidos no rack.",
-            cto: "Comece adicionando os equipamentos desta CTO.",
+            cto: "A CTO não tem equipamento genérico — comece adicionando um splitter ou uma nota, ou abra Fusões para ligar as fibras do cabo.",
             tower: "Comece adicionando um DIO, uma PTO ou os equipamentos ativos da torre.",
         }[identity.type];
 
@@ -303,6 +303,18 @@
                 });
             }
         }
+        if (empty && identity.type === "cto") {
+            const actions = qs("div", empty);
+            if (actions) {
+                actions.innerHTML = `
+                    <button type="button" data-empty-cto-add="add-splitter">+ Splitter</button>
+                    <button type="button" data-empty-cto-add="add-note">+ Nota</button>
+                    <button type="button" data-empty-cto-add="fusions">Abrir Fusões</button>`;
+                qsa("[data-empty-cto-add]", actions).forEach((button) => {
+                    button.onclick = () => openCtoFusionEditor(dialog, button.dataset.emptyCtoAdd);
+                });
+            }
+        }
 
         const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "server", "pto", "other"]);
         const towerAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
@@ -314,6 +326,83 @@
         // MAP_V07513_HIDE_FIBERS_ON_TOWER
         const toolbarFibersButton = qs('.tower-workspace-toolbar-v0750 [data-open-panel="fibers"]');
         if (toolbarFibersButton) toolbarFibersButton.hidden = identity.type === "tower";
+
+        // MAP_V07529_CTO_STRIP_EQUIPMENT: a CTO não tem equipamento
+        // genérico -- pedido explícito do usuário pra tirar tudo que for
+        // equipamento (Adicionar, Ligar portas, Editar linhas, Inventário,
+        // Relatório de ligações) e trocar por ações da própria CTO
+        // (Splitter, Nota, Fusões, contador de portas de cliente/DROP).
+        // Nada disso muda pro Rack/Torre -- só escondido/adicionado quando
+        // identity.type === "cto".
+        const addMenuWrapper = qs('[aria-controls="tower-add-menu-v0750"]', root)?.closest(".tower-toolbar-menu-v0750");
+        if (addMenuWrapper) addMenuWrapper.hidden = identity.type === "cto";
+        const connectPortsButton = qs("[data-connect-ports]", root);
+        if (connectPortsButton) connectPortsButton.hidden = identity.type === "cto";
+        const editLinesButton = qs("[data-edit-lines]", root);
+        if (editLinesButton) editLinesButton.hidden = identity.type === "cto";
+        const inventoryItem = qs('[data-open-panel="equipment"]', root);
+        if (inventoryItem) inventoryItem.hidden = identity.type === "cto";
+        const matrixItem = qs('[data-open-panel="matrix"]', root);
+        if (matrixItem) matrixItem.hidden = identity.type === "cto";
+        if (toolbarFibersButton) {
+            const label = qs("span", toolbarFibersButton);
+            if (label) label.textContent = identity.type === "cto" ? "Fusões" : "Fibras";
+        }
+
+        const actionsBar = qs(".tower-workspace-actions-v0750", root);
+        if (actionsBar && identity.type === "cto") {
+            ["add-splitter", "add-note"].forEach((action) => {
+                if (qs(`[data-cto-quick-add-v07529="${action}"]`, actionsBar)) return;
+                const button = document.createElement("button");
+                button.type = "button";
+                button.dataset.ctoQuickAddV07529 = action;
+                button.textContent = action === "add-splitter" ? "+ Splitter" : "+ Nota";
+                button.onclick = () => openCtoFusionEditor(dialog, action);
+                actionsBar.insertBefore(button, qs("[data-connect-ports]", actionsBar));
+            });
+            updateCtoPortsWidget(root, dialog.dataset.elementId);
+        } else if (actionsBar) {
+            qsa("[data-cto-quick-add-v07529]", actionsBar).forEach((button) => button.remove());
+            qs(".tower-cto-ports-widget-v07529", actionsBar)?.remove();
+        }
+    }
+
+    // MAP_V07529_CTO_STRIP_EQUIPMENT: abre o editor de fusões
+    // (map-cto-suite.js, sobre o mesmo #unifilar-dialog que o Rack já usa
+    // pra fusão de DIO) e, se pedido, dispara a mesma ação que os botões
+    // "+ Splitter"/"+ Nota" de dentro dele já usam -- reaproveita a lógica
+    // existente, não duplica.
+    async function openCtoFusionEditor(dialog, action) {
+        const id = dialog?.dataset.elementId;
+        if (!id) return;
+        await window.networkMap?.showUnifilar?.(id);
+        if (action && action !== "fusions") {
+            document.querySelector(`[data-ceo-quick-add="${action}"]`)?.click();
+        }
+    }
+
+    async function updateCtoPortsWidget(root, elementId) {
+        const actionsBar = qs(".tower-workspace-actions-v0750", root);
+        if (!actionsBar || !elementId) return;
+        let widget = qs(".tower-cto-ports-widget-v07529", actionsBar);
+        if (!widget) {
+            widget = document.createElement("span");
+            widget.className = "tower-cto-ports-widget-v07529";
+            actionsBar.insertBefore(widget, actionsBar.firstChild);
+        }
+        try {
+            const element = await window.networkMap?.fetchElement?.(elementId);
+            const capacity = Number(element?.cto?.capacity || 0);
+            const splitters = (element?.splice_box?.trays || []).flatMap((tray) => tray.splitters || []);
+            const used = splitters.reduce(
+                (total, splitter) => total + (splitter.ports || []).filter((port) => port.output_fiber_id).length,
+                0,
+            );
+            widget.hidden = !capacity;
+            widget.textContent = `${used}/${capacity} portas (clientes/DROPs)`;
+        } catch {
+            widget.hidden = true;
+        }
     }
 
     function ensureElementMenu() {

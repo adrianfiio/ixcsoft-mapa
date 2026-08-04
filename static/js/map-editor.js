@@ -143,6 +143,14 @@
         if (!response.ok) throw new Error(data.detail || data.error || Object.values(data.errors || {}).flat().join(" ") || `Erro HTTP ${response.status}`);
         return data;
     }
+    // MAP_V07529_CTO_STRIP_EQUIPMENT: helper exposto pra map-v0758-core-ui.js
+    // conseguir os dados de uma CTO (capacidade, splitters) sem precisar
+    // ter a URL "/api/map/elements/.../" escrita literalmente naquele
+    // arquivo -- esse arquivo é o único dono de rotas de API do editor.
+    async function fetchElement(id) {
+        const data = await api(`/api/map/elements/${id}/`);
+        return data.element;
+    }
     function notify(text, isError = false) {
         message.textContent = text;
         message.classList.toggle("error", isError);
@@ -2062,6 +2070,6 @@
     window.networkMap = {
         map, loadStructure, showUnifilar, manageContainer, notify,
         api, escapeHtml, askValue, centerWithin, formatBudgetTooltip,
-        splitterLossLabel, openRouteInfoDialog, unifilarDialog,
+        splitterLossLabel, openRouteInfoDialog, unifilarDialog, fetchElement,
     };
 })();
