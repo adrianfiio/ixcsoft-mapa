@@ -21,7 +21,7 @@
         container: {
             elementId: "",
             data: null,
-            layout: { positions: {}, cablePositions: {}, dioPages: {}, routes: {}, zoom: 1 },
+            layout: { positions: {}, cablePositions: {}, dioPages: {}, routes: {}, nodeWidths: {}, zoom: 1 },
             selectedPort: null,
             selectedFiber: null,
             lineMode: false,
@@ -699,11 +699,12 @@
             if (String(containerDialog()?.dataset.elementId || "") !== id) return null;
             state.container.elementId = id;
             state.container.data = data;
-            state.container.layout = { positions: {}, cablePositions: {}, dioPages: {}, routes: {}, zoom: 1, ...(layout.layout || {}) };
+            state.container.layout = { positions: {}, cablePositions: {}, dioPages: {}, routes: {}, nodeWidths: {}, zoom: 1, ...(layout.layout || {}) };
             state.container.layout.positions ||= {};
             state.container.layout.cablePositions ||= {};
             state.container.layout.dioPages ||= {};
             state.container.layout.routes ||= {};
+            state.container.layout.nodeWidths ||= {};
             return data;
         });
         state.container.loadingPromise = loading;
@@ -910,8 +911,9 @@
         if (item?.type === "olt" && Object.keys(item?.metadata?.device_type || {}).length) {
             const definitions = item.metadata.device_type.interfaces || [];
             const groups = new Set(definitions.map((row) => row.group_name || row.description || "Interfaces"));
-            const utilities = (item.metadata.device_type.module_bays || []).length + (item.metadata.device_type.power_ports || []).length;
-            return 120 + Math.ceil(Math.max(1, groups.size) / 2) * 150 + Math.ceil(utilities / 2) * 82;
+            // MAP_V07515_OLT_PON_ONLY: sem a grade de utilidades (módulos/PWR)
+            // renderizada, não há mais altura extra pra reservar pra ela.
+            return 120 + Math.ceil(Math.max(1, groups.size) / 2) * 150;
         }
         return 180;
     }
@@ -1026,16 +1028,15 @@
     function renderOltChassisV07510(item, ports) {
         const metadata = equipmentDeviceTypeV07510(item);
         const groups = oltInterfaceGroupsV07510(item, ports);
-        const moduleBays = Array.isArray(metadata.module_bays) ? metadata.module_bays : [];
-        const powerPorts = Array.isArray(metadata.power_ports) ? metadata.power_ports : [];
+        // MAP_V07515_OLT_PON_ONLY: só as placas de serviço (PON/uplink)
+        // interessam no Canvas — os slots utilitários do chassi (módulos
+        // vazios, fonte de alimentação) importados do YAML do fabricante
+        // não têm porta nenhuma pra ligar e só ocupavam espaço.
         return `<div class="master-olt-chassis-body-v07510">
             <div class="master-olt-chassis-meta-v07510"><span>${escapeHtml(metadata.manufacturer || item.vendor || "OLT")} · ${escapeHtml(metadata.model || item.model || item.name)}</span><span>${metadata.u_height ? `${metadata.u_height}U` : "Chassi modular"}</span></div>
-            ${(moduleBays.length || powerPorts.length) ? `<div class="master-olt-utility-grid-v07510">
-                ${moduleBays.map((bay) => `<section class="master-olt-utility-v07510"><header><strong>${escapeHtml(bay.name)}</strong><span>MÓDULO</span></header><div class="master-olt-empty-slot-v07510">Slot físico do chassi</div></section>`).join("")}
-                ${powerPorts.map((power) => `<section class="master-olt-utility-v07510"><header><strong>${escapeHtml(power.name)}</strong><span>PWR</span></header><div class="master-olt-empty-slot-v07510">${escapeHtml(power.source_type || "alimentação")}</div></section>`).join("")}
-            </div>` : ""}
             <div class="master-olt-slots-v07510">${groups.map((group) => `<section class="master-olt-slot-v07510" data-slot-kind="${escapeHtml(group.kind)}"><header><strong>${escapeHtml(group.name)}</strong><span>${group.ports.length} porta(s)</span></header><div class="master-olt-slot-ports-v07510">${group.ports.map((port) => `<button type="button" class="master-node-port right olt-port-v07510 ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${port.link_id || ""}" title="${escapeHtml(port.type_label || port.type)}"><span>${escapeHtml(port.label)}</span><i></i></button>`).join("")}</div></section>`).join("")}</div>
-        </div>`;
+        </div>
+        <span class="master-olt-resize-grip-v07515" title="Arraste para aumentar/diminuir a largura" aria-hidden="true">⋮⋮</span>`;
     }
 
     function renderEquipmentBodyV07510(item, ports) {
@@ -1209,8 +1210,14 @@
             const ports = item.ports || [];
             const nodeClasses = ["master-canvas-node"];
             if (item.type === "dio" && ports.length > 24) nodeClasses.push("master-dio-large-v07510");
-            if (item.type === "olt" && Object.keys(equipmentDeviceTypeV07510(item)).length) nodeClasses.push("master-olt-chassis-v07510");
-            return `<article class="${nodeClasses.join(" ")}" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="transform:translate(${position.x}px,${position.y}px)">
+            const isOltChassis = item.type === "olt" && Object.keys(equipmentDeviceTypeV07510(item)).length;
+            if (isOltChassis) nodeClasses.push("master-olt-chassis-v07510");
+            // MAP_V07515_OLT_RESIZE: largura salva (se o usuário já arrastou
+            // a alça de redimensionar) vira variável CSS por nó; sem valor
+            // salvo, a regra padrão do CSS (--olt-width com fallback) vale.
+            const savedWidth = isOltChassis ? Number(state.container.layout.nodeWidths?.[String(item.id)]) : 0;
+            const widthStyle = savedWidth > 0 ? `--olt-width:${savedWidth}px;` : "";
+            return `<article class="${nodeClasses.join(" ")}" data-equipment-node="${item.id}" data-equipment-type="${escapeHtml(item.type)}" data-provisioning-mode="${escapeHtml(item.provisioning_mode || 'manual')}" data-monitoring-eligible="${item.monitoring_eligible === true ? 'true' : 'false'}" data-pos-x="${position.x}" data-pos-y="${position.y}" style="${widthStyle}transform:translate(${position.x}px,${position.y}px)">
                 <header><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.type_label)}</small><span class="master-node-actions"><button type="button" class="master-node-edit" data-node-edit="${item.id}" title="Editar propriedades" aria-label="Editar ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"></path><path d="m13.5 6.5 3.5 3.5"></path></svg></button><button type="button" class="master-node-delete" data-node-delete="${item.id}" title="Excluir equipamento" aria-label="Excluir ${escapeHtml(item.name)}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"></path></svg></button></span></header>
                 ${renderEquipmentBodyV07510(item, ports)}
             </article>`;
@@ -1230,7 +1237,7 @@
             </article>`).join("");
         qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
         qsa("[data-canvas-note]", nodes).forEach((node) => installNoteDragV07511(node));
-        qsa("[data-equipment-node]", nodes).forEach((node) => installNodeDrag(node));
+        qsa(".master-olt-chassis-v07510", nodes).forEach((node) => installOltResizeGripV07515(node));
         qsa("[data-cable-node]", nodes).forEach((node) => { installCableDrag(node); syncCableVisualSide(node); });
         qsa("[data-cable-fiber]", nodes).forEach((button) => button.onclick = () => selectCableFiber(button));
         qsa("[data-dio-page]", nodes).forEach((select) => select.onchange = () => {
@@ -1343,6 +1350,37 @@
                 state.container.layout.positions[id] = next;
                 node.dataset.posX = String(next.x); node.dataset.posY = String(next.y);
                 node.style.transform = `translate(${next.x}px,${next.y}px)`;
+                drawContainerLinks();
+            };
+            const up = () => {
+                window.removeEventListener("pointermove", move);
+                saveContainerLayout();
+            };
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", up, { once: true });
+        };
+    }
+
+    // MAP_V07515_OLT_RESIZE: alça própria da OLT pra aumentar a largura do
+    // chassi — a grade de portas é fluida (auto-fill), então alargar joga
+    // automaticamente mais portas lado a lado, sem depender de um layout
+    // fixo de colunas.
+    function installOltResizeGripV07515(node) {
+        const grip = qs(".master-olt-resize-grip-v07515", node);
+        if (!grip) return;
+        grip.onpointerdown = (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            grip.setPointerCapture?.(event.pointerId);
+            const id = String(node.dataset.equipmentNode);
+            const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
+            const startWidth = node.getBoundingClientRect().width / scale;
+            const startX = event.clientX;
+            const move = (moveEvent) => {
+                const next = Math.max(420, Math.min(2200, startWidth + (moveEvent.clientX - startX) / scale));
+                node.style.setProperty("--olt-width", `${next}px`);
+                state.container.layout.nodeWidths[id] = next;
                 drawContainerLinks();
             };
             const up = () => {

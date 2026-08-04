@@ -651,18 +651,46 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 }
 
 .master-canvas-node.master-olt-chassis-v07510 {
-    width: 840px !important;
-}
-.master-olt-utility-grid-v07510 {
-    opacity: .72;
+    /* MAP_V07515_OLT_RESIZE: --olt-width é setado por nó (inline, via JS)
+       quando o usuário arrasta a alça de redimensionar; sem valor salvo,
+       usa o padrão de 840px. */
+    width: var(--olt-width, 840px) !important;
+    position: relative;
 }
 .master-olt-slot-v07510 {
     min-height: 0 !important;
 }
 .master-olt-slot-ports-v07510 {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    /* MAP_V07515_OLT_RESIZE: grade fluida — quantas portas cabem lado a
+       lado depende só da largura disponível, então alargar o nó (arrastando
+       a alça) automaticamente joga mais portas para o lado, em vez de ficar
+       preso em 2 colunas fixas. */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
     gap: 8px !important;
     padding: 10px !important;
+}
+.master-olt-resize-grip-v07515 {
+    position: absolute;
+    top: 50%;
+    right: -14px;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 40px;
+    color: var(--master-muted);
+    background: var(--master-panel-2);
+    border: 1px solid var(--master-border);
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1;
+    cursor: ew-resize;
+    transform: translateY(-50%);
+    user-select: none;
+}
+.master-olt-resize-grip-v07515:hover {
+    color: var(--master-text);
+    border-color: var(--master-accent);
 }
 .master-olt-slot-ports-v07510 .master-node-port {
     min-height: 36px !important;

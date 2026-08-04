@@ -257,9 +257,32 @@
                     destination.x,
                     sourceNodeRect ? (sourceNodeRect.left - canvasRect.left) / scale : source.x,
                 ) - 48 - lane;
+            // MAP_V07515_OLT_DROP_AVOIDS_SIBLING_PORTS: descer reto em
+            // x=source.x, de dentro de uma placa com várias linhas de PON
+            // (ex.: PON 13/1 na linha 1), atravessava outra porta na mesma
+            // coluna de uma linha abaixo (ex.: PON 13/9). As portas irmãs
+            // da própria placa (exceto a de origem) entram como obstáculo
+            // pontual só para achar uma coluna livre de descida — o board
+            // inteiro continua fora da lista de obstáculos do roteamento
+            // genérico, então isso não duplica trabalho.
+            const siblingPorts = board
+                ? qsa("[data-port-id]", board)
+                    .filter((element) => element !== sourceButton)
+                    .map((element) => {
+                        const rect = element.getBoundingClientRect();
+                        return {
+                            left: (rect.left - canvasRect.left) / scale,
+                            right: (rect.right - canvasRect.left) / scale,
+                            top: (rect.top - canvasRect.top) / scale,
+                            bottom: (rect.bottom - canvasRect.top) / scale,
+                        };
+                    })
+                : [];
+            const dropX = findClearLevel(source.x, "x", source.y, guideY, siblingPorts);
             return [
                 source,
-                { x: source.x, y: guideY },
+                { x: dropX, y: source.y },
+                { x: dropX, y: guideY },
                 { x: sideChannel, y: guideY },
                 { x: sideChannel, y: destination.y },
                 destination,
@@ -380,6 +403,13 @@
             hit.setAttribute("cy", point.y);
             hit.setAttribute("r", "14");
             hit.style.fill = "transparent";
+            // MAP_V07515_HANDLE_HIT_POINTER_EVENTS: um <circle> SVG com
+            // fill:transparent depende de "visiblePainted" (o padrão) pra
+            // decidir se recebe clique — em alguns motores de renderização
+            // uma cor com alpha 0 não conta como "pintada", deixando o
+            // centro exato sem resposta. Forçar "all" aqui remove qualquer
+            // dependência da cor de preenchimento.
+            hit.style.pointerEvents = "all";
             hit.style.cursor = "move";
             hit.addEventListener("pointerdown", (event) => {
                 event.preventDefault();
