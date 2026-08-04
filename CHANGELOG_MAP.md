@@ -1,3 +1,15 @@
+## [0.75.19] - 2026-08-04
+
+### Corrigido
+- enlace PTP mostrava "Status: Livre" na torre de DESTINO mesmo já ligado — causa raiz: um enlace PTP é gravado como `ContainerPortLink` apontando só para a torre de ORIGEM; a torre de destino nunca via essa ligação nos próprios dados. Agora consulta também a lista de enlaces PTP do projeto inteiro (que tem os dois lados) antes de decidir se a porta está livre.
+
+### Adicionado
+- distância real entre as duas torres (Haversine, a partir das coordenadas já existentes) exibida na linha tracejada do mapa (tooltip e popup) e no tooltip da porta wireless.
+- bolinha da porta wireless muda de cor: amarela = livre, verde = enlace PTP configurado.
+
+### Não incluído nesta versão (honestidade sobre o que falta)
+- Terceiro estado "vermelho = caiu" pedido pelo usuário **não foi implementado** — exigiria monitoramento real (SNMP/telemetria) do enlace PTP, que não existe hoje para este tipo de ligação. Mostrar "vermelho" sem medir de verdade seria inventar um dado, não uma correção.
+
 ## [0.75.18] - 2026-08-04
 
 ### Adicionado

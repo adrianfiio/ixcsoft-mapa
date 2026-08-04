@@ -775,3 +775,22 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 .optical-graph.panning-v07518 {
     cursor: grabbing;
 }
+
+/* MAP_V07519_PTP_PORT_STATUS: bolinha da porta wireless muda de cor —
+   amarela = livre, verde = enlace PTP configurado. Não existe telemetria
+   real (SNMP) de link PTP hoje, então não há um terceiro estado
+   "caiu"/vermelho aqui — isso precisa de monitoramento de verdade, não dá
+   pra fingir um status que não é medido. */
+[data-port-type="wireless"][data-v07512-ptp-status="free"] i {
+    background: #facc15 !important;
+    border-color: #422006 !important;
+}
+[data-port-type="wireless"][data-v07512-ptp-status="linked"] i {
+    background: #22c55e !important;
+    border-color: #052e14 !important;
+}
+.ptp-distance-v07519 {
+    display: block;
+    margin-top: 3px;
+    color: #7dd3fc;
+}
