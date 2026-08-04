@@ -1,3 +1,11 @@
+## [0.75.21] - 2026-08-04
+
+### Adicionado
+- barra de atalhos nova no topo do editor de fusões da CTO/CDO/CEO, com a mesma aparência da barra de ferramentas do Rack/Torre ("+ Splitter", "+ Nota"). **100% aditivo**: a barra de instruções antiga continua exatamente como estava, inalterada — os botões novos só chamam os mesmos menus de contexto que já existiam (clique com botão direito no fundo do quadro).
+
+### Nota técnica (por que não fui além)
+- Investigação encontrou que a área de toolbar/zoom (`.unifilar-zoom`) e o desenho de linhas (`.optical-links`) desse editor são reconstruídos em sequência por 5 scripts decoradores diferentes (`map-optical-editor-v2.js`, `v3.js`, `map-fusion-polish.js`, `map-v0750-tower-workspace.js`, `map-v0758-core-ui.js`) — `map-fusion-polish.js`, por exemplo, substitui inteiramente o conteúdo de `.unifilar-zoom` por um slider próprio. Reescrever essas áreas sem poder ver o resultado ao vivo arrisca quebrar algum desses 5 scripts. Decisão tomada com o usuário: continuar só adicionando (nunca removendo/renomeando) até dar pra testar ao vivo.
+
 ## [0.75.20] - 2026-08-04
 
 ### Adicionado

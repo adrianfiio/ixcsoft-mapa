@@ -889,7 +889,11 @@
             const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
                 <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
                 <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
-            content.innerHTML = `<div class="ceo-instructions">Arraste os blocos. Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
+            content.innerHTML = `<div class="tower-workspace-toolbar-v0750 ceo-quick-toolbar-v07521">
+                <div class="tower-workspace-title-v0750"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8"></path></svg><span><strong>Editor técnico · ${escapeHtml(element.name)}</strong><small>Splitter, cabos e fusões</small></span></div>
+                <div class="tower-workspace-actions-v0750"><button type="button" data-ceo-quick-add="add-splitter">+ Splitter</button><button type="button" data-ceo-quick-add="add-note">+ Nota</button></div>
+            </div>
+            <div class="ceo-instructions">Arraste os blocos. Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
                 <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div><div class="map-context-menu link-action-menu" hidden><button type="button" data-link-action="info">Informações de rota</button><button type="button" class="danger" data-link-action="delete">Excluir</button></div></div>`;
             let draggedFiber = null;
             let selectedFiber = null;
@@ -1268,6 +1272,20 @@
                 await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
                 unifilarDialog.close(); await showUnifilar(element.id); notify("Nota adicionada.");
             };
+            // MAP_V07521_CEO_QUICK_TOOLBAR: os botões da barra nova só
+            // reaproveitam os MESMOS handlers do menu de contexto (fundo do
+            // quadro, botão direito) — nada de lógica nova, só um atalho
+            // que simula o ponto de clique no centro da área visível.
+            content.querySelectorAll("[data-ceo-quick-add]").forEach((button) => {
+                button.onclick = () => {
+                    const rect = graphEl.getBoundingClientRect();
+                    canvasMenuPoint = {
+                        x: (graphEl.scrollLeft + rect.width / 2) / graphZoom,
+                        y: (graphEl.scrollTop + rect.height / 2) / graphZoom,
+                    };
+                    canvasMenu.querySelector(`[data-canvas-action="${button.dataset.ceoQuickAdd}"]`)?.click();
+                };
+            });
             content.querySelectorAll("[data-delete-note]").forEach((button) => {
                 button.onclick = async () => {
                     const accepted = await window.mapV0758?.confirmAction?.({
