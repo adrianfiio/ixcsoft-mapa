@@ -299,6 +299,10 @@
         qsa("[data-quick-add]", root).forEach((button) => {
             button.hidden = !allowed.has(String(button.dataset.quickAdd));
         });
+
+        // MAP_V07513_HIDE_FIBERS_ON_TOWER
+        const toolbarFibersButton = qs('.tower-workspace-toolbar-v0750 [data-open-panel="fibers"]');
+        if (toolbarFibersButton) toolbarFibersButton.hidden = identity.type === "tower";
     }
 
     function ensureElementMenu() {

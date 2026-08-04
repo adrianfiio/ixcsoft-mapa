@@ -166,6 +166,56 @@
         return `${path} L${last.x},${last.y}`;
     }
 
+    // MAP_V07513_OBSTACLE_ROUTING: mede as caixas REALMENTE renderizadas de
+    // cada equipamento/cabo/nota (não coordenadas fixas de coluna, que
+    // quebram com um chassi de OLT largo ou nós arrastados manualmente) e
+    // devolve seus retângulos em coordenadas locais do canvas, ignorando os
+    // nós de origem/destino do próprio link.
+    function nodeObstacleRects(excludeIds) {
+        const canvas = canvasElement();
+        if (!canvas) return [];
+        const canvasRect = canvas.getBoundingClientRect();
+        const scale = canvasScale();
+        const nodes = qsa("[data-equipment-node], [data-cable-node], [data-canvas-note]", canvas);
+        return nodes
+            .filter((node) => {
+                const id = node.dataset.equipmentNode || node.dataset.cableNode || node.dataset.canvasNote;
+                return id == null || !excludeIds.has(String(id));
+            })
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return {
+                    left: (rect.left - canvasRect.left) / scale,
+                    right: (rect.right - canvasRect.left) / scale,
+                    top: (rect.top - canvasRect.top) / scale,
+                    bottom: (rect.bottom - canvasRect.top) / scale,
+                };
+            });
+    }
+
+    // Procura, a partir de um valor preferido, o nível livre mais próximo
+    // (uma coordenada Y pra um trecho horizontal, ou X pra um trecho
+    // vertical) que não atravessa nenhum obstáculo dentro do intervalo
+    // perpendicular relevante. Se o valor preferido já está livre, devolve
+    // ele sem alteração — layouts sem obstáculo no meio ficam exatamente
+    // como antes.
+    function findClearLevel(preferred, axis, rangeStart, rangeEnd, obstacles) {
+        const lo = Math.min(rangeStart, rangeEnd);
+        const hi = Math.max(rangeStart, rangeEnd);
+        const margin = 10;
+        const blocks = (value) => obstacles.some((box) => (
+            axis === "y"
+                ? box.top - margin < value && value < box.bottom + margin && box.right > lo && box.left < hi
+                : box.left - margin < value && value < box.right + margin && box.bottom > lo && box.top < hi
+        ));
+        if (!blocks(preferred)) return preferred;
+        for (let step = 20; step <= 900; step += 20) {
+            if (!blocks(preferred + step)) return preferred + step;
+            if (!blocks(preferred - step)) return preferred - step;
+        }
+        return preferred;
+    }
+
     function autoRoute(link, endpoints) {
         const { source, destination, sourceButton, destinationButton } = endpoints;
         const lane = (Number(link.id) % 7) * 9;
@@ -204,11 +254,20 @@
         const firstX = source.x + horizontalDirection * offset;
         const lastX = destination.x - horizontalDirection * offset;
         const middleY = source.y + (destination.y - source.y) / 2;
+
+        const excludeIds = new Set([
+            sourceNode?.dataset.equipmentNode || sourceNode?.dataset.cableNode,
+            destinationNode?.dataset.equipmentNode,
+        ].filter(Boolean).map(String));
+        const obstacles = nodeObstacleRects(excludeIds);
+
         if (Math.abs(destination.x - source.x) > 180) {
-            return [source, { x: firstX, y: source.y }, { x: firstX, y: middleY }, { x: lastX, y: middleY }, { x: lastX, y: destination.y }, destination];
+            const clearY = findClearLevel(middleY, "y", firstX, lastX, obstacles);
+            return [source, { x: firstX, y: source.y }, { x: firstX, y: clearY }, { x: lastX, y: clearY }, { x: lastX, y: destination.y }, destination];
         }
         const middleX = source.x + (destination.x - source.x) / 2 + lane;
-        return [source, { x: middleX, y: source.y }, { x: middleX, y: destination.y }, destination];
+        const clearX = findClearLevel(middleX, "x", source.y, destination.y, obstacles);
+        return [source, { x: clearX, y: source.y }, { x: clearX, y: destination.y }, destination];
     }
 
     function routePoints(link) {
@@ -291,7 +350,10 @@
             circle.classList.add("master-link-handle-v07512");
             circle.setAttribute("cx", point.x);
             circle.setAttribute("cy", point.y);
-            circle.setAttribute("r", "8");
+            // MAP_V07513_HANDLE_HITBOX: r=8 exigia mirar o pixel exato pra
+            // reselecionar o ponto depois de movido; 13 dá folga real sem
+            // ficar visualmente estranho.
+            circle.setAttribute("r", "13");
             circle.addEventListener("pointerdown", (event) => {
                 event.preventDefault();
                 event.stopPropagation();

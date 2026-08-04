@@ -337,6 +337,7 @@
                 <button type="button" data-connect-ports>${icon("connect")}<span>Ligar portas</span></button>
                 <button type="button" data-edit-lines>${icon("edit")}<span>Editar linhas</span></button>
                 <button type="button" data-open-panel="fibers">${icon("fiber")}<span>Fibras</span></button>
+                <button type="button" data-container-refresh-v07513 title="Recarrega os dados dos equipamentos sem sair do editor">${icon("fit")}<span>Atualizar</span></button>
                 <div class="tower-toolbar-menu-v0750">
                     <button type="button" data-tower-menu aria-controls="tower-tools-menu-v0750" aria-expanded="false">${icon("menu")}<span>Ferramentas</span>${icon("chevron")}</button>
                     <div id="tower-tools-menu-v0750" class="tower-popover-v0750 tower-tools-menu-v0750" role="menu">
@@ -374,6 +375,13 @@
             notify(root.classList.contains("fiber-focus-v0756")
                 ? "Fibras destacadas. Clique numa fibra e depois na porta traseira do DIO."
                 : "Destaque de fibras desativado.");
+        };
+        qs("[data-container-refresh-v07513]", toolbar).onclick = async () => {
+            const dialog = dialogRoot();
+            const id = dialog?.dataset.elementId;
+            if (!id || !window.mapMasterSuite?.openContainerWorkspace) return;
+            await window.mapMasterSuite.openContainerWorkspace(id);
+            notify("Dados dos equipamentos atualizados.");
         };
         qs("[data-organize-canvas]", toolbar).onclick = () => qs("[data-container-organize]", root)?.click();
         qs("[data-fit-canvas]", toolbar).onclick = () => qs("[data-canvas-zoom-fit]", root)?.click();
