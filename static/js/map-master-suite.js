@@ -1355,6 +1355,14 @@
             const up = () => {
                 window.removeEventListener("pointermove", move);
                 saveContainerLayout();
+                // MAP_V07516_CLEAR_MANUAL_ROUTES_ON_MOVE: uma rota manual
+                // (ponto de dobra arrastado à mão) fica com coordenada
+                // absoluta fixa — se o equipamento se move e a rota não,
+                // a linha passa a cortar por cima de outra coisa. Ao
+                // terminar de mover, os links ligados a este equipamento
+                // voltam pro roteamento automático (que já evita obstáculo),
+                // em vez de ficar "presos" no ponto antigo.
+                document.dispatchEvent(new CustomEvent("map:node-moved", { detail: { equipmentId: id } }));
             };
             window.addEventListener("pointermove", move);
             window.addEventListener("pointerup", up, { once: true });
@@ -1386,6 +1394,7 @@
             const up = () => {
                 window.removeEventListener("pointermove", move);
                 saveContainerLayout();
+                document.dispatchEvent(new CustomEvent("map:node-moved", { detail: { equipmentId: id } }));
             };
             window.addEventListener("pointermove", move);
             window.addEventListener("pointerup", up, { once: true });
@@ -1422,6 +1431,7 @@
             const up = () => {
                 window.removeEventListener("pointermove", move);
                 saveContainerLayout();
+                document.dispatchEvent(new CustomEvent("map:node-moved", { detail: { cableId: id } }));
             };
             window.addEventListener("pointermove", move);
             window.addEventListener("pointerup", up, { once: true });

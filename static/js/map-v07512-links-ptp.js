@@ -447,7 +447,25 @@
         return (state.containerData?.links || []).find((link) => String(link.id) === String(id));
     }
 
+    // MAP_V07516_LINK_HOVER_HIGHLIGHT: passar o mouse acende a linha
+    // (glow), pra dar pra seguir o caminho exato do cordão/fusão em meio a
+    // várias linhas cruzando o Canvas. ensureSvgElement() reaproveita o
+    // mesmo <path> de hit em redesenhos (rewriteLinks roda a cada
+    // pointermove de um arraste) — addEventListener duplicaria o listener
+    // a cada redesenho, por isso o guard dataset.hoverBoundV07516.
+    function bindLinkHover(hit, link) {
+        if (hit.dataset.hoverBoundV07516 === "1") return;
+        hit.dataset.hoverBoundV07516 = "1";
+        hit.addEventListener("mouseenter", () => {
+            qs(`[data-master-link="${link.id}"]`, svgElement())?.classList.add("link-hover-v07516");
+        });
+        hit.addEventListener("mouseleave", () => {
+            qs(`[data-master-link="${link.id}"]`, svgElement())?.classList.remove("link-hover-v07516");
+        });
+    }
+
     function bindHitPath(hit, link, route) {
+        bindLinkHover(hit, link);
         hit.onclick = (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -895,7 +913,40 @@
         return true;
     }
 
+    // MAP_V07516_CLEAR_MANUAL_ROUTES_ON_MOVE: um ponto de dobra manual
+    // (arrastado à mão) é uma coordenada absoluta fixa no layout — quando o
+    // equipamento ou cabo dono da ligação se move, a rota manual antiga não
+    // acompanha, e a linha passa a cortar por cima de outra coisa. Ao final
+    // de um arraste, os links tocando o item movido voltam pro roteamento
+    // automático (que já evita obstáculo desde a v0.75.13/15).
+    function clearManualRoutesFor({ equipmentId, cableId }) {
+        if (!state.layout?.routes || !state.containerData) return;
+        const portIds = new Set();
+        if (equipmentId) {
+            (state.containerData.equipment || [])
+                .find((item) => String(item.id) === String(equipmentId))
+                ?.ports?.forEach((port) => portIds.add(String(port.id)));
+        }
+        let changed = false;
+        (state.containerData.links || []).forEach((link) => {
+            const touchesEquipment = equipmentId && (
+                portIds.has(String(link.source_port_id || "")) || portIds.has(String(link.destination_port_id || ""))
+            );
+            const touchesCable = cableId && String(link.cable_id || "") === String(cableId);
+            if ((touchesEquipment || touchesCable) && state.layout.routes[String(link.id)]?.length) {
+                delete state.layout.routes[String(link.id)];
+                changed = true;
+            }
+        });
+        if (!changed) return;
+        rewriteLinks();
+        saveLayout().catch((error) => notify(error.message, true));
+    }
+
     function installGlobalListeners() {
+        document.addEventListener("map:node-moved", (event) => {
+            clearManualRoutesFor(event.detail || {});
+        });
         document.addEventListener("map:container-rendered", (event) => {
             if (!currentContainerId()) return;
             window.setTimeout(() => enhanceContainer(event.detail?.data || null), 0);
