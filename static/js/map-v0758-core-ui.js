@@ -303,18 +303,12 @@
                 });
             }
         }
-        if (empty && identity.type === "cto") {
-            const actions = qs("div", empty);
-            if (actions) {
-                actions.innerHTML = `
-                    <button type="button" data-empty-cto-add="add-splitter">+ Splitter</button>
-                    <button type="button" data-empty-cto-add="add-note">+ Nota</button>
-                    <button type="button" data-empty-cto-add="fusions">Abrir Fusões</button>`;
-                qsa("[data-empty-cto-add]", actions).forEach((button) => {
-                    button.onclick = () => openCtoFusionEditor(dialog, button.dataset.emptyCtoAdd);
-                });
-            }
-        }
+        // MAP_V07530_CTO_EMBEDDED_CANVAS: a CTO não usa mais o estado
+        // vazio de equipamento -- o Canvas dela (splitter/cabo/nota) fica
+        // embutido direto no painel, então nunca fica "vazio" de verdade
+        // (mesmo sem nenhum splitter ainda, o Canvas embutido aparece com
+        // o quadro pronto pra receber o primeiro).
+        if (empty && identity.type === "cto") empty.hidden = true;
 
         const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "server", "pto", "other"]);
         const towerAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
@@ -323,17 +317,17 @@
             button.hidden = !allowed.has(String(button.dataset.quickAdd));
         });
 
-        // MAP_V07513_HIDE_FIBERS_ON_TOWER
+        // MAP_V07513_HIDE_FIBERS_ON_TOWER / MAP_V07530_CTO_EMBEDDED_CANVAS:
+        // a CTO não usa mais esse botão pra abrir uma janela separada --
+        // o Canvas embutido (abaixo) já mostra e liga as fibras direto.
         const toolbarFibersButton = qs('.tower-workspace-toolbar-v0750 [data-open-panel="fibers"]');
-        if (toolbarFibersButton) toolbarFibersButton.hidden = identity.type === "tower";
+        if (toolbarFibersButton) toolbarFibersButton.hidden = identity.type !== "rack";
 
         // MAP_V07529_CTO_STRIP_EQUIPMENT: a CTO não tem equipamento
         // genérico -- pedido explícito do usuário pra tirar tudo que for
         // equipamento (Adicionar, Ligar portas, Editar linhas, Inventário,
-        // Relatório de ligações) e trocar por ações da própria CTO
-        // (Splitter, Nota, Fusões, contador de portas de cliente/DROP).
-        // Nada disso muda pro Rack/Torre -- só escondido/adicionado quando
-        // identity.type === "cto".
+        // Relatório de ligações). Nada disso muda pro Rack/Torre -- só
+        // escondido quando identity.type === "cto".
         const addMenuWrapper = qs('[aria-controls="tower-add-menu-v0750"]', root)?.closest(".tower-toolbar-menu-v0750");
         if (addMenuWrapper) addMenuWrapper.hidden = identity.type === "cto";
         const connectPortsButton = qs("[data-connect-ports]", root);
@@ -344,41 +338,78 @@
         if (inventoryItem) inventoryItem.hidden = identity.type === "cto";
         const matrixItem = qs('[data-open-panel="matrix"]', root);
         if (matrixItem) matrixItem.hidden = identity.type === "cto";
-        if (toolbarFibersButton) {
-            const label = qs("span", toolbarFibersButton);
-            if (label) label.textContent = identity.type === "cto" ? "Fusões" : "Fibras";
-        }
 
+        // MAP_V07530_CTO_EMBEDDED_CANVAS: o Canvas de splitter/cabo/nota
+        // (map-cto-suite.js) fica embutido DENTRO do mesmo painel do
+        // Rack/Torre, no lugar do Canvas de equipamento -- não abre mais
+        // #unifilar-dialog como janela separada (era isso que aparecia
+        // por cima do Canvas ao clicar em "Fusões"/"+ Nota", bug
+        // reportado pelo usuário). "Estrutura" também aponta pro drawer
+        // de dentro do Canvas embutido em vez do inventário de
+        // equipamento (que a CTO não tem).
         const actionsBar = qs(".tower-workspace-actions-v0750", root);
-        if (actionsBar && identity.type === "cto") {
-            ["add-splitter", "add-note"].forEach((action) => {
-                if (qs(`[data-cto-quick-add-v07529="${action}"]`, actionsBar)) return;
-                const button = document.createElement("button");
-                button.type = "button";
-                button.dataset.ctoQuickAddV07529 = action;
-                button.textContent = action === "add-splitter" ? "+ Splitter" : "+ Nota";
-                button.onclick = () => openCtoFusionEditor(dialog, action);
-                actionsBar.insertBefore(button, qs("[data-connect-ports]", actionsBar));
-            });
-            updateCtoPortsWidget(root, dialog.dataset.elementId);
-        } else if (actionsBar) {
-            qsa("[data-cto-quick-add-v07529]", actionsBar).forEach((button) => button.remove());
-            qs(".tower-cto-ports-widget-v07529", actionsBar)?.remove();
+        const structureButton = qs("[data-structure-info]", root);
+        if (identity.type === "cto") {
+            if (actionsBar) {
+                ["add-splitter", "add-note"].forEach((action) => {
+                    if (qs(`[data-cto-quick-add-v07529="${action}"]`, actionsBar)) return;
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.dataset.ctoQuickAddV07529 = action;
+                    button.textContent = action === "add-splitter" ? "+ Splitter" : "+ Nota";
+                    button.onclick = () => triggerCtoAction(root, action);
+                    actionsBar.insertBefore(button, qs("[data-connect-ports]", actionsBar));
+                });
+                updateCtoPortsWidget(root, dialog.dataset.elementId);
+            }
+            if (structureButton && !structureButton.dataset.ctoOverrideV07530) {
+                structureButton.dataset.ctoOverrideV07530 = "true";
+                structureButton.addEventListener("click", (event) => {
+                    if (dialog.dataset.containerType !== "cto") return;
+                    event.stopImmediatePropagation();
+                    triggerCtoAction(root, "structure");
+                }, true);
+            }
+            ensureCtoEmbeddedCanvas(root, dialog);
+        } else {
+            if (actionsBar) {
+                qsa("[data-cto-quick-add-v07529]", actionsBar).forEach((button) => button.remove());
+                qs(".tower-cto-ports-widget-v07529", actionsBar)?.remove();
+            }
+            qs('[data-panel="canvas"] .cto-embedded-canvas-v07530', root)?.remove();
         }
     }
 
-    // MAP_V07529_CTO_STRIP_EQUIPMENT: abre o editor de fusões
-    // (map-cto-suite.js, sobre o mesmo #unifilar-dialog que o Rack já usa
-    // pra fusão de DIO) e, se pedido, dispara a mesma ação que os botões
-    // "+ Splitter"/"+ Nota" de dentro dele já usam -- reaproveita a lógica
-    // existente, não duplica.
-    async function openCtoFusionEditor(dialog, action) {
-        const id = dialog?.dataset.elementId;
-        if (!id) return;
-        await window.networkMap?.showUnifilar?.(id);
-        if (action && action !== "fusions") {
-            document.querySelector(`[data-ceo-quick-add="${action}"]`)?.click();
+    // MAP_V07530_CTO_EMBEDDED_CANVAS: cria (uma vez) e renderiza o Canvas
+    // de splitter/cabo/nota diretamente dentro do painel [data-panel="canvas"]
+    // do motor do Rack/Torre -- reaproveita window.mapCtoSuite.render()
+    // (map-cto-suite.js) sem alterar sua lógica de fusão/drag/zoom, só
+    // passando um alvo diferente (options.embedded) e um refresh próprio
+    // que re-renderiza no mesmo lugar em vez de abrir #unifilar-dialog.
+    async function ensureCtoEmbeddedCanvas(root, dialog) {
+        const panel = qs('[data-panel="canvas"]', root);
+        const elementId = dialog?.dataset.elementId;
+        if (!panel || !elementId || !window.mapCtoSuite?.render) return;
+        let embedded = qs(".cto-embedded-canvas-v07530", panel);
+        if (!embedded) {
+            embedded = document.createElement("div");
+            embedded.className = "cto-embedded-canvas-v07530";
+            panel.appendChild(embedded);
         }
+        const rerender = async () => {
+            const fresh = await window.networkMap?.fetchElement?.(elementId);
+            if (fresh) await window.mapCtoSuite.render(fresh, embedded, { embedded: true, onRefresh: rerender });
+            updateCtoPortsWidget(root, elementId);
+        };
+        const element = await window.networkMap?.fetchElement?.(elementId);
+        if (element) await window.mapCtoSuite.render(element, embedded, { embedded: true, onRefresh: rerender });
+    }
+
+    function triggerCtoAction(root, action) {
+        const embedded = qs(".cto-embedded-canvas-v07530", root);
+        if (!embedded) return;
+        if (action === "structure") embedded.querySelector("[data-cto-structure-v07523]")?.click();
+        else embedded.querySelector(`[data-ceo-quick-add="${action}"]`)?.click();
     }
 
     async function updateCtoPortsWidget(root, elementId) {
