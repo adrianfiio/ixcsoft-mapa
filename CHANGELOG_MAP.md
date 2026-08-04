@@ -1,3 +1,20 @@
+## [0.75.31] - 2026-08-04
+
+### Alterado — CTO, CEO e CDO no mesmo editor 2D do Rack/Torre
+- CEO/CDO (`element_type=splice_box`) agora abrem `openContainerWorkspace`, exatamente o mesmo motor/shell usado por Rack, Torre e CTO. O conteúdo específico de splitter, cabo, nota e fusão continua pertencendo ao `map-cto-suite.js`, embutido no painel comum — sem reabrir o editor antigo em outra janela.
+- O menu de contexto também abre o editor técnico comum; não existe mais caminho lateral que mande CEO/CDO para `showUnifilar()`.
+- Identidade própria preservada pelo subtipo (`CEO`, `CDO` ou fallback `CEO/CDO`), com título, estrutura e estado óptico corretos.
+- Controles de equipamento genérico permanecem ocultos em CTO/CEO/CDO; Rack e Torre não foram alterados.
+- O widget superior mostra portas usadas/capacidade na CTO e quantidade de fusões/splitters na CEO/CDO.
+
+### Backend
+- Os mesmos cinco endpoints do shell comum agora aceitam também `NetworkElement.ElementType.SPLICE_BOX`: equipamentos do container (bootstrap do shell), links internos, layout v3, endpoint passivo v3 e importação YAML.
+- O payload do container passa a incluir `subtype`, necessário para diferenciar CEO de CDO no frontend.
+
+### Segurança
+- Mudanças aditivas; sem migrations.
+- Base validada contra `main` no commit `64d9cca1bf998d15542794ebbf03d67837906e93` (MAP v0.75.30).
+
 ## [0.75.30] - 2026-08-04
 
 ### Corrigido — bug real reportado com print

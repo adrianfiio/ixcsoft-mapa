@@ -899,9 +899,9 @@ def element_detail_payload(element):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def container_equipment(request, element_id):
-    # MAP_V07528_CTO_TORRE_ENGINE: CTO liberada pra abrir o mesmo Canvas
-    # de equipamento do Rack/Torre (pedido explícito do usuário: "cópia
-    # geral da torre pra CTO"). Nada muda pro Rack/Torre.
+    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: o endpoint fornece o shell
+    # comum também para CEO/CDO (splice_box). A camada visual óptica
+    # continua escondendo equipamento genérico nas três caixas.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
@@ -909,6 +909,7 @@ def container_equipment(request, element_id):
             NetworkElement.ElementType.RACK,
             NetworkElement.ElementType.TOWER,
             NetworkElement.ElementType.CTO,
+            NetworkElement.ElementType.SPLICE_BOX,
         ],
     )
     if request.method == "POST":
@@ -1051,7 +1052,12 @@ def container_equipment(request, element_id):
                 )
         return JsonResponse({"equipment": _container_equipment_payload(equipment)}, status=201)
     return JsonResponse({
-        "container": {"id": container.id, "name": container.name, "type": container.element_type},
+        "container": {
+            "id": container.id,
+            "name": container.name,
+            "type": container.element_type,
+            "subtype": container.metadata.get("import_subtype", ""),
+        },
         "equipment": [
             _container_equipment_payload(item)
             for item in container.internal_equipments.prefetch_related(
@@ -1624,8 +1630,8 @@ def container_equipment_ports(request, element_id, equipment_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def container_port_links(request, element_id):
-    # MAP_V07528_CTO_TORRE_ENGINE: mesma liberação de container_equipment
-    # acima -- CTO precisa poder criar cordões internos igual Rack/Torre.
+    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: mesma liberação do shell para
+    # CTO/CEO/CDO. Rack/Torre mantêm o comportamento anterior.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
@@ -1633,6 +1639,7 @@ def container_port_links(request, element_id):
             NetworkElement.ElementType.RACK,
             NetworkElement.ElementType.TOWER,
             NetworkElement.ElementType.CTO,
+            NetworkElement.ElementType.SPLICE_BOX,
         ],
     )
     if not can_edit_company(request.user, container.company_id):
@@ -1661,7 +1668,7 @@ def container_port_links(request, element_id):
             pk=cable_fiber.cable_id,
             company=container.company,
         ).exists():
-            return JsonResponse({"detail": "Fibra não pertence a um cabo deste rack/torre."}, status=400)
+            return JsonResponse({"detail": "Fibra não pertence a um cabo desta estrutura."}, status=400)
         if ContainerPortLink.objects.filter(cable_fiber=cable_fiber).exists():
             return JsonResponse({"detail": "Esta fibra já está em uso."}, status=409)
         cable = cable_fiber.cable

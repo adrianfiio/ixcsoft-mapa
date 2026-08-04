@@ -984,8 +984,8 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
    mesmo evento map:container-rendered, ordem de execução entre os dois
    arquivos não é garantida) -- assim não importa quem rodou por
    último, a CTO nunca mostra o estado vazio de equipamento. */
-#container-dialog.map-v0758-cto .tower-empty-v0750,
-#container-dialog.map-v0758-cto .master-canvas-scroll {
+#container-dialog.map-v0758-optical-box .tower-empty-v0750,
+#container-dialog.map-v0758-optical-box .master-canvas-scroll {
     display: none !important;
 }
 .cto-embedded-canvas-v07530 {
@@ -993,7 +993,7 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
     inset: 0;
     overflow: auto;
 }
-#container-dialog:not(.map-v0758-cto) .cto-embedded-canvas-v07530 {
+#container-dialog:not(.map-v0758-optical-box) .cto-embedded-canvas-v07530 {
     display: none !important;
 }
 .cto-embedded-canvas-v07530 .tower-workspace-toolbar-v0750.ceo-quick-toolbar-v07521,
