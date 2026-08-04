@@ -672,3 +672,63 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 .master-olt-slot-v07510[data-slot-kind="pon"] header {
     background: rgba(10, 63, 79, .82) !important;
 }
+
+/* MAP_V07514_FUSION_CANVAS_VISUAL: modernização visual do editor de fusões
+   de CTO/CDO (.optical-graph e seus nós) pra usar a mesma linguagem visual
+   do Canvas 2D de Rack/Torre (--master-*), sem tocar em nenhuma lógica de
+   clique/arraste/conexão — só cor, raio de borda e sombra. O sistema de
+   nós arrastáveis e clique-para-ligar (cabo → splitter → fibra) já existe
+   e já funciona; isso só atualiza a aparência. */
+.optical-graph {
+    background: var(--master-bg) !important;
+    border-color: var(--master-border) !important;
+}
+.fiber-cable-node {
+    background: var(--master-panel) !important;
+    border-color: var(--master-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .4) !important;
+}
+.fiber-cable-node header {
+    background: var(--master-panel-2) !important;
+    border-top-color: var(--master-accent) !important;
+    color: var(--master-text) !important;
+}
+.expand-fibers {
+    color: var(--master-accent) !important;
+    background: var(--master-panel-2) !important;
+    border-color: var(--master-accent) !important;
+}
+.fiber-port {
+    color: var(--master-muted) !important;
+}
+.fiber-port:hover,
+.fiber-port.selected {
+    color: var(--master-text) !important;
+    background: rgba(56, 189, 248, .14) !important;
+}
+.graph-splitter-node {
+    background: var(--master-panel) !important;
+    border-color: var(--master-accent) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .4) !important;
+}
+.graph-splitter {
+    background: var(--master-bg) !important;
+    border-color: var(--master-border) !important;
+    border-radius: 8px !important;
+}
+.graph-splitter button {
+    color: var(--master-text) !important;
+    background: var(--master-panel-2) !important;
+    border-color: var(--master-border) !important;
+    border-radius: 6px !important;
+}
+.graph-splitter button:hover,
+.graph-splitter button.selected {
+    border-color: var(--master-accent) !important;
+    background: rgba(56, 189, 248, .18) !important;
+}
+.graph-splitter button.linked {
+    border-color: #22c55e !important;
+}

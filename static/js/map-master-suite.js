@@ -973,13 +973,16 @@
     function renderDioPortPairV07510(port, compact = false) {
         const rearLink = port.fusion_link_id || "";
         const frontLink = port.link_id || "";
+        // MAP_V07514_DIO_ORIENTATION: esquerda = frente (cordão para o
+        // equipamento, ex. OLT) — direita = traseira (fusão com o cabo da
+        // rua). Antes era o contrário.
         if (!compact) {
-            return `<button type="button" class="master-node-port left dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · entrada do cabo"><span>${escapeHtml(port.label)}</span><i></i></button>
-                <button type="button" class="master-node-port right dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · cordão para equipamento"><span>${escapeHtml(port.label)}</span><i></i></button>`;
+            return `<button type="button" class="master-node-port left dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · cordão para equipamento"><span>${escapeHtml(port.label)}</span><i></i></button>
+                <button type="button" class="master-node-port right dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · entrada do cabo"><span>${escapeHtml(port.label)}</span><i></i></button>`;
         }
         return `<div class="master-dio-position-v07510">
-            <button type="button" class="master-node-port dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
             <button type="button" class="master-node-port dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
+            <button type="button" class="master-node-port dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
         </div>`;
     }
 

@@ -1500,6 +1500,22 @@ def _generate_container_equipment_ports(equipment):
             )
             for number in range(1, equipment.dio_port_capacity + 1)
         ]
+    elif equipment.equipment_type in {
+        ContainerEquipment.EquipmentType.PTP,
+        ContainerEquipment.EquipmentType.ACCESS_POINT,
+    }:
+        # MAP_V07514_PTP_DEFAULT_WIRELESS_PORT: sem isto, um rádio PTP ou AP
+        # recém-criado ficava sem nenhuma porta — o clique em "Ligar PTP?"
+        # nunca aparecia porque não existia porta wireless pra clicar, e
+        # nada indicava ao usuário que era preciso adicionar uma manualmente
+        # antes de usar o enlace.
+        ports = [ContainerEquipmentPort(
+            equipment=equipment,
+            port_type=ContainerEquipmentPort.PortType.WIRELESS,
+            number=1,
+            port_number=1,
+            label="Interface wireless",
+        )]
     ContainerEquipmentPort.objects.bulk_create(ports)
 
 
