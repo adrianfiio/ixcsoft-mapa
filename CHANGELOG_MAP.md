@@ -1,3 +1,20 @@
+## [0.75.29] - 2026-08-04
+
+### Alterado — CTO sem equipamento genérico, com splitter/nota/fusões/portas
+- Confirmado pelo usuário: "agora sim tá como eu queria" (v0.75.28, CTO abrindo o motor real da Torre). Pedido de continuação: "tire tudo que for equipamento e adicione pra fazer as fusões aí e adicionar splitter, nota, e já aparecer 1 widget da quantidade de porta que a CTO aceita para ligar clientes e DROPs."
+- **Removido da CTO** (só dela — Rack/Torre continuam com tudo): botão "+ Adicionar" (equipamento genérico), "Ligar portas", "Editar linhas", e no menu Ferramentas: "Inventário" e "Relatório de ligações".
+- **Adicionado na barra de ferramentas da CTO**: botões "+ Splitter" e "+ Nota" — abrem o editor de fusões (`map-cto-suite.js`) já disparando a mesma ação que os botões internos dele usam (reaproveitado, não duplicado). Botão "Fibras" renomeado pra "Fusões" no contexto da CTO (já abria o editor de fusões desde a v0.75.28).
+- **Widget de portas**: mostra `usadas/capacidade` na barra de ferramentas — capacidade vem de `element.cto.capacity`, uso conta as saídas de splitter já ligadas a fibra (clientes/DROPs).
+- Estado vazio da CTO no Canvas também ganhou botões próprios ("+ Splitter", "+ Nota", "Abrir Fusões") em vez do texto genérico de equipamento.
+
+### Corrigido
+- Achado durante a implementação: `.tower-workspace-actions-v0750 button`/`.tower-popover-v0750 button` têm `display:inline-flex` sem `!important`, que vence a regra `[hidden] { display:none }` do navegador por origem de cascata (estilo de autor sempre vence estilo de user-agent, mesmo com especificidade menor). Isso significa que o filtro **já existente** de tipos de equipamento por rack/tower (`button.hidden = !allowed.has(...)`) pode não estar escondendo visualmente os botões corretamente. Adicionado um reforço defensivo (`[hidden] { display:none !important; }`) que corrige isso tanto pros toggles novos da CTO quanto pro filtro antigo.
+
+### Segurança
+- Endpoint de API novo usado pelo widget de portas: nenhum — reaproveita `GET /api/map/elements/<id>/`, já existente, já usado por `showUnifilar()`.
+- `map-v0758-core-ui.js` mantém a regra "sem URL de API crua nesse arquivo" (garantida pelo teste `test_map_v0750_static.py`) — o widget busca dados via um helper novo exposto em `window.networkMap.fetchElement()`, não com a URL escrita direto nesse arquivo.
+- Sem migrations. Nenhuma mudança de comportamento pro Rack/Torre — todos os toggles são reavaliados (`identity.type === "cto"`), nunca aditivos, então rack/tower continuam mostrando exatamente o que já mostravam.
+
 ## [0.75.28] - 2026-08-04
 
 ### Alterado — mudança de arquitetura (só CTO)
