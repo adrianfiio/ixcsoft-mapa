@@ -1348,6 +1348,7 @@ def _fiber_payload(fiber):
 def _container_equipment_payload(item):
     return {
         "id": item.id,
+        "metadata": item.metadata or {},
         "name": item.name,
         "type": (
             "onu"

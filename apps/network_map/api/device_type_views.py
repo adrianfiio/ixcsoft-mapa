@@ -22,29 +22,33 @@ from apps.network_map.models import (
 logger = logging.getLogger(__name__)
 MAX_IMPORTED_INTERFACES = 256
 
-ACTIVE_TYPES = {
+RACK_ALLOWED_TYPES = {
+    ContainerEquipment.EquipmentType.OLT,
+    ContainerEquipment.EquipmentType.DIO,
+    ContainerEquipment.EquipmentType.SWITCH,
+    ContainerEquipment.EquipmentType.ROUTER,
+    ContainerEquipment.EquipmentType.FIREWALL,
+    ContainerEquipment.EquipmentType.SERVER,
+    ContainerEquipment.EquipmentType.PTO,
+    ContainerEquipment.EquipmentType.OTHER,
+}
+
+TOWER_ALLOWED_TYPES = {
+    ContainerEquipment.EquipmentType.OLT,
+    ContainerEquipment.EquipmentType.DIO,
     ContainerEquipment.EquipmentType.SWITCH,
     ContainerEquipment.EquipmentType.ROUTER,
     ContainerEquipment.EquipmentType.FIREWALL,
     ContainerEquipment.EquipmentType.ACCESS_POINT,
     ContainerEquipment.EquipmentType.PTP,
     ContainerEquipment.EquipmentType.ONU,
+    ContainerEquipment.EquipmentType.PTO,
     ContainerEquipment.EquipmentType.OTHER,
 }
 
 ALLOWED_BY_CONTAINER = {
-    NetworkElement.ElementType.RACK: {
-        ContainerEquipment.EquipmentType.OLT,
-        ContainerEquipment.EquipmentType.DIO,
-        ContainerEquipment.EquipmentType.PTO,
-        *ACTIVE_TYPES,
-    },
-    NetworkElement.ElementType.TOWER: {
-        ContainerEquipment.EquipmentType.OLT,
-        ContainerEquipment.EquipmentType.DIO,
-        ContainerEquipment.EquipmentType.PTO,
-        *ACTIVE_TYPES,
-    },
+    NetworkElement.ElementType.RACK: RACK_ALLOWED_TYPES,
+    NetworkElement.ElementType.TOWER: TOWER_ALLOWED_TYPES,
 }
 
 
@@ -82,7 +86,7 @@ def import_container_device_type_yaml(request, element_id):
         return JsonResponse(
             {
                 "detail": (
-                    f"O YAML possui {len(parsed.interfaces)} interfaces físicas. "
+                    f"O YAML possui {len(parsed.interfaces)} interfaces físicas após expandir os intervalos. "
                     f"O limite por importação é {MAX_IMPORTED_INTERFACES}."
                 )
             },
@@ -94,7 +98,7 @@ def import_container_device_type_yaml(request, element_id):
     equipment_type = parsed.suggested_equipment_type if selected_type == "auto" else selected_type
     if equipment_type not in ALLOWED_BY_CONTAINER[container.element_type]:
         return JsonResponse(
-            {"detail": "O tipo escolhido não é permitido neste rack/torre."}, status=400
+            {"detail": "O tipo escolhido não é permitido nesta estrutura."}, status=400
         )
 
     preview = parsed.payload()
@@ -102,6 +106,7 @@ def import_container_device_type_yaml(request, element_id):
     preview["equipment_type_label"] = dict(ContainerEquipment.EquipmentType.choices).get(
         equipment_type, "ONU / Outro"
     )
+    preview["expanded_interface_count"] = len(parsed.interfaces)
     if action == "preview":
         return JsonResponse({"preview": preview})
     if action != "import":
@@ -133,11 +138,18 @@ def import_container_device_type_yaml(request, element_id):
         subtype = "onu"
     elif equipment_type == ContainerEquipment.EquipmentType.PTO:
         subtype = "pto"
+    elif equipment_type == ContainerEquipment.EquipmentType.OLT:
+        subtype = "olt-chassis"
     elif equipment_type == ContainerEquipment.EquipmentType.OTHER and not subtype:
         subtype = "onu" if any(
             item.port_type == ContainerEquipmentPort.PortType.PON
             for item in parsed.interfaces
         ) else "device"
+
+    device_type_metadata = {
+        **parsed.payload(),
+        "source_format": "netbox-device-type-yaml",
+    }
 
     try:
         with transaction.atomic():
@@ -145,27 +157,16 @@ def import_container_device_type_yaml(request, element_id):
                 company=container.company,
                 container=container,
                 name=name,
+                description=parsed.comments,
                 equipment_type=equipment_type,
                 management_ip=management_ip,
                 provisioning_mode=ContainerEquipment.ProvisioningMode.MANUAL,
                 vendor=parsed.manufacturer,
                 model=parsed.model,
                 metadata={
-                    "device_type": {
-                        "manufacturer": parsed.manufacturer,
-                        "model": parsed.model,
-                        "slug": parsed.slug,
-                        "source_format": "netbox-device-type-yaml",
-                        "skipped_interfaces": [
-                            {
-                                "name": item.name,
-                                "type": item.source_type,
-                                "reason": item.warning,
-                            }
-                            for item in parsed.skipped_interfaces
-                        ],
-                    },
+                    "device_type": device_type_metadata,
                     "equipment_subtype": subtype,
+                    "canvas_renderer": "modular-chassis-v07510" if equipment_type == ContainerEquipment.EquipmentType.OLT else "default",
                 },
             )
             equipment.full_clean()
@@ -217,6 +218,7 @@ def import_container_device_type_yaml(request, element_id):
                 "name": equipment.name,
                 "ports_created": len(ports),
                 "equipment_type": equipment.equipment_type,
+                "renderer": equipment.metadata.get("canvas_renderer"),
             },
             "preview": preview,
         },

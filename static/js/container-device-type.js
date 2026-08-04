@@ -54,15 +54,34 @@
     function showDevicePreview(preview) {
         const interfaces = preview.interfaces || [];
         const skipped = preview.skipped_interfaces || [];
+        const modules = preview.module_bays || [];
+        const powerPorts = preview.power_ports || [];
+        const groups = new Map();
+        interfaces.forEach((item) => {
+            const key = item.group_name || item.description || "Interfaces";
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+        });
         yamlPreview.hidden = false;
         yamlPreview.innerHTML = `
             <div class="device-type-preview-head">
                 <div><strong>${escapeHtml(preview.manufacturer)} · ${escapeHtml(preview.model)}</strong><span>${escapeHtml(preview.slug)}</span></div>
-                <span class="device-type-count">${interfaces.length} interface(s)</span>
+                <span class="device-type-count">${interfaces.length} porta(s) após expansão</span>
             </div>
-            <div class="device-type-port-list">
-                ${interfaces.map((item) => `<span><b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.source_type)} → ${escapeHtml(item.port_type)}</small></span>`).join("")}
+            <div class="device-type-preview-meta-v07510">
+                <span>${preview.u_height ? `${preview.u_height}U` : "Altura não informada"}</span>
+                <span>${preview.is_full_depth ? "Profundidade completa" : "Profundidade parcial/não informada"}</span>
+                <span>${modules.length} módulo(s)</span>
+                <span>${powerPorts.length} alimentação(ões)</span>
             </div>
+            ${preview.comments ? `<p>${escapeHtml(preview.comments)}</p>` : ""}
+            <div class="device-type-port-groups-v07510">
+                ${[...groups.entries()].map(([name, rows]) => `
+                    <section><header><strong>${escapeHtml(name)}</strong><span>${rows.length}</span></header>
+                    <div class="device-type-port-list">${rows.map((item) => `<span><b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.source_type)} → ${escapeHtml(item.port_type)}</small></span>`).join("")}</div></section>`).join("")}
+            </div>
+            ${modules.length ? `<details open><summary>Módulos/slots</summary>${modules.map((item) => `<p>${escapeHtml(item.name)}</p>`).join("")}</details>` : ""}
+            ${powerPorts.length ? `<details><summary>Alimentação</summary>${powerPorts.map((item) => `<p>${escapeHtml(item.name)} · ${escapeHtml(item.source_type)}</p>`).join("")}</details>` : ""}
             ${skipped.length ? `<details><summary>${skipped.length} interface(s) ignorada(s)</summary>${skipped.map((item) => `<p>${escapeHtml(item.name)} · ${escapeHtml(item.warning)}</p>`).join("")}</details>` : ""}`;
     }
 
@@ -82,7 +101,7 @@
         if (action === "import") {
             setMessage(`${data.created.name}: ${data.created.ports_created} porta(s) criada(s).`);
             yamlForm.reset();
-            await window.networkMap?.manageContainer?.(id);
+            await window.mapMasterSuite?.openContainerWorkspace?.(id);
         } else {
             setMessage("YAML válido. Confira as interfaces e clique em Importar equipamento.");
         }

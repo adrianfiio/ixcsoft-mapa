@@ -1,3 +1,17 @@
+## [0.75.10] - 2026-08-03
+
+### Corrigido
+- o workspace de Rack/Torre passa a ocupar a linha útil inteira do grid; equipamentos, cabos e notas deixam de ficar em um Canvas com altura zero;
+- o menu global não reage ao botão direito sobre rótulos permanentes do Leaflet;
+- a atualização após importar YAML volta ao fluxo único `mapMasterSuite.openContainerWorkspace`.
+
+### Adicionado
+- DIOs acima de 24 portas mostram todas as bandejas, com 12 posições por bandeja e corredor visual entre elas;
+- cards de cabos ficam verticais no Canvas de Rack/Torre e no workspace óptico;
+- importação YAML expande intervalos como `PON 13/[1-16]`, preserva slots, módulos, alimentação, altura e comentários;
+- OLTs importadas por YAML usam chassi modular agrupado por slot/placa;
+- o editor óptico existente passa a usar shell amplo em tela inteira sem trocar o motor de fusões já homologado.
+
 # Changelog — Mapa
 
 ## [map-0.75.9] - 2026-08-03

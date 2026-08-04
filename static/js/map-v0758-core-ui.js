@@ -457,4 +457,28 @@
         openElementMenu,
         updateContainerIdentity,
     });
+
+
+    // MAP_V07510_TOOLTIP_CONTEXT_GUARD
+    document.addEventListener("contextmenu", (event) => {
+        if (!event.target.closest(".leaflet-tooltip, .network-name-label")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation?.();
+        document.querySelectorAll(".map-context-menu").forEach((menu) => {
+            menu.hidden = true;
+            menu.classList.remove("open");
+        });
+    }, true);
+
+    document.addEventListener("map:fusion-rendered", () => {
+        const dialog = document.querySelector("#unifilar-dialog");
+        if (!dialog) return;
+        dialog.classList.add("map-v07510-optical-workspace");
+        dialog.querySelectorAll(".graph-node[data-cable-node-id]").forEach((node) => {
+            node.classList.add("vertical-v07510");
+        });
+        requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    });
+
 }());
