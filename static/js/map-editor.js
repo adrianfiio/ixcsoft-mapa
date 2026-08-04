@@ -889,12 +889,92 @@
             const noteNodes = notes.map((note) => `<div class="note-node graph-node" data-node-key="note-${note.id}" style="left:${note.x}px;top:${note.y}px">
                 <header><span class="drag-grip">⋮⋮</span><button type="button" class="note-delete" data-delete-note="${note.id}">×</button></header>
                 <div class="note-text" data-note-id="${note.id}">${escapeHtml(note.text)}</div></div>`).join("");
+            // MAP_V07523_CTO_TOWER_TOOLBAR: barra de ferramentas copiada do
+            // Rack/Torre (mesmas classes CSS .tower-workspace-*/.tower-popover-v0750,
+            // reaproveitadas sem duplicar CSS). Diferente do Rack/Torre, aqui
+            // NÃO existe "+ Adicionar equipamento" nem "Ligar portas"/"Editar
+            // linhas" — a CTO/CDO/CEO não tem equipamento genérico, só
+            // splitter e cabo. "Estrutura" mostra o que já existe (splitters
+            // e cabos), "Fibras" destaca portas livres/usadas, "Atualizar"
+            // recarrega. Ferramentas só tem o que faz sentido aqui (estilo de
+            // linha) — sem "Importar YAML"/"Organizar equipamentos", que são
+            // conceitos de equipamento genérico que a CTO/CDO não tem.
+            const structureSplitterItems = allSplitters.map((splitter) => `<button type="button" data-cto-structure-jump="splitter-${splitter.id}"><span><strong>${escapeHtml(splitter.name)}</strong><small>${escapeHtml(splitter.ratio)} · ${splitter.ports.filter((port) => port.output_fiber_id).length}/${splitter.ports.length} saídas em uso</small></span><i>›</i></button>`).join("");
+            const structureCableItems = orderedCables.map((cable) => `<button type="button" data-cto-structure-jump="cable-${cable.id}"><span><strong>${escapeHtml(cable.name)}</strong><small>${cable.fibers.filter((fiber) => usedFiberIds.has(fiber.id)).length}/${cable.fibers.length} fibras em uso</small></span><i>›</i></button>`).join("");
             content.innerHTML = `<div class="tower-workspace-toolbar-v0750 ceo-quick-toolbar-v07521">
                 <div class="tower-workspace-title-v0750"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8"></path></svg><span><strong>Editor técnico · ${escapeHtml(element.name)}</strong><small>Splitter, cabos e fusões</small></span></div>
-                <div class="tower-workspace-actions-v0750"><button type="button" data-ceo-quick-add="add-splitter">+ Splitter</button><button type="button" data-ceo-quick-add="add-note">+ Nota</button></div>
+                <div class="tower-workspace-actions-v0750">
+                    <button type="button" data-cto-structure-v07523><span>Estrutura</span></button>
+                    <button type="button" data-ceo-quick-add="add-splitter">+ Splitter</button>
+                    <button type="button" data-ceo-quick-add="add-note">+ Nota</button>
+                    <button type="button" data-cto-fiber-focus-v07523><span>Fibras</span></button>
+                    <button type="button" data-cto-refresh-v07523><span>Atualizar</span></button>
+                    <div class="tower-toolbar-menu-v0750">
+                        <button type="button" data-cto-tools-toggle-v07523 aria-controls="cto-tools-menu-v07523" aria-expanded="false"><span>Ferramentas</span></button>
+                        <div id="cto-tools-menu-v07523" class="tower-popover-v0750 tower-tools-menu-v0750" role="menu">
+                            <label class="cto-tools-line-style-v07523">Estilo de linha<select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label>
+                        </div>
+                    </div>
+                    <span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span>
+                </div>
             </div>
-            <div class="ceo-instructions">Arraste os blocos. Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir. <label>Linhas <select id="connection-style"><option value="curve">Curvas</option><option value="straight">Retas</option><option value="orthogonal">Ortogonal</option></select></label><span class="unifilar-zoom"><button id="unifilar-zoom-out" type="button" title="Diminuir">−</button><output id="unifilar-zoom-value">100%</output><button id="unifilar-zoom-in" type="button" title="Ampliar">+</button><button id="unifilar-zoom-reset" type="button" title="Ajustar">Ajustar</button></span><div id="unifilar-feedback">F identifica as fibras do cabo e as fibras de saída do splitter.</div></div>
+            <div id="unifilar-feedback" class="cto-feedback-v07523">Clique em duas fibras para ligar, ou nas portas do splitter. Botão direito no fundo do quadro para adicionar splitter ou nota. Clique numa linha para excluir.</div>
+            <div class="tower-drawer-v0750 cto-structure-drawer-v07523" hidden>
+                <header><div><strong>Estrutura</strong><small>O que já existe nesta caixa</small></div><button type="button" data-cto-structure-close-v07523 aria-label="Fechar">×</button></header>
+                <div class="tower-drawer-body-v0750">
+                    <section class="tower-structure-info-v0750 active">
+                        <div class="tower-structure-hero-v0750"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8"></path></svg><div><strong>${escapeHtml(element.name)}</strong><span>${escapeHtml(element.code || "Sem código")}</span></div></div>
+                        <h3>Splitters</h3>
+                        <div class="tower-structure-list-v0750">${structureSplitterItems || "<p>Nenhum splitter.</p>"}</div>
+                        <h3>Cabos</h3>
+                        <div class="tower-structure-list-v0750">${structureCableItems || "<p>Nenhum cabo conectado.</p>"}</div>
+                    </section>
+                </div>
+            </div>
                 <div class="optical-graph"><div class="graph-nodes"><svg class="optical-links"></svg>${cableColumns || '<p>Nenhum cabo conectado à CEO.</p>'}${splitterNodes}${noteNodes}</div><div class="map-context-menu ceo-canvas-menu" hidden><button type="button" data-canvas-action="add-splitter">+ Adicionar splitter</button><button type="button" data-canvas-action="add-note">+ Adicionar nota</button></div><div class="map-context-menu link-action-menu" hidden><button type="button" data-link-action="info">Informações de rota</button><button type="button" class="danger" data-link-action="delete">Excluir</button></div></div>`;
+            content.querySelector("[data-cto-structure-v07523]").onclick = () => {
+                content.querySelector(".cto-structure-drawer-v07523").hidden = false;
+            };
+            content.querySelector("[data-cto-structure-close-v07523]").onclick = () => {
+                content.querySelector(".cto-structure-drawer-v07523").hidden = true;
+            };
+            content.querySelectorAll("[data-cto-structure-jump]").forEach((button) => {
+                button.onclick = () => {
+                    content.querySelector(".cto-structure-drawer-v07523").hidden = true;
+                    const target = content.querySelector(`[data-node-key="${button.dataset.ctoStructureJump}"]`);
+                    if (!target) return;
+                    target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+                    target.classList.add("structure-highlight-v07523");
+                    window.setTimeout(() => target.classList.remove("structure-highlight-v07523"), 1400);
+                };
+            });
+            content.querySelector("[data-cto-fiber-focus-v07523]").onclick = (event) => {
+                const graph = content.querySelector(".optical-graph");
+                graph.classList.toggle("fiber-focus-v07523");
+                event.currentTarget.classList.toggle("active", graph.classList.contains("fiber-focus-v07523"));
+            };
+            content.querySelector("[data-cto-refresh-v07523]").onclick = async () => {
+                unifilarDialog.close(); await showUnifilar(element.id); notify("Dados atualizados.");
+            };
+            const ctoToolsToggle = content.querySelector("[data-cto-tools-toggle-v07523]");
+            const ctoToolsMenu = document.getElementById("cto-tools-menu-v07523");
+            ctoToolsToggle.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const open = !ctoToolsMenu.classList.contains("open");
+                ctoToolsMenu.classList.toggle("open", open);
+                ctoToolsToggle.setAttribute("aria-expanded", String(open));
+            };
+            const closeCtoToolsMenu = (event) => {
+                if (!ctoToolsMenu.classList.contains("open")) return;
+                if (event.target.closest(".tower-toolbar-menu-v0750")) return;
+                ctoToolsMenu.classList.remove("open");
+                ctoToolsToggle.setAttribute("aria-expanded", "false");
+            };
+            document.addEventListener("click", closeCtoToolsMenu);
+            unifilarDialog.addEventListener("close", () => {
+                document.removeEventListener("click", closeCtoToolsMenu);
+            }, { once: true });
             let draggedFiber = null;
             let selectedFiber = null;
             let selectedSplitterPort = null;
