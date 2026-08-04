@@ -501,3 +501,169 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
     grid-template-columns: 1fr !important;
     grid-auto-flow: row !important;
 }
+
+/* MAP_V07511_EDITOR_CANVAS_NOTES */
+#container-dialog.tower-workspace-dialog-v0750 > section {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+#container-dialog.tower-workspace-dialog-v0750 > section > #map-master-container {
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+}
+#container-dialog.tower-workspace-dialog-v0750 #map-master-container [data-panel="canvas"] {
+    display: block !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+.master-dio-trays-v07510 {
+    gap: 34px !important;
+    padding: 16px 14px 20px !important;
+}
+.master-dio-tray-v07510 {
+    padding: 12px 12px 16px !important;
+}
+.master-dio-tray-v07510::after {
+    bottom: -19px !important;
+}
+
+.master-cable-node.vertical-v07510 {
+    width: 210px !important;
+    min-height: 145px !important;
+    border-color: color-mix(in srgb, var(--cable-accent, #22d3ee) 60%, #0f172a) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cable-accent, #22d3ee) 22%, transparent);
+}
+.master-cable-node.vertical-v07510 > header {
+    align-items: flex-start !important;
+    gap: 8px;
+}
+.master-cable-node.vertical-v07510 > header strong,
+.master-cable-node.vertical-v07510 > header small {
+    display: block;
+    white-space: normal !important;
+    word-break: break-word;
+}
+.master-cable-node.vertical-v07510 > header b {
+    color: var(--cable-accent, #22d3ee) !important;
+}
+.master-cable-node.vertical-v07510 .master-cable-fibers {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-auto-flow: row !important;
+    gap: 6px !important;
+    padding: 8px !important;
+    align-content: start;
+}
+.master-cable-node.vertical-v07510 .master-cable-fiber {
+    display: grid !important;
+    grid-template-columns: 16px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-height: 26px !important;
+    padding: 5px 8px !important;
+    border: 1px solid color-mix(in srgb, var(--fiber-color, #94a3b8) 30%, #203246) !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--fiber-color, #94a3b8) 14%, rgba(9, 20, 33, .92)) !important;
+    justify-content: start !important;
+}
+.master-cable-node.vertical-v07510 .master-cable-fiber i {
+    width: 10px !important;
+    height: 10px !important;
+    border-radius: 999px !important;
+    background: var(--fiber-color, #94a3b8) !important;
+}
+.master-cable-node.vertical-v07510 .master-cable-fiber span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.master-cable-node.vertical-v07510[data-fiber-count="1"] {
+    min-height: 0 !important;
+}
+.master-cable-node.vertical-v07510[data-fiber-count="1"] .master-cable-fibers {
+    padding-top: 4px !important;
+}
+.master-cable-node.vertical-v07510[data-fiber-count="1"] .master-cable-fiber {
+    min-height: 24px !important;
+}
+
+.master-canvas-note {
+    cursor: grab;
+    user-select: none;
+}
+.master-canvas-note.dragging-v07511 {
+    cursor: grabbing;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, .35), 0 0 0 1px rgba(250, 204, 21, .28);
+}
+.master-note-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+.master-note-actions button {
+    width: 28px;
+    height: 28px;
+}
+.master-v07511-note-dialog {
+    width: min(720px, calc(100vw - 48px));
+    max-width: 100%;
+    border: 1px solid rgba(71, 113, 145, .55);
+    border-radius: 16px;
+    background: #081629;
+    color: #e2edf7;
+}
+.master-v07511-note-dialog form {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+}
+.master-v07511-note-dialog textarea {
+    min-height: 220px;
+    resize: vertical;
+    border: 1px solid rgba(71, 113, 145, .45);
+    border-radius: 12px;
+    padding: 12px;
+    background: #0c2036;
+    color: inherit;
+}
+.master-v07511-note-dialog footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.master-canvas-node.master-olt-chassis-v07510 {
+    width: 840px !important;
+}
+.master-olt-utility-grid-v07510 {
+    opacity: .72;
+}
+.master-olt-slot-v07510 {
+    min-height: 0 !important;
+}
+.master-olt-slot-ports-v07510 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px !important;
+}
+.master-olt-slot-ports-v07510 .master-node-port {
+    min-height: 36px !important;
+    padding: 6px 20px 6px 8px !important;
+}
+.master-olt-slot-v07510[data-slot-kind="gpon"] header,
+.master-olt-slot-v07510[data-slot-kind="pon"] header {
+    background: rgba(10, 63, 79, .82) !important;
+}
