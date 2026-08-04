@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.82.0 |
-| Mapa | v0.75.18 |
+| Mapa | v0.75.20 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): página de Equipamentos modernizada — sai do layout próprio

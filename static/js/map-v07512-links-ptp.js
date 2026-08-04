@@ -562,6 +562,35 @@
         return { equipment, port };
     }
 
+    // MAP_V07519_PTP_DISTANCE: distância real entre as duas torres via
+    // Haversine, a partir das coordenadas já disponíveis em cada enlace.
+    function distanceKm(lat1, lon1, lat2, lon2) {
+        if (![lat1, lon1, lat2, lon2].every((value) => Number.isFinite(Number(value)))) return null;
+        const toRad = (deg) => (deg * Math.PI) / 180;
+        const earthRadiusKm = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2
+            + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function formatDistanceKm(km) {
+        if (km == null) return "";
+        return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+    }
+
+    // MAP_V07519_PTP_STATUS_BOTH_SIDES: um enlace PTP é um ContainerPortLink
+    // cujo `container` aponta só pra torre de ORIGEM — a torre de DESTINO
+    // nunca via esse link nos próprios state.containerData.links (busca
+    // scoped ao container atual). state.ptpLinks vem do projeto inteiro
+    // (GET /api/map/ptp-links/?project_id=) e tem os dois lados.
+    function ptpLinkForPort(portId) {
+        return (state.ptpLinks || []).find((link) => (
+            String(link.source.port_id) === String(portId) || String(link.destination.port_id) === String(portId)
+        ));
+    }
+
     function decoratePorts() {
         const root = containerRoot();
         if (!root || !state.containerData) return;
@@ -569,7 +598,22 @@
             const { equipment, port } = portData(button.dataset.portId);
             if (!port) return;
             button.dataset.v07512Label = `${equipment.name} · ${port.label}`;
-            button.dataset.v07512Connected = linkedTargetForPort(port.id);
+            let connected = linkedTargetForPort(port.id);
+            let ptpStatus = "";
+            let ptpDistance = "";
+            if (!connected && port.type === "wireless") {
+                const ptpLink = ptpLinkForPort(port.id);
+                if (ptpLink) {
+                    const other = String(ptpLink.source.port_id) === String(port.id) ? ptpLink.destination : ptpLink.source;
+                    const km = distanceKm(ptpLink.source.latitude, ptpLink.source.longitude, ptpLink.destination.latitude, ptpLink.destination.longitude);
+                    connected = `${other.tower_name} · ${other.equipment_name} · ${other.port_label}`;
+                    ptpDistance = formatDistanceKm(km);
+                }
+            }
+            if (port.type === "wireless") ptpStatus = connected ? "linked" : "free";
+            button.dataset.v07512Connected = connected;
+            button.dataset.v07512PtpStatus = ptpStatus;
+            button.dataset.v07512PtpDistance = ptpDistance;
             button.dataset.v07512EquipmentType = equipment.type || "";
             button.dataset.v07512Connector = equipment.connector_type || equipment.metadata?.pon_connector || port.type || "";
             button.classList.add("master-port-hit-v07512");
@@ -644,6 +688,10 @@
     async function enhanceContainer(data = null) {
         if (!currentContainerId() || !containerRoot()) return;
         await loadContainerSnapshot(data).catch((error) => notify(error.message, true));
+        // MAP_V07519_PTP_STATUS_BOTH_SIDES: garante state.ptpLinks fresco
+        // antes de decorar as portas, pra torre de destino de um enlace PTP
+        // também mostrar "conectado" (ver ptpLinkForPort).
+        await refreshPtpLayer().catch(() => {});
         addOltBoardGuides();
         decoratePorts();
         injectRefreshButtons();
@@ -860,10 +908,14 @@
                 [[link.source.latitude, link.source.longitude], [link.destination.latitude, link.destination.longitude]],
                 { color: "#f59e0b", weight: 2, opacity: .92, dashArray: "8 8", lineCap: "round", className: "map-ptp-link-v07512" },
             );
-            line.bindTooltip(`${link.source.tower_name} ↔ ${link.destination.tower_name}<br>${link.source.equipment_name} ↔ ${link.destination.equipment_name}`, { sticky: true, className: "map-ptp-tooltip-v07512" });
+            // MAP_V07519_PTP_DISTANCE: distância real (Haversine) entre as
+            // duas torres, mostrada tanto no tooltip quanto no popup da linha.
+            const km = distanceKm(link.source.latitude, link.source.longitude, link.destination.latitude, link.destination.longitude);
+            const distanceLabel = formatDistanceKm(km);
+            line.bindTooltip(`${link.source.tower_name} ↔ ${link.destination.tower_name}<br>${link.source.equipment_name} ↔ ${link.destination.equipment_name}${distanceLabel ? `<br>📏 ${distanceLabel}` : ""}`, { sticky: true, className: "map-ptp-tooltip-v07512" });
             const remove = document.body.dataset.canEdit === "true"
                 ? `<br><button type="button" data-delete-ptp-link="${link.id}">Remover enlace</button>` : "";
-            line.bindPopup(`<strong>Enlace PTP</strong><br>${link.source.tower_name} ↔ ${link.destination.tower_name}<br>${link.source.equipment_name} · ${link.source.port_label}<br>${link.destination.equipment_name} · ${link.destination.port_label}${remove}`);
+            line.bindPopup(`<strong>Enlace PTP</strong><br>${link.source.tower_name} ↔ ${link.destination.tower_name}<br>${link.source.equipment_name} · ${link.source.port_label}<br>${link.destination.equipment_name} · ${link.destination.port_label}${distanceLabel ? `<br>📏 Distância: ${distanceLabel}` : ""}${remove}`);
             line.on("popupopen", () => {
                 const button = document.querySelector(`[data-delete-ptp-link="${link.id}"]`);
                 if (button) button.onclick = async () => {
@@ -958,7 +1010,11 @@
             if (!button) return;
             const tooltip = ensureTooltip();
             const connected = button.dataset.v07512Connected;
-            tooltip.innerHTML = `<strong>${button.dataset.v07512Label || button.textContent.trim()}</strong><span class="${connected ? "occupied" : "free"}">${connected ? `🔗 Ligado a: ${connected}` : "✅ Status: Livre"}</span>`;
+            // MAP_V07519_PTP_DISTANCE: quando o tooltip é de uma porta
+            // wireless com enlace PTP, soma a distância real entre as torres.
+            const distance = button.dataset.v07512PtpDistance;
+            const distanceLine = distance ? `<span class="ptp-distance-v07519">📏 Distância: ${distance}</span>` : "";
+            tooltip.innerHTML = `<strong>${button.dataset.v07512Label || button.textContent.trim()}</strong><span class="${connected ? "occupied" : "free"}">${connected ? `🔗 Ligado a: ${connected}` : "✅ Status: Livre"}</span>${distanceLine}`;
             tooltip.hidden = false;
         });
         document.addEventListener("mousemove", (event) => {

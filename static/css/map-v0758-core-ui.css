@@ -775,3 +775,46 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 .optical-graph.panning-v07518 {
     cursor: grabbing;
 }
+
+/* MAP_V07519_PTP_PORT_STATUS: bolinha da porta wireless muda de cor —
+   amarela = livre, verde = enlace PTP configurado. Não existe telemetria
+   real (SNMP) de link PTP hoje, então não há um terceiro estado
+   "caiu"/vermelho aqui — isso precisa de monitoramento de verdade, não dá
+   pra fingir um status que não é medido. */
+[data-port-type="wireless"][data-v07512-ptp-status="free"] i {
+    background: #facc15 !important;
+    border-color: #422006 !important;
+}
+[data-port-type="wireless"][data-v07512-ptp-status="linked"] i {
+    background: #22c55e !important;
+    border-color: #052e14 !important;
+}
+.ptp-distance-v07519 {
+    display: block;
+    margin-top: 3px;
+    color: #7dd3fc;
+}
+
+/* MAP_V07519_CTO_CANVAS_PARITY: dual-classe (.master-canvas-node) nos nós
+   de splitter/cabo do editor de fusões só pra herdar aparência (borda,
+   sombra, cor) do Canvas 2D — a largura fixa de 245px do master-canvas-node
+   normal apertaria demais um splitter com muitas saídas, então volta pro
+   tamanho natural desses nós (mesmo usado desde a v0.75.14). Nenhuma
+   lógica de clique/arraste/conexão muda, só herança visual.
+   PORTA style: portas do splitter reaproveitam .master-node-port (mesmo
+   tamanho/raio dos botões do Rack/Torre), cor por status (livre/usada). */
+.master-canvas-node.master-splitter-node-v07519,
+.master-canvas-node.master-cable-node-v07519 {
+    position: relative !important;
+    width: auto !important;
+    min-width: 210px;
+    min-height: 0 !important;
+}
+.master-splitter-node-v07519 .master-node-port {
+    width: auto;
+    min-width: 40px;
+}
+.master-splitter-node-v07519 .master-node-port.used {
+    border-color: #22c55e !important;
+    background: rgba(34, 197, 94, .14) !important;
+}
