@@ -760,3 +760,9 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 .graph-splitter button.linked {
     border-color: #22c55e !important;
 }
+
+/* MAP_V07516_LINK_HOVER_HIGHLIGHT */
+.master-canvas-links path.link-hover-v07516 {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 0 7px currentColor) !important;
+}

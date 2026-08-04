@@ -1,3 +1,16 @@
+## [0.75.16] - 2026-08-04
+
+### Corrigido
+- rota de ligação (cordão/fusão) que tinha ponto de dobra ajustado manualmente ficava "presa" na posição antiga quando o equipamento ou cabo era movido, voltando a cortar por cima de outra coisa — ao terminar de mover, os links tocando o item movido agora recalculam a rota automática (com desvio de obstáculo) do zero.
+
+### Adicionado
+- passar o mouse por cima de uma linha de ligação acende (glow) o cordão/fusão inteiro, pra dar pra seguir o caminho exato mesmo com várias linhas cruzando o Canvas.
+
+### Investigado, aguardando mais informação
+- **DIO "porta já em uso"**: revisão da validação de conflito de porta (`container_port_links`) não encontrou inconsistência entre a orientação esquerda/direita (frente/trás) trocada na v0.75.14 e a checagem de uso — front e rear do mesmo slot já são tratados como ocupações independentes no banco. Preciso de um passo a passo exato (qual cabo/porta, em qual equipamento) pra reproduzir e confirmar se é um bug real ou uma tentativa de reconectar uma porta já ocupada.
+- **PTP — erro 500**: ainda sem o traceback do servidor pedido na v0.75.15. Sem ele não dá pra avançar com segurança.
+- **Roteamento pela canaleta entre placas da OLT** (como no HTML de referência do Gemini) e **CTO/CDO/CEO com o mesmo Canvas do Rack/Torre, restrito a splitter padrão + cabos**: escopo confirmado pelo usuário como parte da mesma frente de trabalho da "Organização Rack" 44U — fica para a entrega dedicada combinada.
+
 ## [0.75.15] - 2026-08-04
 
 ### Corrigido
