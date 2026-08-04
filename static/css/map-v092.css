@@ -114,7 +114,9 @@
 .yaml-drop-v092 [data-yaml-select] { background: #2dd4bf; border-color: #2dd4bf; color: #04201d; font-weight: 800; }
 
 .network-marker.splice_box.cdo { background: #6d28d9; }
-.network-marker.splice_box.cdo small::after { content: "CDO"; }
+/* MAP_V07525_ICON_SET: removido — duplicava o texto "CDO" (o marcador já
+   tem <small>CDO</small> vindo de networkIcon() em map-editor.js; esse
+   ::after acrescentava outro "CDO" logo depois, virando "CDOCDO"). */
 
 @media (max-width: 760px) {
     .yaml-drop-v092 { grid-template-columns: auto minmax(0, 1fr); }

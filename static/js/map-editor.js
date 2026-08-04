@@ -433,16 +433,21 @@
         const displayType = ["cpd", "pop"].includes(normalizedSubtype)
             ? "cpd" : type === "splice_box" && normalizedSubtype === "cdo" ? "cdo" : type;
         const labels = { cto: "CTO", pto: "PTO", splice_box: "CEO", cdo: "CDO", cpd: "CPD", olt: "OLT", dio: "DIO", rack: "RACK", tower: "TORRE" };
+        // MAP_V07525_ICON_SET: ícones substituídos pelo kit SVG fornecido
+        // pelo usuário (icones.html), mesma referência visual usada em
+        // todos os tipos de elemento do mapa. CDO e CEO continuam com o
+        // mesmo desenho (domo de emenda), só muda a cor/rótulo — igual já
+        // era antes, agora só com o traço novo.
         const symbols = {
-            pole: '<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 6h18M6 9h12M12 6v19M8 25h8"></path><circle cx="7" cy="6" r="1"></circle><circle cx="17" cy="6" r="1"></circle></svg>',
-            cto: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M7 9h10M7 15h10M9 20v3m6-3v3"></path><circle cx="9" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle></svg><small>CTO</small>',
-            pto: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4m0 12v4"></path></svg><small>PTO</small>',
-            splice_box: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8M9 21v2m6-2v2"></path></svg><small>CEO</small>',
-            cdo: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="4"></rect><path d="M8 7h8M8 10h8M8 13h8M8 16h8M9 21v2m6-2v2"></path></svg><small>CDO</small>',
-            cpd: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h4m4 0h2M9 20v2m6-2v2"></path><circle cx="7" cy="16" r="1"></circle></svg><small>CPD</small>',
+            pole: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="14" y="6" width="4" height="24" rx="1"></rect><path d="M6 8h20M6 5h20"></path><circle cx="8" cy="8" r="1" fill="currentColor"></circle><circle cx="24" cy="8" r="1" fill="currentColor"></circle></svg>',
+            cto: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="4"></rect><path d="M10 4v3m12-3v3M10 28v2m12-2v2"></path><circle cx="12" cy="12" r="1" fill="currentColor"></circle><circle cx="16" cy="12" r="1" fill="currentColor"></circle><circle cx="20" cy="12" r="1" fill="currentColor"></circle><path d="M9 18h14"></path></svg><small>CTO</small>',
+            pto: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="8" y="8" width="16" height="16" rx="3"></rect><circle cx="16" cy="16" r="3"></circle><path d="M16 4v4M16 24v4"></path></svg><small>PTO</small>',
+            splice_box: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 2h10a5 5 0 0 1 5 5v18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a5 5 0 0 1 5-5z"></path><path d="M9 7h14M9 11h14M9 15h14M9 19h14M9 23h14"></path><path d="M12 27v3m8-3v3"></path></svg><small>CEO</small>',
+            cdo: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 2h10a5 5 0 0 1 5 5v18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a5 5 0 0 1 5-5z"></path><path d="M9 7h14M9 11h14M9 15h14M9 19h14M9 23h14"></path><path d="M12 27v3m8-3v3"></path></svg><small>CDO</small>',
+            cpd: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="6" width="20" height="22" rx="2"></rect><path d="M10 10h4M18 10h4M10 16h4M18 16h4M10 22h4M18 22h4"></path><path d="M13 28v-4h6v4"></path></svg><small>CPD</small>',
             olt: '<svg viewBox="0 0 24 18" aria-hidden="true"><rect x="3" y="2" width="18" height="14" rx="2"></rect><path d="M7 6h10M7 10h10M7 14h6"></path></svg><small>OLT</small>',
-            rack: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"></rect><path d="M4 9h16M4 15h16M8 6h8M8 12h8M8 18h8"></path></svg><small>RACK</small>',
-            tower: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="2"></circle><path d="M12 9 7 22m5-13 5 13M9 16h6M7 5a7 7 0 0 0 0 5m10-5a7 7 0 0 1 0 5M4 3a11 11 0 0 0 0 9m16-9a11 11 0 0 1 0 9"></path></svg><small>TORRE</small>',
+            rack: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="2" width="24" height="28" rx="2"></rect><line x1="4" y1="10" x2="28" y2="10"></line><line x1="4" y1="18" x2="28" y2="18"></line><rect x="8" y="5" width="8" height="2" fill="currentColor"></rect><rect x="8" y="13" width="12" height="2" fill="currentColor"></rect><rect x="8" y="22" width="10" height="2" fill="currentColor"></rect></svg><small>RACK</small>',
+            tower: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="10" r="3"></circle><path d="M14 13L10 28h12l-4-15"></path><path d="M12 28h8"></path><path d="M11 7C9 9 9 11 11 13M7 5c-3 3-3 7 0 10"></path><path d="M21 7c2 2 2 4 0 6M25 5c3 3 3 7 0 10"></path></svg><small>TORRE</small>',
         };
         const large = ["cto", "pto", "splice_box", "cdo", "cpd", "olt", "rack", "tower"].includes(displayType);
         return L.divIcon({
@@ -2159,7 +2164,9 @@
             if (!window.mapV092 || window.mapV092.areReservesVisible()) (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
                     draggable: editing,
-                    icon: L.divIcon({ className: "", html: '<div class="reserve-marker"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"></circle><circle cx="16" cy="16" r="5"></circle><path d="M16 11V5m0 22v-6m5-5h6M5 16h6m12-8-4 4m-6 6-4 4"></path></svg></div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
+                    // MAP_V07525_ICON_SET: mesmo ícone de "espiral de cabo" do kit
+                    // SVG fornecido, igual ao usado nos demais tipos de elemento.
+                    icon: L.divIcon({ className: "", html: '<div class="reserve-marker"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12 12-5.373 12-12c0-4.418-2.386-8.284-6-10.392"></path><path d="M16 10c-3.314 0-6 2.686-6 6s2.686 6 6 6 6-2.686 6-6c0-2.21-1.193-4.142-3-5.196"></path><path d="M16 14c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2"></path></svg></div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
                 }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${editing ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
                 marker.on("popupopen", () => {
                     popupAction(`[data-edit-reserve="${reserve.id}"]`, () => editReserve(p.id, reserve).catch((error) => notify(error.message, true)));

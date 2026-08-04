@@ -210,7 +210,15 @@
         old.querySelector('[data-fusion-zoom="out"]').onclick = () => applyZoom(currentZoom - 0.1, true);
         old.querySelector('[data-fusion-zoom="in"]').onclick = () => applyZoom(currentZoom + 0.1, true);
         old.querySelector('[data-fusion-zoom="70"]').onclick = () => applyZoom(0.7, true);
-        old.querySelector("[data-fusion-organize]").onclick = () => organizeGraph();
+        // MAP_V07525_NO_ORGANIZE_ON_CTO: a CTO/CDO/CEO (marcada pela barra
+        // .ceo-quick-toolbar-v07521, feita na v0.75.23) não tem "Organizar
+        // equipamentos" — pedido explícito do usuário. O Rack, que usa esse
+        // mesmo painel de fusões pra DIO/cabo mas com a barra antiga
+        // (.ceo-instructions sem essa classe), continua com o botão.
+        const isCtoCeoCdo = !!content.querySelector(".ceo-quick-toolbar-v07521");
+        const organizeButton = old.querySelector("[data-fusion-organize]");
+        if (isCtoCeoCdo) organizeButton.remove();
+        else organizeButton.onclick = () => organizeGraph();
         old.querySelector("[data-fusion-fit]").onclick = () => fitGraph(true);
         old.querySelector("[data-fusion-zoom-range]").oninput = (event) => applyZoom(Number(event.target.value) / 100, false);
         old.querySelector("[data-fusion-zoom-range]").onchange = () => scheduleSave({ zoom: currentZoom });

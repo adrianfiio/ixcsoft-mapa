@@ -13,45 +13,16 @@
 }
 .network-marker.network-marker-v3 svg { width: 19px !important; height: 19px !important; }
 .network-marker.network-marker-v3 small { display: none !important; }
-.network-marker.network-marker-v3.cto svg,
-.network-marker.network-marker-v3.splice_box svg,
-.network-marker.network-marker-v3.rack svg { display: none !important; }
-.network-marker.network-marker-v3.cto::before,
-.network-marker.network-marker-v3.splice_box::before,
-.network-marker.network-marker-v3.rack::before {
-    content: "";
-    display: block;
-    width: 19px;
-    height: 22px;
-    background: currentColor;
-    mask-position: center;
-    mask-repeat: no-repeat;
-    mask-size: contain;
-    -webkit-mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
-}
-/* CTO: caixa retangular compacta, semelhante à caixa de atendimento externa. */
-.network-marker.network-marker-v3.cto::before {
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Crect x='3' y='2' width='18' height='23' rx='3' fill='black'/%3E%3Cpath d='M6 7h12M6 11h12M6 15h12M7 20h10' stroke='white' stroke-width='2'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Crect x='3' y='2' width='18' height='23' rx='3' fill='black'/%3E%3Cpath d='M6 7h12M6 11h12M6 15h12M7 20h10' stroke='white' stroke-width='2'/%3E%3C/svg%3E");
-}
-/* CEO/CDO: fechamento vertical de emenda. */
+/* MAP_V07525_ICON_SET: removido o ícone ::before em máscara (CTO/CEO-CDO/
+   RACK) que esta folha desenhava por cima do SVG normal — eram DOIS
+   ícones no mesmo marcador ao mesmo tempo (o SVG de networkIcon() por
+   baixo, esse ::before por cima escondendo-o com display:none só nesses
+   3 tipos). Como networkIcon() agora usa o kit de ícones novo, um único
+   SVG por marcador já é suficiente e correto pra todos os tipos.
+   border-radius por tipo preservado, agora aplicado direto no marcador. */
 .network-marker.network-marker-v3.splice_box { border-radius: 12px !important; }
-.network-marker.network-marker-v3.splice_box::before {
-    width: 15px;
-    height: 24px;
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'%3E%3Cpath d='M5 1h8c2 0 3 2 3 4v16c0 3-2 5-4 5v3H6v-3c-2 0-4-2-4-5V5c0-2 1-4 3-4Z' fill='black'/%3E%3Cpath d='M4 8h10M4 12h10M4 16h10M4 20h10' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'%3E%3Cpath d='M5 1h8c2 0 3 2 3 4v16c0 3-2 5-4 5v3H6v-3c-2 0-4-2-4-5V5c0-2 1-4 3-4Z' fill='black'/%3E%3Cpath d='M4 8h10M4 12h10M4 16h10M4 20h10' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E");
-}
-/* Rack: gabinete técnico sem texto dentro do marcador. */
 .network-marker.network-marker-v3.rack { border-radius: 6px !important; }
-.network-marker.network-marker-v3.rack::before {
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Crect x='3' y='1' width='16' height='24' rx='2' fill='black'/%3E%3Cpath d='M6 6h10M6 11h10M6 16h10M6 21h10' stroke='white' stroke-width='2'/%3E%3Cpath d='M6 27h3M13 27h3' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Crect x='3' y='1' width='16' height='24' rx='2' fill='black'/%3E%3Cpath d='M6 6h10M6 11h10M6 16h10M6 21h10' stroke='white' stroke-width='2'/%3E%3Cpath d='M6 27h3M13 27h3' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
-}
 .network-marker.network-marker-v3.tower { background: #0d6470 !important; }
-.network-marker.splice_box.cdo small::after { content: none !important; }
 
 /* Filtro de rotas só aparece com rotas existentes e fica como gaveta flutuante. */
 #map > .route-filter-floating-v3 {
