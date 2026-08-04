@@ -143,14 +143,6 @@
         if (!response.ok) throw new Error(data.detail || data.error || Object.values(data.errors || {}).flat().join(" ") || `Erro HTTP ${response.status}`);
         return data;
     }
-    // MAP_V07529_CTO_STRIP_EQUIPMENT: helper exposto pra map-v0758-core-ui.js
-    // conseguir os dados de uma CTO (capacidade, splitters) sem precisar
-    // ter a URL "/api/map/elements/.../" escrita literalmente naquele
-    // arquivo -- esse arquivo é o único dono de rotas de API do editor.
-    async function fetchElement(id) {
-        const data = await api(`/api/map/elements/${id}/`);
-        return data.element;
-    }
     function notify(text, isError = false) {
         message.textContent = text;
         message.classList.toggle("error", isError);
@@ -834,20 +826,14 @@
         const element = data.element;
         document.getElementById("unifilar-title").textContent = `Fusões · ${element.name}`;
         document.getElementById("unifilar-subtitle").textContent = `${element.code || "Sem código"} · capacidade ${element.cto?.capacity || 0}`;
-        // MAP_V07527_CTO_WINDOW_PARITY: só a CTO/CDO/CEO (element.splice_box)
-        // esconde o cabeçalho nativo do diálogo -- ela tem seu próprio título
-        // e botão fechar dentro da barra de ferramentas (map-cto-suite.js),
-        // igual o Rack/Torre faz com o header nativo de #container-dialog.
-        // O Rack (renderRackFusionDiagram) e o fallback continuam usando o
-        // cabeçalho nativo normalmente, por isso essa classe é sempre
-        // reajustada aqui, nunca deixada "grudada" de uma abertura anterior.
-        unifilarDialog.classList.toggle("map-cto-suite-active-v07527", Boolean(element.splice_box));
-        // MAP_V07526_CTO_SUITE: renderização extraída para
-        // map-cto-suite.js (arquivo próprio da CTO/CDO/CEO, mesma ideia
-        // do map-master-suite.js pro Rack/Torre). Nenhum comportamento
-        // mudou, só a localização do código -- ver esse arquivo.
+        // MAP_V07533_OPTICAL_CLEANUP: o editor óptico de CTO/CEO/CDO (fusões,
+        // splitters) foi desativado temporariamente para reconstrução -- a
+        // versão anterior compartilhava o mesmo DOM/estado do editor de
+        // Rack/Torre e corrompia esse estado entre aberturas. Não reabre o
+        // #unifilar-dialog antigo nem chama nenhum renderizador óptico.
         if (element.splice_box) {
-            await window.mapCtoSuite.render(element, content);
+            unifilarDialog.close();
+            notify("Editor óptico temporariamente desativado para reconstrução.");
             return;
         }
         if (element.element_type === "rack") {
@@ -1391,13 +1377,15 @@
                         map.closePopup();
                         if (String(state.openingElementId || "") === String(p.id)) return;
                         state.openingElementId = p.id;
-                        // MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: CTO, CEO e CDO
-                        // abrem o mesmo motor/shell real do Rack/Torre. O conteúdo
-                        // óptico continua sendo renderizado por map-cto-suite.js,
-                        // agora embutido no Canvas comum (sem janela antiga).
-                        const opening = ["rack", "tower", "cto", "splice_box"].includes(p.tipo)
+                        // MAP_V07533_OPTICAL_CLEANUP: CTO/CEO/CDO não abrem mais
+                        // nenhum editor (nem o Canvas de Rack/Torre, nem o antigo
+                        // #unifilar-dialog) -- só um aviso, até a reconstrução
+                        // isolada do editor óptico.
+                        const opening = ["rack", "tower"].includes(p.tipo)
                             ? openContainerWorkspace(p.id)
-                            : showUnifilar(p.id);
+                            : ["cto", "splice_box"].includes(p.tipo)
+                                ? Promise.resolve(notify("Editor óptico temporariamente desativado para reconstrução."))
+                                : showUnifilar(p.id);
                         opening
                             .catch((error) => notify(error.message, true))
                             .finally(() => window.setTimeout(() => {
@@ -1452,9 +1440,12 @@
                         duplicates,
                         removeById,
                         edit: () => editElement(p.id).catch((error) => notify(error.message, true)),
-                        // O menu de contexto acompanha o clique normal: nenhuma
-                        // caixa óptica volta a abrir o #unifilar-dialog antigo.
-                        fusions: () => openContainerWorkspace(p.id).catch((error) => notify(error.message, true)),
+                        // MAP_V07533_OPTICAL_CLEANUP: mesmo aviso do clique normal --
+                        // nenhuma caixa óptica abre o Canvas de Rack/Torre nem o
+                        // #unifilar-dialog antigo pelo menu de contexto.
+                        fusions: ["cto", "splice_box"].includes(p.tipo)
+                            ? () => notify("Editor óptico temporariamente desativado para reconstrução.")
+                            : () => openContainerWorkspace(p.id).catch((error) => notify(error.message, true)),
                         remove: async () => {
                             try {
                                 await removeById(p.id);
@@ -2060,15 +2051,5 @@
     // Usado pelo assistente de importação KMZ para desenhar a prévia
     // temporária no Leaflet sem gravar nada, e para recarregar a estrutura
     // depois de uma importação definitiva.
-    // MAP_V07526_CTO_SUITE: expõe os mesmos helpers internos que
-    // map-cto-suite.js precisa pra renderizar a CTO/CDO/CEO (api,
-    // escapeHtml, askValue, centerWithin, formatBudgetTooltip,
-    // splitterLossLabel, openRouteInfoDialog, unifilarDialog) -- puxados
-    // em tempo de chamada de render(), não no carregamento do script, então
-    // a ordem de carregamento entre os dois arquivos não importa.
-    window.networkMap = {
-        map, loadStructure, showUnifilar, manageContainer, notify,
-        api, escapeHtml, askValue, centerWithin, formatBudgetTooltip,
-        splitterLossLabel, openRouteInfoDialog, unifilarDialog, fetchElement,
-    };
+    window.networkMap = { map, loadStructure, showUnifilar, manageContainer, notify };
 })();

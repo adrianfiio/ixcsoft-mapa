@@ -6,9 +6,6 @@
         containerData: null,
         activeElementMenu: null,
     };
-    // MAP_V07532_OPTICAL_BOX_SESSION: invalida fetch/render atrasado quando
-    // o usuário fecha ou troca de CTO/CEO/CDO.
-    let opticalBoxRenderGeneration = 0;
 
     // Criado vazio já na primeira linha executável do arquivo: se qualquer
     // erro acontecer mais adiante na inicialização, window.mapV0758 continua
@@ -187,30 +184,17 @@
         });
     }
 
-    // MAP_V07528_CTO_TORRE_ENGINE: CTO ganha ícone/identidade próprios em
-    // vez de cair no "senão" genérico da Torre (o que a fazia aparecer
-    // com título/ícone de Torre quando aberta por este mesmo Canvas).
     function structureIcon(type) {
-        if (type === "rack") return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"></rect><path d="M4 9h16M4 15h16M8 6h8M8 12h8M8 18h8"></path></svg>';
-        if (["cto", "splice_box"].includes(type)) return '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="4"></rect><path d="M10 4v3m12-3v3M10 28v2m12-2v2"></path><circle cx="12" cy="12" r="1" fill="currentColor"></circle><circle cx="16" cy="12" r="1" fill="currentColor"></circle><circle cx="20" cy="12" r="1" fill="currentColor"></circle><path d="M9 18h14"></path></svg>';
-        return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="2"></circle><path d="M12 9 7 22m5-13 5 13M9 16h6M7 5a7 7 0 0 0 0 5m10-5a7 7 0 0 1 0 5M4 3a11 11 0 0 0 0 9m16-9a11 11 0 0 1 0 9"></path></svg>';
+        return type === "rack"
+            ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"></rect><path d="M4 9h16M4 15h16M8 6h8M8 12h8M8 18h8"></path></svg>'
+            : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="2"></circle><path d="M12 9 7 22m5-13 5 13M9 16h6M7 5a7 7 0 0 0 0 5m10-5a7 7 0 0 1 0 5M4 3a11 11 0 0 0 0 9m16-9a11 11 0 0 1 0 9"></path></svg>';
     }
 
-    // MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: CEO/CDO chegam como
-    // element_type="splice_box" e o subtipo vem de metadata.import_subtype.
-    // Mantemos um tipo real separado (não fingimos que é Torre) e agrupamos
-    // CTO/CEO/CDO em opticalBox apenas para as decisões de UI compartilhadas.
     function containerIdentity(data = state.containerData) {
         const dialog = qs("#container-dialog");
-        const rawType = String(data?.container?.type || dialog?.dataset.containerType || "tower").toLowerCase();
-        const subtype = String(data?.container?.subtype || dialog?.dataset.containerSubtype || "").toLowerCase();
-        const type = ["rack", "tower", "cto", "splice_box"].includes(rawType) ? rawType : "tower";
+        const type = String(data?.container?.type || dialog?.dataset.containerType || "tower").toLowerCase();
         const name = data?.container?.name || dialog?.dataset.containerName || "Estrutura";
-        const opticalBox = ["cto", "splice_box"].includes(type);
-        const label = type === "splice_box"
-            ? subtype === "cdo" ? "CDO" : subtype === "ceo" ? "CEO" : "CEO/CDO"
-            : { rack: "Rack", tower: "Torre", cto: "CTO" }[type];
-        return { type, subtype, name, opticalBox, label };
+        return { type: type === "rack" ? "rack" : "tower", name };
     }
 
     function updateContainerIdentity(data = state.containerData) {
@@ -219,36 +203,9 @@
         if (!root || !dialog) return;
         const identity = containerIdentity(data);
         dialog.dataset.containerType = identity.type;
-        dialog.dataset.containerSubtype = identity.subtype;
         dialog.dataset.containerName = identity.name;
         dialog.classList.toggle("map-v0758-rack", identity.type === "rack");
         dialog.classList.toggle("map-v0758-tower", identity.type === "tower");
-        dialog.classList.toggle("map-v0758-cto", identity.type === "cto");
-        dialog.classList.toggle("map-v0758-splice-box", identity.type === "splice_box");
-        dialog.classList.toggle("map-v0758-optical-box", identity.opticalBox);
-
-        const editorTitle = {
-            rack: "Editor técnico do Rack",
-            tower: "Editor técnico da Torre",
-            cto: "Editor técnico da CTO",
-            splice_box: `Editor técnico da ${identity.label}`,
-        }[identity.type];
-        const structureLabel = {
-            rack: "ESTRUTURA DO RACK",
-            tower: "ESTRUTURA DA TORRE",
-            cto: "ESTRUTURA DA CTO",
-            splice_box: `ESTRUTURA DA ${identity.label}`,
-        }[identity.type];
-        const emptyHeading = identity.opticalBox
-            ? `Monte a ${identity.label} diretamente no Canvas 2D`
-            : identity.type === "rack"
-                ? "Monte o rack diretamente no Canvas 2D"
-                : "Monte a torre diretamente no Canvas 2D";
-        const emptyParagraph = identity.opticalBox
-            ? `A ${identity.label} usa o Canvas óptico: adicione splitter ou nota e ligue as fibras dos cabos diretamente.`
-            : identity.type === "rack"
-                ? "Comece adicionando uma OLT, um DIO ou os equipamentos internos permitidos no rack."
-                : "Comece adicionando um DIO, uma PTO ou os equipamentos ativos da torre.";
 
         const title = qs(".tower-workspace-title-v0750", root);
         if (title) {
@@ -256,7 +213,7 @@
             const small = qs("small", title);
             const icon = qs(":scope > svg", title);
             if (icon) icon.outerHTML = structureIcon(identity.type);
-            if (strong) strong.textContent = editorTitle;
+            if (strong) strong.textContent = identity.type === "rack" ? "Editor técnico do Rack" : "Editor técnico da Torre";
             if (small) small.textContent = `${identity.name} · Canvas 2D, portas, cabos e conexões`;
         }
 
@@ -276,7 +233,7 @@
         const backdrop = qs(".tower-structure-backdrop-v0750", root);
         if (backdrop) {
             backdrop.classList.toggle("rack", identity.type === "rack");
-            backdrop.innerHTML = `${structureIcon(identity.type)}<span>${structureLabel}</span>`;
+            backdrop.innerHTML = `${structureIcon(identity.type)}<span>${identity.type === "rack" ? "ESTRUTURA DO RACK" : "ESTRUTURA DA TORRE"}</span>`;
         }
 
         const empty = qs(".tower-empty-v0750", root);
@@ -285,8 +242,16 @@
             const paragraph = qs("p", empty);
             const emptyIcon = qs(":scope > svg", empty);
             if (emptyIcon) emptyIcon.outerHTML = structureIcon(identity.type);
-            if (heading) heading.textContent = emptyHeading;
-            if (paragraph) paragraph.textContent = emptyParagraph;
+            if (heading) {
+                heading.textContent = identity.type === "rack"
+                    ? "Monte o rack diretamente no Canvas 2D"
+                    : "Monte a torre diretamente no Canvas 2D";
+            }
+            if (paragraph) {
+                paragraph.textContent = identity.type === "rack"
+                    ? "Comece adicionando uma OLT, um DIO ou os equipamentos internos permitidos no rack."
+                    : "Comece adicionando um DIO, uma PTO ou os equipamentos ativos da torre.";
+            }
         }
 
         const addMenu = qs("#tower-add-menu-v0750", root);
@@ -327,12 +292,6 @@
                 });
             }
         }
-        // MAP_V07530_CTO_EMBEDDED_CANVAS: a CTO não usa mais o estado
-        // vazio de equipamento -- o Canvas dela (splitter/cabo/nota) fica
-        // embutido direto no painel, então nunca fica "vazio" de verdade
-        // (mesmo sem nenhum splitter ainda, o Canvas embutido aparece com
-        // o quadro pronto pra receber o primeiro).
-        if (empty && identity.opticalBox) empty.hidden = true;
 
         const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "server", "pto", "other"]);
         const towerAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
@@ -341,156 +300,9 @@
             button.hidden = !allowed.has(String(button.dataset.quickAdd));
         });
 
-        // MAP_V07513_HIDE_FIBERS_ON_TOWER / MAP_V07530_CTO_EMBEDDED_CANVAS:
-        // a CTO não usa mais esse botão pra abrir uma janela separada --
-        // o Canvas embutido (abaixo) já mostra e liga as fibras direto.
+        // MAP_V07513_HIDE_FIBERS_ON_TOWER
         const toolbarFibersButton = qs('.tower-workspace-toolbar-v0750 [data-open-panel="fibers"]');
-        if (toolbarFibersButton) toolbarFibersButton.hidden = identity.type !== "rack";
-
-        // MAP_V07529_CTO_STRIP_EQUIPMENT: a CTO não tem equipamento
-        // genérico -- pedido explícito do usuário pra tirar tudo que for
-        // equipamento (Adicionar, Ligar portas, Editar linhas, Inventário,
-        // Relatório de ligações). Nada disso muda pro Rack/Torre -- só
-        // escondido quando identity.type === "cto".
-        const addMenuWrapper = qs('[aria-controls="tower-add-menu-v0750"]', root)?.closest(".tower-toolbar-menu-v0750");
-        if (addMenuWrapper) addMenuWrapper.hidden = identity.opticalBox;
-        const connectPortsButton = qs("[data-connect-ports]", root);
-        if (connectPortsButton) connectPortsButton.hidden = identity.opticalBox;
-        const editLinesButton = qs("[data-edit-lines]", root);
-        if (editLinesButton) editLinesButton.hidden = identity.opticalBox;
-        const inventoryItem = qs('[data-open-panel="equipment"]', root);
-        if (inventoryItem) inventoryItem.hidden = identity.opticalBox;
-        const matrixItem = qs('[data-open-panel="matrix"]', root);
-        if (matrixItem) matrixItem.hidden = identity.opticalBox;
-
-        // MAP_V07530_CTO_EMBEDDED_CANVAS: o Canvas de splitter/cabo/nota
-        // (map-cto-suite.js) fica embutido DENTRO do mesmo painel do
-        // Rack/Torre, no lugar do Canvas de equipamento -- não abre mais
-        // #unifilar-dialog como janela separada (era isso que aparecia
-        // por cima do Canvas ao clicar em "Fusões"/"+ Nota", bug
-        // reportado pelo usuário). "Estrutura" também aponta pro drawer
-        // de dentro do Canvas embutido em vez do inventário de
-        // equipamento (que a CTO não tem).
-        const actionsBar = qs(".tower-workspace-actions-v0750", root);
-        const structureButton = qs("[data-structure-info]", root);
-        if (identity.opticalBox) {
-            if (actionsBar) {
-                ["add-splitter", "add-note"].forEach((action) => {
-                    if (qs(`[data-cto-quick-add-v07529="${action}"]`, actionsBar)) return;
-                    const button = document.createElement("button");
-                    button.type = "button";
-                    button.dataset.ctoQuickAddV07529 = action;
-                    button.textContent = action === "add-splitter" ? "+ Splitter" : "+ Nota";
-                    button.onclick = () => triggerCtoAction(root, action);
-                    actionsBar.insertBefore(button, qs("[data-connect-ports]", actionsBar));
-                });
-                updateCtoPortsWidget(root, dialog.dataset.elementId);
-            }
-            if (structureButton && !structureButton.dataset.ctoOverrideV07530) {
-                structureButton.dataset.ctoOverrideV07530 = "true";
-                structureButton.addEventListener("click", (event) => {
-                    if (!["cto", "splice_box"].includes(dialog.dataset.containerType)) return;
-                    event.stopImmediatePropagation();
-                    triggerCtoAction(root, "structure");
-                }, true);
-            }
-            ensureCtoEmbeddedCanvas(root, dialog);
-        } else {
-            opticalBoxRenderGeneration += 1;
-            window.mapCtoSuite?.dispose?.();
-            if (actionsBar) {
-                qsa("[data-cto-quick-add-v07529]", actionsBar).forEach((button) => button.remove());
-                qs(".tower-cto-ports-widget-v07529", actionsBar)?.remove();
-            }
-            qs('[data-panel="canvas"] .cto-embedded-canvas-v07530', root)?.remove();
-        }
-    }
-
-    // MAP_V07530_CTO_EMBEDDED_CANVAS: cria (uma vez) e renderiza o Canvas
-    // de splitter/cabo/nota diretamente dentro do painel [data-panel="canvas"]
-    // do motor do Rack/Torre -- reaproveita window.mapCtoSuite.render()
-    // (map-cto-suite.js) sem alterar sua lógica de fusão/drag/zoom, só
-    // passando um alvo diferente (options.embedded) e um refresh próprio
-    // que re-renderiza no mesmo lugar em vez de abrir #unifilar-dialog.
-    async function ensureCtoEmbeddedCanvas(root, dialog) {
-        const panel = qs('[data-panel="canvas"]', root);
-        const elementId = String(dialog?.dataset.elementId || "");
-        if (!panel || !elementId || !window.mapCtoSuite?.render) return;
-        const generation = ++opticalBoxRenderGeneration;
-        let embedded = qs(".cto-embedded-canvas-v07530", panel);
-        if (!embedded) {
-            embedded = document.createElement("div");
-            embedded.className = "cto-embedded-canvas-v07530";
-            panel.appendChild(embedded);
-        }
-        const isCurrent = () => Boolean(
-            generation === opticalBoxRenderGeneration
-            && String(dialog.dataset.elementId || "") === elementId
-            && embedded.isConnected
-        );
-        embedded.dataset.renderState = "loading";
-        embedded.innerHTML = '<div class="optical-box-canvas-state-v07532"><strong>Carregando Canvas óptico…</strong><span>Cabos, fibras, fusões e splitters</span></div>';
-        const rerender = async () => {
-            if (!isCurrent()) return;
-            const fresh = await window.networkMap?.fetchElement?.(elementId);
-            if (!isCurrent()) return;
-            if (fresh) await window.mapCtoSuite.render(fresh, embedded, { embedded: true, onRefresh: rerender });
-            if (!isCurrent()) return;
-            embedded.dataset.renderState = "ready";
-            updateCtoPortsWidget(root, elementId);
-        };
-        try {
-            const element = await window.networkMap?.fetchElement?.(elementId);
-            if (!isCurrent()) return;
-            if (element) await window.mapCtoSuite.render(element, embedded, { embedded: true, onRefresh: rerender });
-            if (!isCurrent()) return;
-            embedded.dataset.renderState = "ready";
-            updateCtoPortsWidget(root, elementId);
-        } catch (error) {
-            if (!isCurrent()) return;
-            window.mapCtoSuite?.dispose?.();
-            embedded.dataset.renderState = "error";
-            embedded.innerHTML = `<div class="optical-box-canvas-state-v07532 error"><strong>Não foi possível abrir o Canvas óptico</strong><span>${escapeHtml(error.message || "Erro inesperado")}</span></div>`;
-            notify(error.message || "Erro ao abrir Canvas óptico.", true);
-        }
-    }
-
-    function triggerCtoAction(root, action) {
-        const embedded = qs(".cto-embedded-canvas-v07530", root);
-        if (!embedded) return;
-        if (action === "structure") embedded.querySelector("[data-cto-structure-v07523]")?.click();
-        else embedded.querySelector(`[data-ceo-quick-add="${action}"]`)?.click();
-    }
-
-    async function updateCtoPortsWidget(root, elementId) {
-        const actionsBar = qs(".tower-workspace-actions-v0750", root);
-        if (!actionsBar || !elementId) return;
-        let widget = qs(".tower-cto-ports-widget-v07529", actionsBar);
-        if (!widget) {
-            widget = document.createElement("span");
-            widget.className = "tower-cto-ports-widget-v07529";
-            actionsBar.insertBefore(widget, actionsBar.firstChild);
-        }
-        try {
-            const element = await window.networkMap?.fetchElement?.(elementId);
-            const trays = element?.splice_box?.trays || [];
-            const splitters = trays.flatMap((tray) => tray.splitters || []);
-            const servicePorts = (element?.cto?.splitters || []).flatMap((splitter) => splitter.ports || []);
-            const capacity = Number(element?.cto?.capacity || servicePorts.length || 0);
-            if (capacity) {
-                const occupiedServices = servicePorts.filter((port) => port.access_point_id).length;
-                const opticalOutputs = splitters.flatMap((splitter) => splitter.ports || []);
-                const fusedOutputs = opticalOutputs.filter((port) => port.output_fiber_id).length;
-                widget.hidden = false;
-                widget.textContent = `${occupiedServices}/${capacity} atendimentos · ${fusedOutputs}/${opticalOutputs.length} saídas fusionadas`;
-                return;
-            }
-            const spliceCount = trays.reduce((total, tray) => total + Number(tray.splice_count || 0), 0);
-            widget.hidden = false;
-            widget.textContent = `${spliceCount} fusões · ${splitters.length} splitter(s)`;
-        } catch {
-            widget.hidden = true;
-        }
+        if (toolbarFibersButton) toolbarFibersButton.hidden = identity.type === "tower";
     }
 
     function ensureElementMenu() {
@@ -591,7 +403,9 @@
         const elementName = element?.nome || element?.name || "Elemento";
         const currentId = element?.id;
         qs("[data-title]", menu).textContent = `${elementName} · ID ${currentId ?? "?"}`;
-        qs('[data-action="open"]', menu).textContent = "Abrir editor técnico";
+        qs('[data-action="open"]', menu).textContent = ["cto", "splice_box"].includes(String(element?.tipo))
+            ? "Abrir fusões"
+            : "Abrir editor técnico";
         const duplicateButton = qs('[data-action="duplicates"]', menu);
         duplicateButton.hidden = duplicates.length < 2;
         duplicateButton.textContent = `Resolver duplicados (${duplicates.length})`;
@@ -620,14 +434,6 @@
             });
             if (accepted) remove?.();
         };
-    }
-
-    const opticalBoxContainerDialog = qs("#container-dialog");
-    if (opticalBoxContainerDialog) {
-        opticalBoxContainerDialog.addEventListener("close", () => {
-            opticalBoxRenderGeneration += 1;
-            window.mapCtoSuite?.dispose?.();
-        });
     }
 
     document.addEventListener("map:container-rendered", (event) => {

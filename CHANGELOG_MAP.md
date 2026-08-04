@@ -1,3 +1,23 @@
+## [0.75.33] - 2026-08-04
+
+### Removido — integração experimental CTO/CEO/CDO no motor do Rack/Torre
+- Reversão completa das v0.75.26 a v0.75.32: CTO, CEO e CDO não abrem mais `openContainerWorkspace` (o Canvas 2D/shell do Rack e da Torre). Elas reutilizavam e alteravam o mesmo DOM interno (`#container-dialog`, `#map-master-container`, `.tower-workspace-actions-v0750`) usado pelo Rack/Torre, causando `Cannot read properties of null (reading 'value')` em `redrawOpticalLinks` e `Cannot set properties of null (setting 'innerHTML')` em `renderEquipmentList`/`openContainerWorkspace` depois de abrir uma caixa óptica.
+- `static/js/map-cto-suite.js` removido do repositório e de `templates/map.html`. Nenhum script, import, callback global ou integração de clique/menu de contexto do módulo óptico experimental permanece carregado.
+- `map-editor.js`, `map-v0758-core-ui.js` e `map-v0750-tower-workspace.js` revertidos ao comportamento anterior à integração: `containerIdentity`/`updateContainerIdentity` voltam a tratar só `rack`/`tower`.
+- Os 5 endpoints compartilhados (`container_equipment`, `container_port_links`, `container_layout_v3`, `create_passive_endpoint_v3`, `import_container_device_type_yaml`) voltam a aceitar só `RACK`/`TOWER`.
+- Clicar ou usar o menu de contexto numa CTO/CEO/CDO agora mostra "Editor óptico temporariamente desativado para reconstrução." — sem abrir o Canvas do Rack/Torre e sem reabrir o antigo `#unifilar-dialog` como solução improvisada.
+
+### Corrigido — Rack/Torre
+- `renderEquipmentList` (`map-master-suite.js`) ganhou uma guarda defensiva: se `[data-panel="equipment"]` não existir, registra o erro no console e retorna, em vez de derrubar o editor com um `TypeError`.
+- Preservada a correção genuína de `.tower-workspace-actions-v0750 [hidden]`/`.tower-popover-v0750 [hidden]` (CSS `display:none !important`, introduzida junto da integração mas não específica dela — afeta o Rack/Torre em geral).
+
+### Adicionado
+- Comando `python manage.py reset_optical_test_data [--dry-run|--confirm]`: relata o volume de dados ópticos de CTO/CEO/CDO (splitters, bandejas, fusões, portas ocupadas por clientes reais, cabos conectados) e remove apenas resíduos estruturais da integração quebrada (equipamento genérico e metadata de layout do Canvas do Rack/Torre presos numa caixa óptica). Nunca apaga splitters, bandejas ou fusões reais — não há como distinguir dado de teste de dado de produção nesses modelos.
+
+### Segurança
+- Sem migrations. Nenhum dado é apagado automaticamente; `reset_optical_test_data` exige `--confirm` e roda dentro de `transaction.atomic()`.
+- Prepara terreno para a reconstrução isolada do editor óptico de CTO/CEO/CDO, em arquivo/arquitetura própria, sem depender do DOM do Rack/Torre.
+
 ## [0.75.32] - 2026-08-04
 
 ### Corrigido — Canvas óptico abre repetidamente sem quebrar

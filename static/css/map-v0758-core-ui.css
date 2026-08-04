@@ -218,12 +218,6 @@
     color: #8ea9bd;
 }
 
-/* MAP_V07527_CTO_WINDOW_PARITY: janela idêntica à do Rack/Torre --
-   mesmos valores de posição/borda/sombra/z-index de
-   #container-dialog.tower-workspace-dialog-v0750 em
-   map-v0750-tower-workspace.css (linhas 12-32), não só o conteúdo de
-   dentro. Pedido explícito do usuário: "quero identico da torre, como
-   abre a janela tudo, não só a interna". */
 #unifilar-dialog.map-v0758-optical-workspace {
     position: fixed !important;
     inset: 0 0 0 var(--v072-sidebar, 292px) !important;
@@ -234,22 +228,13 @@
     margin: 0 !important;
     transform: none !important;
     border: 0 !important;
-    border-left: 1px solid rgba(56, 189, 248, .2) !important;
+    border-left: 1px solid #203b52 !important;
     border-radius: 0 !important;
     background: #061626 !important;
-    box-shadow: -18px 0 55px rgba(0, 0, 0, .38) !important;
-    z-index: 1800 !important;
-}
-#unifilar-dialog.map-v0758-optical-workspace::backdrop {
-    background: transparent !important;
-    backdrop-filter: none !important;
 }
 
 body:has(#map-sidebar.v072-collapsed) #unifilar-dialog.map-v0758-optical-workspace {
-    left: 72px !important;
-}
-body:has(#map-sidebar.master-minimized) #unifilar-dialog.map-v0758-optical-workspace {
-    left: 54px !important;
+    left: var(--v072-sidebar-collapsed, 66px) !important;
 }
 
 #unifilar-dialog.map-v0758-optical-workspace > section {
@@ -267,13 +252,6 @@ body:has(#map-sidebar.master-minimized) #unifilar-dialog.map-v0758-optical-works
     z-index: 20;
     border-bottom: 1px solid #203b52;
     background: #0a2034;
-}
-/* Só a CTO/CDO/CEO esconde o cabeçalho nativo -- ela tem título e botão
-   fechar próprios na barra de ferramentas (map-cto-suite.js), igual o
-   Rack/Torre faz com #container-dialog. O Rack (fusão DIO/cabo) e o
-   fallback continuam com o cabeçalho nativo, sem essa classe. */
-#unifilar-dialog.map-v0758-optical-workspace.map-cto-suite-active-v07527 > section > header {
-    display: none !important;
 }
 
 #unifilar-dialog.map-v0758-optical-workspace #unifilar-content {
@@ -944,88 +922,14 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
     background: rgba(34, 197, 94, .14) !important;
 }
 
-/* MAP_V07529_CTO_STRIP_EQUIPMENT: contador de portas de cliente/DROP da
-   CTO, mostrado na barra de ferramentas do Canvas (mesmo motor do
-   Rack/Torre, só que sem os botões de equipamento genérico). */
-.tower-cto-ports-widget-v07529 {
-    display: inline-flex;
-    align-items: center;
-    min-height: 31px;
-    padding: 4px 10px;
-    border: 1px solid var(--v0750-border, rgba(148, 163, 184, .22));
-    border-radius: 8px;
-    color: var(--v0750-text, #e7f1fb);
-    background: var(--v0750-panel-soft, #102a43);
-    font-size: 11px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-.tower-cto-ports-widget-v07529[hidden] {
-    display: none;
-}
-/* Reforço defensivo: .tower-workspace-actions-v0750 button/.tower-popover-v0750
-   button têm display:inline-flex sem !important, que vence o [hidden] do
-   UA stylesheet por origem de cascata (autor > UA, mesmo sem !important).
-   Sem isso, esconder um botão desses via button.hidden=true não some
-   visualmente -- afeta tanto os toggles novos da CTO quanto o filtro
-   antigo de tipo de equipamento por rack/tower. */
+/* MAP_V07533_TOWER_HIDDEN_FIX: preservado da limpeza óptica v0.75.33 —
+   não é específico de CTO. .tower-workspace-actions-v0750 button/
+   .tower-popover-v0750 button têm display:inline-flex sem !important,
+   que vence o [hidden] do UA stylesheet por origem de cascata (autor >
+   UA, mesmo sem !important). Sem isso, esconder um botão desses via
+   button.hidden=true não some visualmente -- afeta o Rack/Torre em
+   geral (filtro de tipo de equipamento por rack/tower), não só a CTO. */
 .tower-workspace-actions-v0750 [hidden],
 .tower-popover-v0750 [hidden] {
     display: none !important;
-}
-
-/* MAP_V07530_CTO_EMBEDDED_CANVAS: o Canvas de splitter/cabo/nota da CTO
-   passa a viver DENTRO do mesmo painel [data-panel="canvas"] do
-   Rack/Torre (não mais numa janela separada) -- pedido explícito do
-   usuário depois de ver a janela antiga "Editor técnico" abrindo por
-   cima do Canvas novo ao clicar em Fusões/+Nota. Forçado via CSS
-   (!important) porque .tower-empty-v0750 é escondido/mostrado em mais
-   de um lugar (decorateNodes em map-v0750-tower-workspace.js roda no
-   mesmo evento map:container-rendered, ordem de execução entre os dois
-   arquivos não é garantida) -- assim não importa quem rodou por
-   último, a CTO nunca mostra o estado vazio de equipamento. */
-#container-dialog.map-v0758-optical-box .tower-empty-v0750,
-#container-dialog.map-v0758-optical-box .master-canvas-scroll {
-    display: none !important;
-}
-.cto-embedded-canvas-v07530 {
-    position: absolute;
-    inset: 0;
-    overflow: auto;
-}
-#container-dialog:not(.map-v0758-optical-box) .cto-embedded-canvas-v07530 {
-    display: none !important;
-}
-.cto-embedded-canvas-v07530 .tower-workspace-toolbar-v0750.ceo-quick-toolbar-v07521,
-.cto-embedded-canvas-v07530 #unifilar-feedback {
-    display: none !important;
-}
-.cto-embedded-canvas-v07530 .optical-graph {
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
-}
-
-/* MAP_V07532_OPTICAL_BOX_SESSION */
-.cto-embedded-canvas-v07530[data-render-state="loading"],
-.cto-embedded-canvas-v07530[data-render-state="error"] {
-    display: grid;
-    place-items: center;
-}
-.optical-box-canvas-state-v07532 {
-    display: grid;
-    gap: 6px;
-    place-items: center;
-    min-width: min(420px, calc(100% - 32px));
-    padding: 28px;
-    border: 1px solid rgba(56, 189, 248, .28);
-    border-radius: 14px;
-    color: #dff4ff;
-    background: rgba(6, 22, 38, .92);
-    text-align: center;
-}
-.optical-box-canvas-state-v07532 span { color: #8fb3cc; }
-.optical-box-canvas-state-v07532.error {
-    border-color: rgba(248, 113, 113, .45);
-    color: #fecaca;
 }

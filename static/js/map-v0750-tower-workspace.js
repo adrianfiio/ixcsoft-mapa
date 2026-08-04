@@ -369,16 +369,6 @@
         const fibersButton = qs('[data-open-panel="fibers"]', toolbar);
         if (fibersButton) fibersButton.onclick = () => {
             closeActivePopover(root);
-            // MAP_V07528_CTO_TORRE_ENGINE: na CTO (que não tem DIO/porta
-            // traseira pra destacar fibra), "Fibras" abre direto o editor
-            // de splitter/cabo (map-cto-suite.js) por cima do Canvas, igual
-            // o Rack abre a fusão clicando na porta traseira do DIO.
-            const dialog = dialogRoot();
-            if (dialog?.dataset.containerType === "cto") {
-                const id = dialog.dataset.elementId;
-                if (id) window.networkMap?.showUnifilar?.(id);
-                return;
-            }
             qs('[data-tab="canvas"]', root)?.click();
             root.classList.toggle("fiber-focus-v0756");
             fibersButton.classList.toggle("active", root.classList.contains("fiber-focus-v0756"));

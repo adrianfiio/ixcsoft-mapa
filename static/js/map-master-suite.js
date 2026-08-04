@@ -878,6 +878,17 @@
 
     function renderEquipmentList() {
         const panel = qs('#map-master-container [data-panel="equipment"]');
+        // MAP_V07533_OPTICAL_CLEANUP: guarda defensiva -- se o painel de
+        // equipamentos sumir por qualquer motivo (workspace ainda não
+        // montado, DOM alterado por algum código externo), registra o
+        // problema em vez de derrubar o editor inteiro com um TypeError.
+        if (!panel) {
+            const dialog = containerDialog();
+            console.error("[MapMaster] Painel de equipamentos não encontrado.", {
+                dialog, containerId: dialog?.dataset.elementId, containerType: dialog?.dataset.containerType,
+            });
+            return;
+        }
         const equipment = state.container.data?.equipment || [];
         const groups = new Map();
         equipment.forEach((item) => {
