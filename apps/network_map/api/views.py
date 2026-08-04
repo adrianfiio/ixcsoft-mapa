@@ -1668,6 +1668,7 @@ def container_port_links(request, element_id):
         # Fusão: só conflita com outra fusão já existente na mesma porta do
         # DIO. O cordão da frente (se houver) é uma ligação independente.
         in_use_query = Q(destination_port=destination, cable_fiber__isnull=False)
+        role_label = "traseira (fusão)"
     else:
         # Cordão: só conflita com outro cordão já existente na mesma porta de
         # destino, além dos conflitos usuais nas duas pontas do cabo/cordão.
@@ -1675,8 +1676,25 @@ def container_port_links(request, element_id):
             Q(destination_port=destination, source_port__isnull=False)
             | Q(source_port=source) | Q(destination_port=source) | Q(source_port=destination)
         )
-    if ContainerPortLink.objects.filter(in_use_query).exists():
-        return JsonResponse({"detail": "Uma das portas já está em uso."}, status=409)
+        role_label = "frontal (cordão)"
+    conflict = ContainerPortLink.objects.filter(in_use_query).select_related(
+        "source_port__equipment", "destination_port__equipment", "cable"
+    ).first()
+    if conflict:
+        # MAP_V07517_DIO_CONFLICT_MESSAGE: mensagem antes era genérica
+        # ("Uma das portas já está em uso"), sem dizer QUAL porta bateu nem
+        # com qual ligação — difícil de diagnosticar sem acesso ao banco.
+        # Agora nomeia o lado que a requisição tentou usar (frontal/
+        # traseira) e a ligação existente que conflitou.
+        existing = (
+            f"{conflict.source_port.equipment.name} · {conflict.source_port.label}"
+            if conflict.source_port_id
+            else f"cabo {conflict.cable.name if conflict.cable else '?'}"
+        ) + f" → {conflict.destination_port.equipment.name} · {conflict.destination_port.label}"
+        return JsonResponse(
+            {"detail": f"Porta {role_label} já está em uso por: {existing}."},
+            status=409,
+        )
     link_type = str(request.data.get("link_type", "fiber"))
     link_notes = ""
     if source is None:

@@ -1,3 +1,9 @@
+## [0.75.17] - 2026-08-04
+
+### Corrigido
+- **PTP retornava 500 sempre**: `ContainerEquipmentPort` não tem `company`/`company_id` próprio (só `ContainerEquipment`, via `equipment`), mas os 3 endpoints de PTP (`ptp_link_candidates`, `ptp_links` POST, `ptp_link_detail` DELETE) acessavam `.company_id` direto na porta — `AttributeError` derrubava a requisição com HTTP 500 toda vez, mesmo em enlaces criados manualmente com interface wireless corretamente marcada. Corrigido acessando `.equipment.company_id` (ou `.container.company_id` no link). Confirmado com traceback real do servidor.
+- Mensagem de "porta já em uso" do DIO (`container_port_links`) agora diz qual lado (frontal/traseira) e qual ligação existente conflitou, em vez de um genérico "uma das portas já está em uso" — não achei inconsistência na lógica em si (frente e trás do mesmo slot já eram tratadas como ocupações independentes), mas sem a mensagem específica não dava pra diagnosticar sem acesso direto ao banco.
+
 ## [0.75.16] - 2026-08-04
 
 ### Corrigido
