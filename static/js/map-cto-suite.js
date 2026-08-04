@@ -16,7 +16,14 @@
 (function () {
     "use strict";
 
-    async function render(element, content) {
+    // MAP_V07530_CTO_EMBEDDED_CANVAS: pointer pro listener de "resize" da
+    // última renderização -- sem isso, cada refresh (splitter novo, fusão
+    // criada, etc.) empilharia mais um listener de "resize" sem nunca
+    // remover o anterior, já que no modo embutido não existe mais o evento
+    // "close" do #unifilar-dialog pra fazer essa limpeza sozinho.
+    let activeResizeHandler = null;
+
+    async function render(element, content, options = {}) {
         const deps = window.networkMap || {};
         const {
             api, notify, escapeHtml, askValue, centerWithin,
@@ -26,6 +33,19 @@
         if (!api || !unifilarDialog) {
             throw new Error("map-cto-suite: dependências de map-editor.js ainda não carregaram (window.networkMap incompleto).");
         }
+        if (activeResizeHandler) {
+            window.removeEventListener("resize", activeResizeHandler);
+            activeResizeHandler = null;
+        }
+        // MAP_V07530_CTO_EMBEDDED_CANVAS: quando embutido no Canvas do
+        // Rack/Torre (options.embedded), o refresh depois de qualquer ação
+        // não pode fechar/reabrir #unifilar-dialog (era isso que abria a
+        // janela flutuante "Editor técnico" antiga por cima do Canvas --
+        // bug reportado pelo usuário). Em vez disso, chama de volta
+        // options.onRefresh, que re-renderiza no mesmo lugar.
+        const refreshCtoView = options.onRefresh
+            ? options.onRefresh
+            : async () => { unifilarDialog.close(); await showUnifilar(element.id); };
             const [optical, savedLayout] = await Promise.all([
                 api(`/api/map/elements/${element.id}/splices/`),
                 api(`/api/map/elements/${element.id}/layout/`),
@@ -160,7 +180,7 @@
                 event.currentTarget.classList.toggle("active", graph.classList.contains("fiber-focus-v07523"));
             };
             content.querySelector("[data-cto-refresh-v07523]").onclick = async () => {
-                unifilarDialog.close(); await showUnifilar(element.id); notify("Dados atualizados.");
+                await refreshCtoView(); notify("Dados atualizados.");
             };
             const ctoToolsToggle = content.querySelector("[data-cto-tools-toggle-v07523]");
             const ctoToolsMenu = document.getElementById("cto-tools-menu-v07523");
@@ -193,7 +213,7 @@
                     method: "POST",
                     body: JSON.stringify({ tray_id: trayId, input_fiber_id: input, output_fiber_id: output }),
                 });
-                unifilarDialog.close(); await showUnifilar(element.id); notify("Fusão criada na caixa.");
+                await refreshCtoView(); notify("Fusão criada na caixa.");
             };
             content.querySelectorAll(".fiber-port").forEach((chip) => {
                 chip.ondragstart = (event) => {
@@ -219,7 +239,7 @@
                                 method: "POST",
                                 body: JSON.stringify({ connection_type: "splitter_output", port_id: selectedSplitterPort, fiber_id: chip.dataset.fiberId }),
                             });
-                            unifilarDialog.close(); await showUnifilar(element.id); notify("Saída do splitter conectada à fibra.");
+                            await refreshCtoView(); notify("Saída do splitter conectada à fibra.");
                         } catch (error) { notify(error.message, true); }
                         return;
                     }
@@ -241,7 +261,7 @@
                                 method: "POST",
                                 body: JSON.stringify({ connection_type: "splitter_cascade", splitter_id: button.dataset.splitterId, source_port_id: selectedSplitterPort }),
                             });
-                            unifilarDialog.close(); await showUnifilar(element.id); notify("Splitters conectados em cascata.");
+                            await refreshCtoView(); notify("Splitters conectados em cascata.");
                         } catch (error) { notify(error.message, true); }
                         return;
                     }
@@ -251,7 +271,7 @@
                             method: "POST",
                             body: JSON.stringify({ connection_type: "splitter_input", splitter_id: button.dataset.splitterId, fiber_id: selectedFiber }),
                         });
-                        unifilarDialog.close(); await showUnifilar(element.id); notify("Fibra conectada à entrada do splitter.");
+                        await refreshCtoView(); notify("Fibra conectada à entrada do splitter.");
                     } catch (error) { notify(error.message, true); }
                 };
                 button.oncontextmenu = async (event) => {
@@ -261,7 +281,7 @@
                         method: "POST",
                         body: JSON.stringify({ connection_type: "clear_splitter_input", splitter_id: button.dataset.splitterId }),
                     });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+                    await refreshCtoView(); notify("Ligação removida.");
                 };
             });
             content.querySelectorAll(".splitter-output-port").forEach((button) => {
@@ -280,7 +300,7 @@
                         method: "POST",
                         body: JSON.stringify({ connection_type: "clear_splitter_output", port_id: button.dataset.portId }),
                     });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+                    await refreshCtoView(); notify("Ligação removida.");
                 };
             });
             const budgetByLink = new Map();
@@ -372,7 +392,7 @@
                         }),
                     });
                 }
-                unifilarDialog.close(); await showUnifilar(element.id); notify("Ligação removida.");
+                await refreshCtoView(); notify("Ligação removida.");
             };
             linkActionMenu.querySelector('[data-link-action="info"]').onclick = () => {
                 linkActionMenu.hidden = true;
@@ -473,7 +493,7 @@
                     await api(`/api/map/elements/${element.id}/layout/`, {
                         method: "PATCH", body: JSON.stringify({ layout }),
                     });
-                    unifilarDialog.close(); await showUnifilar(element.id);
+                    await refreshCtoView();
                 };
             });
             content.querySelectorAll(".graph-node").forEach((node) => {
@@ -546,7 +566,7 @@
                     });
                     layout[`splitter-${result.splitter_id}`] = { x: Math.round(canvasMenuPoint.x), y: Math.round(canvasMenuPoint.y) };
                     await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter adicionado.");
+                    await refreshCtoView(); notify("Splitter adicionado.");
                 } catch (error) { notify(error.message, true); }
             };
             canvasMenu.querySelector('[data-canvas-action="add-note"]').onclick = async () => {
@@ -556,7 +576,7 @@
                 if (!text) return;
                 layout.notes = [...notes, { id: `n${Date.now()}`, x: Math.round(canvasMenuPoint.x), y: Math.round(canvasMenuPoint.y), text }];
                 await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
-                unifilarDialog.close(); await showUnifilar(element.id); notify("Nota adicionada.");
+                await refreshCtoView(); notify("Nota adicionada.");
             };
             // MAP_V07521_CEO_QUICK_TOOLBAR: os botões da barra nova só
             // reaproveitam os MESMOS handlers do menu de contexto (fundo do
@@ -584,7 +604,7 @@
                     if (!accepted) return;
                     layout.notes = notes.filter((note) => String(note.id) !== String(button.dataset.deleteNote));
                     await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Nota excluída.");
+                    await refreshCtoView(); notify("Nota excluída.");
                 };
             });
             content.querySelectorAll("[data-note-id]").forEach((textEl) => {
@@ -594,7 +614,7 @@
                     if (text === null || text === undefined) return;
                     layout.notes = notes.map((item) => String(item.id) === String(textEl.dataset.noteId) ? { ...item, text } : item);
                     await api(`/api/map/elements/${element.id}/layout/`, { method: "PATCH", body: JSON.stringify({ layout }) });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Nota atualizada.");
+                    await refreshCtoView(); notify("Nota atualizada.");
                 };
             });
             content.querySelectorAll("[data-edit-splitter]").forEach((button) => {
@@ -606,7 +626,7 @@
                             method: "PATCH",
                             body: JSON.stringify({ ratio }),
                         });
-                        unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter atualizado.");
+                        await refreshCtoView(); notify("Splitter atualizado.");
                     } catch (error) { notify(error.message, true); }
                 };
             });
@@ -614,19 +634,26 @@
                 button.onclick = async () => {
                     if (!confirm("Excluir este splitter e suas ligações?")) return;
                     await api(`/api/map/elements/${element.id}/splitters/${button.dataset.deleteSplitter}/`, { method: "DELETE" });
-                    unifilarDialog.close(); await showUnifilar(element.id); notify("Splitter excluído.");
+                    await refreshCtoView(); notify("Splitter excluído.");
                 };
             });
-            unifilarDialog.classList.add("map-v0758-optical-workspace");
-            if (!unifilarDialog.open) unifilarDialog.showModal();
+            if (options.embedded) {
+                content.classList.add("cto-embedded-canvas-v07530");
+            } else {
+                unifilarDialog.classList.add("map-v0758-optical-workspace");
+                if (!unifilarDialog.open) unifilarDialog.showModal();
+            }
             requestAnimationFrame(redrawOpticalLinks);
             setTimeout(redrawOpticalLinks, 150);
-            window.addEventListener("resize", redrawOpticalLinks);
+            activeResizeHandler = redrawOpticalLinks;
+            window.addEventListener("resize", activeResizeHandler);
             graphEl.addEventListener("scroll", redrawOpticalLinks);
             content.addEventListener("scroll", redrawOpticalLinks);
-            unifilarDialog.addEventListener("close", () => {
-                window.removeEventListener("resize", redrawOpticalLinks);
-            }, { once: true });
+            if (!options.embedded) {
+                unifilarDialog.addEventListener("close", () => {
+                    window.removeEventListener("resize", redrawOpticalLinks);
+                }, { once: true });
+            }
     }
 
     window.mapCtoSuite = { render };

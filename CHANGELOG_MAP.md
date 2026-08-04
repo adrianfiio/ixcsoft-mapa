@@ -1,3 +1,20 @@
+## [0.75.30] - 2026-08-04
+
+### Corrigido — bug real reportado com print
+- Usuário mostrou print: clicar em "+ Nota"/"Fusões" abria o "Editor técnico" **antigo** como uma janela flutuante separada, por cima do Canvas novo — exatamente o formato que vinha sendo eliminado a sessão inteira. Causa: a v0.75.28/29 fazia esses botões chamarem `showUnifilar()`, que abre `#unifilar-dialog` (um `<dialog>` HTML diferente do `#container-dialog` da Torre) — e esse dialog, ao abrir dentro do Canvas da Torre, vira uma janela flutuante arrastável (mesmo mecanismo que o Rack usa pra fusão de DIO, `enhanceFusion()`). Pra CTO isso resultava em 2 janelas visíveis ao mesmo tempo.
+
+### Alterado — arquitetura: Canvas da CTO embutido de verdade
+- O Canvas de splitter/cabo/nota (`map-cto-suite.js`) agora é renderizado **dentro** do mesmo painel `[data-panel="canvas"]` que o Rack/Torre usa pro Canvas de equipamento — não abre mais `#unifilar-dialog` como janela separada pra CTO em nenhum fluxo.
+- `map-cto-suite.js`: `render()` ganhou um 3º parâmetro `options` — `options.embedded` (pula os `unifilarDialog.showModal()`/`classList.add()`, já não faz sentido fora de uma janela própria) e `options.onRefresh` (callback usado no lugar do antigo `unifilarDialog.close(); await showUnifilar(...)` — sem isso, qualquer ação dentro do Canvas embutido reabriria a janela antiga de novo). Os ~15 pontos internos de "refresh depois de uma ação" (criar fusão, adicionar splitter, excluir nota, etc.) foram trocados por uma chamada única, `await refreshCtoView()`, que decide qual dos dois comportamentos usar.
+- Corrigido também um vazamento de listener: sem o evento "close" do dialog pra limpar, cada refresh no modo embutido empilharia mais um listener de `resize` sem remover o anterior — agora há um `activeResizeHandler` compartilhado que é removido no início de cada `render()`.
+- `map-v0758-core-ui.js`: `ensureCtoEmbeddedCanvas()` cria (uma vez) e mantém atualizado o Canvas embutido; `triggerCtoAction()` faz os botões "+ Splitter"/"+ Nota"/"Estrutura" da barra de ferramentas clicarem direto nos botões já existentes de dentro do Canvas embutido (escondidos visualmente, mas continuam clicáveis via JS) — reaproveita a lógica de sempre, não duplica.
+- Botão **"Fibras"/"Fusões" removido da CTO** (ficou só pro Rack, onde já fazia sentido) — a fusão agora acontece direto no Canvas, sem precisar de um botão pra "abrir" nada.
+- `.tower-empty-v0750` (estado vazio de equipamento) e `.master-canvas-scroll` (Canvas de equipamento) forçados a sumir via CSS (`!important`) quando o container é uma CTO — o Canvas embutido ocupa o lugar deles.
+
+### Segurança
+- `map-master-suite.js` (o motor de renderização de equipamento do Rack/Torre) **não foi tocado** — o Canvas embutido da CTO vive como um elemento irmão novo dentro do mesmo painel, sem competir pelo `.master-canvas-nodes` que esse arquivo gerencia.
+- Sem migrations. Sem endpoint novo.
+
 ## [0.75.29] - 2026-08-04
 
 ### Alterado — CTO sem equipamento genérico, com splitter/nota/fusões/portas
