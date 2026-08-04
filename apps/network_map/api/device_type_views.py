@@ -53,6 +53,9 @@ ALLOWED_BY_CONTAINER = {
     # derrubava o endpoint com KeyError (ALLOWED_BY_CONTAINER[container.element_type]
     # não tem fallback). Mesmo conjunto permitido da Torre.
     NetworkElement.ElementType.CTO: TOWER_ALLOWED_TYPES,
+    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: CEO/CDO usam splice_box e
+    # compartilham o mesmo shell técnico da CTO, sem mudar Rack/Torre.
+    NetworkElement.ElementType.SPLICE_BOX: TOWER_ALLOWED_TYPES,
 }
 
 
@@ -70,8 +73,9 @@ def _error_detail(exc: Exception) -> str:
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def import_container_device_type_yaml(request, element_id):
-    # MAP_V07528_CTO_TORRE_ENGINE: CTO liberada, mesma cópia geral do
-    # Canvas do Rack/Torre pedida pelo usuário.
+    # MAP_V07531_OPTICAL_BOX_TORRE_ENGINE: CTO/CEO/CDO usam o mesmo
+    # shell técnico. A UI óptica esconde importação de equipamento, mas
+    # o endpoint continua consistente e sem KeyError para todos os tipos.
     container = get_object_or_404(
         scope_company_queryset(NetworkElement.objects, request.user),
         pk=element_id,
@@ -79,6 +83,7 @@ def import_container_device_type_yaml(request, element_id):
             NetworkElement.ElementType.RACK,
             NetworkElement.ElementType.TOWER,
             NetworkElement.ElementType.CTO,
+            NetworkElement.ElementType.SPLICE_BOX,
         ],
     )
     if not can_edit_company(request.user, container.company_id):
