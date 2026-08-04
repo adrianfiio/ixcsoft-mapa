@@ -1491,34 +1491,13 @@
     }
 
     function renderLinkHandles() {
-        const svg = qs("#map-master-container .master-canvas-links");
-        if (!svg || !state.container.lineMode || !state.container.selectedLink) return;
-        const points = state.container.layout.routes[state.container.selectedLink] || [];
-        points.forEach((point, index) => {
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", point.x); circle.setAttribute("cy", point.y); circle.setAttribute("r", "7");
-            circle.classList.add("master-link-handle");
-            circle.onpointerdown = (event) => {
-                event.preventDefault(); event.stopPropagation();
-                const rect = svg.getBoundingClientRect();
-                const scale = Number(qs("#map-master-container .master-canvas")?.dataset.v0741Scale || 1) || 1;
-                const move = (moveEvent) => {
-                    points[index] = { x: (moveEvent.clientX - rect.left) / scale, y: (moveEvent.clientY - rect.top) / scale };
-                    state.container.layout.routes[state.container.selectedLink] = points;
-                    drawContainerLinks();
-                };
-                const up = () => { window.removeEventListener("pointermove", move); saveContainerLayout(); };
-                window.addEventListener("pointermove", move);
-                window.addEventListener("pointerup", up, { once: true });
-            };
-            circle.oncontextmenu = (event) => {
-                event.preventDefault();
-                points.splice(index, 1);
-                state.container.layout.routes[state.container.selectedLink] = points;
-                saveContainerLayout(); drawContainerLinks();
-            };
-            svg.appendChild(circle);
-        });
+        // MAP_V07513_DISABLE_LEGACY_HANDLES: map-v07512-links-ptp.js's
+        // renderPluginHandles() já cobre seleção/arraste/exclusão de ponto
+        // nesta mesma <svg>, sem depender de lineMode. Manter os dois juntos
+        // desenhava dois círculos sobrepostos no mesmo ponto — arrastar um
+        // deixava o outro "fantasma" parado ali até o próximo redraw
+        // completo, o que tornava difícil reencontrar o ponto certo depois
+        // de movê-lo.
     }
 
     async function selectCreatedLinkForEditing(linkId) {
@@ -1755,6 +1734,11 @@
             if (wrapper) wrapper.hidden = !visible;
         });
         const allowedPorts = {
+            // MAP_V07513_OLT_UPLINK_CARD: só uplink (SFP/SFP+) + gerência +
+            // alimentação — as portas PON continuam exclusivas do fluxo
+            // "Adicionar placa" (numeração por slot), não deste editor
+            // genérico, pra não duplicar/confundir os dois caminhos.
+            olt: ["rj45_1g", "sfp_1g", "sfp_plus_10g", "power"],
             switch: ["rj45_100m", "rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g", "sfp28_25g", "qsfp_plus_40g", "qsfp28_100g"],
             router: ["rj45_100m", "rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g", "sfp28_25g", "qsfp_plus_40g", "qsfp28_100g"],
             firewall: ["rj45_1g", "rj45_2g5", "sfp_1g", "sfp_plus_10g"],

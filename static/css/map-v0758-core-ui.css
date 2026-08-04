@@ -603,6 +603,11 @@ body.map-master-suite #unifilar-dialog.map-v07510-optical-workspace {
 .master-canvas-note {
     cursor: grab;
     user-select: none;
+    /* MAP_V07513_NOTE_POINTER_EVENTS: .master-canvas-nodes (o pai direto das
+       notas) é pointer-events:none; cada nó de equipamento já reativa isso
+       em CSS próprio, mas a nota nunca tinha essa regra — clique e arraste
+       atravessavam o elemento sem nunca chegar até ele. */
+    pointer-events: auto;
 }
 .master-canvas-note.dragging-v07511 {
     cursor: grabbing;

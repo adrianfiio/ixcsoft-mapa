@@ -1,3 +1,15 @@
+## [0.75.13] - 2026-08-04
+
+### Corrigido
+- notas do Canvas: o contêiner-pai (`.master-canvas-nodes`) bloqueava todo evento de ponteiro por herança e nunca reabria a exceção pra `.master-canvas-note` — clique, arraste, editar e excluir não chegavam ao elemento em um navegador real. Corrigido com `pointer-events: auto` na nota;
+- roteamento automático de ligações ("Organizar equipamentos" e novas ligações sem ponto manual) passa a medir as caixas realmente renderizadas de equipamentos, cabos e notas e desviar delas, em vez de usar uma coordenada de meio-caminho fixa que cortava por cima de outras caixas;
+- alça de reposicionamento do meio do fio ganhou raio de clique maior (8px → 13px) e o sistema de alças antigo (que ficava duplicado sobre o mesmo ponto e "fantasma" depois de um arraste) foi desativado, já que o sistema novo (seleção por clique na linha, arraste, exclusão por botão direito) já cobre tudo sozinho;
+- botão "Fibras" deixa de aparecer no editor da Torre (o destaque de fibra é específico do DIO em Rack); segue disponível no Rack.
+
+### Adicionado
+- botão "Atualizar" no meio do editor de Rack/Torre, recarrega os dados de equipamentos/cabos sem sair do Canvas nem recarregar a página;
+- OLT ganha uma opção de placa de uplink (SFP/SFP+/gerência) além das placas de PON já existentes, direto pelo editor de equipamento — sem precisar de importação de YAML pra isso.
+
 ## [0.75.12] - 2026-08-03
 
 ### Corrigido
