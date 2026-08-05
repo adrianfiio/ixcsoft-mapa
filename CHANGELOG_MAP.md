@@ -1,3 +1,20 @@
+## [0.75.45] - 2026-08-05
+
+### Chassi e placas de serviço
+- A OLT passa a ser criada como chassi com slots vazios, em disposição vertical ou horizontal.
+- Duplo clique ou botão direito em cada slot instala ou edita a placa de serviço.
+- Cada placa define modelo, GPON/XG-PON/XGS-PON e quantidade exata de portas PON.
+
+### Navegação
+- O pan após zoom usa eventos globais e funciona com botão esquerdo na área vazia ou botão central.
+
+### Uplinks
+- Uplinks ficam fora desta rodada; novas OLTs são criadas sem uplinks.
+
+### Compatibilidade
+- DIO, organizadores, calhas e roteamento traseiro foram preservados.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.44] - 2026-08-05
 
 ### OLT determinística
