@@ -41,6 +41,7 @@ from apps.network_map.api.optical_editor_v3 import (
     fusion_cable_membership,
     fusion_cable_state,
 )
+from apps.network_map.api.dio_fusion_v07537 import dio_fusion_matrix_v07537
 from apps.network_map.api.map_master_views import (
     assign_cable_route_master,
     asset_qr_master,
@@ -100,6 +101,7 @@ urlpatterns = [
     path("elements/<int:element_id>/cables/<int:cable_id>/cut/", cut_cable_at_element, name="cut-cable-at-element"),
     path("elements/<int:element_id>/fusion-cables/", fusion_cable_state, name="fusion-cable-state-v3"),
     path("elements/<int:element_id>/fusion-cables/<int:cable_id>/", fusion_cable_membership, name="fusion-cable-membership-v3"),
+    path("elements/<int:element_id>/dio/<int:equipment_id>/fusion-matrix-v07537/", dio_fusion_matrix_v07537, name="dio-fusion-matrix-v07537"),
     path("elements/<int:element_id>/container-layout-v3/", container_layout_v3, name="container-layout-v3"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/details-v3/", container_equipment_details_v3, name="container-equipment-details-v3"),
     path("elements/<int:element_id>/passive-endpoints-v3/", create_passive_endpoint_v3, name="passive-endpoints-v3"),

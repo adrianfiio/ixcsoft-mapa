@@ -6,18 +6,19 @@
 
     const NODE = {
         ctoCableWidth: 168,
-        distributionCableWidth: 142,
-        cableHeader: 42,
+        distributionCableWidth: 176,
+        cableHeader: 48,
         fiberSize: 13,
         fiberGap: 7,
+        distributionFiberPitch: 17,
         splitterWidth: 178,
         splitterPortGap: 24,
     };
 
     function cableMetrics(session) {
         return stateApi().isDistributionBox(session)
-            ? { width: NODE.distributionCableWidth, columns: 3, maxFibers: 144 }
-            : { width: NODE.ctoCableWidth, columns: 6, maxFibers: 576 };
+            ? { width: NODE.distributionCableWidth, columns: 1, maxFibers: 144, vertical: true }
+            : { width: NODE.ctoCableWidth, columns: 6, maxFibers: 576, vertical: false };
     }
 
     function ensureNode(session, key, fallback) {
@@ -69,11 +70,13 @@
     function cableNodeHeight(session, cable) {
         const metrics = cableMetrics(session);
         const count = visibleFibers(session, cable).length;
+        if (metrics.vertical) return NODE.cableHeader + 22 + Math.max(1, count) * NODE.distributionFiberPitch;
         const rows = Math.max(1, Math.ceil(count / metrics.columns));
         return NODE.cableHeader + 36 + rows * (NODE.fiberSize + NODE.fiberGap);
     }
 
     function cableSide(session, cable, index) {
+        if (stateApi().isDistributionBox(session)) return "left";
         if (Number(cable.destination_id) === Number(session.elementId)) return "left";
         if (Number(cable.origin_id) === Number(session.elementId)) return "right";
         return index % 2 === 0 ? "left" : "right";
@@ -83,10 +86,11 @@
         const side = cableSide(session, cable, index);
         let y = 50;
         list.slice(0, index).forEach((previous, previousIndex) => {
-            if (cableSide(session, previous, previousIndex) === side) {
-                y += cableNodeHeight(session, previous) + 34;
+            if (stateApi().isDistributionBox(session) || cableSide(session, previous, previousIndex) === side) {
+                y += cableNodeHeight(session, previous) + 30;
             }
         });
+        if (stateApi().isDistributionBox(session)) return { x: 64, y };
         return { x: side === "left" ? 58 : 1010, y };
     }
 
@@ -94,10 +98,10 @@
         return 82 + Math.max(1, splitter.output_ports || splitter.ports?.length || 1) * NODE.splitterPortGap;
     }
 
-    function defaultSplitterPosition(index, splitters) {
+    function defaultSplitterPosition(index, splitters, session = null) {
         let y = 90;
         splitters.slice(0, index).forEach((previous) => { y += splitterHeight(previous) + 36; });
-        return { x: 526, y };
+        return { x: session && stateApi().isDistributionBox(session) ? 430 : 526, y };
     }
 
     function endpointSelected(session, endpoint) {
@@ -153,37 +157,59 @@
         ctx.fillText(`${(cable.fibers || []).length} FO · ${relation}`, node.x + 11, node.y + 34);
 
         const fibers = visibleFibers(session, cable);
-        const cellWidth = (metrics.width - 26) / metrics.columns;
-        fibers.forEach((fiber, fiberIndex) => {
-            const col = fiberIndex % metrics.columns;
-            const row = Math.floor(fiberIndex / metrics.columns);
-            const point = {
-                x: node.x + 13 + cellWidth * col + cellWidth / 2,
-                y: node.y + 58 + row * (NODE.fiberSize + NODE.fiberGap) + NODE.fiberSize / 2,
-            };
-            drawEndpoint(
-                ctx,
-                point,
-                { kind: "fiber", id: Number(fiber.id) },
-                session,
-                stateApi().isFiberUsed(session, fiber.id),
-                fiber.color_hex || "#8fb4d8",
-                hitboxes,
-                endpointPoints,
-            );
-        });
+        if (metrics.vertical) {
+            ctx.beginPath();
+            ctx.moveTo(node.x + metrics.width - 17, node.y + NODE.cableHeader + 8);
+            ctx.lineTo(node.x + metrics.width - 17, node.y + height - 10);
+            ctx.strokeStyle = "rgba(66, 214, 181, .72)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            fibers.forEach((fiber, fiberIndex) => {
+                const point = {
+                    x: node.x + metrics.width,
+                    y: node.y + NODE.cableHeader + 18 + fiberIndex * NODE.distributionFiberPitch,
+                };
+                ctx.fillStyle = "#dceaf7";
+                ctx.font = "700 8px system-ui";
+                ctx.textAlign = "right";
+                ctx.fillText(String(fiber.number), point.x - 13, point.y + 3);
+                ctx.textAlign = "left";
+                drawEndpoint(
+                    ctx,
+                    point,
+                    { kind: "fiber", id: Number(fiber.id) },
+                    session,
+                    stateApi().isFiberUsed(session, fiber.id),
+                    fiber.color_hex || "#8fb4d8",
+                    hitboxes,
+                    endpointPoints,
+                );
+            });
+        } else {
+            const cellWidth = (metrics.width - 26) / metrics.columns;
+            fibers.forEach((fiber, fiberIndex) => {
+                const col = fiberIndex % metrics.columns;
+                const row = Math.floor(fiberIndex / metrics.columns);
+                const point = {
+                    x: node.x + 13 + cellWidth * col + cellWidth / 2,
+                    y: node.y + 58 + row * (NODE.fiberSize + NODE.fiberGap) + NODE.fiberSize / 2,
+                };
+                drawEndpoint(
+                    ctx,
+                    point,
+                    { kind: "fiber", id: Number(fiber.id) },
+                    session,
+                    stateApi().isFiberUsed(session, fiber.id),
+                    fiber.color_hex || "#8fb4d8",
+                    hitboxes,
+                    endpointPoints,
+                );
+            });
+        }
         if ((cable.fibers || []).length > fibers.length) {
             ctx.fillStyle = "#91a8c3";
             ctx.font = "9px system-ui";
             ctx.fillText(`+${cable.fibers.length - fibers.length} fibras no painel`, node.x + 11, node.y + height - 8);
-        }
-        if (stateApi().isDistributionBox(session)) {
-            ctx.beginPath();
-            ctx.moveTo(node.x + metrics.width / 2, node.y + NODE.cableHeader + 5);
-            ctx.lineTo(node.x + metrics.width / 2, node.y + height - 7);
-            ctx.strokeStyle = "rgba(79, 147, 190, .14)";
-            ctx.lineWidth = 1;
-            ctx.stroke();
         }
         hitboxes.unshift({ type: "cable", id: cable.id, key, x: node.x, y: node.y, width: metrics.width, height });
         ctx.restore();
@@ -191,7 +217,7 @@
 
     function drawSplitter(ctx, session, splitter, index, splitters, hitboxes, endpointPoints) {
         const key = `splitter:${splitter.id}`;
-        const node = ensureNode(session, key, defaultSplitterPosition(index, splitters));
+        const node = ensureNode(session, key, defaultSplitterPosition(index, splitters, session));
         const height = splitterHeight(splitter);
         const selected = Number(session.selection.splitterId) === Number(splitter.id);
         ctx.save();
@@ -597,7 +623,7 @@
         });
         const splitters = stateApi().splitters(session);
         splitters.forEach((splitter, index) => {
-            session.layout.nodes[`splitter:${splitter.id}`] = defaultSplitterPosition(index, splitters);
+            session.layout.nodes[`splitter:${splitter.id}`] = defaultSplitterPosition(index, splitters, session);
         });
         render(session);
     }
