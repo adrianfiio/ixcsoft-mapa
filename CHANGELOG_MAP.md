@@ -1,3 +1,20 @@
+## [0.75.49] - 2026-08-05
+
+### Rack, navegação e fluxo físico
+- O Rack vazio fica alinhado ao cartão inicial.
+- Clique esquerdo segurado movimenta o Canvas; a roda altera somente o zoom.
+- Mudanças assíncronas de tamanho disparam novo cálculo e sobreposições acionam organização automática.
+
+### OLT e uplinks
+- Slot de serviço vazio abre com clique comum; placa instalada abre por botão direito.
+- O editor permanece aberto depois de instalar a placa e permite potência manual por PON.
+- Slots de uplink ficam no topo e aceitam modelo e portas individuais RJ45 1G, SFP 1G e SFP+ 10G.
+
+### DIO e matriz de fusão
+- Frente segue a cor SC/APC ou SC/UPC; traseira livre fica vermelha e fundida fica laranja.
+- A matriz fica compacta e o botão Desvincular cabo volta a funcionar.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.48] - 2026-08-05
 
 ### Rack vazio e cadastro

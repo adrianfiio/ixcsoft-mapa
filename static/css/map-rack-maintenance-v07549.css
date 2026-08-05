@@ -1,0 +1,283 @@
+/* MAP v0.75.49 — alinhamento do Rack, placas de uplink, DIO legível e matriz compacta. */
+
+/* Rack vazio: o desenho de fundo e o cartão passam a compartilhar o mesmo eixo. */
+#map-master-container.v07549-empty-aligned .tower-structure-backdrop-v0750.v07549-rack-backdrop {
+    top: 52% !important;
+    left: 50% !important;
+    width: min(680px, 72vw) !important;
+    height: min(430px, 58vh) !important;
+    transform: translate(-50%, -50%) !important;
+    border-radius: 24px !important;
+    color: rgba(34, 211, 238, .10) !important;
+}
+#map-master-container.v07549-empty-aligned .tower-structure-backdrop-v0750.v07549-rack-backdrop svg {
+    width: 150px !important;
+    height: 150px !important;
+    opacity: .42;
+}
+#map-master-container.v07549-empty-aligned .tower-structure-backdrop-v0750.v07549-rack-backdrop span {
+    bottom: 24px !important;
+    letter-spacing: .18em !important;
+}
+#map-master-container.v07549-empty-aligned .tower-empty-v0750.v07548-empty-visible {
+    top: 43% !important;
+    left: 50% !important;
+    width: min(560px, calc(100vw - 80px)) !important;
+    min-width: 0 !important;
+    transform: translate(-50%, -50%) !important;
+}
+
+/* Pan com clique esquerdo. */
+#map-master-container .master-canvas-scroll { cursor: grab; }
+#map-master-container .master-canvas-scroll.v07549-is-panning { cursor: grabbing !important; user-select: none !important; }
+
+/* Diálogos da manutenção. */
+.v07549-dialog {
+    width: min(1000px, calc(100vw - 34px));
+    max-height: calc(100vh - 34px);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #34566d;
+    border-radius: 16px;
+    color: #eaf7ff;
+    background: #0b1823;
+    box-shadow: 0 32px 100px rgba(0, 0, 0, .58);
+}
+.v07549-dialog::backdrop { background: rgba(1, 8, 15, .80); backdrop-filter: blur(4px); }
+.v07549-dialog > form { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: calc(100vh - 34px); }
+.v07549-dialog > form > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #29465a;
+    background: linear-gradient(135deg, #12283a, #0d2030);
+}
+.v07549-dialog header small { color: #34c3fb; font-size: 10px; font-weight: 850; letter-spacing: .15em; }
+.v07549-dialog header h2 { margin: 6px 0 3px; font-size: 23px; }
+.v07549-dialog header p { margin: 0; color: #8fa8b9; }
+.v07549-dialog button {
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 1px solid #365870;
+    border-radius: 9px;
+    color: #e8f7ff;
+    background: #102638;
+    cursor: pointer;
+}
+.v07549-dialog header > button { width: 40px; padding: 0; font-size: 24px; }
+.v07549-dialog button.primary { border-color: #0ea5e9; background: linear-gradient(135deg, #0787bd, #0e9fd8); }
+.v07549-dialog button.danger { border-color: #91414b; color: #ffd7db; background: #4a2028; }
+.v07549-dialog-body { min-height: 0; overflow: auto; padding: 20px 22px; }
+.v07549-dialog > form > footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 22px;
+    border-top: 1px solid #29465a;
+    background: #0d1c28;
+}
+.v07549-dialog > form > footer span { flex: 1; }
+.v07549-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px 15px;
+}
+.v07549-form-grid label,
+.v07549-uplink-port-fields label,
+.v07549-port-power label {
+    display: grid;
+    gap: 6px;
+    color: #a9bdcb;
+    font-size: 11px;
+    font-weight: 760;
+}
+.v07549-dialog input,
+.v07549-dialog select {
+    width: 100%;
+    min-height: 41px;
+    padding: 8px 10px;
+    border: 1px solid #35546b;
+    border-radius: 8px;
+    color: #edf8ff;
+    background: #081722;
+}
+.v07549-dialog [data-status] { min-height: 20px; color: #ffb7b7; }
+.v07549-empty-help { padding: 15px; border: 1px dashed #355a70; border-radius: 9px; color: #86a4b7; text-align: center; }
+
+.v07549-port-power,
+.v07549-uplink-port-fields {
+    display: grid;
+    gap: 9px;
+    margin-top: 17px;
+    padding: 13px;
+    border: 1px solid #2d4e63;
+    border-radius: 11px;
+    background: #0d202d;
+}
+.v07549-port-power > header strong,
+.v07549-port-power > header small,
+.v07549-uplink-port-fields > header strong,
+.v07549-uplink-port-fields > header small { display: block; }
+.v07549-port-power > header small,
+.v07549-uplink-port-fields > header small { margin-top: 3px; color: #819fb2; }
+.v07549-port-power > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.v07549-port-power label { grid-template-columns: minmax(90px, 1fr) 90px auto; align-items: center; padding: 7px; border: 1px solid #28475b; border-radius: 8px; background: #081823; }
+.v07549-port-power label input { min-height: 34px; }
+.v07549-port-power label button { min-height: 34px; padding: 5px 8px; font-size: 10px; }
+.v07549-uplink-port-fields > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.v07549-uplink-port-fields label { grid-template-columns: 72px minmax(0, 1fr); align-items: center; padding: 7px; border: 1px solid #28475b; border-radius: 8px; background: #081823; }
+.v07549-uplink-port-fields select { min-height: 34px; }
+
+/* Slots de uplink no topo do chassi. */
+#map-master-container .v07549-uplink-bank {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #29465a;
+}
+#map-master-container .v07549-uplink-bank > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid #315169;
+    border-radius: 9px;
+    background: #132939;
+}
+#map-master-container .v07549-uplink-bank > header strong,
+#map-master-container .v07549-uplink-bank > header small { display: block; }
+#map-master-container .v07549-uplink-bank > header strong { color: #e5f6ff; font-size: 9px; letter-spacing: .09em; }
+#map-master-container .v07549-uplink-bank > header small { margin-top: 3px; color: #80a0b3; font-size: 8px; }
+#map-master-container .v07549-uplink-bank > header > span { padding: 4px 7px; border: 1px solid #35637e; border-radius: 999px; color: #9bdcff; font-size: 8px; }
+#map-master-container .v07549-uplink-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+#map-master-container .v07549-uplink-slot {
+    min-height: 70px;
+    padding: 9px;
+    border: 1px solid #356078;
+    border-radius: 9px;
+    background: #0b1e2b;
+}
+#map-master-container .v07549-uplink-slot.is-empty {
+    display: grid;
+    place-items: center;
+    border-style: dashed;
+    color: #89a6b8;
+    text-align: center;
+    cursor: pointer;
+}
+#map-master-container .v07549-uplink-slot.is-empty:hover { border-color: #2bc3ff; background: #0e2939; }
+#map-master-container .v07549-uplink-slot.is-empty strong,
+#map-master-container .v07549-uplink-slot.is-empty span,
+#map-master-container .v07549-uplink-slot.is-empty small { display: block; }
+#map-master-container .v07549-uplink-slot.is-empty strong { color: #e5f5ff; }
+#map-master-container .v07549-uplink-slot.is-empty small { color: #68bce2; }
+#map-master-container .v07549-uplink-slot > header { padding: 0 0 7px; }
+#map-master-container .v07549-uplink-slot > header strong,
+#map-master-container .v07549-uplink-slot > header small { display: block; }
+#map-master-container .v07549-uplink-slot > header small { margin-top: 2px; color: #7f9caf; }
+#map-master-container .v07549-uplink-ports { display: flex; flex-wrap: wrap; gap: 5px; }
+#map-master-container .master-node-port.v07549-uplink-port {
+    position: relative !important;
+    display: grid !important;
+    grid-template-rows: auto 9px !important;
+    place-items: center !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 37px !important;
+    min-height: 37px !important;
+    padding: 3px !important;
+    border-color: #33566e !important;
+    background: #0c2231 !important;
+}
+#map-master-container .master-node-port.v07549-uplink-port > span { display: block !important; font-size: 8px; }
+#map-master-container .master-node-port.v07549-uplink-port > i { position: static !important; width: 8px !important; height: 8px !important; margin: 0 !important; transform: none !important; background: #46687d !important; }
+#map-master-container .master-node-port.v07549-uplink-port.is-linked.is-rj45-1g,
+#map-master-container .master-node-port.v07549-uplink-port.is-linked.is-sfp-1g { border-color: #19d18a !important; box-shadow: 0 0 0 1px rgba(25, 209, 138, .30), 0 0 12px rgba(25, 209, 138, .24); }
+#map-master-container .master-node-port.v07549-uplink-port.is-linked.is-rj45-1g > i,
+#map-master-container .master-node-port.v07549-uplink-port.is-linked.is-sfp-1g > i { background: #19d18a !important; }
+#map-master-container .master-node-port.v07549-uplink-port.is-linked.is-sfp-plus-10g { border-color: #2da7ff !important; box-shadow: 0 0 0 1px rgba(45, 167, 255, .32), 0 0 12px rgba(45, 167, 255, .26); }
+#map-master-container .master-node-port.v07549-uplink-port.is-linked.is-sfp-plus-10g > i { background: #2da7ff !important; }
+
+/* Slots de serviço: vazio abre com clique comum. */
+#map-master-container .v07545-service-slot.is-empty { cursor: pointer; }
+#map-master-container .v07545-service-slot.is-empty:hover { border-color: #2bc3ff !important; background: #0e2939 !important; }
+#map-master-container .v07545-service-slot.is-empty small { text-transform: none; }
+
+/* DIO: duas faces com espaço real, frente pela cor do conector e traseira pelo estado. */
+#map-master-container .v07539-dio-cavity > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 9px 10px !important;
+}
+#map-master-container .v07539-dio-pair {
+    display: grid !important;
+    grid-template-columns: 31px 31px !important;
+    gap: 7px !important;
+    width: 69px !important;
+    min-width: 69px !important;
+    padding: 3px !important;
+    border-radius: 10px;
+    background: rgba(7, 22, 33, .55);
+}
+#map-master-container .v07539-dio-pair .master-node-port.v07548-dio-dot-port {
+    width: 31px !important;
+    min-width: 31px !important;
+    height: 31px !important;
+    min-height: 31px !important;
+    border-width: 1px !important;
+    border-radius: 8px !important;
+}
+#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-apc { border-color: #2acb8c !important; }
+#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-apc > i { background: #2acb8c !important; box-shadow: 0 0 7px rgba(42, 203, 140, .55); }
+#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-upc { border-color: #27a9ff !important; }
+#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-upc > i { background: #27a9ff !important; box-shadow: 0 0 7px rgba(39, 169, 255, .55); }
+#map-master-container .v07539-dio-pair.rear-free-v07549 .master-node-port.v07549-dio-rear { border-color: #e34f5f !important; background: rgba(96, 25, 36, .32) !important; }
+#map-master-container .v07539-dio-pair.rear-free-v07549 .master-node-port.v07549-dio-rear > i { background: #e34f5f !important; box-shadow: 0 0 7px rgba(227, 79, 95, .52); }
+#map-master-container .v07539-dio-pair.has-rear-v07549 .master-node-port.v07549-dio-rear { border-color: #ff7b17 !important; background: rgba(106, 48, 14, .35) !important; }
+#map-master-container .v07539-dio-pair.has-rear-v07549 .master-node-port.v07549-dio-rear > i { background: #ff7b17 !important; box-shadow: 0 0 8px rgba(255, 123, 23, .65); }
+
+/* Matriz de fusão: conteúdo limitado ao que realmente existe. */
+.map-dio-fusion-workspace-v07538 > section {
+    width: min(1460px, 100vw) !important;
+    max-width: 1460px !important;
+    margin: 0 auto !important;
+}
+.map-dio-fusion-workspace-v07538 main {
+    grid-template-columns: minmax(330px, 410px) minmax(200px, 235px) minmax(500px, 720px) !important;
+    justify-content: center !important;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+.map-dio-fusion-workspace-v07538 main > section > div { padding: 10px !important; }
+.map-dio-tube-v07538 > div {
+    grid-template-columns: repeat(12, 30px) !important;
+    justify-content: start !important;
+    gap: 5px !important;
+}
+.map-dio-fusion-workspace-v07538 button {
+    border-radius: 9px !important;
+    transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+.map-dio-fusion-workspace-v07538 button:hover:not(:disabled) { transform: translateY(-1px); }
+.map-dio-fusion-header-actions-v07538 [data-dio-auto-fuse-v07538] {
+    border-color: #ff7b17 !important;
+    background: linear-gradient(135deg, #f45b0b, #ff841e) !important;
+    box-shadow: 0 8px 24px rgba(244, 91, 11, .22);
+}
+.map-dio-cable-card-v07538 { max-width: 100%; }
+
+@media (max-width: 1050px) {
+    .map-dio-fusion-workspace-v07538 main {
+        grid-template-columns: minmax(300px, 390px) minmax(190px, 220px) minmax(480px, 620px) !important;
+    }
+}
+@media (max-width: 800px) {
+    .v07549-form-grid,
+    .v07549-port-power > div,
+    .v07549-uplink-port-fields > div { grid-template-columns: 1fr; }
+    .v07549-port-power label { grid-template-columns: 1fr 90px auto; }
+}
