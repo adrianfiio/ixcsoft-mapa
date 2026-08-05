@@ -88,9 +88,9 @@ class MapV07537ContractTests(unittest.TestCase):
         self.assertIn("IXCMapDialog", runtime)
 
     def test_current_map_version_is_v07537(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.44")', content("config/settings.py"))
-        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.44}", content("docker-compose.yml"))
-        self.assertIn("Mapa | v0.75.44", content("VERSIONS.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.45")', content("config/settings.py"))
+        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.45}", content("docker-compose.yml"))
+        self.assertIn("Mapa | v0.75.45", content("VERSIONS.md"))
         self.assertIn("MAP v0.75.39", content("docs/releases/map/map-v0.75.39.md"))
         self.assertIn('version: "0.75.39"', content("static/js/optical/optical-workspace.js"))
 
