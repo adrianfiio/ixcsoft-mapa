@@ -3,11 +3,8 @@
 
     const namespace = global.IXCOptical = global.IXCOptical || {};
 
-    function subtypeLabel(element) {
-        if (element.element_type === "cto") return "CTO";
-        return String(element.element_subtype || element.metadata?.import_subtype || "ceo").toLowerCase() === "cdo"
-            ? "CDO"
-            : "CEO";
+    function workspaceLabel() {
+        return "CAIXA ÓPTICA";
     }
 
     function createSession(elementId) {
@@ -25,52 +22,60 @@
             cableState: { cables: [] },
             servicePorts: null,
             layout: {
-                version: 1,
+                version: 2,
                 viewport: { zoom: 1, panX: 0, panY: 0 },
                 nodes: {},
                 notes: [],
             },
             selection: {
                 cableId: null,
-                fiberA: null,
-                fiberB: null,
-                trayId: null,
                 splitterId: null,
-                splitterPortId: null,
-                cascadePortId: null,
+                pendingEndpoint: null,
             },
-            mode: "select",
+            expandedCables: new Set(),
             status: "",
             statusError: false,
             dragging: null,
+            connectionDraft: null,
             saveTimer: null,
             renderVersion: 0,
             initialFitDone: false,
             mutating: false,
+            layoutMigrated: false,
         };
+    }
+
+    function clampNumber(value, min, max, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback;
     }
 
     function normalizeLayout(raw) {
         const source = raw && typeof raw === "object" ? raw : {};
+        const sourceVersion = Number(source.version || 1);
         const viewport = source.viewport && typeof source.viewport === "object" ? source.viewport : {};
-        const nodes = source.nodes && typeof source.nodes === "object" ? source.nodes : {};
+        const rawNodes = source.nodes && typeof source.nodes === "object" ? source.nodes : {};
         const notes = Array.isArray(source.notes) ? source.notes : [];
+        const keepNodes = sourceVersion >= 2;
         return {
-            version: 1,
+            version: 2,
             viewport: {
-                zoom: clampNumber(viewport.zoom, 0.4, 2.4, 1),
-                panX: clampNumber(viewport.panX, -5000, 5000, 0),
-                panY: clampNumber(viewport.panY, -5000, 5000, 0),
+                zoom: clampNumber(viewport.zoom, 0.35, 2.6, 1),
+                panX: clampNumber(viewport.panX, -7000, 7000, 0),
+                panY: clampNumber(viewport.panY, -7000, 7000, 0),
             },
-            nodes: Object.fromEntries(Object.entries(nodes).filter(([, value]) => (
-                value && Number.isFinite(Number(value.x)) && Number.isFinite(Number(value.y))
-            )).map(([key, value]) => [key, { x: Number(value.x), y: Number(value.y) }])),
+            nodes: keepNodes
+                ? Object.fromEntries(Object.entries(rawNodes).filter(([, value]) => (
+                    value && Number.isFinite(Number(value.x)) && Number.isFinite(Number(value.y))
+                )).map(([key, value]) => [key, { x: Number(value.x), y: Number(value.y) }]))
+                : {},
             notes: notes.filter((item) => item && typeof item.text === "string").map((item) => ({
                 id: String(item.id || `note-${Math.random().toString(36).slice(2)}`),
-                x: clampNumber(item.x, -5000, 5000, 0),
-                y: clampNumber(item.y, -5000, 5000, 0),
-                text: item.text.slice(0, 240),
+                x: clampNumber(item.x, -7000, 7000, 0),
+                y: clampNumber(item.y, -7000, 7000, 0),
+                text: item.text.slice(0, 1200),
             })),
+            migratedFromVersion: sourceVersion,
         };
     }
 
@@ -81,16 +86,12 @@
         session.cableState = payload.cableState || session.cableState;
         session.servicePorts = payload.servicePorts;
         session.layout = normalizeLayout(payload.layout);
-        const trays = payload.element.splice_box?.trays || [];
-        session.selection.trayId = trays[0]?.id || null;
-        session.selection.splitterId = trays.flatMap((tray) => tray.splitters || [])[0]?.id || null;
+        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 2;
+        delete session.layout.migratedFromVersion;
+        session.selection.splitterId = splitters(session)[0]?.id || null;
         session.selection.cableId = session.optical.cables[0]?.id || null;
+        session.selection.pendingEndpoint = null;
         return session;
-    }
-
-    function clampNumber(value, min, max, fallback) {
-        const number = Number(value);
-        return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback;
     }
 
     function fiberById(session, fiberId) {
@@ -106,20 +107,58 @@
         return (session.optical.cables || []).find((item) => Number(item.id) === Number(cableId)) || null;
     }
 
-    function trays(session) {
+    function internalGroups(session) {
         return session.element?.splice_box?.trays || [];
     }
 
+    function internalGroup(session) {
+        return internalGroups(session)[0] || null;
+    }
+
     function splitters(session) {
-        return trays(session).flatMap((tray) => (tray.splitters || []).map((splitter) => ({
+        return internalGroups(session).flatMap((group) => (group.splitters || []).map((splitter) => ({
             ...splitter,
-            trayId: tray.id,
-            trayName: tray.name || `Bandeja ${tray.number}`,
+            internalGroupId: group.id,
         })));
     }
 
     function splitterById(session, splitterId) {
         return splitters(session).find((item) => Number(item.id) === Number(splitterId)) || null;
+    }
+
+    function splitterPortById(session, portId) {
+        const id = Number(portId);
+        for (const splitter of splitters(session)) {
+            const port = (splitter.ports || []).find((item) => Number(item.id) === id);
+            if (port) return { ...port, splitterId: splitter.id, splitterRatio: splitter.ratio };
+        }
+        return null;
+    }
+
+    function endpointKey(endpoint) {
+        if (!endpoint) return "";
+        return `${endpoint.kind}:${Number(endpoint.id)}`;
+    }
+
+    function endpointLabel(session, endpoint) {
+        if (!endpoint) return "Nenhuma ponta selecionada";
+        if (endpoint.kind === "fiber") {
+            const fiber = fiberById(session, endpoint.id);
+            return fiber
+                ? `${fiber.cableName} · fibra ${fiber.number} · ${fiber.color_name || "sem cor"}`
+                : `Fibra ${endpoint.id}`;
+        }
+        if (endpoint.kind === "splitter-input") {
+            const splitter = splitterById(session, endpoint.id);
+            return `${splitter ? `Splitter ${splitter.ratio}` : "Splitter"} · entrada`;
+        }
+        if (endpoint.kind === "splitter-output") {
+            const port = splitterPortById(session, endpoint.id);
+            return port
+                ? `Splitter ${port.splitterRatio} · saída ${port.number}`
+                : `Saída ${endpoint.id}`;
+        }
+        return "Ponta óptica";
     }
 
     function isFiberUsed(session, fiberId) {
@@ -130,6 +169,23 @@
             Number(splitter.input_fiber_id) === id
             || (splitter.ports || []).some((port) => Number(port.output_fiber_id) === id)
         ));
+    }
+
+    function endpointOccupied(session, endpoint) {
+        if (!endpoint) return false;
+        if (endpoint.kind === "fiber") return isFiberUsed(session, endpoint.id);
+        if (endpoint.kind === "splitter-input") {
+            const splitter = splitterById(session, endpoint.id);
+            return Boolean(splitter?.input_fiber_id || splitter?.input_splitter_port_id);
+        }
+        if (endpoint.kind === "splitter-output") {
+            const port = splitterPortById(session, endpoint.id);
+            const cascaded = (session.optical.splitter_links || []).some((item) => (
+                Number(item.input_splitter_port_id) === Number(endpoint.id)
+            ));
+            return Boolean(port?.output_fiber_id || cascaded);
+        }
+        return false;
     }
 
     function dispose(session) {
@@ -146,12 +202,17 @@
         createSession,
         hydrate,
         normalizeLayout,
-        subtypeLabel,
+        workspaceLabel,
         fiberById,
         cableById,
-        trays,
+        internalGroups,
+        internalGroup,
         splitters,
         splitterById,
+        splitterPortById,
+        endpointKey,
+        endpointLabel,
+        endpointOccupied,
         isFiberUsed,
         dispose,
     });

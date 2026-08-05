@@ -28,8 +28,10 @@
     <link rel="stylesheet" href="{% static 'css/map-v0750-tower-workspace.css' %}?v={{ map_version }}-tower-r17">
     <link rel="stylesheet" href="{% static 'css/map-v0758-core-ui.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v07512-links-ptp.css' %}?v={{ map_version }}">
-    <!-- MAP_V07534_ISOLATED_OPTICAL_WORKSPACE -->
-    <link rel="stylesheet" href="{% static 'css/map-optical-workspace-v07534.css' %}?v={{ map_version }}">
+    <!-- MAP_V07535_DIRECT_OPTICAL_LINKS -->
+    <link rel="stylesheet" href="{% static 'css/map-dialogs-v07535.css' %}?v={{ map_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-optical-workspace-v07535.css' %}?v={{ map_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-rack-polish-v07535.css' %}?v={{ map_version }}">
     {% if current_company.brand_color %}<style>:root{--map-brand-accent:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
 <!-- IXCSOFT_MAP_UI_V072 -->
@@ -522,7 +524,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <!-- MAP_V07534_ISOLATED_OPTICAL_WORKSPACE: carregado antes do mapa; só é acionado no clique. -->
+    <!-- MAP_V07535_DIRECT_OPTICAL_LINKS: diálogo próprio antes do workspace isolado. -->
+    <script src="{% static 'js/map-dialogs-v07535.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/optical/optical-api.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/optical/optical-state.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/optical/optical-renderer.js' %}?v={{ map_version }}"></script>
@@ -540,6 +543,7 @@
     <script src="{% static 'js/map-v074-ui.js' %}?v={{ map_version }}-workspace-r4"></script>
     <script src="{% static 'js/map-v0741-ui.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/map-v0750-tower-workspace.js' %}?v={{ map_version }}-tower-r17"></script>
+    <script src="{% static 'js/map-rack-polish-v07535.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/map-v0758-core-ui.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/map-v07512-links-ptp.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>

@@ -1,3 +1,23 @@
+## [0.75.35] - 2026-08-04
+
+### Editor óptico — ligações diretas
+- CTO, CEO e CDO continuam isoladas do DOM do Rack/Torre, mas a interface passa a se apresentar apenas como Caixa óptica.
+- Cabos organizados em colunas verticais. Ligações podem ser criadas selecionando ponta a ponta ou arrastando uma linha diretamente no Canvas.
+- Fusão fibra-fibra, entrada/saída de splitter e cascata usam o mesmo fluxo simples de pontas.
+- A ideia de bandeja foi removida da UX; o agrupamento legado do backend é criado e usado internamente sem pedir IDs ao projetista.
+- Notas livres podem ser criadas e editadas com o texto definido pelo projetista.
+
+### Diálogos
+- Novo `IXCMapDialog` substitui os popups nativos do navegador no editor óptico, com confirmação, texto, seleção e formulário próprios.
+
+### Rack e DIO
+- DIO deixa explícito o sentido: esquerda para OLT/equipamento e direita para cabos/rede externa.
+- Widgets de cabo ganham alça de redimensionamento, alternância de largura e grade de fibras responsiva, com preferência persistida no navegador.
+
+### Segurança e arquitetura
+- Nenhuma migration. Nenhum dado óptico é apagado.
+- O polimento do Rack usa apenas os eventos públicos do workspace e não adiciona `MutationObserver`.
+
 ## [0.75.34] - 2026-08-04
 
 ### Adicionado — workspace óptico isolado

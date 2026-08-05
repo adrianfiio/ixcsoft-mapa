@@ -5,13 +5,13 @@
     const stateApi = () => namespace.state;
 
     const NODE = {
-        cableWidth: 184,
-        cableHeader: 30,
-        fiberSize: 12,
-        fiberGap: 5,
-        splitterWidth: 156,
-        splitterPortGap: 19,
-        trayPadding: 26,
+        cableWidth: 168,
+        cableHeader: 42,
+        fiberSize: 13,
+        fiberGap: 7,
+        fiberColumns: 6,
+        splitterWidth: 178,
+        splitterPortGap: 24,
     };
 
     function ensureNode(session, key, fallback) {
@@ -56,110 +56,126 @@
         return { ctx, width, height };
     }
 
+    function visibleFibers(cable) {
+        return (cable.fibers || []).slice(0, 576);
+    }
+
     function cableNodeHeight(cable) {
-        const count = Math.min((cable.fibers || []).length, 288);
-        const rows = Math.max(1, Math.ceil(count / 12));
-        return NODE.cableHeader + 30 + rows * (NODE.fiberSize + NODE.fiberGap);
+        const count = visibleFibers(cable).length;
+        const rows = Math.max(1, Math.ceil(count / NODE.fiberColumns));
+        return NODE.cableHeader + 36 + rows * (NODE.fiberSize + NODE.fiberGap);
     }
 
-    function defaultCablePosition(index, count, canvasHeight) {
-        const left = index % 2 === 0;
-        const row = Math.floor(index / 2);
-        const rows = Math.max(1, Math.ceil(count / 2));
-        const spacing = Math.max(130, (Math.max(canvasHeight, 620) - 100) / rows);
-        return { x: left ? 50 : 860, y: 50 + row * spacing };
+    function cableSide(session, cable, index) {
+        if (Number(cable.destination_id) === Number(session.elementId)) return "left";
+        if (Number(cable.origin_id) === Number(session.elementId)) return "right";
+        return index % 2 === 0 ? "left" : "right";
     }
 
-    function defaultSplitterPosition(index, trayIndex) {
-        return { x: 410 + (index % 2) * 210, y: 120 + trayIndex * 240 + Math.floor(index / 2) * 170 };
-    }
-
-    function drawCable(ctx, session, cable, index, total, viewportHeight, hitboxes, fiberPoints) {
-        const key = `cable:${cable.id}`;
-        const node = ensureNode(session, key, defaultCablePosition(index, total, viewportHeight));
-        const height = cableNodeHeight(cable);
-        const selected = Number(session.selection.cableId) === Number(cable.id);
-        ctx.save();
-        roundedRect(ctx, node.x, node.y, NODE.cableWidth, height, 12);
-        ctx.fillStyle = "#0d1b2c";
-        ctx.fill();
-        ctx.lineWidth = selected ? 3 : 1.5;
-        ctx.strokeStyle = selected ? "#42d6b5" : "#35506d";
-        ctx.stroke();
-        ctx.fillStyle = "#132842";
-        roundedRect(ctx, node.x + 1, node.y + 1, NODE.cableWidth - 2, NODE.cableHeader, 11);
-        ctx.fill();
-        ctx.fillStyle = "#f4f8ff";
-        ctx.font = "600 13px system-ui";
-        ctx.fillText(truncate(cable.name || `Cabo ${cable.id}`, 22), node.x + 12, node.y + 20);
-        ctx.fillStyle = "#91a8c3";
-        ctx.font = "11px system-ui";
-        const relation = cable.requires_cut ? "passagem · corte necessário" : cable.relation_action === "pass" ? "passagem" : "conectado";
-        ctx.fillText(`${(cable.fibers || []).length} fibras · ${relation}`, node.x + 12, node.y + 47);
-
-        const visibleFibers = (cable.fibers || []).slice(0, 288);
-        visibleFibers.forEach((fiber, fiberIndex) => {
-            const col = fiberIndex % 12;
-            const row = Math.floor(fiberIndex / 12);
-            const x = node.x + 12 + col * (NODE.fiberSize + NODE.fiberGap);
-            const y = node.y + 60 + row * (NODE.fiberSize + NODE.fiberGap);
-            const used = stateApi().isFiberUsed(session, fiber.id);
-            ctx.beginPath();
-            ctx.arc(x + NODE.fiberSize / 2, y + NODE.fiberSize / 2, NODE.fiberSize / 2, 0, Math.PI * 2);
-            ctx.fillStyle = fiber.color_hex || "#a8b1bd";
-            ctx.fill();
-            ctx.lineWidth = used ? 2 : 1;
-            ctx.strokeStyle = used ? "#ffca5c" : "#08111d";
-            ctx.stroke();
-            fiberPoints.set(Number(fiber.id), { x: x + NODE.fiberSize / 2, y: y + NODE.fiberSize / 2 });
+    function defaultCablePosition(session, cable, index, list) {
+        const side = cableSide(session, cable, index);
+        let y = 50;
+        list.slice(0, index).forEach((previous, previousIndex) => {
+            if (cableSide(session, previous, previousIndex) === side) y += cableNodeHeight(previous) + 34;
         });
-        if ((cable.fibers || []).length > 288) {
-            ctx.fillStyle = "#91a8c3";
-            ctx.font = "10px system-ui";
-            ctx.fillText(`+${cable.fibers.length - 288} fibras no painel`, node.x + 12, node.y + height - 8);
-        }
-        hitboxes.push({ type: "cable", id: cable.id, key, x: node.x, y: node.y, width: NODE.cableWidth, height });
-        ctx.restore();
-    }
-
-    function drawTray(ctx, session, tray, trayIndex, hitboxes, splitterPoints) {
-        const splitters = (tray.splitters || []).map((item, index) => ({ item, index }));
-        const positions = splitters.map(({ item, index }) => ensureNode(
-            session,
-            `splitter:${item.id}`,
-            defaultSplitterPosition(index, trayIndex),
-        ));
-        const minX = Math.min(...positions.map((p) => p.x), 360) - NODE.trayPadding;
-        const minY = Math.min(...positions.map((p) => p.y), 80 + trayIndex * 240) - 44;
-        const maxX = Math.max(...positions.map((p) => p.x + NODE.splitterWidth), 720) + NODE.trayPadding;
-        const maxY = Math.max(...positions.map((p, index) => p.y + splitterHeight(splitters[index]?.item)), 220 + trayIndex * 240) + NODE.trayPadding;
-        ctx.save();
-        ctx.setLineDash([8, 7]);
-        roundedRect(ctx, minX, minY, maxX - minX, maxY - minY, 18);
-        ctx.fillStyle = "rgba(18, 36, 58, 0.48)";
-        ctx.fill();
-        ctx.strokeStyle = "#385a7d";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = "#bcd0e8";
-        ctx.font = "600 12px system-ui";
-        ctx.fillText(`${tray.name || `Bandeja ${tray.number}`} · ${tray.splice_count || 0} fusões`, minX + 14, minY + 23);
-        ctx.restore();
-        splitters.forEach(({ item, index }) => drawSplitter(ctx, session, item, tray, index, trayIndex, hitboxes, splitterPoints));
+        return { x: side === "left" ? 50 : 1010, y };
     }
 
     function splitterHeight(splitter) {
-        return 72 + Math.max(1, splitter.output_ports || splitter.ports?.length || 1) * NODE.splitterPortGap;
+        return 82 + Math.max(1, splitter.output_ports || splitter.ports?.length || 1) * NODE.splitterPortGap;
     }
 
-    function drawSplitter(ctx, session, splitter, tray, index, trayIndex, hitboxes, splitterPoints) {
+    function defaultSplitterPosition(index, splitters) {
+        let y = 90;
+        splitters.slice(0, index).forEach((previous) => { y += splitterHeight(previous) + 36; });
+        return { x: 530, y };
+    }
+
+    function endpointSelected(session, endpoint) {
+        return stateApi().endpointKey(session.selection.pendingEndpoint) === stateApi().endpointKey(endpoint);
+    }
+
+    function drawEndpoint(ctx, point, endpoint, session, occupied, color, hitboxes, endpointPoints) {
+        const selected = endpointSelected(session, endpoint);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, selected ? 8 : occupied ? 6.5 : 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = occupied ? color : "#07111e";
+        ctx.fill();
+        ctx.lineWidth = selected ? 3 : 2;
+        ctx.strokeStyle = selected ? "#f8e16c" : color;
+        ctx.stroke();
+        if (selected) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(248, 225, 108, .42)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        ctx.restore();
+        const key = stateApi().endpointKey(endpoint);
+        endpointPoints.set(key, point);
+        hitboxes.push({ type: "endpoint", endpoint, x: point.x - 11, y: point.y - 11, width: 22, height: 22 });
+    }
+
+    function drawCable(ctx, session, cable, index, list, hitboxes, endpointPoints) {
+        const key = `cable:${cable.id}`;
+        const node = ensureNode(session, key, defaultCablePosition(session, cable, index, list));
+        const height = cableNodeHeight(cable);
+        const selected = Number(session.selection.cableId) === Number(cable.id);
+        const side = cableSide(session, cable, index);
+        ctx.save();
+        roundedRect(ctx, node.x, node.y, NODE.cableWidth, height, 13);
+        ctx.fillStyle = "#0b1a2b";
+        ctx.fill();
+        ctx.lineWidth = selected ? 3 : 1.5;
+        ctx.strokeStyle = selected ? "#42d6b5" : side === "left" ? "#3e6d98" : "#3f8b73";
+        ctx.stroke();
+        roundedRect(ctx, node.x + 1, node.y + 1, NODE.cableWidth - 2, NODE.cableHeader, 12);
+        ctx.fillStyle = side === "left" ? "#132a43" : "#123229";
+        ctx.fill();
+        ctx.fillStyle = "#f4f8ff";
+        ctx.font = "700 12px system-ui";
+        ctx.fillText(truncate(cable.name || `Cabo ${cable.id}`, 21), node.x + 11, node.y + 18);
+        ctx.fillStyle = "#91a8c3";
+        ctx.font = "10px system-ui";
+        const relation = cable.requires_cut ? "passagem · cortar" : cable.relation_action === "pass" ? "passagem" : side === "left" ? "entrada" : "saída";
+        ctx.fillText(`${(cable.fibers || []).length} FO · ${relation}`, node.x + 11, node.y + 34);
+
+        const fibers = visibleFibers(cable);
+        fibers.forEach((fiber, fiberIndex) => {
+            const col = fiberIndex % NODE.fiberColumns;
+            const row = Math.floor(fiberIndex / NODE.fiberColumns);
+            const x = node.x + 13 + col * (NODE.fiberSize + NODE.fiberGap + 8);
+            const y = node.y + 58 + row * (NODE.fiberSize + NODE.fiberGap);
+            const point = { x: x + NODE.fiberSize / 2, y: y + NODE.fiberSize / 2 };
+            drawEndpoint(
+                ctx,
+                point,
+                { kind: "fiber", id: Number(fiber.id) },
+                session,
+                stateApi().isFiberUsed(session, fiber.id),
+                fiber.color_hex || "#8fb4d8",
+                hitboxes,
+                endpointPoints,
+            );
+        });
+        if ((cable.fibers || []).length > fibers.length) {
+            ctx.fillStyle = "#91a8c3";
+            ctx.font = "9px system-ui";
+            ctx.fillText(`+${cable.fibers.length - fibers.length} fibras disponíveis no painel`, node.x + 11, node.y + height - 8);
+        }
+        hitboxes.unshift({ type: "cable", id: cable.id, key, x: node.x, y: node.y, width: NODE.cableWidth, height });
+        ctx.restore();
+    }
+
+    function drawSplitter(ctx, session, splitter, index, splitters, hitboxes, endpointPoints) {
         const key = `splitter:${splitter.id}`;
-        const node = ensureNode(session, key, defaultSplitterPosition(index, trayIndex));
+        const node = ensureNode(session, key, defaultSplitterPosition(index, splitters));
         const height = splitterHeight(splitter);
         const selected = Number(session.selection.splitterId) === Number(splitter.id);
         ctx.save();
-        roundedRect(ctx, node.x, node.y, NODE.splitterWidth, height, 12);
+        roundedRect(ctx, node.x, node.y, NODE.splitterWidth, height, 13);
         ctx.fillStyle = "#10253d";
         ctx.fill();
         ctx.strokeStyle = selected ? "#42d6b5" : "#41698e";
@@ -167,36 +183,42 @@
         ctx.stroke();
         ctx.fillStyle = "#d9e8f8";
         ctx.font = "700 12px system-ui";
-        ctx.fillText(`Splitter ${splitter.ratio}`, node.x + 12, node.y + 22);
+        ctx.fillText(`Splitter ${splitter.ratio}`, node.x + 13, node.y + 22);
         ctx.fillStyle = "#8da7c3";
         ctx.font = "10px system-ui";
-        ctx.fillText(tray.name || `Bandeja ${tray.number}`, node.x + 12, node.y + 40);
+        ctx.fillText(`${splitter.output_ports || splitter.ports?.length || 0} saída(s)`, node.x + 13, node.y + 40);
 
-        const input = { x: node.x, y: node.y + 55 };
-        drawPort(ctx, input, "#42d6b5", Boolean(splitter.input_fiber_id || splitter.input_splitter_port_id));
-        splitterPoints.set(`splitter-input:${splitter.id}`, input);
+        const input = { x: node.x, y: node.y + 61 };
+        drawEndpoint(
+            ctx,
+            input,
+            { kind: "splitter-input", id: Number(splitter.id) },
+            session,
+            Boolean(splitter.input_fiber_id || splitter.input_splitter_port_id),
+            "#42d6b5",
+            hitboxes,
+            endpointPoints,
+        );
         (splitter.ports || []).forEach((port, portIndex) => {
-            const point = { x: node.x + NODE.splitterWidth, y: node.y + 60 + portIndex * NODE.splitterPortGap };
-            drawPort(ctx, point, "#6fb7ff", Boolean(port.output_fiber_id));
+            const point = { x: node.x + NODE.splitterWidth, y: node.y + 66 + portIndex * NODE.splitterPortGap };
+            drawEndpoint(
+                ctx,
+                point,
+                { kind: "splitter-output", id: Number(port.id), splitterId: Number(splitter.id) },
+                session,
+                stateApi().endpointOccupied(session, { kind: "splitter-output", id: port.id }),
+                "#6fb7ff",
+                hitboxes,
+                endpointPoints,
+            );
             ctx.fillStyle = "#a9bdd3";
             ctx.font = "9px system-ui";
             ctx.textAlign = "right";
-            ctx.fillText(String(port.number), point.x - 10, point.y + 3);
+            ctx.fillText(`P${port.number}`, point.x - 11, point.y + 3);
             ctx.textAlign = "left";
-            splitterPoints.set(`splitter-port:${port.id}`, point);
         });
-        hitboxes.push({ type: "splitter", id: splitter.id, key, x: node.x, y: node.y, width: NODE.splitterWidth, height });
+        hitboxes.unshift({ type: "splitter", id: splitter.id, key, x: node.x, y: node.y, width: NODE.splitterWidth, height });
         ctx.restore();
-    }
-
-    function drawPort(ctx, point, color, occupied) {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, occupied ? 6 : 5, 0, Math.PI * 2);
-        ctx.fillStyle = occupied ? color : "#0a1421";
-        ctx.fill();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.stroke();
     }
 
     function drawLink(ctx, start, end, color, width = 2, dashed = false) {
@@ -207,63 +229,69 @@
         ctx.lineWidth = width;
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
-        const bend = Math.max(40, Math.abs(end.x - start.x) * 0.42);
-        ctx.bezierCurveTo(start.x + bend, start.y, end.x - bend, end.y, end.x, end.y);
+        const direction = end.x >= start.x ? 1 : -1;
+        const bend = Math.max(42, Math.abs(end.x - start.x) * 0.38);
+        ctx.bezierCurveTo(start.x + bend * direction, start.y, end.x - bend * direction, end.y, end.x, end.y);
         ctx.stroke();
         ctx.restore();
     }
 
-    function drawLinks(ctx, session, fiberPoints, splitterPoints) {
+    function drawSavedLinks(ctx, session, endpointPoints) {
         (session.optical.splices || []).forEach((splice) => {
             drawLink(
                 ctx,
-                fiberPoints.get(Number(splice.input_fiber_id)),
-                fiberPoints.get(Number(splice.output_fiber_id)),
+                endpointPoints.get(`fiber:${Number(splice.input_fiber_id)}`),
+                endpointPoints.get(`fiber:${Number(splice.output_fiber_id)}`),
                 "#ffca5c",
-                2.4,
+                2.5,
             );
         });
         (session.optical.splitter_links || []).forEach((splitter) => {
-            const inputPoint = splitterPoints.get(`splitter-input:${splitter.splitter_id}`);
+            const input = endpointPoints.get(`splitter-input:${Number(splitter.splitter_id)}`);
             if (splitter.input_fiber_id) {
-                drawLink(ctx, fiberPoints.get(Number(splitter.input_fiber_id)), inputPoint, "#42d6b5", 2.4);
+                drawLink(ctx, endpointPoints.get(`fiber:${Number(splitter.input_fiber_id)}`), input, "#42d6b5", 2.5);
             } else if (splitter.input_splitter_port_id) {
-                drawLink(
-                    ctx,
-                    splitterPoints.get(`splitter-port:${splitter.input_splitter_port_id}`),
-                    inputPoint,
-                    "#9b8cff",
-                    2.3,
-                    true,
-                );
+                drawLink(ctx, endpointPoints.get(`splitter-output:${Number(splitter.input_splitter_port_id)}`), input, "#9b8cff", 2.4, true);
             }
             (splitter.ports || []).forEach((port) => {
                 if (!port.output_fiber_id) return;
                 drawLink(
                     ctx,
-                    splitterPoints.get(`splitter-port:${port.id}`),
-                    fiberPoints.get(Number(port.output_fiber_id)),
+                    endpointPoints.get(`splitter-output:${Number(port.id)}`),
+                    endpointPoints.get(`fiber:${Number(port.output_fiber_id)}`),
                     "#6fb7ff",
-                    2.2,
+                    2.3,
                 );
             });
         });
     }
 
+    function drawDraft(ctx, session, endpointPoints) {
+        const draft = session.connectionDraft;
+        if (!draft?.start || !draft.currentWorld) return;
+        const start = endpointPoints.get(stateApi().endpointKey(draft.start));
+        if (!start) return;
+        drawLink(ctx, start, draft.currentWorld, "#f8e16c", 2.5, true);
+        ctx.beginPath();
+        ctx.arc(draft.currentWorld.x, draft.currentWorld.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#f8e16c";
+        ctx.fill();
+    }
+
     function drawNotes(ctx, session, hitboxes) {
+        ctx.font = "11px system-ui";
         (session.layout.notes || []).forEach((note) => {
-            const width = 190;
-            const lines = wrapText(ctx, note.text, width - 20);
-            const height = 28 + lines.length * 16;
-            roundedRect(ctx, note.x, note.y, width, height, 10);
-            ctx.fillStyle = "rgba(68, 53, 18, 0.96)";
+            const width = 210;
+            const lines = wrapText(ctx, note.text, width - 22);
+            const height = 32 + lines.length * 16;
+            roundedRect(ctx, note.x, note.y, width, height, 11);
+            ctx.fillStyle = "rgba(64, 50, 18, .96)";
             ctx.fill();
             ctx.strokeStyle = "#d6a93e";
             ctx.stroke();
             ctx.fillStyle = "#ffe9a8";
-            ctx.font = "11px system-ui";
-            lines.forEach((line, index) => ctx.fillText(line, note.x + 10, note.y + 22 + index * 16));
-            hitboxes.push({ type: "note", id: note.id, key: `note:${note.id}`, x: note.x, y: note.y, width, height });
+            lines.forEach((line, index) => ctx.fillText(line, note.x + 11, note.y + 23 + index * 16));
+            hitboxes.unshift({ type: "note", id: note.id, key: `note:${note.id}`, x: note.x, y: note.y, width, height });
         });
     }
 
@@ -273,7 +301,7 @@
         if (!fitted) return;
         const { ctx, width, height } = fitted;
         ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = "#07111e";
+        ctx.fillStyle = "#06111d";
         ctx.fillRect(0, 0, width, height);
         ctx.save();
         const { zoom, panX, panY } = session.layout.viewport;
@@ -281,25 +309,23 @@
         ctx.scale(zoom, zoom);
         drawGrid(ctx, width / zoom, height / zoom, panX / zoom, panY / zoom);
         const hitboxes = [];
-        const fiberPoints = new Map();
-        const splitterPoints = new Map();
-        (session.optical.cables || []).forEach((cable, index, list) => {
-            drawCable(ctx, session, cable, index, list.length, height / zoom, hitboxes, fiberPoints);
-        });
-        stateApi().trays(session).forEach((tray, trayIndex) => {
-            drawTray(ctx, session, tray, trayIndex, hitboxes, splitterPoints);
-        });
-        drawLinks(ctx, session, fiberPoints, splitterPoints);
+        const endpointPoints = new Map();
+        const cables = session.optical.cables || [];
+        cables.forEach((cable, index) => drawCable(ctx, session, cable, index, cables, hitboxes, endpointPoints));
+        const splitters = stateApi().splitters(session);
+        splitters.forEach((splitter, index) => drawSplitter(ctx, session, splitter, index, splitters, hitboxes, endpointPoints));
+        drawSavedLinks(ctx, session, endpointPoints);
+        drawDraft(ctx, session, endpointPoints);
         drawNotes(ctx, session, hitboxes);
         ctx.restore();
-        session.renderCache = { hitboxes, fiberPoints, splitterPoints, width, height };
+        session.renderCache = { hitboxes, endpointPoints, width, height };
         session.renderVersion += 1;
     }
 
     function drawGrid(ctx, width, height, offsetX, offsetY) {
         const size = 28;
         ctx.save();
-        ctx.strokeStyle = "rgba(92, 128, 164, 0.10)";
+        ctx.strokeStyle = "rgba(92, 128, 164, .10)";
         ctx.lineWidth = 1;
         const startX = Math.floor(-offsetX / size) * size - size;
         const startY = Math.floor(-offsetY / size) * size - size;
@@ -327,6 +353,11 @@
         )) || null;
     }
 
+    function hitTestEndpoint(session, screenPoint) {
+        const hit = hitTest(session, screenPoint);
+        return hit?.type === "endpoint" ? hit.endpoint : null;
+    }
+
     function moveNode(session, hitbox, screenPoint, offset) {
         const point = screenToWorld(session, screenPoint);
         if (hitbox.type === "note") {
@@ -337,15 +368,25 @@
             }
             return;
         }
-        session.layout.nodes[hitbox.key] = {
-            x: point.x - offset.x,
-            y: point.y - offset.y,
-        };
+        session.layout.nodes[hitbox.key] = { x: point.x - offset.x, y: point.y - offset.y };
+    }
+
+    function organizeVertical(session) {
+        session.layout.nodes = {};
+        const cables = session.optical.cables || [];
+        cables.forEach((cable, index) => {
+            session.layout.nodes[`cable:${cable.id}`] = defaultCablePosition(session, cable, index, cables);
+        });
+        const splitters = stateApi().splitters(session);
+        splitters.forEach((splitter, index) => {
+            session.layout.nodes[`splitter:${splitter.id}`] = defaultSplitterPosition(index, splitters);
+        });
+        render(session);
     }
 
     function fitView(session) {
         render(session);
-        const boxes = session.renderCache?.hitboxes || [];
+        const boxes = (session.renderCache?.hitboxes || []).filter((box) => box.type !== "endpoint");
         if (!boxes.length || !session.canvas) {
             session.layout.viewport = { zoom: 1, panX: 0, panY: 0 };
             render(session);
@@ -356,10 +397,10 @@
         const maxX = Math.max(...boxes.map((box) => box.x + box.width));
         const maxY = Math.max(...boxes.map((box) => box.y + box.height));
         const rect = session.canvas.getBoundingClientRect();
-        const padding = 42;
+        const padding = 46;
         const contentWidth = Math.max(1, maxX - minX);
         const contentHeight = Math.max(1, maxY - minY);
-        const zoom = Math.max(0.4, Math.min(1.25,
+        const zoom = Math.max(0.35, Math.min(1.25,
             (Math.max(320, rect.width) - padding * 2) / contentWidth,
             (Math.max(320, rect.height) - padding * 2) / contentHeight,
         ));
@@ -378,9 +419,19 @@
     function zoomAt(session, screenPoint, factor) {
         const viewport = session.layout.viewport;
         const before = screenToWorld(session, screenPoint);
-        viewport.zoom = Math.max(0.4, Math.min(2.4, viewport.zoom * factor));
+        viewport.zoom = Math.max(0.35, Math.min(2.6, viewport.zoom * factor));
         viewport.panX = screenPoint.x - before.x * viewport.zoom;
         viewport.panY = screenPoint.y - before.y * viewport.zoom;
+        render(session);
+    }
+
+    function setConnectionDraft(session, start, currentWorld) {
+        session.connectionDraft = { start, currentWorld };
+        render(session);
+    }
+
+    function clearConnectionDraft(session) {
+        session.connectionDraft = null;
         render(session);
     }
 
@@ -398,7 +449,7 @@
             }
         });
         if (line) lines.push(line);
-        return lines.slice(0, 8);
+        return lines.slice(0, 14);
     }
 
     function truncate(value, max) {
@@ -409,11 +460,15 @@
     namespace.renderer = Object.freeze({
         render,
         hitTest,
+        hitTestEndpoint,
         moveNode,
         screenToWorld,
         worldToScreen,
         resetView,
         fitView,
         zoomAt,
+        organizeVertical,
+        setConnectionDraft,
+        clearConnectionDraft,
     });
 })(window);
