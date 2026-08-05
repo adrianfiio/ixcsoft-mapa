@@ -743,7 +743,7 @@
         state.canvas = canvas;
         state.scroll = scroll;
         attachScroll(scroll);
-        installRackZoom(root, scroll);
+        if (!global.mapRackViewportV07546) installRackZoom(root, scroll);
         root.classList.add("v07542-physical-rack");
         enhanceRackEquipmentFaces(root);
         const geometry = { x: 280, y: 48, innerWidth: 620, width: 740, duct: 42, gutter: 18, header: 46, unitHeight: 48 };

@@ -1,3 +1,14 @@
+## [0.75.46] - 2026-08-05
+
+### Navegação do Rack
+- Um único controlador passa a cuidar de zoom, pan e botões de ajuste.
+- O Rack pode ser arrastado vertical e horizontalmente depois do zoom, inclusive sobre o gabinete, organizadores e áreas vazias dos equipamentos.
+- O arraste de equipamentos pelo cabeçalho e os cliques nas portas continuam separados do pan.
+
+### Correção de conflito
+- Os handlers antigos da v0.75.42 e v0.75.45 deixam de disputar wheel e pointer events.
+- Nenhuma migration e nenhuma alteração de topologia foram adicionadas.
+
 ## [0.75.45] - 2026-08-05
 
 ### Chassi e placas de serviço
