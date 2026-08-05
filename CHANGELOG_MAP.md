@@ -1,3 +1,23 @@
+## [0.75.43] - 2026-08-05
+
+### Navegação do Rack
+- O Canvas volta a permitir deslocamento por arraste na área vazia, preservando a roda do mouse para zoom.
+- O arraste do cabeçalho continua reservado ao encaixe dos equipamentos em unidades U.
+
+### Organizadores e rotas
+- Cada equipamento usa seu organizador local antes de entrar na calha lateral.
+- Cada cavidade do DIO recebe um organizador próprio, inclusive a última cavidade.
+- Cabos externos e cordões frontais deixam de entrar diretamente nas portas sem passar pelo organizador correspondente.
+
+### OLT, uplinks e placas
+- A área inferior da OLT separa placas de serviço e uplinks físicos.
+- Uplinks RJ45 1G, SFP 1G e SFP+ 10G podem ser criados e editados.
+- Placas de serviço podem registrar modelo e tecnologia GPON, XG-PON ou XGS-PON pelo botão direito.
+
+### Interface
+- Os botões redundantes Ligar portas e Editar linhas são removidos da barra superior do Rack.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.42] - 2026-08-05
 
 ### Rack 19 polegadas compacto
