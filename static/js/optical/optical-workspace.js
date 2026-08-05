@@ -121,7 +121,7 @@
             if (!isCurrent(session)) return;
             state.hydrate(session, payload);
             renderWorkspace(session);
-            setStatus(session, "Editor óptico carregado. Selecione ou arraste entre duas pontas.");
+            setStatus(session, "Editor óptico carregado. Entrada à esquerda, saída à direita; selecione ou arraste entre duas pontas.");
         } catch (error) {
             if (!isCurrent(session) || error.name === "AbortError") return;
             showFatal(session, error.message);
@@ -211,9 +211,9 @@
         renderServicePorts(session);
         renderNearbyCables(session);
         renderNotes(session);
-        if (session.layoutMigrated && state.isDistributionBox(session)) {
-            // v0.75.37: CEO/CDO migram para cabos realmente verticais,
-            // com uma fibra por linha. CTO mantém o arranjo anterior.
+        if (session.layoutMigrated && state.isOpticalBox(session)) {
+            // v0.75.39: CTO, CEO e CDO migram para cabos verticais,
+            // com divisor direcional e uma fibra por linha.
             session.layout.nodes = {};
         }
         const shouldFit = !session.initialFitDone && Object.keys(session.layout.nodes || {}).length === 0;
@@ -344,7 +344,7 @@
             (splitter.ports || []).map((port) => ({ ...port, splitter: splitter.name || splitter.ratio }))
         ));
         target.innerHTML = `<section class="ixc-optical-card">
-            <h3>Portas de atendimento / PTO (${rows.length})</h3>
+            <h3>Portas de atendimento da CTO (${rows.length})</h3>
             <div class="ixc-optical-service-list">${rows.map((port) => `<div class="ixc-optical-service-row" data-service-row data-port-id="${port.id}">
                 <div><strong>${escapeHtml(port.splitter)} · P${port.number}</strong><small>${escapeHtml(port.access_point || "Sem cliente vinculado")}</small></div>
                 <select data-service-status ${!canEdit() ? "disabled" : ""}>
@@ -959,6 +959,6 @@
         isOpen() {
             return Boolean(currentSession && !currentSession.disposed);
         },
-        version: "0.75.38",
+        version: "0.75.39",
     });
 })(window);

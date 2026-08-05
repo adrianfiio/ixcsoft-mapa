@@ -16,8 +16,16 @@
     };
 
     function cableMetrics(session) {
-        return stateApi().isDistributionBox(session)
-            ? { width: NODE.distributionCableWidth, columns: 1, maxFibers: 144, vertical: true }
+        // MAP v0.75.39: CTO, CEO e CDO compartilham o mesmo idioma visual:
+        // cabos verticais e uma fibra por linha. As portas de atendimento da
+        // CTO continuam no painel lateral, separadas da fibra física.
+        return stateApi().isOpticalBox(session)
+            ? {
+                width: stateApi().isDistributionBox(session) ? NODE.distributionCableWidth : NODE.ctoCableWidth,
+                columns: 1,
+                maxFibers: 576,
+                vertical: true,
+            }
             : { width: NODE.ctoCableWidth, columns: 6, maxFibers: 576, vertical: false };
     }
 
@@ -75,14 +83,21 @@
         return NODE.cableHeader + 36 + rows * (NODE.fiberSize + NODE.fiberGap);
     }
 
+    function cableTopologyRelation(session, cable) {
+        if (Number(cable.destination_id) === Number(session.elementId)) return "input";
+        if (Number(cable.origin_id) === Number(session.elementId)) return "output";
+        if (cable.requires_cut) return "cut";
+        if (String(cable.relation_action || "").toLowerCase() === "pass") return "pass";
+        return "unknown";
+    }
+
     function cableSide(session, cable, index) {
-        if (stateApi().isDistributionBox(session)) {
-            const key = `cable:${cable.id}`;
-            const saved = session.layout.nodes[key];
-            if (saved && Number.isFinite(saved.x)) return saved.x < 560 ? "left" : "right";
-            if (String(cable.relation_action || "").toLowerCase().includes("out")) return "right";
-            if (Number(cable.origin_id) === Number(session.elementId)) return "right";
-            if (Number(cable.destination_id) === Number(session.elementId)) return "left";
+        if (stateApi().isOpticalBox(session)) {
+            const saved = session.layout.nodes[`cable:${cable.id}`];
+            if (saved && Number.isFinite(Number(saved.x))) return Number(saved.x) < 560 ? "left" : "right";
+            const relation = cableTopologyRelation(session, cable);
+            if (relation === "input") return "left";
+            if (relation === "output") return "right";
             return index % 2 === 0 ? "left" : "right";
         }
         if (Number(cable.destination_id) === Number(session.elementId)) return "left";
@@ -92,15 +107,13 @@
 
     function defaultCablePosition(session, cable, index, list) {
         const side = cableSide(session, cable, index);
-        let y = 50;
+        let y = 54;
         list.slice(0, index).forEach((previous, previousIndex) => {
-            if (stateApi().isDistributionBox(session)) {
-                if (cableSide(session, previous, previousIndex) === side) y += cableNodeHeight(session, previous) + 30;
-            } else if (cableSide(session, previous, previousIndex) === side) {
+            if (cableSide(session, previous, previousIndex) === side) {
                 y += cableNodeHeight(session, previous) + 30;
             }
         });
-        if (stateApi().isDistributionBox(session)) return { x: side === "left" ? 64 : 866, y };
+        if (stateApi().isOpticalBox(session)) return { x: side === "left" ? 62 : 866, y };
         return { x: side === "left" ? 58 : 1010, y };
     }
 
@@ -111,7 +124,7 @@
     function defaultSplitterPosition(index, splitters, session = null) {
         let y = 90;
         splitters.slice(0, index).forEach((previous) => { y += splitterHeight(previous) + 36; });
-        return { x: session && stateApi().isDistributionBox(session) ? 430 : 526, y };
+        return { x: session && stateApi().isOpticalBox(session) ? 476 : 526, y };
     }
 
     function endpointSelected(session, endpoint) {
@@ -163,7 +176,12 @@
         ctx.fillText(truncate(cable.name || `Cabo ${cable.id}`, stateApi().isDistributionBox(session) ? 17 : 21), node.x + 11, node.y + 18);
         ctx.fillStyle = "#91a8c3";
         ctx.font = "10px system-ui";
-        const relation = cable.requires_cut ? "passagem · cortar" : cable.relation_action === "pass" ? "passagem" : side === "left" ? "entrada" : "saída";
+        const topology = cableTopologyRelation(session, cable);
+        const relation = topology === "cut" ? "passagem · cortar"
+            : topology === "pass" ? "passagem"
+            : topology === "input" ? "entrada"
+            : topology === "output" ? "saída"
+            : side === "left" ? "entrada visual" : "saída visual";
         ctx.fillText(`${(cable.fibers || []).length} FO · ${relation}`, node.x + 11, node.y + 34);
 
         const fibers = visibleFibers(session, cable);
@@ -468,7 +486,7 @@
         ctx.translate(panX, panY);
         ctx.scale(zoom, zoom);
         drawGrid(ctx, width / zoom, height / zoom, panX / zoom, panY / zoom);
-        if (stateApi().isDistributionBox(session)) drawDistributionDivider(ctx, width / zoom, height / zoom);
+        if (stateApi().isOpticalBox(session)) drawDistributionDivider(ctx, width / zoom, height / zoom);
         const hitboxes = [];
         const linkHits = [];
         const endpointPoints = new Map();
@@ -499,8 +517,8 @@
         ctx.fillStyle = "rgba(215, 233, 247, .9)";
         ctx.font = "700 11px system-ui";
         ctx.textAlign = "center";
-        ctx.fillText("ENTRADA", dividerX - 88, 24);
-        ctx.fillText("SAÍDA", dividerX + 88, 24);
+        ctx.fillText("ENTRADA / CHEGADA", dividerX - 126, 24);
+        ctx.fillText("SAÍDA / DISTRIBUIÇÃO", dividerX + 126, 24);
         ctx.textAlign = "left";
         ctx.restore();
     }

@@ -1,3 +1,29 @@
+## [0.75.39] - 2026-08-05
+
+### DIO com frente e traseira independentes
+- Cada porta do DIO exibe a fusão/terminação traseira em laranja e o cordão frontal em roxo, permitindo os dois vínculos simultaneamente.
+- A fusão traseira não bloqueia a PON da OLT na frente da mesma porta; romper um lado preserva o outro.
+- DIO organizado em cavidades de 12 posições, com indicador laranja na frente quando a traseira está ligada.
+
+### Rack, OLT, PTO, ONU/ONT e DROP
+- OLT compacta com larguras persistentes P/M/G/Auto.
+- PTO mostra entrada óptica e conector SC/APC ou SC/UPC; ONU/ONT mostra PON, LAN e potência RX opcional.
+- DROP pode terminar diretamente em DIO, PTO ou porta PON de ONU/ONT.
+- Editor legado de equipamentos é substituído no Canvas por um modal moderno de criação e edição.
+
+### CTO, CEO e CDO
+- CTO passa a compartilhar o divisor direcional, cabos verticais nos dois lados e splitters centrais de CEO/CDO.
+- Entrada/saída considera a topologia real; mover visualmente não altera origem/destino sem comando explícito.
+
+### Cabos, reservas e informações
+- Botão direito no cabo oferece informações, edição, inversão, CTO, CEO, CDO, reserva, associação/desassociação e exclusão.
+- Painel do cabo reúne fibras, conexões, caixas, reservas, comprimento, ocupação e orçamento óptico estimado.
+- Reserva técnica registra metragem, tipo, posição, responsável e observação usando os modelos existentes.
+
+### Persistência e estabilidade
+- Preferências adicionais de OLT e cavidades do DIO são persistidas no metadata do elemento.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.38] - 2026-08-04
 
 ### Rack, OLT e DIO

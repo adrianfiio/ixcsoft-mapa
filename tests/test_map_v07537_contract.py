@@ -15,9 +15,9 @@ class MapV07537ContractTests(unittest.TestCase):
         state = content("static/js/optical/optical-state.js")
         self.assertIn("distributionFiberPitch", renderer)
         self.assertIn("columns: 1", renderer)
-        self.assertIn('if (stateApi().isDistributionBox(session)) return { x: 64, y };', renderer)
-        self.assertIn('version: 4', state)
-        self.assertIn('< 4', state)
+        self.assertIn('if (stateApi().isOpticalBox(session)) return { x: side === "left" ? 62 : 866, y };', renderer)
+        self.assertIn('version: 6', state)
+        self.assertIn('< 6', state)
 
     def test_optical_panel_separates_fusions_from_splitter_links(self):
         workspace = content("static/js/optical/optical-workspace.js")
@@ -61,8 +61,8 @@ class MapV07537ContractTests(unittest.TestCase):
         ):
             self.assertIn(token, backend)
         self.assertIn("fusion-matrix-v07537", urls)
-        self.assertIn("map-dio-fusion-v07537.js", template)
-        self.assertIn("map-dio-fusion-v07537.css", template)
+        self.assertIn("map-dio-fusion-v07538.js", template)
+        self.assertIn("map-dio-fusion-v07538.css", template)
 
     def test_dio_fusions_persist_without_migration(self):
         backend = content("apps/network_map/api/dio_fusion_v07537.py")
@@ -88,11 +88,11 @@ class MapV07537ContractTests(unittest.TestCase):
         self.assertIn("IXCMapDialog", runtime)
 
     def test_current_map_version_is_v07537(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.38")', content("config/settings.py"))
-        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.38}", content("docker-compose.yml"))
-        self.assertIn("Mapa | v0.75.38", content("VERSIONS.md"))
-        self.assertIn("MAP v0.75.38", content("docs/releases/map/map-v0.75.38.md"))
-        self.assertIn('version: "0.75.38"', content("static/js/optical/optical-workspace.js"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.39")', content("config/settings.py"))
+        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.39}", content("docker-compose.yml"))
+        self.assertIn("Mapa | v0.75.39", content("VERSIONS.md"))
+        self.assertIn("MAP v0.75.39", content("docs/releases/map/map-v0.75.39.md"))
+        self.assertIn('version: "0.75.39"', content("static/js/optical/optical-workspace.js"))
 
 
 if __name__ == "__main__":
