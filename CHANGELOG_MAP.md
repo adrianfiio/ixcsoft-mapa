@@ -1,3 +1,22 @@
+## [0.75.44] - 2026-08-05
+
+### OLT determinística
+- O cadastro da OLT cria exatamente a quantidade informada de placas e PONs por placa.
+- A face da OLT passa a ser renderizada pelas placas persistidas, sem transformar PONs em linhas genéricas.
+
+### Uplinks explícitos
+- Grupos de uplink são definidos no cadastro com nome, quantidade de portas e tipo RJ45, SFP ou SFP+.
+- Zero grupos cria a OLT sem uplinks.
+- Somente portas registradas no metadata da v0.75.44 são exibidas como uplink.
+
+### Navegação
+- Zoom pela roda passa a preservar o ponto sob o cursor.
+- Arrastar a área vazia altera a translação do Canvas, permitindo navegar em qualquer direção após o zoom.
+
+### Compatibilidade
+- Organizadores e roteamento por calhas foram preservados.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.43] - 2026-08-05
 
 ### Navegação do Rack

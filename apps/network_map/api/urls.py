@@ -51,6 +51,7 @@ from apps.network_map.api.map_v07539 import (
     layout_v07539,
 )
 from apps.network_map.api.map_v07543 import olt_hardware_v07543
+from apps.network_map.api.map_v07544 import equipment_collection_v07544, olt_hardware_v07544
 from apps.network_map.api.map_master_views import (
     assign_cable_route_master,
     asset_qr_master,

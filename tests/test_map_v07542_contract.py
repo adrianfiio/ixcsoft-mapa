@@ -103,9 +103,9 @@ class MapV07542ContractTests(unittest.TestCase):
         template = content("templates/map.html")
         self.assertIn('map-rack-physical-v07542.js', template)
         self.assertIn('map-rack-physical-v07542.css', template)
-        self.assertIn('0.75.43', content('config/settings.py'))
-        self.assertIn('v0.75.43', content('VERSIONS.md'))
-        self.assertIn('MAP v0.75.43', content('docs/releases/map/map-v0.75.43.md'))
+        self.assertIn('0.75.44', content('config/settings.py'))
+        self.assertIn('v0.75.44', content('VERSIONS.md'))
+        self.assertIn('MAP v0.75.44', content('docs/releases/map/map-v0.75.44.md'))
 
 
 if __name__ == '__main__':
