@@ -46,7 +46,7 @@
                     <div class="ixc-optical-heading">
                         <span class="ixc-optical-kicker">CAIXA ÓPTICA</span>
                         <h2 id="ixc-optical-title" data-optical-title>Carregando…</h2>
-                        <p data-optical-subtitle>Preparando cabos, fibras, splitters e ligações.</p>
+                        <p data-optical-subtitle>Preparando cabos, fibras, splitters, DROPs e portas de atendimento.</p>
                     </div>
                     <div class="ixc-optical-header-actions">
                         <button type="button" data-action="refresh" title="Recarregar dados">↻</button>
@@ -63,7 +63,7 @@
                     <button type="button" data-action="add-note" data-edit-only>+ Nota</button>
                     <button type="button" data-action="add-splitter" data-edit-only>+ Splitter</button>
                     <button type="button" data-action="save-layout" data-edit-only>Salvar</button>
-                    <span class="ixc-optical-toolbar-hint">Clique em duas pontas ou arraste uma linha. Botão direito abre ações; linhas podem ser desenhadas ou autoajustadas.</span>
+                    <span class="ixc-optical-toolbar-hint">Clique em duas pontas ou arraste uma linha. Botão direito abre ações; linhas podem ser desenhadas, autoajustadas ou rompidas.</span>
                 </div>
                 <div class="ixc-optical-body">
                     <aside class="ixc-optical-panel ixc-optical-panel-left">
@@ -72,7 +72,7 @@
                         <div class="ixc-optical-fiber-list" data-fiber-list></div>
                         <div class="ixc-optical-nearby" data-nearby-cables></div>
                     </aside>
-                    <main class="ixc-optical-stage">
+                    <main class="ixc-optical-stage ixc-optical-stage-has-divider">
                         <div class="ixc-optical-loading" data-loading>
                             <span class="ixc-optical-spinner"></span>
                             <strong>Carregando editor óptico…</strong>
@@ -344,7 +344,7 @@
             (splitter.ports || []).map((port) => ({ ...port, splitter: splitter.name || splitter.ratio }))
         ));
         target.innerHTML = `<section class="ixc-optical-card">
-            <h3>Portas de atendimento (${rows.length})</h3>
+            <h3>Portas de atendimento / PTO (${rows.length})</h3>
             <div class="ixc-optical-service-list">${rows.map((port) => `<div class="ixc-optical-service-row" data-service-row data-port-id="${port.id}">
                 <div><strong>${escapeHtml(port.splitter)} · P${port.number}</strong><small>${escapeHtml(port.access_point || "Sem cliente vinculado")}</small></div>
                 <select data-service-status ${!canEdit() ? "disabled" : ""}>
@@ -359,7 +359,7 @@
     function renderNearbyCables(session) {
         const target = session.root.querySelector("[data-nearby-cables]");
         const candidates = session.cableState.cables || [];
-        target.innerHTML = `<div class="ixc-optical-subtitle"><strong>Cabos próximos</strong><small>Associação manual de passagem</small></div>
+        target.innerHTML = `<div class="ixc-optical-subtitle"><strong>Cabos próximos</strong><small>Associação manual de passagem · captura máxima 5 m</small></div>
             ${candidates.length ? candidates.map((cable) => {
                 const mode = cable.endpoint ? "fixed" : cable.passage && !cable.excluded ? "remove" : "include";
                 const label = mode === "fixed" ? "Ponta física" : mode === "remove" ? "Remover" : cable.excluded ? "Reincluir" : "Associar";
@@ -959,6 +959,6 @@
         isOpen() {
             return Boolean(currentSession && !currentSession.disposed);
         },
-        version: "0.75.37",
+        version: "0.75.38",
     });
 })(window);

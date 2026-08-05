@@ -88,11 +88,11 @@ class MapV07537ContractTests(unittest.TestCase):
         self.assertIn("IXCMapDialog", runtime)
 
     def test_current_map_version_is_v07537(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.37")', content("config/settings.py"))
-        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.37}", content("docker-compose.yml"))
-        self.assertIn("Mapa | v0.75.37", content("VERSIONS.md"))
-        self.assertIn("MAP v0.75.37", content("docs/releases/map/map-v0.75.37.md"))
-        self.assertIn('version: "0.75.37"', content("static/js/optical/optical-workspace.js"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.38")', content("config/settings.py"))
+        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.38}", content("docker-compose.yml"))
+        self.assertIn("Mapa | v0.75.38", content("VERSIONS.md"))
+        self.assertIn("MAP v0.75.38", content("docs/releases/map/map-v0.75.38.md"))
+        self.assertIn('version: "0.75.38"', content("static/js/optical/optical-workspace.js"))
 
 
 if __name__ == "__main__":
