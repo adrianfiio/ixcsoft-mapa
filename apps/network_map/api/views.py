@@ -2598,6 +2598,88 @@ def reserve_to_element(request, cable_id, reserve_id):
     }, status=201)
 
 
+@api_view(["POST", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def splice_box_trays(request, element_id, tray_id=None):
+    # MAP_V07534_OPTICAL_TRAYS: CRUD isolado das bandejas de CTO/CEO/CDO.
+    element = get_object_or_404(
+        scope_company_queryset(NetworkElement.objects, request.user),
+        pk=element_id,
+        element_type__in=[
+            NetworkElement.ElementType.SPLICE_BOX,
+            NetworkElement.ElementType.CTO,
+        ],
+    )
+    if not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+
+    tray = None
+    if tray_id is not None:
+        tray = get_object_or_404(SpliceTray, pk=tray_id, splice_box=element)
+
+    if request.method in {"PATCH", "DELETE"} and tray is None:
+        return JsonResponse({"detail": "Informe a bandeja que será alterada."}, status=400)
+    if request.method == "POST" and tray is not None:
+        return JsonResponse({"detail": "Use PATCH para alterar uma bandeja existente."}, status=405)
+
+    if request.method == "DELETE":
+        if tray.splitters.exists() or tray.splices.exists():
+            return JsonResponse(
+                {"detail": "Remova as fusões e os splitters da bandeja antes de excluí-la."},
+                status=409,
+            )
+        tray.delete()
+        return JsonResponse({"success": True})
+
+    try:
+        capacity = int(request.data.get("capacity", tray.capacity if tray else 12))
+    except (TypeError, ValueError):
+        return JsonResponse({"detail": "Capacidade inválida."}, status=400)
+    if not 1 <= capacity <= 288:
+        return JsonResponse({"detail": "A capacidade deve ficar entre 1 e 288."}, status=400)
+
+    if tray is None:
+        try:
+            number = int(request.data.get("number") or 0)
+        except (TypeError, ValueError):
+            number = 0
+        if number <= 0:
+            number = (element.splice_trays.order_by("-number").values_list("number", flat=True).first() or 0) + 1
+        if element.splice_trays.filter(number=number).exists():
+            return JsonResponse({"detail": "Já existe uma bandeja com este número."}, status=409)
+        tray = SpliceTray.objects.create(
+            splice_box=element,
+            number=number,
+            name=str(request.data.get("name") or f"Bandeja {number}").strip()[:100],
+            capacity=capacity,
+        )
+        status_code = 201
+    else:
+        if "number" in request.data:
+            try:
+                number = int(request.data.get("number"))
+            except (TypeError, ValueError):
+                return JsonResponse({"detail": "Número da bandeja inválido."}, status=400)
+            if number <= 0 or element.splice_trays.exclude(pk=tray.pk).filter(number=number).exists():
+                return JsonResponse({"detail": "Número de bandeja inválido ou duplicado."}, status=409)
+            tray.number = number
+        if "name" in request.data:
+            tray.name = str(request.data.get("name") or "").strip()[:100]
+        tray.capacity = capacity
+        tray.save(update_fields=["number", "name", "capacity", "updated_at"])
+        status_code = 200
+
+    return JsonResponse({
+        "success": True,
+        "tray": {
+            "id": tray.id,
+            "number": tray.number,
+            "name": tray.name,
+            "capacity": tray.capacity,
+        },
+    }, status=status_code)
+
+
 @api_view(["GET", "POST", "DELETE"])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def splice_box_fibers(request, element_id, splice_id=None):
@@ -2609,6 +2691,10 @@ def splice_box_fibers(request, element_id, splice_id=None):
             NetworkElement.ElementType.CTO,
         ],
     )
+    # MAP_V07534_OPTICAL_WRITE_PERMISSION_FIBERS: leitura pode seguir a
+    # política pública existente; toda mutação exige acesso de edição à empresa.
+    if request.method != "GET" and not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
     if (
         request.method == "GET"
         and element.element_type == NetworkElement.ElementType.CTO
@@ -2900,6 +2986,10 @@ def splice_box_layout(request, element_id):
             NetworkElement.ElementType.TOWER,
         ],
     )
+    # MAP_V07534_OPTICAL_WRITE_PERMISSION_LAYOUT: layout é dado editável da
+    # empresa; impedir PATCH por usuário somente leitura.
+    if request.method != "GET" and not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
     if request.method == "GET":
         return JsonResponse({
             "success": True,
@@ -2926,6 +3016,10 @@ def splice_box_splitters(request, element_id, splitter_id=None):
             NetworkElement.ElementType.CTO,
         ],
     )
+    # MAP_V07534_OPTICAL_WRITE_PERMISSION_SPLITTERS: POST/PATCH/DELETE são
+    # operações destrutivas e precisam respeitar a empresa do elemento.
+    if not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
     splitter = None
     if splitter_id is not None:
         splitter = get_object_or_404(

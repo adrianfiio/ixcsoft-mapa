@@ -1377,14 +1377,16 @@
                         map.closePopup();
                         if (String(state.openingElementId || "") === String(p.id)) return;
                         state.openingElementId = p.id;
-                        // MAP_V07533_OPTICAL_CLEANUP: CTO/CEO/CDO não abrem mais
-                        // nenhum editor (nem o Canvas de Rack/Torre, nem o antigo
-                        // #unifilar-dialog) -- só um aviso, até a reconstrução
-                        // isolada do editor óptico.
+                        // MAP_V07534_ISOLATED_OPTICAL_WORKSPACE: CTO/CEO/CDO usam
+                        // um runtime próprio, sem acessar #container-dialog,
+                        // #map-master-container ou qualquer estado de Rack/Torre.
+                        const opticalWorkspace = window.IXCOpticalWorkspace;
                         const opening = ["rack", "tower"].includes(p.tipo)
                             ? openContainerWorkspace(p.id)
                             : ["cto", "splice_box"].includes(p.tipo)
-                                ? Promise.resolve(notify("Editor óptico temporariamente desativado para reconstrução."))
+                                ? opticalWorkspace?.open
+                                    ? opticalWorkspace.open(p.id)
+                                    : Promise.reject(new Error("Editor óptico não foi carregado. Atualize os arquivos estáticos."))
                                 : showUnifilar(p.id);
                         opening
                             .catch((error) => notify(error.message, true))
@@ -1440,11 +1442,17 @@
                         duplicates,
                         removeById,
                         edit: () => editElement(p.id).catch((error) => notify(error.message, true)),
-                        // MAP_V07533_OPTICAL_CLEANUP: mesmo aviso do clique normal --
-                        // nenhuma caixa óptica abre o Canvas de Rack/Torre nem o
-                        // #unifilar-dialog antigo pelo menu de contexto.
+                        // MAP_V07534_ISOLATED_OPTICAL_WORKSPACE: o menu de contexto
+                        // acompanha o clique normal e mantém Rack/Torre isolados.
                         fusions: ["cto", "splice_box"].includes(p.tipo)
-                            ? () => notify("Editor óptico temporariamente desativado para reconstrução.")
+                            ? () => {
+                                const opticalWorkspace = window.IXCOpticalWorkspace;
+                                if (!opticalWorkspace?.open) {
+                                    notify("Editor óptico não foi carregado. Atualize os arquivos estáticos.", true);
+                                    return;
+                                }
+                                opticalWorkspace.open(p.id).catch((error) => notify(error.message, true));
+                            }
                             : () => openContainerWorkspace(p.id).catch((error) => notify(error.message, true)),
                         remove: async () => {
                             try {

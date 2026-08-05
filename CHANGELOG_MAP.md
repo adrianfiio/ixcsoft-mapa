@@ -1,3 +1,21 @@
+## [0.75.34] - 2026-08-04
+
+### Adicionado — workspace óptico isolado
+- Novo Canvas 2D exclusivo para CTO, CEO e CDO, carregado pelos módulos `static/js/optical/*` e pelo CSS `map-optical-workspace-v07534.css`.
+- Cabos e fibras em painel próprio, criação/remoção de bandejas e fusões, ligação de entrada e saídas de splitters, criação/remoção de splitters, notas e layout persistente.
+- Portas de atendimento da CTO ficam em seção separada das saídas ópticas do splitter, evitando a confusão de modelos que existia no editor experimental.
+- Cabos próximos podem ser associados à caixa sem reutilizar o DOM do Rack/Torre.
+
+### Arquitetura e estabilidade
+- O workspace cria uma raiz DOM própria por abertura, usa `AbortController`, `ResizeObserver` descartável, seletores locais e token de sessão.
+- Fechar ou trocar a caixa aborta requisições pendentes, remove o DOM e encerra timers/listeners da sessão.
+- Nenhum arquivo do novo módulo contém referências a `#map-master-container`, `#container-dialog`, `#unifilar-dialog` ou `openContainerWorkspace`.
+- Rack e Torre permanecem no fluxo original, sem alteração de seus arquivos de Canvas.
+
+### Segurança
+- POST/DELETE de fusões, PATCH de layout, CRUD de bandejas e POST/PATCH/DELETE de splitters agora exigem permissão de edição da empresa no backend.
+- Sem migrations e sem exclusão automática de dados.
+
 ## [0.75.33] - 2026-08-04
 
 ### Removido — integração experimental CTO/CEO/CDO no motor do Rack/Torre
