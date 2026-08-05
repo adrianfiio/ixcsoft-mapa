@@ -1,0 +1,116 @@
+/* MAP v0.75.35 — clareza do DIO e widgets de cabo redimensionáveis. */
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-canvas-node[data-equipment-type="dio"] {
+    width: 390px !important;
+    min-height: 150px;
+}
+.map-dio-flow-labels-v07535 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+    padding: 7px 11px 6px;
+    border-bottom: 1px solid rgba(71, 113, 145, .34);
+    background: linear-gradient(90deg, rgba(16, 82, 67, .22), rgba(7, 22, 37, .25) 50%, rgba(20, 74, 112, .24));
+    pointer-events: none;
+}
+.map-dio-flow-labels-v07535 > span { display: grid; gap: 1px; }
+.map-dio-flow-labels-v07535 > span:last-child { text-align: right; }
+.map-dio-flow-labels-v07535 b {
+    color: #dcecf8;
+    font-size: 8px;
+    letter-spacing: .11em;
+}
+.map-dio-flow-labels-v07535 small { color: #7893aa; font-size: 7px; }
+.map-dio-flow-labels-v07535 i {
+    color: #71d8c1;
+    text-align: center;
+    font-size: 15px;
+    font-style: normal;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .map-dio-upstream-v07535 {
+    border-color: rgba(52, 211, 153, .42) !important;
+    background: rgba(14, 78, 63, .34) !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .map-dio-cable-v07535 {
+    border-color: rgba(56, 189, 248, .44) !important;
+    background: rgba(15, 70, 105, .38) !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .map-dio-upstream-v07535 i {
+    border-color: #34d399 !important;
+    background: #0b352b !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .map-dio-cable-v07535 i {
+    border-color: #38bdf8 !important;
+    background: #0b2f48 !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-dio-position-v07510 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 7px !important;
+}
+
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-cable-node.map-cable-resizable-v07535 {
+    width: var(--map-cable-width-v07535, 280px) !important;
+    min-width: 190px !important;
+    max-width: 620px !important;
+    overflow: visible !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-cable-node .master-cable-fibers {
+    grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)) !important;
+    max-height: none !important;
+    overflow: visible !important;
+    gap: 5px !important;
+    padding: 9px 11px 12px !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-cable-node .master-cable-fiber {
+    min-width: 0 !important;
+    min-height: 24px !important;
+    padding: 4px 7px 4px 13px !important;
+    overflow: hidden;
+    border-radius: 6px !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-cable-node.output .master-cable-fiber {
+    padding-right: 13px !important;
+    padding-left: 7px !important;
+}
+.tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-cable-node .master-cable-fiber span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.map-cable-resize-v07535 {
+    position: absolute;
+    z-index: 20;
+    right: -7px;
+    bottom: 8px;
+    width: 15px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(56, 189, 248, .55);
+    border-radius: 7px;
+    color: #8ddcf8;
+    background: #0b2135;
+    box-shadow: 0 7px 18px rgba(0, 0, 0, .32);
+    cursor: ew-resize;
+    font-size: 9px;
+    letter-spacing: -3px;
+    user-select: none;
+    touch-action: none;
+}
+.map-cable-resize-v07535:hover { border-color: #38bdf8; color: #e0f5ff; }
+.map-cable-expand-v07535 {
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    color: #9ddcf5 !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+}
+body.map-cable-resizing-v07535,
+body.map-cable-resizing-v07535 * { cursor: ew-resize !important; user-select: none !important; }
+@media (max-width: 980px) {
+    .tower-workspace-dialog-v0750 .map-v07535-rack-polish .master-canvas-node[data-equipment-type="dio"] { width: 340px !important; }
+}

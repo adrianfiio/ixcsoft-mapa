@@ -12,23 +12,11 @@
     }
 
     async function request(url, options = {}) {
-        const headers = {
-            Accept: "application/json",
-            ...(options.headers || {}),
-        };
-        if (options.body && !(options.body instanceof FormData)) {
-            headers["Content-Type"] = "application/json";
-        }
+        const headers = { Accept: "application/json", ...(options.headers || {}) };
+        if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
         const method = String(options.method || "GET").toUpperCase();
-        if (method !== "GET" && method !== "HEAD") {
-            headers["X-CSRFToken"] = csrfToken();
-        }
-        const response = await fetch(url, {
-            credentials: "same-origin",
-            ...options,
-            method,
-            headers,
-        });
+        if (method !== "GET" && method !== "HEAD") headers["X-CSRFToken"] = csrfToken();
+        const response = await fetch(url, { credentials: "same-origin", ...options, method, headers });
         if (response.status === 204) return null;
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -44,20 +32,15 @@
     }
 
     function json(method, body, signal) {
-        return {
-            method,
-            signal,
-            body: body === undefined ? undefined : JSON.stringify(body),
-        };
+        return { method, signal, body: body === undefined ? undefined : JSON.stringify(body) };
     }
 
     async function loadWorkspace(elementId, signal) {
         const elementResponse = await request(`/api/map/elements/${elementId}/`, { signal });
         const element = elementResponse.element;
         if (!element || !["cto", "splice_box"].includes(element.element_type)) {
-            throw new Error("Este elemento não é uma CTO, CEO ou CDO.");
+            throw new Error("Este elemento não é uma caixa óptica editável.");
         }
-
         const optional = (promise, fallback) => promise.catch((error) => {
             if (error.name === "AbortError") throw error;
             return { ...fallback, unavailable_reason: error.message };
@@ -65,10 +48,7 @@
         const requests = [
             request(`/api/map/elements/${elementId}/splices/`, { signal }),
             request(`/api/map/elements/${elementId}/layout/`, { signal }),
-            optional(
-                request(`/api/map/elements/${elementId}/fusion-cables/?radius_m=80`, { signal }),
-                { cables: [] },
-            ),
+            optional(request(`/api/map/elements/${elementId}/fusion-cables/?radius_m=80`, { signal }), { cables: [] }),
         ];
         if (element.element_type === "cto") {
             requests.push(optional(
@@ -99,10 +79,7 @@
             }, signal));
         },
         deleteSplice(elementId, spliceId, signal) {
-            return request(`/api/map/elements/${elementId}/splices/${spliceId}/`, {
-                method: "DELETE",
-                signal,
-            });
+            return request(`/api/map/elements/${elementId}/splices/${spliceId}/`, { method: "DELETE", signal });
         },
         connectSplitterInput(elementId, splitterId, fiberId, signal) {
             return request(`/api/map/elements/${elementId}/splices/`, json("POST", {
@@ -137,34 +114,24 @@
                 port_id: portId,
             }, signal));
         },
-        createTray(elementId, payload, signal) {
-            return request(`/api/map/elements/${elementId}/trays/`, json("POST", payload, signal));
+        createInternalGroup(elementId, signal) {
+            return request(`/api/map/elements/${elementId}/trays/`, json("POST", {
+                number: 1,
+                name: "Estrutura interna",
+                capacity: 288,
+            }, signal));
         },
-        updateTray(elementId, trayId, payload, signal) {
-            return request(`/api/map/elements/${elementId}/trays/${trayId}/`, json("PATCH", payload, signal));
-        },
-        deleteTray(elementId, trayId, signal) {
-            return request(`/api/map/elements/${elementId}/trays/${trayId}/`, {
-                method: "DELETE",
-                signal,
-            });
-        },
-        createSplitter(elementId, trayId, ratio, signal) {
+        createSplitter(elementId, internalGroupId, ratio, signal) {
             return request(`/api/map/elements/${elementId}/splitters/`, json("POST", {
-                tray_id: trayId,
+                tray_id: internalGroupId,
                 ratio,
             }, signal));
         },
         updateSplitter(elementId, splitterId, ratio, signal) {
-            return request(`/api/map/elements/${elementId}/splitters/${splitterId}/`, json("PATCH", {
-                ratio,
-            }, signal));
+            return request(`/api/map/elements/${elementId}/splitters/${splitterId}/`, json("PATCH", { ratio }, signal));
         },
         deleteSplitter(elementId, splitterId, signal) {
-            return request(`/api/map/elements/${elementId}/splitters/${splitterId}/`, {
-                method: "DELETE",
-                signal,
-            });
+            return request(`/api/map/elements/${elementId}/splitters/${splitterId}/`, { method: "DELETE", signal });
         },
         includeCable(elementId, cableId, signal) {
             return request(`/api/map/elements/${elementId}/fusion-cables/${cableId}/`, json("POST", {
@@ -173,10 +140,7 @@
             }, signal));
         },
         excludeCable(elementId, cableId, signal) {
-            return request(`/api/map/elements/${elementId}/fusion-cables/${cableId}/`, {
-                method: "DELETE",
-                signal,
-            });
+            return request(`/api/map/elements/${elementId}/fusion-cables/${cableId}/`, { method: "DELETE", signal });
         },
         updateServicePort(elementId, payload, signal) {
             return request(`/api/map/master/ctos/${elementId}/splitter-ports/`, json("PATCH", payload, signal));

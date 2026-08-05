@@ -6,10 +6,11 @@
 
     function dependencies() {
         const { api, state, renderer } = namespace;
-        if (!api || !state || !renderer) {
-            throw new Error("Módulo óptico incompleto. Recarregue a página após o deploy.");
+        const dialog = global.IXCMapDialog;
+        if (!api || !state || !renderer || !dialog) {
+            throw new Error("Editor óptico incompleto. Recarregue a página após o deploy.");
         }
-        return { api, state, renderer };
+        return { api, state, renderer, dialog };
     }
 
     function escapeHtml(value) {
@@ -42,29 +43,30 @@
         return `
             <section class="ixc-optical-shell" role="dialog" aria-modal="true" aria-labelledby="ixc-optical-title">
                 <header class="ixc-optical-header">
-                    <div>
-                        <span class="ixc-optical-kicker" data-optical-kind>CAIXA ÓPTICA</span>
+                    <div class="ixc-optical-heading">
+                        <span class="ixc-optical-kicker">CAIXA ÓPTICA</span>
                         <h2 id="ixc-optical-title" data-optical-title>Carregando…</h2>
-                        <p data-optical-subtitle>Preparando cabos, bandejas, fusões e splitters.</p>
+                        <p data-optical-subtitle>Preparando cabos, fibras, splitters e ligações.</p>
                     </div>
                     <div class="ixc-optical-header-actions">
                         <button type="button" data-action="refresh" title="Recarregar dados">↻</button>
                         <button type="button" data-action="close" class="ixc-optical-close" title="Fechar">×</button>
                     </div>
                 </header>
-                <div class="ixc-optical-toolbar" aria-label="Ferramentas do Canvas óptico">
-                    <button type="button" data-action="reset-view">Centralizar</button>
-                    <button type="button" data-action="zoom-out">− Zoom</button>
-                    <button type="button" data-action="zoom-in">+ Zoom</button>
+                <div class="ixc-optical-toolbar" aria-label="Ferramentas da caixa óptica">
+                    <button type="button" data-action="organize">Organizar vertical</button>
+                    <button type="button" data-action="fit-view">Enquadrar</button>
+                    <button type="button" data-action="zoom-out">−</button>
+                    <button type="button" data-action="zoom-in">+</button>
+                    <span class="ixc-optical-divider"></span>
                     <button type="button" data-action="add-note" data-edit-only>+ Nota</button>
-                    <button type="button" data-action="add-tray" data-edit-only>+ Bandeja</button>
                     <button type="button" data-action="add-splitter" data-edit-only>+ Splitter</button>
-                    <button type="button" data-action="save-layout" data-edit-only>Salvar layout</button>
-                    <span class="ixc-optical-toolbar-hint">Arraste cabos, splitters e notas. A edição de fibras fica nos painéis laterais.</span>
+                    <button type="button" data-action="save-layout" data-edit-only>Salvar</button>
+                    <span class="ixc-optical-toolbar-hint">Clique em duas pontas ou arraste uma linha entre elas. Arraste o corpo dos blocos para mover.</span>
                 </div>
                 <div class="ixc-optical-body">
                     <aside class="ixc-optical-panel ixc-optical-panel-left">
-                        <div class="ixc-optical-panel-title"><strong>Cabos e fibras</strong><span data-cable-count>0</span></div>
+                        <div class="ixc-optical-panel-title"><strong>Cabos</strong><span data-cable-count>0</span></div>
                         <div class="ixc-optical-cable-list" data-cable-list></div>
                         <div class="ixc-optical-fiber-list" data-fiber-list></div>
                         <div class="ixc-optical-nearby" data-nearby-cables></div>
@@ -77,7 +79,7 @@
                         <canvas data-optical-canvas tabindex="0" aria-label="Canvas 2D da caixa óptica"></canvas>
                     </main>
                     <aside class="ixc-optical-panel ixc-optical-panel-right">
-                        <div data-editor-controls></div>
+                        <div data-connection-controls></div>
                         <div data-splitter-controls></div>
                         <div data-splice-list></div>
                         <div data-service-ports></div>
@@ -86,7 +88,7 @@
                 </div>
                 <footer class="ixc-optical-footer">
                     <span data-optical-status>Inicializando…</span>
-                    <span data-optical-session></span>
+                    <span>ligações ponta a ponta · sessão <b data-optical-session></b></span>
                 </footer>
             </section>`;
     }
@@ -100,10 +102,8 @@
         document.body.classList.add("ixc-optical-workspace-open");
         session.root = root;
         session.canvas = root.querySelector("[data-optical-canvas]");
-        root.querySelectorAll("[data-edit-only]").forEach((item) => {
-            item.hidden = !canEdit();
-        });
-        root.querySelector("[data-optical-session]").textContent = `sessão ${session.id.slice(-6)}`;
+        root.querySelectorAll("[data-edit-only]").forEach((item) => { item.hidden = !canEdit(); });
+        root.querySelector("[data-optical-session]").textContent = session.id.slice(-6);
         return root;
     }
 
@@ -119,7 +119,7 @@
             if (!isCurrent(session)) return;
             state.hydrate(session, payload);
             renderWorkspace(session);
-            setStatus(session, "Editor óptico carregado.");
+            setStatus(session, "Editor óptico carregado. Selecione ou arraste entre duas pontas.");
         } catch (error) {
             if (!isCurrent(session) || error.name === "AbortError") return;
             showFatal(session, error.message);
@@ -145,46 +145,34 @@
 
     function reconcileSelection(session) {
         const { state } = dependencies();
-        const trays = state.trays(session);
-        const trayIds = new Set(trays.map((item) => Number(item.id)));
-        if (!trayIds.has(Number(session.selection.trayId))) {
-            session.selection.trayId = trays[0]?.id || null;
-        }
         const splitters = state.splitters(session);
-        const splitterIds = new Set(splitters.map((item) => Number(item.id)));
-        if (!splitterIds.has(Number(session.selection.splitterId))) {
+        if (!splitters.some((item) => Number(item.id) === Number(session.selection.splitterId))) {
             session.selection.splitterId = splitters[0]?.id || null;
         }
-        const cableIds = new Set((session.optical.cables || []).map((item) => Number(item.id)));
-        if (!cableIds.has(Number(session.selection.cableId))) {
+        if (!(session.optical.cables || []).some((item) => Number(item.id) === Number(session.selection.cableId))) {
             session.selection.cableId = session.optical.cables[0]?.id || null;
         }
-        for (const key of ["fiberA", "fiberB"]) {
-            if (session.selection[key] && !state.fiberById(session, session.selection[key])) {
-                session.selection[key] = null;
-            }
-        }
-        const allPortIds = new Set(splitters.flatMap((item) => (item.ports || []).map((port) => Number(port.id))));
-        if (session.selection.cascadePortId && !allPortIds.has(Number(session.selection.cascadePortId))) {
-            session.selection.cascadePortId = null;
-        }
+        const pending = session.selection.pendingEndpoint;
+        if (pending?.kind === "fiber" && !state.fiberById(session, pending.id)) session.selection.pendingEndpoint = null;
+        if (pending?.kind === "splitter-input" && !state.splitterById(session, pending.id)) session.selection.pendingEndpoint = null;
+        if (pending?.kind === "splitter-output" && !state.splitterPortById(session, pending.id)) session.selection.pendingEndpoint = null;
     }
 
     function renderWorkspace(session) {
         if (!isCurrent(session)) return;
         const { state, renderer } = dependencies();
         reconcileSelection(session);
-        const kind = state.subtypeLabel(session.element);
-        session.root.querySelector("[data-optical-kind]").textContent = kind;
-        session.root.querySelector("[data-optical-title]").textContent = session.element.name || `${kind} ${session.element.id}`;
+        const splitterCount = state.splitters(session).length;
+        session.root.querySelector("[data-optical-title]").textContent = session.element.name || `Caixa ${session.element.id}`;
         session.root.querySelector("[data-optical-subtitle]").textContent = [
             session.element.code || "Sem código",
-            `${state.trays(session).length} bandeja(s)`,
             `${session.optical.cables.length} cabo(s)`,
+            `${session.optical.splices.length} fusão(ões)`,
+            `${splitterCount} splitter(s)`,
         ].join(" · ");
         session.root.querySelector("[data-loading]").hidden = true;
         renderCablePanel(session);
-        renderEditorControls(session);
+        renderConnectionControls(session);
         renderSplitterControls(session);
         renderSpliceList(session);
         renderServicePorts(session);
@@ -194,6 +182,10 @@
         renderer.render(session);
         if (shouldFit) renderer.fitView(session);
         session.initialFitDone = true;
+        if (session.layoutMigrated) {
+            session.layoutMigrated = false;
+            scheduleLayoutSave(session);
+        }
         if (!session.resizeObserver && "ResizeObserver" in global) {
             session.resizeObserver = new global.ResizeObserver(() => renderer.render(session));
             session.resizeObserver.observe(session.canvas.parentElement);
@@ -221,39 +213,30 @@
             fibers.innerHTML = '<p class="ixc-optical-empty">Selecione um cabo.</p>';
             return;
         }
-        fibers.innerHTML = `<div class="ixc-optical-subtitle"><strong>${escapeHtml(cable.name)}</strong><small>Clique em duas fibras para criar uma fusão.</small></div>
+        const pendingKey = state.endpointKey(session.selection.pendingEndpoint);
+        fibers.innerHTML = `<div class="ixc-optical-subtitle"><strong>${escapeHtml(cable.name)}</strong><small>Clique numa fibra e depois em outra ponta. A segunda seleção liga automaticamente.</small></div>
             <div class="ixc-optical-fiber-grid">${cable.fibers.map((fiber) => {
+                const endpoint = { kind: "fiber", id: Number(fiber.id) };
+                const selected = pendingKey === state.endpointKey(endpoint);
                 const used = state.isFiberUsed(session, fiber.id);
-                const selectedA = Number(session.selection.fiberA) === Number(fiber.id);
-                const selectedB = Number(session.selection.fiberB) === Number(fiber.id);
-                return `<button type="button" data-action="select-fiber" data-fiber-id="${fiber.id}" class="ixc-optical-fiber ${used ? "is-used" : ""} ${selectedA || selectedB ? "is-selected" : ""}" title="${escapeHtml(fiber.color_name)} · ${escapeHtml(fiber.status)}">
-                    <i style="--fiber-color:${escapeHtml(fiber.color_hex || "#aaa")}"></i><span>${fiber.number}</span>${selectedA ? "<b>A</b>" : selectedB ? "<b>B</b>" : ""}
+                return `<button type="button" data-action="select-endpoint" data-endpoint-kind="fiber" data-endpoint-id="${fiber.id}" class="ixc-optical-fiber ${used ? "is-used" : ""} ${selected ? "is-selected" : ""}" title="${escapeHtml(fiber.color_name)} · ${escapeHtml(fiber.status)}">
+                    <i style="--fiber-color:${escapeHtml(fiber.color_hex || "#aaa")}"></i><span>F${fiber.number}</span>${selected ? "<b>1</b>" : ""}
                 </button>`;
             }).join("")}</div>`;
     }
 
-    function selectionDescription(session, fiberId) {
-        const fiber = dependencies().state.fiberById(session, fiberId);
-        return fiber
-            ? `${fiber.cableName} · fibra ${fiber.number} · ${fiber.color_name}`
-            : "Nenhuma fibra selecionada";
-    }
-
-    function renderEditorControls(session) {
+    function renderConnectionControls(session) {
         const { state } = dependencies();
-        const trays = state.trays(session);
-        const target = session.root.querySelector("[data-editor-controls]");
-        target.innerHTML = `<section class="ixc-optical-card">
-            <div class="ixc-optical-card-heading"><h3>Nova fusão</h3><div class="ixc-optical-mini-actions"><button type="button" data-action="edit-tray" ${!canEdit() || !session.selection.trayId ? "disabled" : ""}>Editar bandeja</button><button type="button" data-action="delete-tray" ${!canEdit() || !session.selection.trayId ? "disabled" : ""}>Excluir</button></div></div>
-            <label>Bandeja
-                <select data-field="tray-id" ${!canEdit() ? "disabled" : ""}>${trays.map((tray) => `<option value="${tray.id}" ${Number(session.selection.trayId) === Number(tray.id) ? "selected" : ""}>${escapeHtml(tray.name || `Bandeja ${tray.number}`)}</option>`).join("")}</select>
-            </label>
-            <div class="ixc-optical-selection"><span>A</span><p>${escapeHtml(selectionDescription(session, session.selection.fiberA))}</p></div>
-            <div class="ixc-optical-selection"><span>B</span><p>${escapeHtml(selectionDescription(session, session.selection.fiberB))}</p></div>
-            <div class="ixc-optical-row">
-                <button type="button" data-action="clear-fiber-selection">Limpar</button>
-                <button type="button" class="is-primary" data-action="create-splice" ${!canEdit() ? "disabled" : ""}>Criar fusão</button>
+        const target = session.root.querySelector("[data-connection-controls]");
+        const pending = session.selection.pendingEndpoint;
+        target.innerHTML = `<section class="ixc-optical-card ixc-optical-connection-card">
+            <div class="ixc-optical-card-heading"><h3>Ligação rápida</h3><span class="ixc-optical-live-dot"></span></div>
+            <p>Selecione uma ponta no Canvas ou no painel de fibras. Depois selecione a ponta de destino. Também pode puxar a linha diretamente.</p>
+            <div class="ixc-optical-pending-endpoint ${pending ? "has-value" : ""}">
+                <span>${pending ? "1" : "·"}</span>
+                <strong>${escapeHtml(state.endpointLabel(session, pending))}</strong>
             </div>
+            <button type="button" data-action="clear-endpoint" ${pending ? "" : "disabled"}>Cancelar seleção</button>
         </section>`;
     }
 
@@ -264,43 +247,29 @@
         if (selected) session.selection.splitterId = selected.id;
         const target = session.root.querySelector("[data-splitter-controls]");
         if (!selected) {
-            target.innerHTML = '<section class="ixc-optical-card"><h3>Splitters</h3><p class="ixc-optical-empty">Nenhum splitter cadastrado.</p></section>';
+            target.innerHTML = '<section class="ixc-optical-card"><h3>Splitters</h3><p class="ixc-optical-empty">Nenhum splitter cadastrado. Use “+ Splitter”.</p></section>';
             return;
         }
-        const selectedFiber = state.fiberById(session, session.selection.fiberA);
-        const usedCascadePorts = new Set((session.optical.splitter_links || [])
-            .filter((item) => Number(item.splitter_id) !== Number(selected.id))
-            .map((item) => Number(item.input_splitter_port_id))
-            .filter(Boolean));
-        const cascadePorts = splitters
-            .filter((item) => Number(item.id) !== Number(selected.id))
-            .flatMap((item) => (item.ports || [])
-                .filter((port) => !port.output_fiber_id && !usedCascadePorts.has(Number(port.id)))
-                .map((port) => ({
-                    id: port.id,
-                    label: `${item.trayName} · ${item.ratio} · P${port.number}`,
-                })));
-        if (!cascadePorts.some((item) => Number(item.id) === Number(session.selection.cascadePortId))) {
-            session.selection.cascadePortId = cascadePorts[0]?.id || null;
-        }
+        const pendingKey = state.endpointKey(session.selection.pendingEndpoint);
+        const inputEndpoint = { kind: "splitter-input", id: Number(selected.id) };
         target.innerHTML = `<section class="ixc-optical-card">
             <div class="ixc-optical-card-heading"><h3>Splitter</h3><div class="ixc-optical-mini-actions"><button type="button" data-action="edit-splitter" ${!canEdit() ? "disabled" : ""}>Relação</button><button type="button" data-action="delete-splitter" ${!canEdit() ? "disabled" : ""}>Excluir</button></div></div>
             <label>Selecionado
-                <select data-field="splitter-id">${splitters.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(selected.id) ? "selected" : ""}>${escapeHtml(item.trayName)} · ${escapeHtml(item.ratio)}</option>`).join("")}</select>
+                <select data-field="splitter-id">${splitters.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(selected.id) ? "selected" : ""}>Splitter ${escapeHtml(item.ratio)}</option>`).join("")}</select>
             </label>
-            <div class="ixc-optical-splitter-input">
-                <span>Entrada</span>
-                <strong>${selected.input_fiber_id ? `Fibra ${selected.input_fiber_id}` : selected.input_splitter_port_id ? `Cascata P${selected.input_splitter_port_id}` : "Livre"}</strong>
-                <button type="button" data-action="connect-splitter-input" ${!canEdit() || !selectedFiber ? "disabled" : ""}>Ligar fibra A</button>
-                ${cascadePorts.length ? `<select data-field="cascade-port-id" ${!canEdit() ? "disabled" : ""}>${cascadePorts.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(session.selection.cascadePortId) ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select><button type="button" data-action="connect-splitter-cascade" ${!canEdit() || !session.selection.cascadePortId ? "disabled" : ""}>Ligar em cascata</button>` : ""}
-                <button type="button" data-action="clear-splitter-input" ${!canEdit() ? "disabled" : ""}>Desligar</button>
-            </div>
-            <div class="ixc-optical-port-list">${(selected.ports || []).map((port) => `<div class="ixc-optical-port-row">
-                <span>P${port.number}</span><strong>${port.output_fiber_id ? `Fibra ${port.output_fiber_id}` : "Livre"}</strong>
-                <button type="button" data-action="connect-splitter-output" data-port-id="${port.id}" ${!canEdit() || !selectedFiber ? "disabled" : ""}>Ligar A</button>
-                <button type="button" data-action="clear-splitter-output" data-port-id="${port.id}" ${!canEdit() ? "disabled" : ""}>×</button>
-            </div>`).join("")}</div>
-            <small class="ixc-optical-help">A fibra A selecionada no painel esquerdo é usada nas ligações do splitter.</small>
+            <button type="button" class="ixc-optical-endpoint-row ${pendingKey === state.endpointKey(inputEndpoint) ? "is-selected" : ""}" data-action="select-endpoint" data-endpoint-kind="splitter-input" data-endpoint-id="${selected.id}">
+                <span class="ixc-optical-socket is-input"></span><span><strong>Entrada</strong><small>${selected.input_fiber_id ? `Fibra ${selected.input_fiber_id}` : selected.input_splitter_port_id ? "Cascata ligada" : "Livre"}</small></span><b>selecionar</b>
+            </button>
+            ${selected.input_fiber_id || selected.input_splitter_port_id ? `<button type="button" class="ixc-optical-inline-danger" data-action="clear-splitter-input" ${!canEdit() ? "disabled" : ""}>Desligar entrada</button>` : ""}
+            <div class="ixc-optical-port-list">${(selected.ports || []).map((port) => {
+                const endpoint = { kind: "splitter-output", id: Number(port.id), splitterId: Number(selected.id) };
+                return `<div class="ixc-optical-port-row">
+                    <button type="button" class="ixc-optical-endpoint-row ${pendingKey === state.endpointKey(endpoint) ? "is-selected" : ""}" data-action="select-endpoint" data-endpoint-kind="splitter-output" data-endpoint-id="${port.id}" data-splitter-id="${selected.id}">
+                        <span class="ixc-optical-socket is-output"></span><span><strong>Saída ${port.number}</strong><small>${port.output_fiber_id ? `Fibra ${port.output_fiber_id}` : "Livre"}</small></span><b>selecionar</b>
+                    </button>
+                    ${state.endpointOccupied(session, endpoint) ? `<button type="button" class="ixc-optical-port-clear" data-action="clear-splitter-output" data-port-id="${port.id}" ${!canEdit() ? "disabled" : ""}>×</button>` : ""}
+                </div>`;
+            }).join("")}</div>
         </section>`;
     }
 
@@ -355,7 +324,7 @@
 
     function renderNotes(session) {
         const target = session.root.querySelector("[data-note-list]");
-        target.innerHTML = session.layout.notes.length ? `<section class="ixc-optical-card"><h3>Notas</h3>${session.layout.notes.map((note) => `<div class="ixc-optical-note-row"><span>${escapeHtml(note.text)}</span><button type="button" data-action="delete-note" data-note-id="${escapeHtml(note.id)}" ${!canEdit() ? "disabled" : ""}>×</button></div>`).join("")}</section>` : "";
+        target.innerHTML = session.layout.notes.length ? `<section class="ixc-optical-card"><h3>Notas do projeto</h3>${session.layout.notes.map((note) => `<div class="ixc-optical-note-row"><span>${escapeHtml(note.text)}</span><button type="button" data-action="edit-note" data-note-id="${escapeHtml(note.id)}" ${!canEdit() ? "disabled" : ""}>Editar</button><button type="button" data-action="delete-note" data-note-id="${escapeHtml(note.id)}" ${!canEdit() ? "disabled" : ""}>×</button></div>`).join("")}</section>` : "";
     }
 
     async function reload(session, message = "Dados atualizados.") {
@@ -364,11 +333,13 @@
         setStatus(session, "Atualizando…");
         const oldSelection = { ...session.selection };
         const oldLayout = session.layout;
+        const oldExpanded = session.expandedCables;
         const payload = await api.loadWorkspace(session.elementId, session.controller.signal);
         if (!isCurrent(session)) return;
         state.hydrate(session, payload);
-        session.selection = { ...session.selection, ...oldSelection };
+        session.selection = { ...session.selection, ...oldSelection, pendingEndpoint: null };
         session.layout = oldLayout;
+        session.expandedCables = oldExpanded;
         renderWorkspace(session);
         setStatus(session, message);
     }
@@ -401,6 +372,7 @@
         try {
             setStatus(session, "Salvando alteração…");
             await action();
+            session.selection.pendingEndpoint = null;
             await reload(session, successMessage);
         } catch (error) {
             if (error.name !== "AbortError") setStatus(session, error.message, true);
@@ -408,6 +380,96 @@
             session.mutating = false;
             session.root?.removeAttribute("aria-busy");
         }
+    }
+
+    async function internalGroupId(session) {
+        const { api, state } = dependencies();
+        const existing = state.internalGroup(session);
+        if (existing) return existing.id;
+        const created = await api.createInternalGroup(session.elementId, session.controller.signal);
+        return created.tray.id;
+    }
+
+    function endpointFromNode(node) {
+        if (!node?.dataset.endpointKind || !node.dataset.endpointId) return null;
+        const endpoint = {
+            kind: node.dataset.endpointKind,
+            id: Number(node.dataset.endpointId),
+        };
+        if (node.dataset.splitterId) endpoint.splitterId = Number(node.dataset.splitterId);
+        return endpoint;
+    }
+
+    async function connectEndpoints(session, first, second) {
+        const { api, state } = dependencies();
+        if (!first || !second) return;
+        if (state.endpointKey(first) === state.endpointKey(second)) {
+            session.selection.pendingEndpoint = null;
+            renderWorkspace(session);
+            return;
+        }
+        const pair = [first.kind, second.kind].sort().join("+");
+        if (pair === "fiber+fiber") {
+            const a = state.fiberById(session, first.id);
+            const b = state.fiberById(session, second.id);
+            if (!a || !b) return setStatus(session, "Uma das fibras não está mais disponível.", true);
+            if (Number(a.cableId) === Number(b.cableId)) return setStatus(session, "A fusão precisa ligar fibras de cabos diferentes.", true);
+            return runMutation(session, async () => {
+                const groupId = await internalGroupId(session);
+                await api.createSplice(session.elementId, {
+                    tray_id: groupId,
+                    input_fiber_id: a.id,
+                    output_fiber_id: b.id,
+                }, session.controller.signal);
+            }, "Fusão criada.");
+        }
+        const fiber = first.kind === "fiber" ? first : second.kind === "fiber" ? second : null;
+        const splitterInput = first.kind === "splitter-input" ? first : second.kind === "splitter-input" ? second : null;
+        const splitterOutput = first.kind === "splitter-output" ? first : second.kind === "splitter-output" ? second : null;
+        if (fiber && splitterInput) {
+            return runMutation(session, () => api.connectSplitterInput(
+                session.elementId,
+                splitterInput.id,
+                fiber.id,
+                session.controller.signal,
+            ), "Entrada do splitter ligada.");
+        }
+        if (fiber && splitterOutput) {
+            return runMutation(session, () => api.connectSplitterOutput(
+                session.elementId,
+                splitterOutput.id,
+                fiber.id,
+                session.controller.signal,
+            ), "Saída do splitter ligada.");
+        }
+        if (splitterInput && splitterOutput) {
+            return runMutation(session, () => api.connectSplitterCascade(
+                session.elementId,
+                splitterInput.id,
+                splitterOutput.id,
+                session.controller.signal,
+            ), "Cascata entre splitters criada.");
+        }
+        setStatus(session, "Essas duas pontas não formam uma ligação válida.", true);
+    }
+
+    async function chooseEndpoint(session, endpoint) {
+        const { state, renderer } = dependencies();
+        if (!canEdit()) return setStatus(session, "Seu acesso é somente leitura.", true);
+        const pending = session.selection.pendingEndpoint;
+        if (!pending) {
+            session.selection.pendingEndpoint = endpoint;
+            renderCablePanel(session);
+            renderConnectionControls(session);
+            renderSplitterControls(session);
+            renderer.render(session);
+            setStatus(session, `Ponta selecionada: ${state.endpointLabel(session, endpoint)}. Escolha o destino.`);
+            return;
+        }
+        session.selection.pendingEndpoint = null;
+        renderConnectionControls(session);
+        renderer.render(session);
+        await connectEndpoints(session, pending, endpoint);
     }
 
     function bindEvents(session) {
@@ -424,14 +486,21 @@
         const button = event.target.closest("[data-action]");
         if (!button || !isCurrent(session)) return;
         const action = button.dataset.action;
-        const { api, state, renderer } = dependencies();
+        const { api, state, renderer, dialog } = dependencies();
         if (action === "close") return close();
         if (action === "refresh") {
             try { await reload(session); } catch (error) { setStatus(session, error.message, true); }
             return;
         }
-        if (action === "reset-view") {
-            renderer.resetView(session);
+        if (action === "organize") {
+            renderer.organizeVertical(session);
+            renderer.fitView(session);
+            scheduleLayoutSave(session);
+            setStatus(session, "Cabos organizados em colunas verticais.");
+            return;
+        }
+        if (action === "fit-view") {
+            renderer.fitView(session);
             scheduleLayoutSave(session);
             return;
         }
@@ -448,119 +517,67 @@
             renderer.render(session);
             return;
         }
-        if (action === "select-fiber") {
-            const fiberId = Number(button.dataset.fiberId);
-            if (Number(session.selection.fiberA) === fiberId) session.selection.fiberA = null;
-            else if (Number(session.selection.fiberB) === fiberId) session.selection.fiberB = null;
-            else if (!session.selection.fiberA) session.selection.fiberA = fiberId;
-            else if (!session.selection.fiberB) session.selection.fiberB = fiberId;
-            else {
-                session.selection.fiberA = session.selection.fiberB;
-                session.selection.fiberB = fiberId;
-            }
+        if (action === "select-endpoint") return chooseEndpoint(session, endpointFromNode(button));
+        if (action === "clear-endpoint") {
+            session.selection.pendingEndpoint = null;
+            renderConnectionControls(session);
             renderCablePanel(session);
-            renderEditorControls(session);
             renderSplitterControls(session);
             renderer.render(session);
+            setStatus(session, "Seleção cancelada.");
             return;
-        }
-        if (action === "clear-fiber-selection") {
-            session.selection.fiberA = null;
-            session.selection.fiberB = null;
-            renderCablePanel(session);
-            renderEditorControls(session);
-            renderSplitterControls(session);
-            renderer.render(session);
-            return;
-        }
-        if (action === "create-splice") {
-            const fiberA = state.fiberById(session, session.selection.fiberA);
-            const fiberB = state.fiberById(session, session.selection.fiberB);
-            if (!fiberA || !fiberB) return setStatus(session, "Selecione duas fibras.", true);
-            if (Number(fiberA.cableId) === Number(fiberB.cableId)) return setStatus(session, "A fusão precisa ligar cabos diferentes.", true);
-            if (!session.selection.trayId) return setStatus(session, "Selecione uma bandeja.", true);
-            return runMutation(session, () => api.createSplice(session.elementId, {
-                tray_id: session.selection.trayId,
-                input_fiber_id: fiberA.id,
-                output_fiber_id: fiberB.id,
-            }, session.controller.signal), "Fusão criada.");
         }
         if (action === "delete-splice") {
-            if (!global.confirm("Excluir esta fusão?")) return;
+            const accepted = await dialog.confirm({
+                title: "Excluir fusão",
+                message: "A ligação entre as duas fibras será removida.",
+                confirmLabel: "Excluir fusão",
+                danger: true,
+            });
+            if (!accepted || !isCurrent(session)) return;
             return runMutation(session, () => api.deleteSplice(session.elementId, Number(button.dataset.spliceId), session.controller.signal), "Fusão removida.");
         }
-        if (action === "add-tray") {
-            const existing = state.trays(session);
-            const nextNumber = existing.reduce((max, item) => Math.max(max, Number(item.number) || 0), 0) + 1;
-            const name = String(global.prompt("Nome da bandeja:", `Bandeja ${nextNumber}`) || "").trim();
-            if (!name) return;
-            const capacity = Number(global.prompt("Capacidade de fusões:", "12"));
-            if (!Number.isInteger(capacity) || capacity < 1 || capacity > 288) return setStatus(session, "Capacidade inválida (1 a 288).", true);
-            return runMutation(session, () => api.createTray(session.elementId, {
-                number: nextNumber,
-                name,
-                capacity,
-            }, session.controller.signal), "Bandeja criada.");
-        }
-        if (action === "edit-tray") {
-            const tray = state.trays(session).find((item) => Number(item.id) === Number(session.selection.trayId));
-            if (!tray) return setStatus(session, "Selecione uma bandeja válida.", true);
-            const number = Number(global.prompt("Número da bandeja:", String(tray.number)));
-            if (!Number.isInteger(number) || number < 1) return setStatus(session, "Número da bandeja inválido.", true);
-            const name = String(global.prompt("Nome da bandeja:", tray.name || `Bandeja ${tray.number}`) || "").trim();
-            if (!name) return;
-            const capacity = Number(global.prompt("Capacidade de fusões:", String(tray.capacity || 12)));
-            if (!Number.isInteger(capacity) || capacity < 1 || capacity > 288) return setStatus(session, "Capacidade inválida (1 a 288).", true);
-            return runMutation(session, () => api.updateTray(session.elementId, tray.id, {
-                number,
-                name,
-                capacity,
-            }, session.controller.signal), "Bandeja atualizada.");
-        }
-        if (action === "delete-tray") {
-            if (!session.selection.trayId || !global.confirm("Excluir a bandeja selecionada? Só bandejas vazias podem ser removidas.")) return;
-            return runMutation(session, () => api.deleteTray(session.elementId, session.selection.trayId, session.controller.signal), "Bandeja removida.");
-        }
         if (action === "add-splitter") {
-            const trays = state.trays(session);
-            if (!trays.length) return setStatus(session, "A caixa não possui bandejas.", true);
-            const trayId = Number(global.prompt(`ID da bandeja (${trays.map((item) => `${item.id}=${item.name || `Bandeja ${item.number}`}`).join(", ")}):`, session.selection.trayId || trays[0].id));
-            if (!trays.some((item) => Number(item.id) === trayId)) return setStatus(session, "Bandeja inválida.", true);
-            const ratio = String(global.prompt("Relação do splitter (ex.: 1:8):", "1:8") || "").trim();
-            if (!ratio) return;
-            return runMutation(session, () => api.createSplitter(session.elementId, trayId, ratio, session.controller.signal), "Splitter criado.");
+            const ratio = await dialog.prompt({
+                title: "Adicionar splitter",
+                label: "Relação",
+                value: "1:8",
+                options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64", "10:90", "15:85", "20:80", "30:70", "40:60", "45:55"],
+                confirmLabel: "Adicionar",
+            });
+            if (!ratio || !isCurrent(session)) return;
+            return runMutation(session, async () => {
+                const groupId = await internalGroupId(session);
+                await api.createSplitter(session.elementId, groupId, ratio, session.controller.signal);
+            }, "Splitter criado.");
         }
         if (action === "edit-splitter") {
             const splitter = state.splitterById(session, session.selection.splitterId);
             if (!splitter) return setStatus(session, "Selecione um splitter válido.", true);
-            const ratio = String(global.prompt("Nova relação do splitter:", splitter.ratio || "1:8") || "").trim();
-            if (!ratio || ratio === splitter.ratio) return;
+            const ratio = await dialog.prompt({
+                title: "Alterar splitter",
+                label: "Nova relação",
+                value: splitter.ratio || "1:8",
+                options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64", "10:90", "15:85", "20:80", "30:70", "40:60", "45:55"],
+                confirmLabel: "Salvar relação",
+            });
+            if (!ratio || ratio === splitter.ratio || !isCurrent(session)) return;
             return runMutation(session, () => api.updateSplitter(session.elementId, splitter.id, ratio, session.controller.signal), "Relação do splitter atualizada.");
         }
         if (action === "delete-splitter") {
-            if (!session.selection.splitterId || !global.confirm("Excluir o splitter selecionado? Ligações associadas poderão ser removidas.")) return;
+            if (!session.selection.splitterId) return;
+            const accepted = await dialog.confirm({
+                title: "Excluir splitter",
+                message: "As ligações associadas a este splitter poderão ser removidas pelo servidor.",
+                confirmLabel: "Excluir splitter",
+                danger: true,
+            });
+            if (!accepted || !isCurrent(session)) return;
             return runMutation(session, () => api.deleteSplitter(session.elementId, session.selection.splitterId, session.controller.signal), "Splitter removido.");
-        }
-        if (action === "connect-splitter-input") {
-            if (!session.selection.fiberA || !session.selection.splitterId) return;
-            return runMutation(session, () => api.connectSplitterInput(session.elementId, session.selection.splitterId, session.selection.fiberA, session.controller.signal), "Entrada do splitter ligada.");
-        }
-        if (action === "connect-splitter-cascade") {
-            if (!session.selection.splitterId || !session.selection.cascadePortId) return;
-            return runMutation(session, () => api.connectSplitterCascade(
-                session.elementId,
-                session.selection.splitterId,
-                session.selection.cascadePortId,
-                session.controller.signal,
-            ), "Cascata entre splitters criada.");
         }
         if (action === "clear-splitter-input") {
             if (!session.selection.splitterId) return;
             return runMutation(session, () => api.clearSplitterInput(session.elementId, session.selection.splitterId, session.controller.signal), "Entrada do splitter desligada.");
-        }
-        if (action === "connect-splitter-output") {
-            if (!session.selection.fiberA) return;
-            return runMutation(session, () => api.connectSplitterOutput(session.elementId, Number(button.dataset.portId), session.selection.fiberA, session.controller.signal), "Saída do splitter ligada.");
         }
         if (action === "clear-splitter-output") {
             return runMutation(session, () => api.clearSplitterOutput(session.elementId, Number(button.dataset.portId), session.controller.signal), "Saída do splitter desligada.");
@@ -582,20 +599,56 @@
             }, session.controller.signal), "Porta de atendimento atualizada.");
         }
         if (action === "add-note") {
-            const text = String(global.prompt("Texto da nota:", "") || "").trim();
-            if (!text) return;
+            const text = await dialog.prompt({
+                title: "Nova nota do projeto",
+                label: "Texto da nota",
+                placeholder: "Descreva a orientação do projetista…",
+                multiline: true,
+                rows: 5,
+                maxLength: 1200,
+                confirmLabel: "Adicionar nota",
+            });
+            if (!text || !String(text).trim() || !isCurrent(session)) return;
             session.layout.notes.push({
                 id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                x: 390,
+                x: 760,
                 y: 70,
-                text: text.slice(0, 240),
+                text: String(text).trim().slice(0, 1200),
             });
             renderNotes(session);
             renderer.render(session);
             scheduleLayoutSave(session);
             return;
         }
+        if (action === "edit-note") {
+            const note = session.layout.notes.find((item) => item.id === button.dataset.noteId);
+            if (!note) return;
+            const text = await dialog.prompt({
+                title: "Editar nota",
+                label: "Texto da nota",
+                value: note.text,
+                multiline: true,
+                rows: 5,
+                maxLength: 1200,
+                confirmLabel: "Salvar nota",
+            });
+            if (text === null || !isCurrent(session)) return;
+            const cleaned = String(text).trim();
+            if (!cleaned) return setStatus(session, "A nota não pode ficar vazia.", true);
+            note.text = cleaned.slice(0, 1200);
+            renderNotes(session);
+            renderer.render(session);
+            scheduleLayoutSave(session);
+            return;
+        }
         if (action === "delete-note") {
+            const accepted = await dialog.confirm({
+                title: "Excluir nota",
+                message: "A nota será removida do layout desta caixa.",
+                confirmLabel: "Excluir nota",
+                danger: true,
+            });
+            if (!accepted || !isCurrent(session)) return;
             session.layout.notes = session.layout.notes.filter((item) => item.id !== button.dataset.noteId);
             renderNotes(session);
             renderer.render(session);
@@ -606,14 +659,10 @@
     function handleChange(session, event) {
         if (!isCurrent(session)) return;
         const field = event.target.dataset.field;
-        if (field === "tray-id") session.selection.trayId = Number(event.target.value);
         if (field === "splitter-id") {
             session.selection.splitterId = Number(event.target.value);
             renderSplitterControls(session);
             dependencies().renderer.render(session);
-        }
-        if (field === "cascade-port-id") {
-            session.selection.cascadePortId = Number(event.target.value) || null;
         }
     }
 
@@ -627,7 +676,17 @@
             const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
             const hit = renderer.hitTest(session, screen);
             const world = renderer.screenToWorld(session, screen);
-            if (hit && canEdit()) {
+            if (hit?.type === "endpoint" && canEdit()) {
+                session.dragging = {
+                    type: "connection",
+                    startEndpoint: hit.endpoint,
+                    startScreen: screen,
+                    moved: false,
+                };
+                renderer.setConnectionDraft(session, hit.endpoint, world);
+                return;
+            }
+            if (hit && canEdit() && ["cable", "splitter", "note"].includes(hit.type)) {
                 session.dragging = {
                     type: "node",
                     hit,
@@ -637,34 +696,59 @@
                 if (hit.type === "splitter") session.selection.splitterId = Number(hit.id);
                 renderCablePanel(session);
                 renderSplitterControls(session);
-            } else {
-                session.dragging = {
-                    type: "pan",
-                    start: screen,
-                    panX: session.layout.viewport.panX,
-                    panY: session.layout.viewport.panY,
-                };
+                return;
             }
+            session.dragging = {
+                type: "pan",
+                start: screen,
+                panX: session.layout.viewport.panX,
+                panY: session.layout.viewport.panY,
+            };
         });
         canvas.addEventListener("pointermove", (event) => {
             if (!session.dragging || !isCurrent(session)) return;
             const rect = canvas.getBoundingClientRect();
             const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-            if (session.dragging.type === "node") {
+            if (session.dragging.type === "connection") {
+                const dx = screen.x - session.dragging.startScreen.x;
+                const dy = screen.y - session.dragging.startScreen.y;
+                session.dragging.moved = session.dragging.moved || Math.hypot(dx, dy) > 5;
+                renderer.setConnectionDraft(session, session.dragging.startEndpoint, renderer.screenToWorld(session, screen));
+            } else if (session.dragging.type === "node") {
                 renderer.moveNode(session, session.dragging.hit, screen, session.dragging.offset);
+                renderer.render(session);
             } else {
                 session.layout.viewport.panX = session.dragging.panX + screen.x - session.dragging.start.x;
                 session.layout.viewport.panY = session.dragging.panY + screen.y - session.dragging.start.y;
+                renderer.render(session);
             }
-            renderer.render(session);
         });
-        const finish = () => {
-            if (!session.dragging) return;
+        const finish = async (event) => {
+            if (!session.dragging || !isCurrent(session)) return;
+            const dragging = session.dragging;
             session.dragging = null;
+            if (dragging.type === "connection") {
+                const rect = canvas.getBoundingClientRect();
+                const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+                const destination = renderer.hitTestEndpoint(session, screen);
+                renderer.clearConnectionDraft(session);
+                if (destination && dependencies().state.endpointKey(destination) !== dependencies().state.endpointKey(dragging.startEndpoint)) {
+                    session.selection.pendingEndpoint = null;
+                    await connectEndpoints(session, dragging.startEndpoint, destination);
+                } else if (!dragging.moved) {
+                    await chooseEndpoint(session, dragging.startEndpoint);
+                } else {
+                    session.selection.pendingEndpoint = dragging.startEndpoint;
+                    renderConnectionControls(session);
+                    renderer.render(session);
+                    setStatus(session, "Linha iniciada. Selecione a ponta de destino.");
+                }
+                return;
+            }
             scheduleLayoutSave(session);
         };
-        canvas.addEventListener("pointerup", finish);
-        canvas.addEventListener("pointercancel", finish);
+        canvas.addEventListener("pointerup", (event) => { finish(event); });
+        canvas.addEventListener("pointercancel", (event) => { finish(event); });
         canvas.addEventListener("wheel", (event) => {
             event.preventDefault();
             const rect = canvas.getBoundingClientRect();
@@ -679,6 +763,6 @@
         isOpen() {
             return Boolean(currentSession && !currentSession.disposed);
         },
-        version: "0.75.34",
+        version: "0.75.35",
     });
 })(window);

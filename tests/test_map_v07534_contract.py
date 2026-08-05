@@ -11,7 +11,7 @@ class MapV07534ContractTests(unittest.TestCase):
     def test_isolated_optical_assets_are_loaded(self):
         template = self.read("templates/map.html")
         expected = [
-            "css/map-optical-workspace-v07534.css",
+            "css/map-optical-workspace-v07535.css",
             "js/optical/optical-api.js",
             "js/optical/optical-state.js",
             "js/optical/optical-renderer.js",
@@ -70,9 +70,9 @@ class MapV07534ContractTests(unittest.TestCase):
         settings = self.read("config/settings.py")
         compose = self.read("docker-compose.yml")
         versions = self.read("VERSIONS.md")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.34")', settings)
-        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.34}", compose)
-        self.assertIn("Mapa | v0.75.34", versions)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.35")', settings)
+        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.35}", compose)
+        self.assertIn("Mapa | v0.75.35", versions)
         self.assertIn("MAP v0.75.34", self.read("docs/releases/map/map-v0.75.34.md"))
 
     def test_no_migration_was_added_for_release(self):
