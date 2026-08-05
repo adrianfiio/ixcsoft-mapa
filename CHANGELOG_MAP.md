@@ -1,3 +1,17 @@
+## [0.75.40] - 2026-08-05
+
+### Rack físico e calhas
+- O Rack passa a posicionar equipamentos por unidades U dentro de um gabinete travado.
+- Cordões frontais saem do ponto exato da porta e percorrem a calha lateral mais próxima.
+- Cabos externos usam um único tronco traseiro por cabo, com derivações curtas até os DIOs.
+
+### Correção de duplicações
+- Corrigidos atributos data inconsistentes que duplicavam resumos de cabos, alvos CABOS e botões Fusões após reaberturas.
+- Rack e Torre removem cartões e controles visuais repetidos pelo mesmo ID.
+
+### Compatibilidade
+- Nenhuma migration e nenhum endpoint novo.
+
 ## [0.75.39] - 2026-08-05
 
 ### DIO com frente e traseira independentes
