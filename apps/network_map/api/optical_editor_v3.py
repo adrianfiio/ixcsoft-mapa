@@ -21,6 +21,10 @@ from apps.network_map.models import (
 )
 
 
+# MAP_V07536_OPTICAL_CAPTURE: limite rígido de proximidade para CEO/CDO/CTO.
+OPTICAL_BOX_CAPTURE_RADIUS_M = 5.0
+
+
 def _distance_m(a: tuple[float, float], b: tuple[float, float]) -> float:
     lon1, lat1 = a
     lon2, lat2 = b
@@ -96,9 +100,10 @@ def _element_for_edit(request, element_id: int) -> NetworkElement:
 def fusion_cable_state(request, element_id):
     element = _element_for_edit(request, element_id)
     try:
-        radius = max(1.0, min(float(request.GET.get("radius_m") or 45), 500.0))
+        requested_radius = float(request.GET.get("radius_m") or OPTICAL_BOX_CAPTURE_RADIUS_M)
+        radius = max(1.0, min(requested_radius, OPTICAL_BOX_CAPTURE_RADIUS_M))
     except (TypeError, ValueError):
-        radius = 45.0
+        radius = OPTICAL_BOX_CAPTURE_RADIUS_M
     excluded = _excluded_ids(element)
     metadata = _metadata(element)
     element_route_id = metadata.get("route_id")
@@ -189,9 +194,15 @@ def fusion_cable_membership(request, element_id, cable_id):
     if not is_endpoint and action == "pass":
         distance = _cable_distance_m(element, cable)
         try:
-            max_distance = max(1.0, min(float(request.data.get("max_distance_m") or 80), 500.0))
+            requested_max_distance = float(
+                request.data.get("max_distance_m") or OPTICAL_BOX_CAPTURE_RADIUS_M
+            )
+            max_distance = max(
+                1.0,
+                min(requested_max_distance, OPTICAL_BOX_CAPTURE_RADIUS_M),
+            )
         except (TypeError, ValueError):
-            max_distance = 80.0
+            max_distance = OPTICAL_BOX_CAPTURE_RADIUS_M
         if distance > max_distance:
             return JsonResponse(
                 {"detail": f"O cabo está a {distance:.1f} m da caixa; limite configurado: {max_distance:.1f} m."},

@@ -55,6 +55,7 @@
                 </header>
                 <div class="ixc-optical-toolbar" aria-label="Ferramentas da caixa óptica">
                     <button type="button" data-action="organize">Organizar vertical</button>
+                    <button type="button" data-action="auto-links">Autoajustar linhas</button>
                     <button type="button" data-action="fit-view">Enquadrar</button>
                     <button type="button" data-action="zoom-out">−</button>
                     <button type="button" data-action="zoom-in">+</button>
@@ -62,7 +63,7 @@
                     <button type="button" data-action="add-note" data-edit-only>+ Nota</button>
                     <button type="button" data-action="add-splitter" data-edit-only>+ Splitter</button>
                     <button type="button" data-action="save-layout" data-edit-only>Salvar</button>
-                    <span class="ixc-optical-toolbar-hint">Clique em duas pontas ou arraste uma linha entre elas. Arraste o corpo dos blocos para mover.</span>
+                    <span class="ixc-optical-toolbar-hint">Clique em duas pontas ou arraste uma linha. Botão direito abre ações; linhas podem ser desenhadas ou autoajustadas.</span>
                 </div>
                 <div class="ixc-optical-body">
                     <aside class="ixc-optical-panel ixc-optical-panel-left">
@@ -86,6 +87,7 @@
                         <div data-note-list></div>
                     </aside>
                 </div>
+                <div class="ixc-optical-context-menu" data-optical-context-menu hidden role="menu"></div>
                 <footer class="ixc-optical-footer">
                     <span data-optical-status>Inicializando…</span>
                     <span>ligações ponta a ponta · sessão <b data-optical-session></b></span>
@@ -143,6 +145,36 @@
         loading.innerHTML = `<strong>Não foi possível abrir a caixa.</strong><span>${escapeHtml(message)}</span><button type="button" data-action="refresh">Tentar novamente</button>`;
     }
 
+    function closeContextMenu(session) {
+        const menu = session.root?.querySelector("[data-optical-context-menu]");
+        if (menu) {
+            menu.hidden = true;
+            menu.innerHTML = "";
+        }
+        session.contextActions.clear();
+        session.contextWorld = null;
+    }
+
+    function openContextMenu(session, clientX, clientY, items, worldPoint = null) {
+        if (!isCurrent(session)) return;
+        closeContextMenu(session);
+        const menu = session.root.querySelector("[data-optical-context-menu]");
+        const rootRect = session.root.getBoundingClientRect();
+        session.contextWorld = worldPoint;
+        menu.innerHTML = items.map((item, index) => {
+            if (item.separator) return '<hr role="separator">';
+            const token = `ctx-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`;
+            session.contextActions.set(token, item.run);
+            return `<button type="button" role="menuitem" data-optical-context-action="${token}" class="${item.danger ? "is-danger" : ""}" ${item.disabled ? "disabled" : ""}><span>${escapeHtml(item.label)}</span>${item.hint ? `<small>${escapeHtml(item.hint)}</small>` : ""}</button>`;
+        }).join("");
+        menu.hidden = false;
+        const menuRect = menu.getBoundingClientRect();
+        const left = Math.max(8, Math.min(clientX - rootRect.left, rootRect.width - menuRect.width - 8));
+        const top = Math.max(8, Math.min(clientY - rootRect.top, rootRect.height - menuRect.height - 8));
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+    }
+
     function reconcileSelection(session) {
         const { state } = dependencies();
         const splitters = state.splitters(session);
@@ -178,6 +210,11 @@
         renderServicePorts(session);
         renderNearbyCables(session);
         renderNotes(session);
+        if (session.layoutMigrated && state.isDistributionBox(session)) {
+            // v0.75.36: CEO e CDO recebem uma única migração para o arranjo
+            // vertical; CTO mantém o layout que já estava em uso.
+            session.layout.nodes = {};
+        }
         const shouldFit = !session.initialFitDone && Object.keys(session.layout.nodes || {}).length === 0;
         renderer.render(session);
         if (shouldFit) renderer.fitView(session);
@@ -472,12 +509,152 @@
         await connectEndpoints(session, pending, endpoint);
     }
 
+    async function addSplitter(session) {
+        const { api, dialog } = dependencies();
+        const ratio = await dialog.prompt({
+            title: "Adicionar splitter",
+            label: "Relação",
+            value: "1:8",
+            options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64", "10:90", "15:85", "20:80", "30:70", "40:60", "45:55"],
+            confirmLabel: "Adicionar",
+        });
+        if (!ratio || !isCurrent(session)) return;
+        return runMutation(session, async () => {
+            const groupId = await internalGroupId(session);
+            await api.createSplitter(session.elementId, groupId, ratio, session.controller.signal);
+        }, "Splitter criado.");
+    }
+
+    async function addNote(session, worldPoint = null) {
+        const { renderer, dialog } = dependencies();
+        const text = await dialog.prompt({
+            title: "Nova nota do projeto",
+            label: "Texto da nota",
+            placeholder: "Descreva a orientação do projetista…",
+            multiline: true,
+            rows: 5,
+            maxLength: 1200,
+            confirmLabel: "Adicionar nota",
+        });
+        if (!text || !String(text).trim() || !isCurrent(session)) return;
+        const point = worldPoint || { x: 760, y: 70 };
+        session.layout.notes.push({
+            id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            x: Number(point.x),
+            y: Number(point.y),
+            text: String(text).trim().slice(0, 1200),
+        });
+        renderNotes(session);
+        renderer.render(session);
+        scheduleLayoutSave(session);
+    }
+
+    async function disconnectLink(session, link) {
+        const { api, state, dialog } = dependencies();
+        if (!link || !canEdit()) return;
+        const isSplice = link.type === "splice";
+        const accepted = await dialog.confirm({
+            title: isSplice ? "Romper fusão" : "Desligar ligação",
+            message: isSplice
+                ? `A fusão ${link.label} será removida.`
+                : `A ligação ${link.label} será desligada.`,
+            confirmLabel: isSplice ? "Romper fusão" : "Desligar",
+            danger: true,
+        });
+        if (!accepted || !isCurrent(session)) return;
+        await runMutation(session, async () => {
+            if (link.type === "splice") {
+                await api.deleteSplice(session.elementId, link.refId, session.controller.signal);
+            } else if (link.type === "splitter-output") {
+                await api.clearSplitterOutput(session.elementId, link.portId, session.controller.signal);
+            } else {
+                await api.clearSplitterInput(session.elementId, link.splitterId, session.controller.signal);
+            }
+            state.removeLinkRoute(session, link.id);
+        }, isSplice ? "Fusão rompida." : "Ligação desligada.");
+        scheduleLayoutSave(session);
+    }
+
+    function openCanvasContextMenu(session, event) {
+        const { renderer, state } = dependencies();
+        const rect = session.canvas.getBoundingClientRect();
+        const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        const world = renderer.screenToWorld(session, screen);
+        const handle = renderer.hitTestLinkHandle(session, screen);
+        if (handle && canEdit()) {
+            openContextMenu(session, event.clientX, event.clientY, [
+                { label: "Remover ponto do traçado", hint: "Mantém a ligação", run: () => {
+                    renderer.removeLinkPoint(session, handle.id, handle.pointIndex);
+                    scheduleLayoutSave(session);
+                } },
+                { separator: true },
+                { label: "Autoajustar linha", run: () => { renderer.autoRoute(session, handle.id); scheduleLayoutSave(session); } },
+            ], world);
+            return;
+        }
+        const linkHit = renderer.hitTestLink(session, screen);
+        if (linkHit) {
+            const link = state.linkById(session, linkHit.id);
+            session.selection.linkId = linkHit.id;
+            renderer.render(session);
+            openContextMenu(session, event.clientX, event.clientY, [
+                { label: "Editar traçado", hint: "Arraste os pontos amarelos", run: () => {
+                    renderer.ensureManualRoute(session, linkHit.id);
+                    scheduleLayoutSave(session);
+                    setStatus(session, "Traçado em edição. Arraste os pontos ou clique na linha para criar outro ponto.");
+                } },
+                { label: "Autoajustar linha", run: () => { renderer.autoRoute(session, linkHit.id); scheduleLayoutSave(session); } },
+                { separator: true },
+                { label: "Linha curva", run: () => { renderer.setLinkStyle(session, linkHit.id, "curve"); scheduleLayoutSave(session); } },
+                { label: "Linha ortogonal", hint: "Ângulos de 90°", run: () => { renderer.setLinkStyle(session, linkHit.id, "orthogonal"); scheduleLayoutSave(session); } },
+                { label: "Linha reta", run: () => { renderer.setLinkStyle(session, linkHit.id, "straight"); scheduleLayoutSave(session); } },
+                { separator: true },
+                { label: link?.type === "splice" ? "Romper fusão" : "Desligar ligação", danger: true, run: () => disconnectLink(session, link) },
+            ], world);
+            return;
+        }
+        openContextMenu(session, event.clientX, event.clientY, [
+            { label: "Adicionar splitter", hint: "Criar no ponto central", disabled: !canEdit(), run: () => addSplitter(session) },
+            { label: "Adicionar nota", hint: "Criar neste ponto", disabled: !canEdit(), run: () => addNote(session, world) },
+        ], world);
+    }
+
+    async function handleCanvasDoubleClick(session, event) {
+        if (!canEdit() || !isCurrent(session)) return;
+        const { renderer, state } = dependencies();
+        const rect = session.canvas.getBoundingClientRect();
+        const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        const handle = renderer.hitTestLinkHandle(session, screen);
+        if (handle) {
+            renderer.removeLinkPoint(session, handle.id, handle.pointIndex);
+            scheduleLayoutSave(session);
+            setStatus(session, "Ponto do traçado removido.");
+            return;
+        }
+        const linkHit = renderer.hitTestLink(session, screen);
+        if (linkHit) await disconnectLink(session, state.linkById(session, linkHit.id));
+    }
+
     function bindEvents(session) {
         const root = session.root;
-        root.addEventListener("click", (event) => handleClick(session, event));
+        root.addEventListener("click", async (event) => {
+            const contextButton = event.target.closest("[data-optical-context-action]");
+            if (contextButton) {
+                const run = session.contextActions.get(contextButton.dataset.opticalContextAction);
+                closeContextMenu(session);
+                if (run) await run();
+                return;
+            }
+            closeContextMenu(session);
+            await handleClick(session, event);
+        });
         root.addEventListener("change", (event) => handleChange(session, event));
         root.addEventListener("keydown", (event) => {
-            if (event.key === "Escape") close();
+            if (event.key === "Escape") {
+                const menu = root.querySelector("[data-optical-context-menu]");
+                if (menu && !menu.hidden) closeContextMenu(session);
+                else close();
+            }
         });
         bindCanvas(session);
     }
@@ -496,7 +673,14 @@
             renderer.organizeVertical(session);
             renderer.fitView(session);
             scheduleLayoutSave(session);
-            setStatus(session, "Cabos organizados em colunas verticais.");
+            setStatus(session, "Cabos organizados verticalmente.");
+            return;
+        }
+        if (action === "auto-links") {
+            state.savedLinks(session).forEach((link) => renderer.autoRoute(session, link.id));
+            session.editingLinkId = null;
+            scheduleLayoutSave(session);
+            setStatus(session, "Todas as linhas foram autoajustadas.");
             return;
         }
         if (action === "fit-view") {
@@ -537,20 +721,7 @@
             if (!accepted || !isCurrent(session)) return;
             return runMutation(session, () => api.deleteSplice(session.elementId, Number(button.dataset.spliceId), session.controller.signal), "Fusão removida.");
         }
-        if (action === "add-splitter") {
-            const ratio = await dialog.prompt({
-                title: "Adicionar splitter",
-                label: "Relação",
-                value: "1:8",
-                options: ["1:2", "1:4", "1:8", "1:16", "1:32", "1:64", "10:90", "15:85", "20:80", "30:70", "40:60", "45:55"],
-                confirmLabel: "Adicionar",
-            });
-            if (!ratio || !isCurrent(session)) return;
-            return runMutation(session, async () => {
-                const groupId = await internalGroupId(session);
-                await api.createSplitter(session.elementId, groupId, ratio, session.controller.signal);
-            }, "Splitter criado.");
-        }
+        if (action === "add-splitter") return addSplitter(session);
         if (action === "edit-splitter") {
             const splitter = state.splitterById(session, session.selection.splitterId);
             if (!splitter) return setStatus(session, "Selecione um splitter válido.", true);
@@ -598,28 +769,7 @@
                 notes: row.querySelector("[data-service-notes]").value,
             }, session.controller.signal), "Porta de atendimento atualizada.");
         }
-        if (action === "add-note") {
-            const text = await dialog.prompt({
-                title: "Nova nota do projeto",
-                label: "Texto da nota",
-                placeholder: "Descreva a orientação do projetista…",
-                multiline: true,
-                rows: 5,
-                maxLength: 1200,
-                confirmLabel: "Adicionar nota",
-            });
-            if (!text || !String(text).trim() || !isCurrent(session)) return;
-            session.layout.notes.push({
-                id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                x: 760,
-                y: 70,
-                text: String(text).trim().slice(0, 1200),
-            });
-            renderNotes(session);
-            renderer.render(session);
-            scheduleLayoutSave(session);
-            return;
-        }
+        if (action === "add-note") return addNote(session);
         if (action === "edit-note") {
             const note = session.layout.notes.find((item) => item.id === button.dataset.noteId);
             if (!note) return;
@@ -670,12 +820,32 @@
         const canvas = session.canvas;
         const { renderer } = dependencies();
         canvas.addEventListener("pointerdown", (event) => {
-            if (!isCurrent(session)) return;
+            if (!isCurrent(session) || event.button !== 0) return;
+            closeContextMenu(session);
             canvas.setPointerCapture(event.pointerId);
             const rect = canvas.getBoundingClientRect();
             const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
             const hit = renderer.hitTest(session, screen);
             const world = renderer.screenToWorld(session, screen);
+            if (session.editingLinkId && canEdit()) {
+                const handle = renderer.hitTestLinkHandle(session, screen);
+                if (handle && handle.id === session.editingLinkId) {
+                    session.dragging = { type: "link-point", linkId: handle.id, pointIndex: handle.pointIndex };
+                    return;
+                }
+                const linkHit = renderer.hitTestLink(session, screen);
+                if (linkHit && linkHit.id === session.editingLinkId) {
+                    const pointIndex = renderer.insertLinkPoint(session, linkHit.id, world);
+                    session.dragging = { type: "link-point", linkId: linkHit.id, pointIndex };
+                    return;
+                }
+            }
+            const selectedLink = renderer.hitTestLink(session, screen);
+            if (selectedLink) {
+                session.selection.linkId = selectedLink.id;
+                renderer.render(session);
+                return;
+            }
             if (hit?.type === "endpoint" && canEdit()) {
                 session.dragging = {
                     type: "connection",
@@ -709,7 +879,10 @@
             if (!session.dragging || !isCurrent(session)) return;
             const rect = canvas.getBoundingClientRect();
             const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-            if (session.dragging.type === "connection") {
+            if (session.dragging.type === "link-point") {
+                renderer.moveLinkPoint(session, session.dragging.linkId, session.dragging.pointIndex, screen);
+                renderer.render(session);
+            } else if (session.dragging.type === "connection") {
                 const dx = screen.x - session.dragging.startScreen.x;
                 const dy = screen.y - session.dragging.startScreen.y;
                 session.dragging.moved = session.dragging.moved || Math.hypot(dx, dy) > 5;
@@ -749,6 +922,15 @@
         };
         canvas.addEventListener("pointerup", (event) => { finish(event); });
         canvas.addEventListener("pointercancel", (event) => { finish(event); });
+        canvas.addEventListener("dblclick", (event) => {
+            event.preventDefault();
+            handleCanvasDoubleClick(session, event);
+        });
+        canvas.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openCanvasContextMenu(session, event);
+        });
         canvas.addEventListener("wheel", (event) => {
             event.preventDefault();
             const rect = canvas.getBoundingClientRect();
@@ -763,6 +945,6 @@
         isOpen() {
             return Boolean(currentSession && !currentSession.disposed);
         },
-        version: "0.75.35",
+        version: "0.75.36",
     });
 })(window);

@@ -5,14 +5,20 @@
     const stateApi = () => namespace.state;
 
     const NODE = {
-        cableWidth: 168,
+        ctoCableWidth: 168,
+        distributionCableWidth: 142,
         cableHeader: 42,
         fiberSize: 13,
         fiberGap: 7,
-        fiberColumns: 6,
         splitterWidth: 178,
         splitterPortGap: 24,
     };
+
+    function cableMetrics(session) {
+        return stateApi().isDistributionBox(session)
+            ? { width: NODE.distributionCableWidth, columns: 3, maxFibers: 144 }
+            : { width: NODE.ctoCableWidth, columns: 6, maxFibers: 576 };
+    }
 
     function ensureNode(session, key, fallback) {
         if (!session.layout.nodes[key]) session.layout.nodes[key] = { ...fallback };
@@ -56,13 +62,14 @@
         return { ctx, width, height };
     }
 
-    function visibleFibers(cable) {
-        return (cable.fibers || []).slice(0, 576);
+    function visibleFibers(session, cable) {
+        return (cable.fibers || []).slice(0, cableMetrics(session).maxFibers);
     }
 
-    function cableNodeHeight(cable) {
-        const count = visibleFibers(cable).length;
-        const rows = Math.max(1, Math.ceil(count / NODE.fiberColumns));
+    function cableNodeHeight(session, cable) {
+        const metrics = cableMetrics(session);
+        const count = visibleFibers(session, cable).length;
+        const rows = Math.max(1, Math.ceil(count / metrics.columns));
         return NODE.cableHeader + 36 + rows * (NODE.fiberSize + NODE.fiberGap);
     }
 
@@ -76,9 +83,11 @@
         const side = cableSide(session, cable, index);
         let y = 50;
         list.slice(0, index).forEach((previous, previousIndex) => {
-            if (cableSide(session, previous, previousIndex) === side) y += cableNodeHeight(previous) + 34;
+            if (cableSide(session, previous, previousIndex) === side) {
+                y += cableNodeHeight(session, previous) + 34;
+            }
         });
-        return { x: side === "left" ? 50 : 1010, y };
+        return { x: side === "left" ? 58 : 1010, y };
     }
 
     function splitterHeight(splitter) {
@@ -88,7 +97,7 @@
     function defaultSplitterPosition(index, splitters) {
         let y = 90;
         splitters.slice(0, index).forEach((previous) => { y += splitterHeight(previous) + 36; });
-        return { x: 530, y };
+        return { x: 526, y };
     }
 
     function endpointSelected(session, endpoint) {
@@ -119,36 +128,39 @@
     }
 
     function drawCable(ctx, session, cable, index, list, hitboxes, endpointPoints) {
+        const metrics = cableMetrics(session);
         const key = `cable:${cable.id}`;
         const node = ensureNode(session, key, defaultCablePosition(session, cable, index, list));
-        const height = cableNodeHeight(cable);
+        const height = cableNodeHeight(session, cable);
         const selected = Number(session.selection.cableId) === Number(cable.id);
         const side = cableSide(session, cable, index);
         ctx.save();
-        roundedRect(ctx, node.x, node.y, NODE.cableWidth, height, 13);
+        roundedRect(ctx, node.x, node.y, metrics.width, height, 13);
         ctx.fillStyle = "#0b1a2b";
         ctx.fill();
         ctx.lineWidth = selected ? 3 : 1.5;
         ctx.strokeStyle = selected ? "#42d6b5" : side === "left" ? "#3e6d98" : "#3f8b73";
         ctx.stroke();
-        roundedRect(ctx, node.x + 1, node.y + 1, NODE.cableWidth - 2, NODE.cableHeader, 12);
+        roundedRect(ctx, node.x + 1, node.y + 1, metrics.width - 2, NODE.cableHeader, 12);
         ctx.fillStyle = side === "left" ? "#132a43" : "#123229";
         ctx.fill();
         ctx.fillStyle = "#f4f8ff";
         ctx.font = "700 12px system-ui";
-        ctx.fillText(truncate(cable.name || `Cabo ${cable.id}`, 21), node.x + 11, node.y + 18);
+        ctx.fillText(truncate(cable.name || `Cabo ${cable.id}`, stateApi().isDistributionBox(session) ? 17 : 21), node.x + 11, node.y + 18);
         ctx.fillStyle = "#91a8c3";
         ctx.font = "10px system-ui";
         const relation = cable.requires_cut ? "passagem · cortar" : cable.relation_action === "pass" ? "passagem" : side === "left" ? "entrada" : "saída";
         ctx.fillText(`${(cable.fibers || []).length} FO · ${relation}`, node.x + 11, node.y + 34);
 
-        const fibers = visibleFibers(cable);
+        const fibers = visibleFibers(session, cable);
+        const cellWidth = (metrics.width - 26) / metrics.columns;
         fibers.forEach((fiber, fiberIndex) => {
-            const col = fiberIndex % NODE.fiberColumns;
-            const row = Math.floor(fiberIndex / NODE.fiberColumns);
-            const x = node.x + 13 + col * (NODE.fiberSize + NODE.fiberGap + 8);
-            const y = node.y + 58 + row * (NODE.fiberSize + NODE.fiberGap);
-            const point = { x: x + NODE.fiberSize / 2, y: y + NODE.fiberSize / 2 };
+            const col = fiberIndex % metrics.columns;
+            const row = Math.floor(fiberIndex / metrics.columns);
+            const point = {
+                x: node.x + 13 + cellWidth * col + cellWidth / 2,
+                y: node.y + 58 + row * (NODE.fiberSize + NODE.fiberGap) + NODE.fiberSize / 2,
+            };
             drawEndpoint(
                 ctx,
                 point,
@@ -163,9 +175,17 @@
         if ((cable.fibers || []).length > fibers.length) {
             ctx.fillStyle = "#91a8c3";
             ctx.font = "9px system-ui";
-            ctx.fillText(`+${cable.fibers.length - fibers.length} fibras disponíveis no painel`, node.x + 11, node.y + height - 8);
+            ctx.fillText(`+${cable.fibers.length - fibers.length} fibras no painel`, node.x + 11, node.y + height - 8);
         }
-        hitboxes.unshift({ type: "cable", id: cable.id, key, x: node.x, y: node.y, width: NODE.cableWidth, height });
+        if (stateApi().isDistributionBox(session)) {
+            ctx.beginPath();
+            ctx.moveTo(node.x + metrics.width / 2, node.y + NODE.cableHeader + 5);
+            ctx.lineTo(node.x + metrics.width / 2, node.y + height - 7);
+            ctx.strokeStyle = "rgba(79, 147, 190, .14)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        hitboxes.unshift({ type: "cable", id: cable.id, key, x: node.x, y: node.y, width: metrics.width, height });
         ctx.restore();
     }
 
@@ -221,48 +241,147 @@
         ctx.restore();
     }
 
-    function drawLink(ctx, start, end, color, width = 2, dashed = false) {
-        if (!start || !end) return;
-        ctx.save();
-        if (dashed) ctx.setLineDash([7, 5]);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
+    function distancePointToSegment(point, a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const lengthSquared = dx * dx + dy * dy;
+        if (!lengthSquared) return Math.hypot(point.x - a.x, point.y - a.y);
+        const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
+        return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
+    }
+
+    function cubicPoint(start, c1, c2, end, t) {
+        const mt = 1 - t;
+        return {
+            x: mt ** 3 * start.x + 3 * mt ** 2 * t * c1.x + 3 * mt * t ** 2 * c2.x + t ** 3 * end.x,
+            y: mt ** 3 * start.y + 3 * mt ** 2 * t * c1.y + 3 * mt * t ** 2 * c2.y + t ** 3 * end.y,
+        };
+    }
+
+    function autoCurveSamples(start, end) {
         const direction = end.x >= start.x ? 1 : -1;
         const bend = Math.max(42, Math.abs(end.x - start.x) * 0.38);
-        ctx.bezierCurveTo(start.x + bend * direction, start.y, end.x - bend * direction, end.y, end.x, end.y);
+        const c1 = { x: start.x + bend * direction, y: start.y };
+        const c2 = { x: end.x - bend * direction, y: end.y };
+        return Array.from({ length: 31 }, (_, index) => cubicPoint(start, c1, c2, end, index / 30));
+    }
+
+    function orthogonalPoints(start, end, waypoints = []) {
+        if (!waypoints.length) {
+            const middleX = (start.x + end.x) / 2;
+            return [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end];
+        }
+        const result = [start];
+        waypoints.forEach((point) => {
+            const previous = result[result.length - 1];
+            result.push({ x: point.x, y: previous.y }, { x: point.x, y: point.y });
+        });
+        const previous = result[result.length - 1];
+        result.push({ x: end.x, y: previous.y }, end);
+        return result.filter((item, index, list) => index === 0 || item.x !== list[index - 1].x || item.y !== list[index - 1].y);
+    }
+
+    function smoothManualSamples(points) {
+        if (points.length < 3) return points;
+        const samples = [points[0]];
+        for (let index = 0; index < points.length - 1; index += 1) {
+            const start = points[index];
+            const end = points[index + 1];
+            const previous = points[Math.max(0, index - 1)];
+            const next = points[Math.min(points.length - 1, index + 2)];
+            const c1 = { x: start.x + (end.x - previous.x) / 6, y: start.y + (end.y - previous.y) / 6 };
+            const c2 = { x: end.x - (next.x - start.x) / 6, y: end.y - (next.y - start.y) / 6 };
+            for (let step = 1; step <= 12; step += 1) samples.push(cubicPoint(start, c1, c2, end, step / 12));
+        }
+        return samples;
+    }
+
+    function linkSamples(route, start, end) {
+        if (route.style === "straight") return [start, end];
+        if (route.mode === "manual" && route.points.length) {
+            const points = [start, ...route.points, end];
+            if (route.style === "orthogonal") return orthogonalPoints(start, end, route.points);
+            return smoothManualSamples(points);
+        }
+        if (route.style === "orthogonal") return orthogonalPoints(start, end);
+        return autoCurveSamples(start, end);
+    }
+
+    function linkPaint(ctx, start, end, colors) {
+        const first = colors?.[0] || "#8fb4d8";
+        const second = colors?.[1] || first;
+        if (first.toLowerCase() === second.toLowerCase()) return first;
+        const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
+        gradient.addColorStop(0, first);
+        gradient.addColorStop(0.48, first);
+        gradient.addColorStop(0.52, second);
+        gradient.addColorStop(1, second);
+        return gradient;
+    }
+
+    function drawSampledLink(ctx, samples, paint, width, dashed) {
+        if (samples.length < 2) return;
+        ctx.save();
+        if (dashed) ctx.setLineDash([7, 5]);
+        ctx.strokeStyle = paint;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(samples[0].x, samples[0].y);
+        samples.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
         ctx.stroke();
         ctx.restore();
     }
 
-    function drawSavedLinks(ctx, session, endpointPoints) {
-        (session.optical.splices || []).forEach((splice) => {
-            drawLink(
-                ctx,
-                endpointPoints.get(`fiber:${Number(splice.input_fiber_id)}`),
-                endpointPoints.get(`fiber:${Number(splice.output_fiber_id)}`),
-                "#ffca5c",
-                2.5,
-            );
-        });
-        (session.optical.splitter_links || []).forEach((splitter) => {
-            const input = endpointPoints.get(`splitter-input:${Number(splitter.splitter_id)}`);
-            if (splitter.input_fiber_id) {
-                drawLink(ctx, endpointPoints.get(`fiber:${Number(splitter.input_fiber_id)}`), input, "#42d6b5", 2.5);
-            } else if (splitter.input_splitter_port_id) {
-                drawLink(ctx, endpointPoints.get(`splitter-output:${Number(splitter.input_splitter_port_id)}`), input, "#9b8cff", 2.4, true);
+    function drawSavedLinks(ctx, session, endpointPoints, linkHits, hitboxes) {
+        stateApi().savedLinks(session).forEach((link) => {
+            const start = endpointPoints.get(stateApi().endpointKey(link.start));
+            const end = endpointPoints.get(stateApi().endpointKey(link.end));
+            if (!start || !end) return;
+            const route = stateApi().linkRoute(session, link.id);
+            const samples = linkSamples(route, start, end);
+            const selected = session.selection.linkId === link.id || session.editingLinkId === link.id;
+            drawSampledLink(ctx, samples, linkPaint(ctx, start, end, link.colors), selected ? 4.4 : 2.7, link.dashed);
+            if (selected) {
+                drawSampledLink(ctx, samples, "rgba(248, 225, 108, .24)", 8.5, false);
+                drawSampledLink(ctx, samples, linkPaint(ctx, start, end, link.colors), 3.2, link.dashed);
             }
-            (splitter.ports || []).forEach((port) => {
-                if (!port.output_fiber_id) return;
-                drawLink(
-                    ctx,
-                    endpointPoints.get(`splitter-output:${Number(port.id)}`),
-                    endpointPoints.get(`fiber:${Number(port.output_fiber_id)}`),
-                    "#6fb7ff",
-                    2.3,
-                );
+            const xs = samples.map((item) => item.x);
+            const ys = samples.map((item) => item.y);
+            linkHits.push({
+                type: "link",
+                id: link.id,
+                link,
+                samples,
+                x: Math.min(...xs) - 10,
+                y: Math.min(...ys) - 10,
+                width: Math.max(...xs) - Math.min(...xs) + 20,
+                height: Math.max(...ys) - Math.min(...ys) + 20,
             });
+            if (session.editingLinkId === link.id && route.mode === "manual") {
+                route.points.forEach((point, pointIndex) => {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = "#f8e16c";
+                    ctx.fill();
+                    ctx.strokeStyle = "#171200";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.restore();
+                    hitboxes.push({
+                        type: "link-handle",
+                        id: link.id,
+                        link,
+                        pointIndex,
+                        x: point.x - 12,
+                        y: point.y - 12,
+                        width: 24,
+                        height: 24,
+                    });
+                });
+            }
         });
     }
 
@@ -271,7 +390,8 @@
         if (!draft?.start || !draft.currentWorld) return;
         const start = endpointPoints.get(stateApi().endpointKey(draft.start));
         if (!start) return;
-        drawLink(ctx, start, draft.currentWorld, "#f8e16c", 2.5, true);
+        const samples = autoCurveSamples(start, draft.currentWorld);
+        drawSampledLink(ctx, samples, "#f8e16c", 2.5, true);
         ctx.beginPath();
         ctx.arc(draft.currentWorld.x, draft.currentWorld.y, 6, 0, Math.PI * 2);
         ctx.fillStyle = "#f8e16c";
@@ -309,16 +429,17 @@
         ctx.scale(zoom, zoom);
         drawGrid(ctx, width / zoom, height / zoom, panX / zoom, panY / zoom);
         const hitboxes = [];
+        const linkHits = [];
         const endpointPoints = new Map();
         const cables = session.optical.cables || [];
         cables.forEach((cable, index) => drawCable(ctx, session, cable, index, cables, hitboxes, endpointPoints));
         const splitters = stateApi().splitters(session);
         splitters.forEach((splitter, index) => drawSplitter(ctx, session, splitter, index, splitters, hitboxes, endpointPoints));
-        drawSavedLinks(ctx, session, endpointPoints);
+        drawSavedLinks(ctx, session, endpointPoints, linkHits, hitboxes);
         drawDraft(ctx, session, endpointPoints);
         drawNotes(ctx, session, hitboxes);
         ctx.restore();
-        session.renderCache = { hitboxes, endpointPoints, width, height };
+        session.renderCache = { hitboxes, linkHits, endpointPoints, width, height };
         session.renderVersion += 1;
     }
 
@@ -358,6 +479,23 @@
         return hit?.type === "endpoint" ? hit.endpoint : null;
     }
 
+    function hitTestLinkHandle(session, screenPoint) {
+        const hit = hitTest(session, screenPoint);
+        return hit?.type === "link-handle" ? hit : null;
+    }
+
+    function hitTestLink(session, screenPoint) {
+        const point = screenToWorld(session, screenPoint);
+        const threshold = 10 / Math.max(0.35, session.layout.viewport.zoom);
+        const hits = session.renderCache?.linkHits || [];
+        return [...hits].reverse().find((hit) => {
+            if (point.x < hit.x || point.x > hit.x + hit.width || point.y < hit.y || point.y > hit.y + hit.height) return false;
+            return hit.samples.some((sample, index) => (
+                index > 0 && distancePointToSegment(point, hit.samples[index - 1], sample) <= threshold
+            ));
+        }) || null;
+    }
+
     function moveNode(session, hitbox, screenPoint, offset) {
         const point = screenToWorld(session, screenPoint);
         if (hitbox.type === "note") {
@@ -369,6 +507,86 @@
             return;
         }
         session.layout.nodes[hitbox.key] = { x: point.x - offset.x, y: point.y - offset.y };
+    }
+
+    function linkEndpointPositions(session, linkId) {
+        const link = stateApi().linkById(session, linkId);
+        const points = session.renderCache?.endpointPoints;
+        if (!link || !points) return null;
+        const start = points.get(stateApi().endpointKey(link.start));
+        const end = points.get(stateApi().endpointKey(link.end));
+        return start && end ? { link, start, end } : null;
+    }
+
+    function ensureManualRoute(session, linkId) {
+        const positions = linkEndpointPositions(session, linkId);
+        if (!positions) return null;
+        const route = stateApi().linkRoute(session, linkId);
+        if (!route.points.length) {
+            const thirdX = positions.start.x + (positions.end.x - positions.start.x) / 3;
+            const twoThirdX = positions.start.x + (positions.end.x - positions.start.x) * 2 / 3;
+            route.points = [
+                { x: thirdX, y: positions.start.y },
+                { x: twoThirdX, y: positions.end.y },
+            ];
+        }
+        route.mode = "manual";
+        session.editingLinkId = String(linkId);
+        session.selection.linkId = String(linkId);
+        render(session);
+        return route;
+    }
+
+    function autoRoute(session, linkId) {
+        const route = stateApi().linkRoute(session, linkId);
+        route.mode = "auto";
+        route.points = [];
+        if (session.editingLinkId === String(linkId)) session.editingLinkId = null;
+        render(session);
+    }
+
+    function setLinkStyle(session, linkId, style) {
+        const route = stateApi().linkRoute(session, linkId);
+        route.style = ["curve", "orthogonal", "straight"].includes(style) ? style : "curve";
+        if (route.style === "straight") {
+            route.mode = "auto";
+            route.points = [];
+            if (session.editingLinkId === String(linkId)) session.editingLinkId = null;
+        }
+        render(session);
+    }
+
+    function insertLinkPoint(session, linkId, worldPoint) {
+        const positions = linkEndpointPositions(session, linkId);
+        if (!positions) return -1;
+        const route = ensureManualRoute(session, linkId);
+        const chain = [positions.start, ...route.points, positions.end];
+        let bestIndex = 0;
+        let bestDistance = Infinity;
+        for (let index = 1; index < chain.length; index += 1) {
+            const distance = distancePointToSegment(worldPoint, chain[index - 1], chain[index]);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = index - 1;
+            }
+        }
+        route.points.splice(bestIndex, 0, { x: worldPoint.x, y: worldPoint.y });
+        render(session);
+        return bestIndex;
+    }
+
+    function moveLinkPoint(session, linkId, pointIndex, screenPoint) {
+        const route = stateApi().linkRoute(session, linkId);
+        if (!route.points[pointIndex]) return;
+        route.mode = "manual";
+        route.points[pointIndex] = screenToWorld(session, screenPoint);
+    }
+
+    function removeLinkPoint(session, linkId, pointIndex) {
+        const route = stateApi().linkRoute(session, linkId);
+        route.points.splice(pointIndex, 1);
+        if (!route.points.length) route.mode = "auto";
+        render(session);
     }
 
     function organizeVertical(session) {
@@ -386,7 +604,7 @@
 
     function fitView(session) {
         render(session);
-        const boxes = (session.renderCache?.hitboxes || []).filter((box) => box.type !== "endpoint");
+        const boxes = (session.renderCache?.hitboxes || []).filter((box) => !["endpoint", "link-handle"].includes(box.type));
         if (!boxes.length || !session.canvas) {
             session.layout.viewport = { zoom: 1, panX: 0, panY: 0 };
             render(session);
@@ -461,7 +679,15 @@
         render,
         hitTest,
         hitTestEndpoint,
+        hitTestLink,
+        hitTestLinkHandle,
         moveNode,
+        moveLinkPoint,
+        insertLinkPoint,
+        removeLinkPoint,
+        ensureManualRoute,
+        autoRoute,
+        setLinkStyle,
         screenToWorld,
         worldToScreen,
         resetView,

@@ -2,6 +2,7 @@
     "use strict";
 
     const namespace = global.IXCOptical = global.IXCOptical || {};
+    const LINK_STYLES = new Set(["curve", "orthogonal", "straight"]);
 
     function workspaceLabel() {
         return "CAIXA ÓPTICA";
@@ -22,21 +23,26 @@
             cableState: { cables: [] },
             servicePorts: null,
             layout: {
-                version: 2,
+                version: 3,
                 viewport: { zoom: 1, panX: 0, panY: 0 },
                 nodes: {},
+                links: {},
                 notes: [],
             },
             selection: {
                 cableId: null,
                 splitterId: null,
                 pendingEndpoint: null,
+                linkId: null,
             },
             expandedCables: new Set(),
             status: "",
             statusError: false,
             dragging: null,
             connectionDraft: null,
+            editingLinkId: null,
+            contextActions: new Map(),
+            contextWorld: null,
             saveTimer: null,
             renderVersion: 0,
             initialFitDone: false,
@@ -50,15 +56,37 @@
         return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback;
     }
 
+    function normalizePoint(item) {
+        if (!item || !Number.isFinite(Number(item.x)) || !Number.isFinite(Number(item.y))) return null;
+        return {
+            x: clampNumber(item.x, -7000, 7000, 0),
+            y: clampNumber(item.y, -7000, 7000, 0),
+        };
+    }
+
+    function normalizeLinkRoute(value) {
+        const source = value && typeof value === "object" ? value : {};
+        const style = LINK_STYLES.has(String(source.style || "")) ? String(source.style) : "curve";
+        const points = Array.isArray(source.points)
+            ? source.points.map(normalizePoint).filter(Boolean).slice(0, 24)
+            : [];
+        return {
+            mode: source.mode === "manual" && points.length ? "manual" : "auto",
+            style,
+            points,
+        };
+    }
+
     function normalizeLayout(raw) {
         const source = raw && typeof raw === "object" ? raw : {};
         const sourceVersion = Number(source.version || 1);
         const viewport = source.viewport && typeof source.viewport === "object" ? source.viewport : {};
         const rawNodes = source.nodes && typeof source.nodes === "object" ? source.nodes : {};
+        const rawLinks = source.links && typeof source.links === "object" ? source.links : {};
         const notes = Array.isArray(source.notes) ? source.notes : [];
         const keepNodes = sourceVersion >= 2;
         return {
-            version: 2,
+            version: 3,
             viewport: {
                 zoom: clampNumber(viewport.zoom, 0.35, 2.6, 1),
                 panX: clampNumber(viewport.panX, -7000, 7000, 0),
@@ -69,6 +97,10 @@
                     value && Number.isFinite(Number(value.x)) && Number.isFinite(Number(value.y))
                 )).map(([key, value]) => [key, { x: Number(value.x), y: Number(value.y) }]))
                 : {},
+            links: Object.fromEntries(Object.entries(rawLinks).map(([key, value]) => [
+                String(key),
+                normalizeLinkRoute(value),
+            ])),
             notes: notes.filter((item) => item && typeof item.text === "string").map((item) => ({
                 id: String(item.id || `note-${Math.random().toString(36).slice(2)}`),
                 x: clampNumber(item.x, -7000, 7000, 0),
@@ -86,12 +118,18 @@
         session.cableState = payload.cableState || session.cableState;
         session.servicePorts = payload.servicePorts;
         session.layout = normalizeLayout(payload.layout);
-        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 2;
+        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 3;
         delete session.layout.migratedFromVersion;
         session.selection.splitterId = splitters(session)[0]?.id || null;
         session.selection.cableId = session.optical.cables[0]?.id || null;
         session.selection.pendingEndpoint = null;
+        session.selection.linkId = null;
+        session.editingLinkId = null;
         return session;
+    }
+
+    function isDistributionBox(session) {
+        return session.element?.element_type === "splice_box";
     }
 
     function fiberById(session, fiberId) {
@@ -101,6 +139,10 @@
             if (fiber) return { ...fiber, cableId: cable.id, cableName: cable.name };
         }
         return null;
+    }
+
+    function fiberColor(session, fiberId) {
+        return fiberById(session, fiberId)?.color_hex || "#8fb4d8";
     }
 
     function cableById(session, cableId) {
@@ -188,12 +230,85 @@
         return false;
     }
 
+    function savedLinks(session) {
+        const links = [];
+        (session.optical.splices || []).forEach((splice) => {
+            links.push({
+                id: `splice:${Number(splice.id)}`,
+                type: "splice",
+                refId: Number(splice.id),
+                label: `${splice.input?.cable || "Cabo"} F${splice.input?.number || ""} ↔ ${splice.output?.cable || "Cabo"} F${splice.output?.number || ""}`,
+                start: { kind: "fiber", id: Number(splice.input_fiber_id) },
+                end: { kind: "fiber", id: Number(splice.output_fiber_id) },
+                colors: [fiberColor(session, splice.input_fiber_id), fiberColor(session, splice.output_fiber_id)],
+            });
+        });
+        (session.optical.splitter_links || []).forEach((splitter) => {
+            if (splitter.input_fiber_id) {
+                const color = fiberColor(session, splitter.input_fiber_id);
+                links.push({
+                    id: `splitter-input:${Number(splitter.splitter_id)}`,
+                    type: "splitter-input",
+                    splitterId: Number(splitter.splitter_id),
+                    label: `Fibra F${fiberById(session, splitter.input_fiber_id)?.number || splitter.input_fiber_id} → entrada do splitter`,
+                    start: { kind: "fiber", id: Number(splitter.input_fiber_id) },
+                    end: { kind: "splitter-input", id: Number(splitter.splitter_id) },
+                    colors: [color, color],
+                });
+            } else if (splitter.input_splitter_port_id) {
+                links.push({
+                    id: `splitter-cascade:${Number(splitter.splitter_id)}`,
+                    type: "splitter-cascade",
+                    splitterId: Number(splitter.splitter_id),
+                    sourcePortId: Number(splitter.input_splitter_port_id),
+                    label: "Cascata entre splitters",
+                    start: { kind: "splitter-output", id: Number(splitter.input_splitter_port_id) },
+                    end: { kind: "splitter-input", id: Number(splitter.splitter_id) },
+                    colors: ["#9b8cff", "#9b8cff"],
+                    dashed: true,
+                });
+            }
+            (splitter.ports || []).forEach((port) => {
+                if (!port.output_fiber_id) return;
+                const color = fiberColor(session, port.output_fiber_id);
+                links.push({
+                    id: `splitter-output:${Number(port.id)}`,
+                    type: "splitter-output",
+                    splitterId: Number(splitter.splitter_id),
+                    portId: Number(port.id),
+                    label: `Saída ${port.number} do splitter → fibra F${fiberById(session, port.output_fiber_id)?.number || port.output_fiber_id}`,
+                    start: { kind: "splitter-output", id: Number(port.id) },
+                    end: { kind: "fiber", id: Number(port.output_fiber_id) },
+                    colors: [color, color],
+                });
+            });
+        });
+        return links;
+    }
+
+    function linkById(session, linkId) {
+        return savedLinks(session).find((item) => item.id === String(linkId)) || null;
+    }
+
+    function linkRoute(session, linkId) {
+        const key = String(linkId);
+        if (!session.layout.links[key]) session.layout.links[key] = normalizeLinkRoute({});
+        return session.layout.links[key];
+    }
+
+    function removeLinkRoute(session, linkId) {
+        delete session.layout.links[String(linkId)];
+        if (session.editingLinkId === String(linkId)) session.editingLinkId = null;
+        if (session.selection.linkId === String(linkId)) session.selection.linkId = null;
+    }
+
     function dispose(session) {
         if (!session || session.disposed) return;
         session.disposed = true;
         session.controller.abort();
         if (session.saveTimer) clearTimeout(session.saveTimer);
         session.resizeObserver?.disconnect();
+        session.contextActions?.clear();
         session.root?.remove();
         document.body.classList.remove("ixc-optical-workspace-open");
     }
@@ -202,8 +317,11 @@
         createSession,
         hydrate,
         normalizeLayout,
+        normalizeLinkRoute,
         workspaceLabel,
+        isDistributionBox,
         fiberById,
+        fiberColor,
         cableById,
         internalGroups,
         internalGroup,
@@ -214,6 +332,10 @@
         endpointLabel,
         endpointOccupied,
         isFiberUsed,
+        savedLinks,
+        linkById,
+        linkRoute,
+        removeLinkRoute,
         dispose,
     });
 })(window);
