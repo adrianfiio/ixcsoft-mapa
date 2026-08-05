@@ -51,6 +51,9 @@ from apps.network_map.services import (
 GOOGLE_TILES_BASE_URL = "https://tile.googleapis.com/v1"
 GOOGLE_SESSION_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,2048}$")
 
+# MAP_V07536_OPTICAL_CAPTURE: CEO e CDO só capturam cabos a até 5 m.
+OPTICAL_BOX_CAPTURE_RADIUS_M = 5.0
+
 
 def _google_tiles_configuration():
     configuration = MapBaseConfiguration.objects.filter(
@@ -2736,7 +2739,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
                 company=element.company,
                 geometry__isnull=False,
             ).only("id", "geometry"):
-                if candidate.geometry.transform(3857, clone=True).distance(element_metric) <= 45:
+                if candidate.geometry.transform(3857, clone=True).distance(element_metric) <= OPTICAL_BOX_CAPTURE_RADIUS_M:
                     nearby_cable_ids.append(candidate.id)
         except Exception:
             nearby_cable_ids = []

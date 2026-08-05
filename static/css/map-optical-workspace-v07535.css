@@ -455,3 +455,47 @@ body:has(#map-sidebar.master-minimized) .ixc-optical-workspace { left: 54px; }
     .ixc-optical-panel-right { border: 0; border-bottom: 1px solid var(--ixc-optical-line); }
     .ixc-optical-stage { min-height: 430px; }
 }
+
+/* MAP v0.75.36 — menu contextual e edição manual de traçados */
+.ixc-optical-context-menu[hidden] { display: none !important; }
+.ixc-optical-context-menu {
+    position: absolute;
+    z-index: 40;
+    width: min(250px, calc(100vw - 28px));
+    padding: 7px;
+    border: 1px solid rgba(99, 151, 194, .58);
+    border-radius: 12px;
+    background: rgba(6, 18, 30, .985);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .58);
+    backdrop-filter: blur(16px);
+}
+.ixc-optical-context-menu hr {
+    height: 1px;
+    margin: 5px 3px;
+    border: 0;
+    background: rgba(99, 151, 194, .24);
+}
+.ixc-optical-context-menu button {
+    width: 100%;
+    min-height: 39px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    justify-items: start;
+    padding: 7px 9px;
+    border-color: transparent;
+    text-align: left;
+    background: transparent;
+}
+.ixc-optical-context-menu button:hover:not(:disabled) {
+    border-color: rgba(63, 212, 178, .36);
+    background: rgba(63, 212, 178, .12);
+}
+.ixc-optical-context-menu button span { font-size: 10px; font-weight: 760; }
+.ixc-optical-context-menu button small { color: var(--ixc-optical-muted); font-size: 8px; }
+.ixc-optical-context-menu button.is-danger { color: #ffd4d8; }
+.ixc-optical-context-menu button.is-danger:hover:not(:disabled) {
+    border-color: rgba(255, 108, 120, .46);
+    background: rgba(255, 108, 120, .12);
+}
+.ixc-optical-workspace[aria-busy="true"] .ixc-optical-context-menu { pointer-events: none; opacity: .45; }

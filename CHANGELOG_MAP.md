@@ -1,3 +1,19 @@
+## [0.75.36] - 2026-08-04
+
+### CEO/CDO — cabos verticais e traçados editáveis
+- CEO e CDO continuam no mesmo workspace óptico e recebem organização vertical específica dos cabos na migração do layout v3; CTO preserva o arranjo anterior.
+- Cada ligação pode permanecer em autoajuste ou ser convertida em traçado manual com pontos arrastáveis. Estilos curva, ortogonal e reta são opcionais e persistidos no layout.
+- Botão direito no Canvas abre menu próprio para adicionar splitter ou nota. Sobre uma ligação, oferece editar, autoajustar, escolher estilo e romper/desligar.
+- Duplo clique numa fusão ou ligação abre confirmação para rompimento, sem `alert`, `prompt` ou `confirm` nativos.
+
+### Cores e captura
+- Fusão cabo a cabo usa gradiente meio a meio com as cores reais das duas fibras. Ligações entre splitter e cabo usam a cor da fibra ligada.
+- Captura e associação por proximidade de caixas ópticas passam a ter limite rígido de 5 metros no frontend e backend.
+
+### Arquitetura
+- Rotas manuais são salvas em `unifilar_layout.links`, sem migration e sem alterar Rack/Torre.
+- O menu contextual e a edição de linhas permanecem dentro da raiz isolada do workspace óptico.
+
 ## [0.75.35] - 2026-08-04
 
 ### Editor óptico — ligações diretas

@@ -48,7 +48,7 @@
         const requests = [
             request(`/api/map/elements/${elementId}/splices/`, { signal }),
             request(`/api/map/elements/${elementId}/layout/`, { signal }),
-            optional(request(`/api/map/elements/${elementId}/fusion-cables/?radius_m=80`, { signal }), { cables: [] }),
+            optional(request(`/api/map/elements/${elementId}/fusion-cables/?radius_m=5`, { signal }), { cables: [] }),
         ];
         if (element.element_type === "cto") {
             requests.push(optional(
@@ -136,7 +136,7 @@
         includeCable(elementId, cableId, signal) {
             return request(`/api/map/elements/${elementId}/fusion-cables/${cableId}/`, json("POST", {
                 action: "pass",
-                max_distance_m: 80,
+                max_distance_m: 5,
             }, signal));
         },
         excludeCable(elementId, cableId, signal) {
