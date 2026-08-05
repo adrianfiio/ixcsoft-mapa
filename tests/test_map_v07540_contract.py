@@ -85,11 +85,11 @@ class MapV07540ContractTests(unittest.TestCase):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
         versions = content("VERSIONS.md")
-        release = content("docs/releases/map/map-v0.75.42.md")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.42")', settings)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.42}', compose)
-        self.assertIn("Mapa | v0.75.42", versions)
-        self.assertIn("MAP v0.75.42", release)
+        release = content("docs/releases/map/map-v0.75.43.md")
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.43")', settings)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.43}', compose)
+        self.assertIn("Mapa | v0.75.43", versions)
+        self.assertIn("MAP v0.75.43", release)
 
 
 if __name__ == "__main__":
