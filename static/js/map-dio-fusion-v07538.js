@@ -92,7 +92,7 @@
         let summary = qs("[data-rack-cable-summary-v07538]", node);
         if (!summary) {
             summary = document.createElement("div");
-            summary.dataset.rackCableSummaryV07537 = "1";
+            summary.dataset.rackCableSummaryV07538 = "1";
             summary.className = "map-rack-cable-summary-v07538";
             summary.innerHTML = `
                 <button type="button" data-rack-cable-anchor-v07538="${id}" title="Vincular este cabo a um DIO" aria-label="Vincular cabo ao DIO"><i></i></button>
@@ -164,7 +164,7 @@
         if (!target) {
             target = document.createElement("button");
             target.type = "button";
-            target.dataset.dioCableTargetV07537 = String(id);
+            target.dataset.dioCableTargetV07538 = String(id);
             target.className = "map-dio-cable-target-v07538";
             target.innerHTML = '<i></i><span><strong>CABOS</strong><small data-dio-linked-count-v07538>0 vinculados</small></span>';
             target.title = "Arraste um cabo até aqui ou abra a matriz de fusões. A frente do DIO continua livre para OLT.";
@@ -179,7 +179,7 @@
         if (header && !qs("[data-open-dio-fusions-v07538]", header)) {
             const button = document.createElement("button");
             button.type = "button";
-            button.dataset.openDioFusionsV07537 = String(id);
+            button.dataset.openDioFusionsV07538 = String(id);
             button.className = "map-open-dio-fusions-v07538";
             button.textContent = "Fusões";
             button.title = "Abrir matriz de fusão do DIO";

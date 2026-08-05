@@ -179,8 +179,8 @@ class MapV07539ContractTests(unittest.TestCase):
         self.assertIn("layout-v07539", urls)
         self.assertIn("map-v07539-suite.js", template)
         self.assertIn("map-v07539-suite.css", template)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.39")', content("config/settings.py"))
-        self.assertIn("Mapa | v0.75.39", content("VERSIONS.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.40")', content("config/settings.py"))
+        self.assertIn("Mapa | v0.75.40", content("VERSIONS.md"))
         self.assertIn("MAP v0.75.39", content("docs/releases/map/map-v0.75.39.md"))
 
 
