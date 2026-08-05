@@ -73,7 +73,7 @@ class MapV07547ContractTests(unittest.TestCase):
         runtime = text("static/js/map-rack-ux-v07547.js")
         for forbidden in ("window.alert(", "window.prompt(", "window.confirm(", "global.alert(", "global.prompt(", "global.confirm("):
             self.assertNotIn(forbidden, runtime)
-        release = text("docs/releases/map/map-v0.75.47.md")
+        release = text("docs/releases/map/map-v0.75.48.md")
         self.assertIn("Nenhuma migration", release)
 
 

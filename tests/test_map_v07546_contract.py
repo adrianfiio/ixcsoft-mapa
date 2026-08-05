@@ -50,10 +50,10 @@ class MapV07546ContractTests(unittest.TestCase):
     def test_current_version_and_release_document(self):
         settings = content("config/settings.py")
         versions = content("VERSIONS.md")
-        release = content("docs/releases/map/map-v0.75.47.md")
-        self.assertIn('0.75.47', settings)
-        self.assertIn('v0.75.47', versions)
-        self.assertIn('MAP v0.75.47', release)
+        release = content("docs/releases/map/map-v0.75.48.md")
+        self.assertIn('0.75.48', settings)
+        self.assertIn('v0.75.48', versions)
+        self.assertIn('MAP v0.75.48', release)
 
     def test_no_native_browser_popups(self):
         runtime = content("static/js/map-rack-viewport-v07546.js")

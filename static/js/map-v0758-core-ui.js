@@ -15,8 +15,8 @@
     // existir pra decidir se deve interceptar o clique.
     window.mapV0758 = window.mapV0758 || {};
 
-    const qs = (selector, root = document) => root.querySelector(selector);
-    const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
+    const qs = (selector, root = document) => root?.querySelector?.(selector) || null;
+    const qsa = (selector, root = document) => [...(root?.querySelectorAll?.(selector) || [])];
 
     function notify(message, error = false) {
         window.networkMap?.notify?.(message, error);
@@ -293,7 +293,7 @@
             }
         }
 
-        const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "server", "pto", "other"]);
+        const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "server"]);
         const towerAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
         const allowed = identity.type === "rack" ? rackAllowed : towerAllowed;
         qsa("[data-quick-add]", root).forEach((button) => {

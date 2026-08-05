@@ -71,10 +71,10 @@ class MapV07542ContractTests(unittest.TestCase):
         self.assertNotIn("map-rack-physical-v07540.js", template)
 
     def test_versions_are_current(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.47")', content("config/settings.py"))
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.47}', content("docker-compose.yml"))
-        self.assertIn("Mapa | v0.75.47", content("VERSIONS.md"))
-        self.assertIn("MAP v0.75.47", content("docs/releases/map/map-v0.75.47.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.48")', content("config/settings.py"))
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.48}', content("docker-compose.yml"))
+        self.assertIn("Mapa | v0.75.48", content("VERSIONS.md"))
+        self.assertIn("MAP v0.75.48", content("docs/releases/map/map-v0.75.48.md"))
 
     def test_no_new_backend_or_native_popup(self):
         runtime = content("static/js/map-rack-physical-v07542.js")
