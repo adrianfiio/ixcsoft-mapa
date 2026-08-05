@@ -53,6 +53,7 @@ from apps.network_map.api.map_v07539 import (
 from apps.network_map.api.map_v07543 import olt_hardware_v07543
 from apps.network_map.api.map_v07544 import equipment_collection_v07544, olt_hardware_v07544
 from apps.network_map.api.map_v07545 import equipment_collection_v07545, olt_chassis_v07545
+from apps.network_map.api.map_v07547 import equipment_collection_v07547, olt_chassis_v07547
 from apps.network_map.api.map_master_views import (
     assign_cable_route_master,
     asset_qr_master,
@@ -122,6 +123,8 @@ urlpatterns = [
     path("v07543/elements/<int:element_id>/olt/<int:equipment_id>/hardware/", olt_hardware_v07543, name="olt-hardware-v07543"),
     path("v07545/elements/<int:element_id>/equipment/", equipment_collection_v07545, name="equipment-collection-v07545"),
     path("v07545/elements/<int:element_id>/olt/<int:equipment_id>/chassis/", olt_chassis_v07545, name="olt-chassis-v07545"),
+    path("v07547/elements/<int:element_id>/equipment/", equipment_collection_v07547, name="equipment-collection-v07547"),
+    path("v07547/elements/<int:element_id>/olt/<int:equipment_id>/chassis/", olt_chassis_v07547, name="olt-chassis-v07547"),
     path("elements/<int:element_id>/container-layout-v3/", container_layout_v3, name="container-layout-v3"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/details-v3/", container_equipment_details_v3, name="container-equipment-details-v3"),
     path("elements/<int:element_id>/passive-endpoints-v3/", create_passive_endpoint_v3, name="passive-endpoints-v3"),

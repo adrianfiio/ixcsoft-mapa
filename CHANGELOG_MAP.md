@@ -1,3 +1,18 @@
+## [0.75.47] - 2026-08-05
+
+### OLT e portas PON
+- O número da PON fica acima do ponto de conexão, sem sobreposição visual.
+- O cadastro inicial da OLT pede slots de serviço e slots de uplink, sem criar PONs automaticamente.
+- As portas PON continuam sendo criadas somente ao instalar uma placa no slot de serviço.
+
+### Navegação do Rack
+- O clique esquerdo segurado movimenta o Rack mantendo o zoom atual.
+- Os handlers antigos são interceptados antes de disputar o mesmo gesto.
+
+### Menu do Rack
+- PTO e Outro deixam de aparecer na inclusão de equipamentos do Rack.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.46] - 2026-08-05
 
 ### Navegação do Rack

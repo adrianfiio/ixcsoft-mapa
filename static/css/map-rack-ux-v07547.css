@@ -1,0 +1,148 @@
+/* MAP v0.75.47 — pan padrão, chassi com slots de uplink e PON legível. */
+
+#map-master-container.v07542-physical-rack .master-canvas-scroll {
+    cursor: grab !important;
+    touch-action: none;
+}
+#map-master-container.v07542-physical-rack .master-canvas-scroll.is-panning-v07547 {
+    cursor: grabbing !important;
+    user-select: none !important;
+}
+
+.v07547-equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+}
+.v07547-equipment-grid label {
+    display: grid;
+    gap: 7px;
+    color: #9fb1c2;
+    font-size: 11px;
+    font-weight: 750;
+}
+.v07547-equipment-grid input,
+.v07547-equipment-grid select {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 11px;
+    border: 1px solid #36546c;
+    border-radius: 9px;
+    color: #edf7ff;
+    background: #0a1722;
+}
+.v07547-form-hint {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid #29485f;
+    border-radius: 9px;
+    color: #86a3b7;
+    background: #0b1d2a;
+    font-size: 10px;
+}
+
+/* O número fica acima e o ponto de ligação abaixo. Um conceito ousado: ambos visíveis. */
+.v07545-pon-grid .master-node-port.v07547-pon-port {
+    position: relative !important;
+    display: block !important;
+    overflow: visible !important;
+    min-height: 39px !important;
+    height: 39px !important;
+    padding: 0 !important;
+}
+.v07545-pon-grid .master-node-port.v07547-pon-port .v07547-pon-number {
+    position: absolute !important;
+    z-index: 2;
+    top: 4px !important;
+    left: 2px !important;
+    right: 2px !important;
+    width: auto !important;
+    margin: 0 !important;
+    color: #eaf7ff !important;
+    font: 800 8px/1 system-ui !important;
+    text-align: center !important;
+    white-space: nowrap;
+    pointer-events: none;
+}
+.v07545-pon-grid .master-node-port.v07547-pon-port .v07547-pon-point {
+    position: absolute !important;
+    z-index: 3;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 6px !important;
+    width: 10px !important;
+    height: 10px !important;
+    margin: 0 !important;
+    transform: translateX(-50%) !important;
+    border-radius: 50% !important;
+}
+.v07545-olt-face.is-vertical .v07545-pon-grid .master-node-port.v07547-pon-port {
+    min-height: 36px !important;
+    height: 36px !important;
+}
+
+.v07547-uplink-bank {
+    display: grid;
+    gap: 7px;
+    padding-top: 8px;
+    border-top: 1px solid #29465a;
+}
+.v07547-uplink-bank > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 9px;
+    border: 1px solid #315169;
+    border-radius: 8px;
+    background: #132939;
+}
+.v07547-uplink-bank > header strong {
+    display: block;
+    color: #e3f4ff;
+    font-size: 9px;
+    letter-spacing: .08em;
+}
+.v07547-uplink-bank > header small {
+    display: block;
+    margin-top: 3px;
+    color: #7f9caf;
+    font-size: 8px;
+}
+.v07547-uplink-bank > header > span {
+    padding: 4px 7px;
+    border: 1px solid #35637e;
+    border-radius: 999px;
+    color: #9bdcff;
+    font-size: 8px;
+}
+.v07547-uplink-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 7px;
+}
+.v07547-uplink-slot {
+    display: grid;
+    place-items: center;
+    min-height: 58px;
+    padding: 8px;
+    border: 1px dashed #356078;
+    border-radius: 8px;
+    color: #8da8ba;
+    background: #0d202d;
+    text-align: center;
+}
+.v07547-uplink-slot strong {
+    color: #dff2ff;
+    font-size: 10px;
+}
+.v07547-uplink-slot span {
+    margin-top: 3px;
+    font-size: 8px;
+}
+
+@media (max-width: 800px) {
+    .v07547-equipment-grid { grid-template-columns: 1fr; }
+    .v07545-olt-face.is-horizontal .v07545-pon-grid { grid-template-columns: repeat(8, minmax(26px, 1fr)); }
+}
