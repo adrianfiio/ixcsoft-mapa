@@ -1,3 +1,20 @@
+## [0.75.48] - 2026-08-05
+
+### Rack vazio e cadastro
+- O gabinete físico e os cartões de cabos ficam ocultos enquanto não houver OLT, DIO ou Switch.
+- O cadastro da OLT deixa de exibir PONs por slot e cria todos os slots de serviço/uplink informados.
+- PTO e Outro deixam de aparecer no menu do Rack.
+
+### OLT e potência
+- O editor próprio da OLT permite ampliar o chassi, instalar mais placas e informar potência TX por PON no modo manual.
+- Cada PON pode destacar o caminho conhecido OLT → DIO → cabo e calcular a potência estimada após as perdas cadastradas.
+
+### DIO e estabilidade
+- Portas do DIO ficam compactas, com detalhes no hover/botão direito e linhas terminando no centro dos pontos.
+- O cabo traseiro ligado ao DIO volta a ser desenhado a partir da topologia persistida.
+- Helpers de consulta do módulo v0.75.8 passam a tolerar raízes ausentes, eliminando o TypeError ao editar o Rack.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.47] - 2026-08-05
 
 ### OLT e portas PON
