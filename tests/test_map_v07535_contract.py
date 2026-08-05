@@ -79,7 +79,7 @@ class MapV07535ContractTests(unittest.TestCase):
         workspace = content("static/js/optical/optical-workspace.js")
         self.assertIn("organizeVertical", renderer)
         self.assertIn("cableSide", renderer)
-        self.assertIn("cableNodeHeight(session, previous) + 34", renderer)
+        self.assertIn("cableNodeHeight(session, previous) + 30", renderer)
         self.assertIn("Cabos organizados verticalmente", workspace)
         self.assertIn('data-action="organize"', workspace)
 
@@ -120,10 +120,10 @@ class MapV07535ContractTests(unittest.TestCase):
         self.assertIn("ResizeObserver", combined)
 
     def test_version_is_07535_and_no_migration_was_added(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.36")', content("config/settings.py"))
-        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.36}", content("docker-compose.yml"))
-        self.assertIn("Mapa | v0.75.36", content("VERSIONS.md"))
-        self.assertIn("MAP v0.75.36", content("docs/releases/map/map-v0.75.36.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.37")', content("config/settings.py"))
+        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.37}", content("docker-compose.yml"))
+        self.assertIn("Mapa | v0.75.37", content("VERSIONS.md"))
+        self.assertIn("MAP v0.75.37", content("docs/releases/map/map-v0.75.37.md"))
         migrations = [path.name for path in (ROOT / "apps/network_map/migrations").glob("*.py")]
         self.assertFalse(any("07535" in name for name in migrations))
 

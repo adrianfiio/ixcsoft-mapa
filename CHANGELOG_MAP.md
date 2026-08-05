@@ -1,3 +1,19 @@
+## [0.75.37] - 2026-08-04
+
+### CEO/CDO — cabos em coluna real
+- Cada cabo de CEO/CDO é desenhado verticalmente, um abaixo do outro, com uma única coluna de fibras numeradas. CTO mantém seu arranjo próprio.
+- O painel lateral passa a chamar tudo de Conexões e separa fusões cabo a cabo de ligações de entrada/saída/cascata de splitter.
+
+### Rack, DIO e fusões
+- O cabo no Rack vira um cartão compacto com um único ponto agregado; arrastar esse ponto até o DIO vincula o cabo sem espalhar todas as fibras no Canvas principal.
+- O DIO ganha botão Fusões e uma janela própria em matriz: cabos/tubos/fibras à esquerda, seleção rápida ao centro e portas agrupadas de 12 à direita.
+- Um clique na fibra seguido de um clique na porta cria a fusão. Auto fusão sequencial distribui fibras livres nas portas livres a partir da porta escolhida.
+- Botão direito ou duplo clique numa porta ocupada rompe a fusão com confirmação própria.
+
+### OLT compacta e desempenho
+- A OLT passa a usar linhas por slot e até 16 colunas de portas, exibindo somente os números das interfaces. Textos repetidos como PON e numerações longas saem do Canvas.
+- Nenhum MutationObserver novo, nenhuma migration e nenhuma alteração destrutiva de dados.
+
 ## [0.75.36] - 2026-08-04
 
 ### CEO/CDO — cabos verticais e traçados editáveis

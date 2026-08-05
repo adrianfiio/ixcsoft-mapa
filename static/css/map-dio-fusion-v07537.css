@@ -1,0 +1,546 @@
+/* MAP v0.75.37 — Rack compacto, cabo agregado e matriz de fusão do DIO. */
+
+/* Cabo do Rack: um único ponto agregado. As fibras ficam na matriz do DIO. */
+.tower-workspace-dialog-v0750 .map-rack-cable-compact-v07537 {
+    width: 190px !important;
+    min-width: 190px !important;
+    max-width: 190px !important;
+    min-height: 92px !important;
+    overflow: visible !important;
+}
+.tower-workspace-dialog-v0750 .map-rack-cable-compact-v07537 .master-cable-fibers,
+.tower-workspace-dialog-v0750 .map-rack-cable-compact-v07537 .map-cable-resize-v07535,
+.tower-workspace-dialog-v0750 .map-rack-cable-compact-v07537 .map-cable-expand-v07535 {
+    display: none !important;
+}
+.map-rack-cable-summary-v07537 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 32px;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(71, 113, 145, .3);
+    background: linear-gradient(90deg, rgba(10, 31, 49, .94), rgba(8, 25, 41, .98));
+}
+.map-rack-cable-summary-v07537 > span { display: grid; gap: 2px; }
+.map-rack-cable-summary-v07537 strong { color: #e8f4fc; font-size: 10px; }
+.map-rack-cable-summary-v07537 small { color: #7f9bb3; font-size: 7px; }
+.map-rack-cable-summary-v07537 button {
+    position: relative;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    border: 1px solid rgba(56, 189, 248, .66) !important;
+    border-radius: 50% !important;
+    background: #081c2d !important;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, .08);
+    cursor: crosshair !important;
+    touch-action: none;
+}
+.map-rack-cable-summary-v07537 button i {
+    position: absolute;
+    inset: 8px;
+    border: 2px solid #38bdf8;
+    border-radius: 50%;
+    background: #0c3049;
+}
+.map-rack-cable-summary-v07537 button:hover { box-shadow: 0 0 0 6px rgba(56, 189, 248, .14); }
+
+/* DIO no Canvas: frente segue visível para OLT; lado de cabos vira alvo agregado. */
+.tower-workspace-dialog-v0750 .map-dio-matrix-ready-v07537 {
+    width: 330px !important;
+    min-height: 122px !important;
+}
+.tower-workspace-dialog-v0750 .map-dio-matrix-ready-v07537 .map-dio-port-hidden-v07537 {
+    display: none !important;
+}
+.map-dio-cable-target-v07537 {
+    width: calc(100% - 20px) !important;
+    min-height: 38px !important;
+    display: grid !important;
+    grid-template-columns: 25px minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+    margin: 7px 10px 10px;
+    padding: 5px 8px !important;
+    border: 1px dashed rgba(56, 189, 248, .55) !important;
+    color: #cdeefe !important;
+    background: rgba(12, 48, 73, .46) !important;
+    text-align: left;
+}
+.map-dio-cable-target-v07537 > i {
+    width: 19px;
+    height: 19px;
+    border: 2px solid #38bdf8;
+    border-radius: 50%;
+    background: #0a2b43;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, .08);
+}
+.map-dio-cable-target-v07537 > span { display: grid; }
+.map-dio-cable-target-v07537 strong { font-size: 8px; letter-spacing: .1em; }
+.map-dio-cable-target-v07537 small { color: #7fa8c4; font-size: 7px; }
+.map-dio-cable-target-v07537.is-drop-target {
+    border-style: solid !important;
+    border-color: #4ade80 !important;
+    color: #effff5 !important;
+    background: rgba(22, 101, 52, .42) !important;
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, .12);
+}
+.map-open-dio-fusions-v07537 {
+    min-height: 23px !important;
+    padding: 2px 7px !important;
+    border-color: rgba(249, 115, 22, .62) !important;
+    color: #ffdabd !important;
+    background: rgba(154, 52, 18, .35) !important;
+    font-size: 8px !important;
+}
+
+/* OLT compacta: slots nas linhas, portas nas colunas, somente números. */
+.tower-workspace-dialog-v0750 .map-olt-compact-v07537 {
+    --olt-width: 505px !important;
+    width: 505px !important;
+    min-width: 440px !important;
+    max-width: 560px !important;
+    min-height: 0 !important;
+}
+.map-olt-compact-v07537 .master-olt-chassis-body-v07510 { padding: 6px 7px 8px !important; }
+.map-olt-compact-v07537 .master-olt-chassis-meta-v07510 {
+    min-height: 20px !important;
+    padding: 3px 5px !important;
+    font-size: 7px !important;
+}
+.map-olt-compact-v07537 .master-olt-slots-v07510 {
+    display: grid !important;
+    gap: 3px !important;
+    margin-top: 4px !important;
+}
+.map-olt-compact-v07537 .master-olt-slot-v07510 {
+    display: grid !important;
+    grid-template-columns: 35px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 4px !important;
+    min-height: 28px !important;
+    padding: 3px 4px !important;
+    border-radius: 6px !important;
+}
+.map-olt-compact-v07537 .master-olt-slot-v07510 > header {
+    display: grid !important;
+    place-items: center !important;
+    min-height: 22px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+.map-olt-compact-v07537 .master-olt-slot-v07510 > header strong {
+    color: #9bc6df !important;
+    font-size: 8px !important;
+    letter-spacing: .06em;
+}
+.map-olt-compact-v07537 .master-olt-slot-v07510 > header span { display: none !important; }
+.map-olt-compact-v07537 .master-olt-slot-ports-v07510 {
+    display: grid !important;
+    grid-template-columns: repeat(16, minmax(18px, 1fr)) !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+}
+.map-olt-compact-v07537 .olt-port-v07510 {
+    position: relative !important;
+    width: auto !important;
+    min-width: 18px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    overflow: visible !important;
+    font-size: 7px !important;
+}
+.map-olt-compact-v07537 .olt-port-v07510 span {
+    display: grid !important;
+    place-items: center;
+    padding: 0 !important;
+    font-size: 7px !important;
+    line-height: 1 !important;
+}
+.map-olt-compact-v07537 .olt-port-v07510 i {
+    position: absolute !important;
+    top: -2px !important;
+    right: -2px !important;
+    left: auto !important;
+    width: 5px !important;
+    height: 5px !important;
+    border-width: 1px !important;
+}
+.map-olt-compact-v07537 .olt-port-v07510.used {
+    border-color: #a78bfa !important;
+    color: #fff !important;
+    background: rgba(109, 40, 217, .48) !important;
+}
+
+/* Ligações agregadas Rack → DIO. */
+.map-rack-association-links-v07537 {
+    position: absolute;
+    z-index: 6;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+.map-rack-association-links-v07537 path {
+    fill: none;
+    stroke: #38bdf8;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 3px rgba(56, 189, 248, .35));
+}
+#map-rack-cable-drag-v07537 {
+    position: fixed;
+    z-index: 200500;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
+#map-rack-cable-drag-v07537 path {
+    fill: none;
+    stroke: #facc15;
+    stroke-width: 3;
+    stroke-dasharray: 8 5;
+    stroke-linecap: round;
+}
+body.map-cable-linking-v07537,
+body.map-cable-linking-v07537 * { cursor: crosshair !important; user-select: none !important; }
+
+/* Workspace da matriz de fusão. */
+body.map-dio-fusion-open-v07537 { overflow: hidden; }
+.map-dio-fusion-workspace-v07537,
+.map-dio-fusion-workspace-v07537 * { box-sizing: border-box; }
+.map-dio-fusion-workspace-v07537 {
+    position: fixed;
+    z-index: 210000;
+    inset: 0;
+    display: none;
+    color: #e5edf6;
+    background: rgba(1, 5, 10, .72);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    backdrop-filter: blur(5px);
+}
+.map-dio-fusion-workspace-v07537.is-open { display: block; }
+.map-dio-fusion-workspace-v07537 > section {
+    width: 100%;
+    height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 24px minmax(0, 1fr);
+    overflow: hidden;
+    background: #171b22;
+}
+.map-dio-fusion-workspace-v07537 > section > header {
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 22px;
+    border-bottom: 1px solid #28313d;
+    background: #191d24;
+}
+.map-dio-fusion-workspace-v07537 > section > header > div:first-child { min-width: 0; }
+.map-dio-fusion-workspace-v07537 > section > header span {
+    color: #ff781a;
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: .14em;
+}
+.map-dio-fusion-workspace-v07537 h2 {
+    margin: 2px 0 0;
+    color: #f7fafc;
+    font-size: 19px;
+}
+.map-dio-fusion-workspace-v07537 > section > header p {
+    margin: 4px 0 0;
+    color: #9bb0c9;
+    font-size: 10px;
+}
+.map-dio-fusion-header-actions-v07537 { display: flex; gap: 8px; }
+.map-dio-fusion-workspace-v07537 button,
+.map-dio-fusion-workspace-v07537 select { font: inherit; }
+.map-dio-fusion-workspace-v07537 button {
+    min-height: 31px;
+    padding: 5px 9px;
+    border: 1px solid #354355;
+    border-radius: 7px;
+    color: #dce7f3;
+    background: #202833;
+    cursor: pointer;
+}
+.map-dio-fusion-workspace-v07537 button:hover:not(:disabled) { border-color: #ff781a; color: #fff; }
+.map-dio-fusion-workspace-v07537 button:disabled { opacity: .36; cursor: not-allowed; }
+[data-dio-auto-fuse-v07537] {
+    border-color: #ff5c00 !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #f65b00, #ff781a) !important;
+    font-weight: 800 !important;
+}
+[data-dio-close-v07537] {
+    width: 38px;
+    min-width: 38px;
+    padding: 0 !important;
+    font-size: 24px !important;
+}
+.map-dio-fusion-status-v07537 {
+    padding: 5px 22px;
+    color: #86a4bf;
+    background: #151920;
+    font-size: 9px;
+}
+.map-dio-fusion-status-v07537.is-error { color: #ff9ea7; }
+.map-dio-fusion-workspace-v07537 main {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(410px, 1.15fr) minmax(240px, .58fr) minmax(610px, 1.55fr);
+    overflow: hidden;
+}
+.map-dio-fusion-workspace-v07537 main > section {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    border-right: 1px solid #28313d;
+    background: #171b22;
+}
+.map-dio-fusion-workspace-v07537 main > section:last-child { border-right: 0; }
+.map-dio-fusion-workspace-v07537 main > section > header {
+    position: sticky;
+    z-index: 4;
+    top: 0;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #313c49;
+    background: rgba(31, 38, 48, .98);
+}
+.map-dio-fusion-workspace-v07537 main > section > header strong {
+    color: #9cc2e0;
+    font-size: 9px;
+    letter-spacing: .08em;
+}
+.map-dio-fusion-workspace-v07537 main > section > header span {
+    min-width: 20px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    color: #07111b;
+    background: #1597d4;
+    text-align: center;
+    font-size: 8px;
+    font-weight: 850;
+}
+.map-dio-fusion-workspace-v07537 main > section > header button { margin-left: auto; min-height: 27px; padding: 3px 8px; font-size: 8px; }
+.map-dio-fusion-workspace-v07537 main > section > div { padding: 12px; }
+
+.map-dio-cable-card-v07537 {
+    margin-bottom: 11px;
+    overflow: hidden;
+    border: 1px solid #2b3541;
+    border-radius: 11px;
+    background: #1b2028;
+}
+.map-dio-cable-card-v07537.is-active { border-color: #1597d4; box-shadow: inset 3px 0 #1597d4; }
+.map-dio-cable-card-v07537 > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30px;
+    align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid #303a47;
+    background: #1d232c;
+}
+.map-dio-cable-card-v07537 > header > button:first-child {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+}
+.map-dio-cable-card-v07537 > header > button:first-child > span {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    color: #40c9ff;
+    background: #0e344a;
+}
+.map-dio-cable-card-v07537 > header strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.map-dio-cable-card-v07537 > header small { color: #7f9bb5; font-size: 8px; }
+.map-dio-tubes-v07537 { padding: 7px 10px 9px; }
+.map-dio-tube-v07537 {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+.map-dio-tube-v07537 > b {
+    position: relative;
+    min-height: 37px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px 0 0 5px;
+    color: #07110f;
+    background: var(--tube-color, #64748b);
+    font-size: 8px;
+}
+.map-dio-tube-v07537 > div {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(25px, 1fr));
+    gap: 4px;
+}
+.map-dio-tube-v07537 button {
+    position: relative;
+    min-width: 25px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    color: #081018;
+    background: var(--fiber-color, #94a3b8);
+    font-size: 8px;
+    font-weight: 850;
+}
+.map-dio-tube-v07537 button i {
+    position: absolute;
+    top: -2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    border: 1px solid #24313e;
+    border-radius: 50%;
+    background: #56dfc4;
+}
+.map-dio-tube-v07537 button.is-fused { opacity: .64; box-shadow: inset 0 0 0 2px #111820; }
+.map-dio-tube-v07537 button.is-selected { outline: 3px solid #facc15; outline-offset: 2px; opacity: 1; }
+
+.map-dio-selection-v07537 { background: #161922 !important; }
+.map-dio-selection-card-v07537 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    border: 1px solid #303a48;
+    border-radius: 10px;
+    background: #1d232c;
+}
+.map-dio-selection-card-v07537 > div { display: grid; grid-template-columns: 24px 1fr; gap: 6px; align-items: center; }
+.map-dio-selection-card-v07537 > div > span {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #151000;
+    background: #facc15;
+    font-size: 9px;
+    font-weight: 900;
+}
+.map-dio-selection-card-v07537 p { margin: 0; }
+.map-dio-selection-card-v07537 strong { display: block; color: #f2f6fa; font-size: 9px; }
+.map-dio-selection-card-v07537 small { color: #819ab0; font-size: 7px; }
+.map-dio-selection-card-v07537 > i { color: #ff781a; text-align: center; font-style: normal; }
+.map-dio-selection-help-v07537 { color: #8299b0; font-size: 9px; line-height: 1.5; }
+.map-dio-selection-v07537 dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.map-dio-selection-v07537 dl div { padding: 8px; border: 1px solid #2e3946; border-radius: 8px; text-align: center; background: #1c222b; }
+.map-dio-selection-v07537 dt { color: #7f96ab; font-size: 7px; }
+.map-dio-selection-v07537 dd { margin: 3px 0 0; color: #f5f8fb; font-size: 16px; font-weight: 850; }
+
+.map-dio-port-group-v07537 {
+    margin-bottom: 9px;
+    overflow: hidden;
+    border: 1px solid #2b3542;
+    border-radius: 10px;
+    background: #1a1f27;
+}
+.map-dio-port-group-v07537 > header {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 11px;
+    border-bottom: 1px solid #354252;
+    background: #202630;
+}
+.map-dio-port-group-v07537 > header strong { color: #b7d2e7; font-size: 9px; }
+.map-dio-port-group-v07537 > header small { color: #ff781a; font-size: 8px; }
+.map-dio-port-group-v07537 > div {
+    display: grid;
+    grid-template-columns: repeat(12, 36px);
+    gap: 6px;
+    padding: 9px 11px 11px;
+}
+.map-dio-port-group-v07537 button {
+    position: relative;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+    border: 2px solid #ff5c00;
+    border-radius: 7px;
+    color: #ff8b42;
+    background: #1d2026;
+    font-size: 8px;
+    font-weight: 850;
+}
+.map-dio-port-group-v07537 button i {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #ff781a;
+    transform: translateX(-50%);
+}
+.map-dio-port-group-v07537 button.is-fused {
+    border-color: var(--fusion-color, #22c55e);
+    color: #fff;
+    background: color-mix(in srgb, var(--fusion-color, #22c55e) 28%, #1d2026);
+}
+.map-dio-port-group-v07537 button.is-fused i { background: var(--fusion-color, #22c55e); }
+.map-dio-port-group-v07537 button.has-front::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #8b5cf6;
+}
+.map-dio-port-group-v07537 button.is-selected { outline: 3px solid #facc15; outline-offset: 2px; }
+.map-dio-empty-v07537 { padding: 24px; color: #8299b0; text-align: center; font-size: 10px; }
+
+.map-dio-port-menu-v07537 {
+    position: fixed;
+    z-index: 211000;
+    width: 215px;
+    padding: 7px;
+    border: 1px solid #48586a;
+    border-radius: 9px;
+    background: #111720;
+    box-shadow: 0 20px 55px rgba(0, 0, 0, .55);
+}
+.map-dio-port-menu-v07537[hidden] { display: none; }
+.map-dio-port-menu-v07537 button { width: 100%; border-color: rgba(244, 63, 94, .55); color: #ffc0c7; background: rgba(127, 29, 29, .38); }
+.map-dio-port-menu-v07537 small { display: block; margin-top: 5px; color: #8299b0; font-size: 8px; }
+
+@media (max-width: 1250px) {
+    .map-dio-fusion-workspace-v07537 main { grid-template-columns: 390px 230px minmax(540px, 1fr); }
+    .map-dio-tube-v07537 > div { grid-template-columns: repeat(6, minmax(28px, 1fr)); }
+}

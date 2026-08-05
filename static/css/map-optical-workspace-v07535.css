@@ -499,3 +499,29 @@ body:has(#map-sidebar.master-minimized) .ixc-optical-workspace { left: 54px; }
     background: rgba(255, 108, 120, .12);
 }
 .ixc-optical-workspace[aria-busy="true"] .ixc-optical-context-menu { pointer-events: none; opacity: .45; }
+
+/* MAP v0.75.37 — conexões separadas de fusões e cabos CEO/CDO em coluna real. */
+.ixc-optical-connections-card .ixc-optical-card-heading small {
+    color: var(--ixc-optical-muted);
+    font-size: 8px;
+}
+.ixc-optical-connection-group + .ixc-optical-connection-group {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(54, 87, 117, .55);
+}
+.ixc-optical-connection-group h4 {
+    margin: 0 0 6px;
+    color: #a9c5dc;
+    font-size: 9px;
+    letter-spacing: .03em;
+}
+.ixc-optical-connection-row {
+    grid-template-columns: minmax(0, 1fr) 27px !important;
+}
+.ixc-optical-connection-row > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

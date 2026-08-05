@@ -195,24 +195,25 @@
         const { state, renderer } = dependencies();
         reconcileSelection(session);
         const splitterCount = state.splitters(session).length;
+        const connectionCount = state.savedLinks(session).length;
         session.root.querySelector("[data-optical-title]").textContent = session.element.name || `Caixa ${session.element.id}`;
         session.root.querySelector("[data-optical-subtitle]").textContent = [
             session.element.code || "Sem código",
             `${session.optical.cables.length} cabo(s)`,
-            `${session.optical.splices.length} fusão(ões)`,
+            `${connectionCount} conexão(ões)`,
             `${splitterCount} splitter(s)`,
         ].join(" · ");
         session.root.querySelector("[data-loading]").hidden = true;
         renderCablePanel(session);
         renderConnectionControls(session);
         renderSplitterControls(session);
-        renderSpliceList(session);
+        renderConnectionList(session);
         renderServicePorts(session);
         renderNearbyCables(session);
         renderNotes(session);
         if (session.layoutMigrated && state.isDistributionBox(session)) {
-            // v0.75.36: CEO e CDO recebem uma única migração para o arranjo
-            // vertical; CTO mantém o layout que já estava em uso.
+            // v0.75.37: CEO/CDO migram para cabos realmente verticais,
+            // com uma fibra por linha. CTO mantém o arranjo anterior.
             session.layout.nodes = {};
         }
         const shouldFit = !session.initialFitDone && Object.keys(session.layout.nodes || {}).length === 0;
@@ -310,16 +311,26 @@
         </section>`;
     }
 
-    function renderSpliceList(session) {
+    function renderConnectionList(session) {
+        const { state } = dependencies();
         const target = session.root.querySelector("[data-splice-list]");
-        target.innerHTML = `<section class="ixc-optical-card">
-            <h3>Fusões (${session.optical.splices.length})</h3>
-            <div class="ixc-optical-splice-list">${session.optical.splices.length ? session.optical.splices.map((splice) => `<div class="ixc-optical-splice-row">
-                <span><i style="--fiber-color:${escapeHtml(splice.input.color_hex)}"></i>${escapeHtml(splice.input.cable)} F${splice.input.number}</span>
-                <b>→</b>
-                <span><i style="--fiber-color:${escapeHtml(splice.output.color_hex)}"></i>${escapeHtml(splice.output.cable)} F${splice.output.number}</span>
-                <button type="button" data-action="delete-splice" data-splice-id="${splice.id}" ${!canEdit() ? "disabled" : ""}>×</button>
-            </div>`).join("") : '<p class="ixc-optical-empty">Nenhuma fusão cadastrada.</p>'}</div>
+        const links = state.savedLinks(session);
+        const fusions = links.filter((link) => link.type === "splice");
+        const splitterLinks = links.filter((link) => link.type !== "splice");
+        const row = (link, label) => `<div class="ixc-optical-splice-row ixc-optical-connection-row">
+            <span><i style="--fiber-color:${escapeHtml(link.colors?.[0] || "#8fb4d8")}"></i>${escapeHtml(label || link.label)}</span>
+            <button type="button" data-action="disconnect-link" data-link-id="${escapeHtml(link.id)}" ${!canEdit() ? "disabled" : ""} title="${link.type === "splice" ? "Romper fusão" : "Desligar ligação"}">×</button>
+        </div>`;
+        target.innerHTML = `<section class="ixc-optical-card ixc-optical-connections-card">
+            <div class="ixc-optical-card-heading"><h3>Conexões (${links.length})</h3><small>${fusions.length} fusão(ões) · ${splitterLinks.length} ligação(ões)</small></div>
+            <div class="ixc-optical-connection-group">
+                <h4>Fusões cabo ↔ cabo (${fusions.length})</h4>
+                <div class="ixc-optical-splice-list">${fusions.length ? fusions.map((link) => row(link)).join("") : '<p class="ixc-optical-empty">Nenhuma fusão cabo a cabo.</p>'}</div>
+            </div>
+            <div class="ixc-optical-connection-group">
+                <h4>Ligações de splitter (${splitterLinks.length})</h4>
+                <div class="ixc-optical-splice-list">${splitterLinks.length ? splitterLinks.map((link) => row(link)).join("") : '<p class="ixc-optical-empty">Nenhuma ligação de splitter.</p>'}</div>
+            </div>
         </section>`;
     }
 
@@ -711,6 +722,9 @@
             setStatus(session, "Seleção cancelada.");
             return;
         }
+        if (action === "disconnect-link") {
+            return disconnectLink(session, state.linkById(session, button.dataset.linkId));
+        }
         if (action === "delete-splice") {
             const accepted = await dialog.confirm({
                 title: "Excluir fusão",
@@ -945,6 +959,6 @@
         isOpen() {
             return Boolean(currentSession && !currentSession.disposed);
         },
-        version: "0.75.36",
+        version: "0.75.37",
     });
 })(window);

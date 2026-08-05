@@ -17,7 +17,7 @@ class MapV07536ContractTests(unittest.TestCase):
         self.assertIn('element_type === "splice_box"', state)
         self.assertIn("isDistributionBox(session)", renderer)
         self.assertIn("distributionCableWidth", renderer)
-        self.assertIn("columns: 3", renderer)
+        self.assertIn("columns: 1", renderer)
         for forbidden in ('=== "ceo"', '=== "cdo"', 'import_subtype ==='):
             self.assertNotIn(forbidden, workspace)
             self.assertNotIn(forbidden, renderer)
@@ -26,7 +26,7 @@ class MapV07536ContractTests(unittest.TestCase):
         state = content("static/js/optical/optical-state.js")
         renderer = content("static/js/optical/optical-renderer.js")
         for token in (
-            "version: 3", "links: {}", "normalizeLinkRoute", "route.mode = \"manual\"",
+            "version: 4", "links: {}", "normalizeLinkRoute", "route.mode = \"manual\"",
             "ensureManualRoute", "insertLinkPoint", "moveLinkPoint", "removeLinkPoint",
             "autoRoute", "setLinkStyle",
         ):
@@ -91,8 +91,8 @@ class MapV07536ContractTests(unittest.TestCase):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
         release = content("docs/releases/map/map-v0.75.36.md")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.36")', settings)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.36}', compose)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.37")', settings)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.37}', compose)
         self.assertIn("MAP v0.75.36", release)
         migrations = list((ROOT / "apps/network_map/migrations").glob("*.py"))
         self.assertFalse(any(path.name.startswith("00") and "07536" in path.name for path in migrations))
