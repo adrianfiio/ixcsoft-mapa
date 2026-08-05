@@ -5,7 +5,7 @@
     const LINK_STYLES = new Set(["curve", "orthogonal", "straight"]);
 
     function workspaceLabel() {
-        return "CAIXA ÓPTICA";
+        return "EDITOR ÓPTICO";
     }
 
     function createSession(elementId) {
@@ -23,7 +23,7 @@
             cableState: { cables: [] },
             servicePorts: null,
             layout: {
-                version: 4,
+                version: 5,
                 viewport: { zoom: 1, panX: 0, panY: 0 },
                 nodes: {},
                 links: {},
@@ -86,7 +86,7 @@
         const notes = Array.isArray(source.notes) ? source.notes : [];
         const keepNodes = sourceVersion >= 2;
         return {
-            version: 4,
+            version: 5,
             viewport: {
                 zoom: clampNumber(viewport.zoom, 0.35, 2.6, 1),
                 panX: clampNumber(viewport.panX, -7000, 7000, 0),
@@ -118,7 +118,7 @@
         session.cableState = payload.cableState || session.cableState;
         session.servicePorts = payload.servicePorts;
         session.layout = normalizeLayout(payload.layout);
-        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 4;
+        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 5;
         delete session.layout.migratedFromVersion;
         session.selection.splitterId = splitters(session)[0]?.id || null;
         session.selection.cableId = session.optical.cables[0]?.id || null;

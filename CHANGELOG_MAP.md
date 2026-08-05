@@ -1,3 +1,20 @@
+## [0.75.38] - 2026-08-04
+
+### Rack, OLT e DIO
+- O ponto agregado do cabo no Rack foi movido para a esquerda, reduzindo a volta visual da linha ao vincular em DIOs posicionados à esquerda do cabo.
+- O traçado de arraste e as ligações agregadas Rack → DIO passam a usar atualização em requestAnimationFrame, deixando a direção mais responsiva durante o movimento.
+- O DIO no Canvas passa a seguir o mesmo idioma visual de bandejas/cavidades do restante do Rack, com o alvo de cabos separado da frente do equipamento.
+- A OLT compacta fica mais flexível para leitura, com largura ampliável e portas só com números.
+
+### CEO, CDO e CTO
+- CEO/CDO/CTO passam a usar um divisor central pontilhado no Canvas para reforçar entrada à esquerda e saída à direita.
+- Em caixas de distribuição, cabos podem nascer dos dois lados e a legenda muda automaticamente entre entrada e saída.
+- As fibras continuam verticais, uma abaixo da outra.
+
+### UX do editor
+- O editor óptico destaca que a captura de cabos próximos está limitada a 5 m.
+- O resumo de conexões evita mensagens confusas quando só existem ligações de splitter.
+
 ## [0.75.37] - 2026-08-04
 
 ### CEO/CDO — cabos em coluna real

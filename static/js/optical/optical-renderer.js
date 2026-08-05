@@ -76,7 +76,15 @@
     }
 
     function cableSide(session, cable, index) {
-        if (stateApi().isDistributionBox(session)) return "left";
+        if (stateApi().isDistributionBox(session)) {
+            const key = `cable:${cable.id}`;
+            const saved = session.layout.nodes[key];
+            if (saved && Number.isFinite(saved.x)) return saved.x < 560 ? "left" : "right";
+            if (String(cable.relation_action || "").toLowerCase().includes("out")) return "right";
+            if (Number(cable.origin_id) === Number(session.elementId)) return "right";
+            if (Number(cable.destination_id) === Number(session.elementId)) return "left";
+            return index % 2 === 0 ? "left" : "right";
+        }
         if (Number(cable.destination_id) === Number(session.elementId)) return "left";
         if (Number(cable.origin_id) === Number(session.elementId)) return "right";
         return index % 2 === 0 ? "left" : "right";
@@ -86,11 +94,13 @@
         const side = cableSide(session, cable, index);
         let y = 50;
         list.slice(0, index).forEach((previous, previousIndex) => {
-            if (stateApi().isDistributionBox(session) || cableSide(session, previous, previousIndex) === side) {
+            if (stateApi().isDistributionBox(session)) {
+                if (cableSide(session, previous, previousIndex) === side) y += cableNodeHeight(session, previous) + 30;
+            } else if (cableSide(session, previous, previousIndex) === side) {
                 y += cableNodeHeight(session, previous) + 30;
             }
         });
-        if (stateApi().isDistributionBox(session)) return { x: 64, y };
+        if (stateApi().isDistributionBox(session)) return { x: side === "left" ? 64 : 866, y };
         return { x: side === "left" ? 58 : 1010, y };
     }
 
@@ -158,21 +168,25 @@
 
         const fibers = visibleFibers(session, cable);
         if (metrics.vertical) {
+            const rightSide = side === "right";
+            const trunkX = rightSide ? node.x + 18 : node.x + metrics.width - 18;
+            const endpointX = rightSide ? node.x : node.x + metrics.width;
+            const numberX = rightSide ? node.x + 18 : node.x + metrics.width - 18;
             ctx.beginPath();
-            ctx.moveTo(node.x + metrics.width - 17, node.y + NODE.cableHeader + 8);
-            ctx.lineTo(node.x + metrics.width - 17, node.y + height - 10);
+            ctx.moveTo(trunkX, node.y + NODE.cableHeader + 8);
+            ctx.lineTo(trunkX, node.y + height - 10);
             ctx.strokeStyle = "rgba(66, 214, 181, .72)";
             ctx.lineWidth = 3;
             ctx.stroke();
             fibers.forEach((fiber, fiberIndex) => {
                 const point = {
-                    x: node.x + metrics.width,
+                    x: endpointX,
                     y: node.y + NODE.cableHeader + 18 + fiberIndex * NODE.distributionFiberPitch,
                 };
                 ctx.fillStyle = "#dceaf7";
                 ctx.font = "700 8px system-ui";
-                ctx.textAlign = "right";
-                ctx.fillText(String(fiber.number), point.x - 13, point.y + 3);
+                ctx.textAlign = rightSide ? "left" : "right";
+                ctx.fillText(String(fiber.number), rightSide ? numberX + 13 : numberX - 13, point.y + 3);
                 ctx.textAlign = "left";
                 drawEndpoint(
                     ctx,
@@ -454,6 +468,7 @@
         ctx.translate(panX, panY);
         ctx.scale(zoom, zoom);
         drawGrid(ctx, width / zoom, height / zoom, panX / zoom, panY / zoom);
+        if (stateApi().isDistributionBox(session)) drawDistributionDivider(ctx, width / zoom, height / zoom);
         const hitboxes = [];
         const linkHits = [];
         const endpointPoints = new Map();
@@ -467,6 +482,27 @@
         ctx.restore();
         session.renderCache = { hitboxes, linkHits, endpointPoints, width, height };
         session.renderVersion += 1;
+    }
+
+
+    function drawDistributionDivider(ctx, width, height) {
+        const dividerX = 560;
+        ctx.save();
+        ctx.setLineDash([9, 7]);
+        ctx.strokeStyle = "rgba(111, 183, 255, .35)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(dividerX, 24);
+        ctx.lineTo(dividerX, height - 24);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(215, 233, 247, .9)";
+        ctx.font = "700 11px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText("ENTRADA", dividerX - 88, 24);
+        ctx.fillText("SAÍDA", dividerX + 88, 24);
+        ctx.textAlign = "left";
+        ctx.restore();
     }
 
     function drawGrid(ctx, width, height, offsetX, offsetY) {
