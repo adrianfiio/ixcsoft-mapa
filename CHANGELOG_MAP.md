@@ -1,3 +1,25 @@
+## [0.75.42] - 2026-08-05
+
+### Rack 19 polegadas compacto
+- O Rack passa a acompanhar a largura padrão da OLT/DIO, sem gabinete vazio maior que os equipamentos.
+- A altura visual usa somente as unidades U necessárias para a ocupação atual.
+- OLT, DIO, Switch, Roteador e Firewall compartilham a mesma largura 19 polegadas.
+
+### Organizadores e caminhos
+- O Rack reserva 1U entre equipamentos para organizadores horizontais.
+- Cordões frontais usam calhas laterais e o organizador mais próximo.
+- Cabos externos chegam às cavidades do DIO pela lateral mais adequada, mantendo um tronco traseiro por cabo.
+
+### DIO e Switch
+- DIO mantém cavidades de 12 portas com organizadores ópticos entre bandejas.
+- Switches são cadastrados em modal moderno com nome, fabricante, modelo, IP e quantidade de portas.
+- Portas de Switch/Roteador/Firewall são geradas no backend e exibidas em até 12 por linha.
+
+### Tipos e zoom
+- PTO, ONU/ONT, Rádio PTP, Access Point e Outro deixam de ser oferecidos dentro do Rack.
+- A roda do mouse controla diretamente o zoom; os botões de zoom e ajuste permanecem.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.41] - 2026-08-05
 
 ### Correção do Rack físico

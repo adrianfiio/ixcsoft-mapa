@@ -297,6 +297,7 @@ def _equipment_payload(equipment):
         "onu_lan_count": int(metadata.get("onu_lan_count") or 4),
         "pon_connector": metadata.get("pon_connector") or "SC/APC",
         "rx_power_dbm": metadata.get("rx_power_dbm"),
+        "port_count": int(metadata.get("port_count") or equipment.ports.count() or 0),
         "ports": [_port_payload(port) for port in equipment.ports.select_related("equipment")],
     }
 
@@ -358,6 +359,18 @@ def _create_equipment_ports_v07539(equipment):
             )
             for index in range(1, lan_count + 1)
         )
+    elif kind in {"switch", "router", "firewall"}:
+        port_count = max(1, min(int((equipment.metadata or {}).get("port_count") or (24 if kind == "switch" else 8)), 96))
+        ports = [
+            ContainerEquipmentPort(
+                equipment=equipment,
+                port_type=ContainerEquipmentPort.PortType.RJ45_1G,
+                number=number,
+                port_number=number,
+                label=f"Porta {number}",
+            )
+            for number in range(1, port_count + 1)
+        ]
     elif kind == "olt":
         number = 0
         for slot in range(1, equipment.card_count + 1):
@@ -393,18 +406,22 @@ def equipment_collection_v07539(request, element_id):
         return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
     data = _json_body(request)
     requested_type = str(data.get("equipment_type") or "").strip()
-    allowed = {
+    rack_allowed = {
         ContainerEquipment.EquipmentType.OLT,
         ContainerEquipment.EquipmentType.DIO,
         ContainerEquipment.EquipmentType.SWITCH,
         ContainerEquipment.EquipmentType.ROUTER,
         ContainerEquipment.EquipmentType.FIREWALL,
+    }
+    tower_allowed = {
+        *rack_allowed,
         ContainerEquipment.EquipmentType.ACCESS_POINT,
         ContainerEquipment.EquipmentType.PTP,
         ContainerEquipment.EquipmentType.ONU,
         ContainerEquipment.EquipmentType.PTO,
         ContainerEquipment.EquipmentType.OTHER,
     }
+    allowed = rack_allowed if container.element_type == NetworkElement.ElementType.RACK else tower_allowed
     if requested_type not in allowed:
         return JsonResponse({"detail": "Tipo de equipamento inválido."}, status=400)
     name = str(data.get("name") or "").strip()
@@ -415,6 +432,7 @@ def equipment_collection_v07539(request, element_id):
         pons_per_card = max(0, min(int(data.get("pons_per_card") or 0), 64))
         dio_capacity = int(data.get("dio_port_capacity") or 0)
         onu_lan_count = max(1, min(int(data.get("onu_lan_count") or 4), 16))
+        port_count = max(1, min(int(data.get("port_count") or 24), 96))
     except (TypeError, ValueError):
         return JsonResponse({"detail": "Capacidades informadas são inválidas."}, status=400)
     if requested_type == ContainerEquipment.EquipmentType.DIO and dio_capacity not in {12, 24, 36, 48, 72, 96, 144, 192, 244}:
@@ -427,13 +445,21 @@ def equipment_collection_v07539(request, element_id):
     else:
         connector = ""
     metadata = {}
+    if requested_type in {
+        ContainerEquipment.EquipmentType.SWITCH,
+        ContainerEquipment.EquipmentType.ROUTER,
+        ContainerEquipment.EquipmentType.FIREWALL,
+    }:
+        metadata["port_count"] = port_count
+        metadata["height_units"] = 1 if port_count <= 12 else 2 if port_count <= 24 else 3
+        metadata["rack_form_factor"] = "19-inch"
     if requested_type == ContainerEquipment.EquipmentType.ONU:
-        metadata = {
+        metadata.update({
             "equipment_subtype": "onu",
             "onu_lan_count": onu_lan_count,
             "pon_connector": str(data.get("pon_connector") or "SC/APC"),
             "rx_power_dbm": data.get("rx_power_dbm") or None,
-        }
+        })
     try:
         with transaction.atomic():
             equipment = ContainerEquipment.objects.create(
@@ -517,6 +543,7 @@ def equipment_editor_v07539(request, element_id, equipment_id):
         "asset_tag", "rack_unit", "rack_face", "photo_url", "documentation_url",
         "firmware", "role", "notes", "onu_lan_count", "pon_connector",
         "rx_power_dbm", "width", "height", "cavity_columns", "collapsed_cavities",
+        "port_count", "height_units", "rack_form_factor",
     }
     for field in metadata_fields:
         if field in data:
