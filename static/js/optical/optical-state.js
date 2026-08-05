@@ -5,7 +5,7 @@
     const LINK_STYLES = new Set(["curve", "orthogonal", "straight"]);
 
     function workspaceLabel() {
-        return "EDITOR ÓPTICO";
+        return "CAIXA ÓPTICA";
     }
 
     function createSession(elementId) {
@@ -23,7 +23,7 @@
             cableState: { cables: [] },
             servicePorts: null,
             layout: {
-                version: 5,
+                version: 6,
                 viewport: { zoom: 1, panX: 0, panY: 0 },
                 nodes: {},
                 links: {},
@@ -86,7 +86,7 @@
         const notes = Array.isArray(source.notes) ? source.notes : [];
         const keepNodes = sourceVersion >= 2;
         return {
-            version: 5,
+            version: 6,
             viewport: {
                 zoom: clampNumber(viewport.zoom, 0.35, 2.6, 1),
                 panX: clampNumber(viewport.panX, -7000, 7000, 0),
@@ -118,7 +118,7 @@
         session.cableState = payload.cableState || session.cableState;
         session.servicePorts = payload.servicePorts;
         session.layout = normalizeLayout(payload.layout);
-        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 5;
+        session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 6;
         delete session.layout.migratedFromVersion;
         session.selection.splitterId = splitters(session)[0]?.id || null;
         session.selection.cableId = session.optical.cables[0]?.id || null;
@@ -130,6 +130,10 @@
 
     function isDistributionBox(session) {
         return session.element?.element_type === "splice_box";
+    }
+
+    function isOpticalBox(session) {
+        return ["splice_box", "cto"].includes(String(session.element?.element_type || ""));
     }
 
     function fiberById(session, fiberId) {
@@ -320,6 +324,7 @@
         normalizeLinkRoute,
         workspaceLabel,
         isDistributionBox,
+        isOpticalBox,
         fiberById,
         fiberColor,
         cableById,

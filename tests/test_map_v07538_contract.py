@@ -13,15 +13,17 @@ class MapV07538ContractTests(unittest.TestCase):
     def test_distribution_boxes_draw_side_divider_and_two_sides(self):
         renderer = content("static/js/optical/optical-renderer.js")
         self.assertIn("drawDistributionDivider", renderer)
-        self.assertIn('fillText("ENTRADA"', renderer)
-        self.assertIn('fillText("SAÍDA"', renderer)
-        self.assertIn('return { x: side === "left" ? 64 : 866, y };', renderer)
+        self.assertIn('fillText("ENTRADA / CHEGADA"', renderer)
+        self.assertIn('fillText("SAÍDA / DISTRIBUIÇÃO"', renderer)
+        self.assertIn('return { x: side === "left" ? 62 : 866, y };', renderer)
 
     def test_distribution_box_vertical_cables_can_render_from_both_sides(self):
         renderer = content("static/js/optical/optical-renderer.js")
         self.assertIn('const rightSide = side === "right";', renderer)
         self.assertIn('const endpointX = rightSide ? node.x : node.x + metrics.width;', renderer)
-        self.assertIn('const relation = cable.requires_cut ? "passagem · cortar" : cable.relation_action === "pass" ? "passagem" : side === "left" ? "entrada" : "saída";', renderer)
+        self.assertIn('function cableTopologyRelation', renderer)
+        self.assertIn('entrada visual', renderer)
+        self.assertIn('saída visual', renderer)
 
     def test_new_dio_runtime_uses_left_anchor_and_smooth_drag(self):
         runtime = content("static/js/map-dio-fusion-v07538.js")
@@ -45,12 +47,12 @@ class MapV07538ContractTests(unittest.TestCase):
         workspace = content("static/js/optical/optical-workspace.js")
         settings = content("config/settings.py")
         versions = content("VERSIONS.md")
-        release = content("docs/releases/map/map-v0.75.38.md")
+        release = content("docs/releases/map/map-v0.75.39.md")
         self.assertIn('captura máxima 5 m', workspace)
-        self.assertIn('version: "0.75.38"', workspace)
-        self.assertIn('0.75.38', settings)
-        self.assertIn('v0.75.38', versions)
-        self.assertIn('MAP v0.75.38', release)
+        self.assertIn('version: "0.75.39"', workspace)
+        self.assertIn('0.75.39', settings)
+        self.assertIn('v0.75.39', versions)
+        self.assertIn('MAP v0.75.39', release)
 
     def test_no_browser_popups(self):
         runtime = content("static/js/map-dio-fusion-v07538.js")
