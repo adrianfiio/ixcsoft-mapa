@@ -653,7 +653,7 @@
         state.scroll = qs(".master-canvas-scroll", root);
         if (!state.canvas || !state.scroll) return;
         hideRedundantToolbarActions(root);
-        installNavigation(state.scroll);
+        if (!global.mapRackViewportV07546) installNavigation(state.scroll);
         qsa('.master-canvas-node[data-equipment-type="dio"]', root).forEach(enhanceDio);
         await Promise.all(qsa('.master-canvas-node[data-equipment-type="olt"]', root).map((node) => enhanceOlt(node, generation).catch((error) => {
             node.dataset.v07545HardwareError = error.message;

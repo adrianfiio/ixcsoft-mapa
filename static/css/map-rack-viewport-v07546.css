@@ -1,0 +1,22 @@
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled {
+    overflow: hidden !important;
+    touch-action: none !important;
+    cursor: grab;
+    overscroll-behavior: contain;
+}
+
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled.is-panning-v07546 {
+    cursor: grabbing !important;
+    user-select: none;
+}
+
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled.is-panning-v07546 * {
+    cursor: grabbing !important;
+}
+
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled button,
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled a,
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled [data-port-id],
+#map-master-container.v07542-physical-rack .master-canvas-scroll.v07546-navigation-enabled .master-node-port {
+    cursor: pointer;
+}
