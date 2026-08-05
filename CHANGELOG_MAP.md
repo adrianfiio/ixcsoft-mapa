@@ -1,3 +1,19 @@
+## [0.75.41] - 2026-08-05
+
+### Correção do Rack físico
+- Corrigido o erro de JavaScript causado por `closest()` receber um elemento DOM em vez de seletor CSS.
+- Equipamentos podem ser movidos pelo cabeçalho com encaixe vertical em unidades U.
+- Posições manuais são persistidas no layout do elemento e podem ser descartadas com Auto organizar.
+
+### Prevenção de sobreposição
+- Posições U repetidas são realocadas para o espaço livre mais próximo.
+- A altura é medida depois da largura final do Rack, evitando OLT e DIO sobrepostos.
+- O Rack usa 42U por padrão e cresce quando necessário.
+
+### Compatibilidade
+- Calhas, troncos traseiros, deduplicação e Torre em Canvas livre foram preservados.
+- Nenhuma migration e nenhum endpoint novo.
+
 ## [0.75.40] - 2026-08-05
 
 ### Rack físico e calhas

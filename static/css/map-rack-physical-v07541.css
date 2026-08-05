@@ -1,6 +1,6 @@
-/* MAP v0.75.40 — rack físico travado, calhas laterais e roteamento traseiro agrupado. */
+/* MAP v0.75.41 — rack físico com snap em U, calhas laterais e roteamento traseiro agrupado. */
 
-#map-master-container.v07540-physical-rack .master-canvas {
+#map-master-container.v07541-physical-rack .master-canvas {
     position: relative !important;
     overflow: visible !important;
     background:
@@ -11,12 +11,12 @@
     background-size: auto, 28px 28px, 28px 28px, auto !important;
 }
 
-#map-master-container.v07540-physical-rack .master-canvas-links,
-#map-master-container.v07540-physical-rack .map-rack-association-links-v07538 {
+#map-master-container.v07541-physical-rack .master-canvas-links,
+#map-master-container.v07541-physical-rack .map-rack-association-links-v07538 {
     display: none !important;
 }
 
-.v07540-rack-frame {
+.v07541-rack-frame {
     position: absolute;
     z-index: 1;
     box-sizing: border-box;
@@ -27,7 +27,7 @@
     pointer-events: none;
 }
 
-.v07540-rack-frame > header {
+.v07541-rack-frame > header {
     position: absolute;
     inset: 0 0 auto 0;
     height: 46px;
@@ -42,17 +42,17 @@
     border-radius: 8px 8px 0 0;
 }
 
-.v07540-rack-frame > header strong {
+.v07541-rack-frame > header strong {
     font: 850 12px/1 system-ui, sans-serif;
     letter-spacing: .12em;
 }
 
-.v07540-rack-frame > header span {
+.v07541-rack-frame > header span {
     color: #8fb0c8;
     font: 700 9px/1 system-ui, sans-serif;
 }
 
-.v07540-duct {
+.v07541-duct {
     position: absolute;
     z-index: 3;
     top: 48px;
@@ -64,9 +64,9 @@
         #081826;
 }
 
-.v07540-duct.left { left: 0; border-radius: 0 0 0 8px; }
-.v07540-duct.right { right: 0; border-radius: 0 0 8px 0; }
-.v07540-duct b {
+.v07541-duct.left { left: 0; border-radius: 0 0 0 8px; }
+.v07541-duct.right { right: 0; border-radius: 0 0 8px 0; }
+.v07541-duct b {
     position: sticky;
     top: 55px;
     display: block;
@@ -78,7 +78,7 @@
     writing-mode: vertical-rl;
 }
 
-.v07540-rear-spine {
+.v07541-rear-spine {
     position: absolute;
     z-index: 2;
     top: 48px;
@@ -90,7 +90,7 @@
     pointer-events: none;
 }
 
-.v07540-rear-spine span {
+.v07541-rear-spine span {
     position: absolute;
     right: 8px;
     top: 9px;
@@ -99,7 +99,7 @@
     letter-spacing: .15em;
 }
 
-.v07540-rack-units {
+.v07541-rack-units {
     position: absolute;
     z-index: 1;
     top: 48px;
@@ -108,13 +108,13 @@
     right: 48px;
 }
 
-.v07540-rack-units > div {
+.v07541-rack-units > div {
     position: relative;
     box-sizing: border-box;
     border-bottom: 1px solid rgba(105, 151, 181, .22);
 }
 
-.v07540-rack-units span {
+.v07541-rack-units span {
     position: absolute;
     left: 5px;
     top: 5px;
@@ -122,15 +122,15 @@
     font: 700 7px/1 system-ui, sans-serif;
 }
 
-.v07540-rack-units i {
+.v07541-rack-units i {
     position: absolute;
     inset: 6px 16px;
     border-left: 2px solid rgba(106, 147, 174, .18);
     border-right: 2px solid rgba(106, 147, 174, .18);
 }
 
-#map-master-container.v07540-physical-rack .v07540-rack-mounted,
-#map-master-container.v07540-physical-rack .v07540-external-cable {
+#map-master-container.v07541-physical-rack .v07541-rack-mounted,
+#map-master-container.v07541-physical-rack .v07541-external-cable {
     position: absolute !important;
     z-index: 8 !important;
     box-sizing: border-box !important;
@@ -138,23 +138,23 @@
     transition: box-shadow .16s ease, border-color .16s ease !important;
 }
 
-#map-master-container.v07540-physical-rack .v07540-rack-mounted {
+#map-master-container.v07541-physical-rack .v07541-rack-mounted {
     max-width: none !important;
     border-radius: 6px !important;
     box-shadow: 0 6px 18px rgba(0, 0, 0, .34) !important;
 }
 
-#map-master-container.v07540-physical-rack .v07540-rack-mounted > header,
-#map-master-container.v07540-physical-rack .v07540-external-cable > header {
+#map-master-container.v07541-physical-rack .v07541-rack-mounted > header,
+#map-master-container.v07541-physical-rack .v07541-external-cable > header {
     cursor: default !important;
 }
 
-#map-master-container.v07540-physical-rack .v07540-rack-mounted:hover {
+#map-master-container.v07541-physical-rack .v07541-rack-mounted:hover {
     border-color: #5f93b4 !important;
     box-shadow: 0 7px 22px rgba(0, 0, 0, .42), 0 0 0 1px rgba(81, 168, 219, .16) !important;
 }
 
-.v07540-rack-u-badge {
+.v07541-rack-u-badge {
     margin-left: 5px;
     padding: 3px 6px;
     border: 1px solid #3b617a;
@@ -165,26 +165,26 @@
     white-space: nowrap;
 }
 
-#map-master-container.v07540-physical-rack .v07540-external-cable {
+#map-master-container.v07541-physical-rack .v07541-external-cable {
     min-width: 230px !important;
     max-width: 230px !important;
     border-color: #167e5c !important;
     background: #0a1c29 !important;
 }
 
-#map-master-container.v07540-physical-rack .v07540-external-cable[data-external-side-v07540="left"] {
+#map-master-container.v07541-physical-rack .v07541-external-cable[data-external-side-v07541="left"] {
     border-left-color: #2dd4bf !important;
 }
 
-#map-master-container.v07540-physical-rack .v07540-external-cable[data-external-side-v07540="right"] {
+#map-master-container.v07541-physical-rack .v07541-external-cable[data-external-side-v07541="right"] {
     border-right-color: #2dd4bf !important;
 }
 
-#map-master-container.v07540-physical-rack .map-rack-cable-summary-v07538 {
+#map-master-container.v07541-physical-rack .map-rack-cable-summary-v07538 {
     grid-template-columns: 32px minmax(0, 1fr) !important;
 }
 
-.v07540-rack-links {
+.v07541-rack-links {
     position: absolute;
     z-index: 5;
     inset: 0 auto auto 0;
@@ -192,50 +192,107 @@
     pointer-events: none;
 }
 
-.v07540-rack-links path {
+.v07541-rack-links path {
     fill: none;
     vector-effect: non-scaling-stroke;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.v07540-front-link {
+.v07541-front-link {
     stroke: #38bdf8;
     stroke-width: 2.4;
     filter: drop-shadow(0 0 3px rgba(56, 189, 248, .34));
 }
 
-.v07540-port-dot {
+.v07541-port-dot {
     fill: #071521;
     stroke: #7dd3fc;
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
 }
 
-.v07540-rear-trunk {
+.v07541-rear-trunk {
     stroke: #f59e0b;
     stroke-width: 3.2;
     stroke-dasharray: 8 5;
     opacity: .78;
 }
 
-.v07540-rear-branch {
+.v07541-rear-branch {
     stroke: #fbbf24;
     stroke-width: 2.3;
     stroke-dasharray: 5 4;
     opacity: .72;
 }
 
-#map-master-container[data-container-kind-v07540="tower"] [data-v07540-duplicate-cable="1"] {
+#map-master-container[data-container-kind-v07541="tower"] [data-v07541-duplicate-cable="1"] {
     display: none !important;
 }
 
-#map-master-container.v07540-physical-rack .master-canvas-note {
+#map-master-container.v07541-physical-rack .master-canvas-note {
     z-index: 12 !important;
 }
 
 @media (max-width: 1100px) {
-    #map-master-container.v07540-physical-rack .master-canvas {
+    #map-master-container.v07541-physical-rack .master-canvas {
         min-width: 1460px !important;
     }
+}
+
+/* MAP v0.75.41 — manutenção do encaixe em U e movimentação controlada. */
+.v07541-rack-toolbar {
+    position: absolute;
+    z-index: 14;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 28px;
+    padding: 4px 6px 4px 10px;
+    border: 1px solid #31536b;
+    border-radius: 8px;
+    color: #9dbbd0;
+    background: rgba(10, 27, 41, .94);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+    font: 700 8px/1 system-ui, sans-serif;
+}
+
+.v07541-rack-toolbar button {
+    min-height: 22px;
+    padding: 3px 8px;
+    border: 1px solid #267da5;
+    border-radius: 6px;
+    color: #e9f8ff;
+    background: #125775;
+    font: 800 8px/1 system-ui, sans-serif;
+    cursor: pointer;
+}
+
+#map-master-container.v07541-physical-rack .v07541-rack-mounted {
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+#map-master-container.v07541-physical-rack .v07541-rack-mounted > header {
+    cursor: ns-resize !important;
+    user-select: none;
+    touch-action: none;
+}
+
+#map-master-container.v07541-physical-rack .v07541-rack-mounted > header button,
+#map-master-container.v07541-physical-rack .v07541-rack-mounted > header a,
+#map-master-container.v07541-physical-rack .v07541-rack-mounted > header input,
+#map-master-container.v07541-physical-rack .v07541-rack-mounted > header select {
+    cursor: pointer !important;
+}
+
+#map-master-container.v07541-physical-rack .v07541-rack-mounted.is-dragging-v07541 {
+    z-index: 24 !important;
+    border-color: #7dd3fc !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .55), 0 0 0 2px rgba(56, 189, 248, .45) !important;
+    opacity: .94;
+}
+
+#map-master-container.v07541-physical-rack .v07541-rack-mounted.is-dragging-v07541 > header {
+    cursor: grabbing !important;
 }
