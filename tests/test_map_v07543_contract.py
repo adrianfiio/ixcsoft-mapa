@@ -82,9 +82,9 @@ class MapV07543ContractTests(unittest.TestCase):
         self.assertIn("olt-hardware-v07543", urls)
         self.assertIn("map-rack-hardware-v07544.js", template)
         self.assertIn("map-rack-hardware-v07544.css", template)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.48")', content("config/settings.py"))
-        self.assertIn("Mapa | v0.75.48", content("VERSIONS.md"))
-        self.assertIn("MAP v0.75.48", content("docs/releases/map/map-v0.75.48.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.49")', content("config/settings.py"))
+        self.assertIn("Mapa | v0.75.49", content("VERSIONS.md"))
+        self.assertIn("MAP v0.75.49", content("docs/releases/map/map-v0.75.49.md"))
 
     def test_no_native_browser_popup(self):
         runtime = content("static/js/map-rack-hardware-v07544.js")

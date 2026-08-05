@@ -547,16 +547,16 @@
         if (event.target.closest("[data-dio-close-v07538]")) return closeWorkspace();
         const cableButton = event.target.closest("[data-dio-select-cable-v07538]");
         if (cableButton) {
-            state.selectedCableId = Number(cableButton.dataset.dioSelectCableV07537);
+            state.selectedCableId = Number(cableButton.dataset.dioSelectCableV07538);
             state.selectedFiberId = null;
             renderWorkspace();
             return;
         }
         const fiberButton = event.target.closest("[data-dio-fiber-v07538]");
         if (fiberButton) {
-            const fiberId = Number(fiberButton.dataset.dioFiberV07537);
+            const fiberId = Number(fiberButton.dataset.dioFiberV07538);
             const cableCard = fiberButton.closest("[data-dio-cable-card-v07538]");
-            state.selectedCableId = Number(cableCard.dataset.dioCableCardV07537);
+            state.selectedCableId = Number(cableCard.dataset.dioCableCardV07538);
             const fiber = selectedCable()?.fibers.find((item) => Number(item.id) === fiberId);
             if (fiber?.fusion) {
                 state.selectedFiberId = fiberId;
@@ -569,7 +569,7 @@
         }
         const portButton = event.target.closest("[data-dio-port-v07538]");
         if (portButton) {
-            const portId = Number(portButton.dataset.dioPortV07537);
+            const portId = Number(portButton.dataset.dioPortV07538);
             const port = state.data.ports.find((item) => Number(item.id) === portId);
             state.selectedPortId = portId;
             if (!port?.fusion && state.selectedFiberId) await createFusion(portId);
@@ -578,7 +578,7 @@
         }
         if (event.target.closest("[data-dio-auto-fuse-v07538]")) return autoFuse();
         const detach = event.target.closest("[data-dio-detach-cable-v07538]");
-        if (detach) return detachCable(Number(detach.dataset.dioDetachCableV07537));
+        if (detach) return detachCable(Number(detach.dataset.dioDetachCableV07538));
         if (event.target.closest("[data-dio-attach-menu-v07538]")) return attachCableDialog();
     }
 
@@ -709,7 +709,7 @@
         const portButton = event.target.closest("[data-dio-port-v07538]");
         if (!portButton) return;
         event.preventDefault();
-        const portId = Number(portButton.dataset.dioPortV07537);
+        const portId = Number(portButton.dataset.dioPortV07538);
         const port = state.data?.ports.find((item) => Number(item.id) === portId);
         if (!port?.fusion) return;
         openPortMenu(event.clientX, event.clientY, port);
@@ -718,7 +718,7 @@
     function handleWorkspaceDoubleClick(event) {
         const portButton = event.target.closest("[data-dio-port-v07538]");
         if (!portButton) return;
-        const port = state.data?.ports.find((item) => Number(item.id) === Number(portButton.dataset.dioPortV07537));
+        const port = state.data?.ports.find((item) => Number(item.id) === Number(portButton.dataset.dioPortV07538));
         if (port?.fusion) deleteFusion(port.fusion.id);
     }
 
@@ -731,7 +731,7 @@
         const button = qs("[data-dio-break-fusion-v07538]", menu);
         button.onclick = () => {
             closePortMenu();
-            deleteFusion(Number(button.dataset.dioBreakFusionV07537));
+            deleteFusion(Number(button.dataset.dioBreakFusionV07538));
         };
     }
 

@@ -21,7 +21,7 @@ class MapV07545RollingContractTests(unittest.TestCase):
 
     def test_current_version(self):
         settings = content("config/settings.py")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.48")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.49")', settings)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
