@@ -578,7 +578,12 @@
         document.getElementById("container-fields").hidden = !isContainer;
         document.getElementById("container-fields-title").textContent = element.element_type === "tower" ? "Equipamentos da torre" : "Equipamentos do rack";
         if (isCto && element.cto) {
-            const splitter = element.cto.splitters[0];
+            // MAP_V07553_EMPTY_CTO_GUARD: element.cto.splitters podia vir
+            // ausente (não só vazio) numa CTO sem splitter cadastrado ainda,
+            // e o acesso direto [0] derrubava a edição com "Cannot read
+            // properties of undefined (reading '0')".
+            const splitters = Array.isArray(element.cto.splitters) ? element.cto.splitters : [];
+            const splitter = splitters[0];
             elementForm.elements.cto_capacity.value = element.cto.capacity || 8;
             elementForm.elements.splitter_ratio.value = splitter?.ratio || element.cto.splitter_ratio || "1:8";
             elementForm.elements.splitter_ports.value = splitter?.output_ports || element.cto.capacity || 8;

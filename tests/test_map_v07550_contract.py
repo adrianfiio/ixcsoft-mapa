@@ -68,8 +68,8 @@ class MapV07550ContractTests(unittest.TestCase):
         self.assertIn("return fallback", js)
 
     def test_version_and_release_are_current(self):
-        self.assertIn('0.75.52', content("config/settings.py"))
-        self.assertIn('v0.75.52', content("VERSIONS.md"))
+        self.assertIn('0.75.53', content("config/settings.py"))
+        self.assertIn('v0.75.53', content("VERSIONS.md"))
         self.assertIn('MAP v0.75.50', content("docs/releases/map/map-v0.75.50.md"))
 
     def test_no_migration_or_native_browser_popup(self):

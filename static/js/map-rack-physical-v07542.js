@@ -944,12 +944,41 @@
         openRackEquipmentDialog();
     }
 
+    // MAP_V07553_RACK_CLOSE_TEARDOWN: fechar o dialog (sem antes trocar pra
+    // Torre) nunca chamava resetPhysicalMode — enhance() só alcança esse
+    // reset quando dialog.open ainda é true. A classe "v07542-physical-rack"
+    // em #map-master-container e containerType="rack" em #container-dialog
+    // ficavam presos pra sempre, e todo runtime do Rack (viewport, ux,
+    // integrity, maintenance) reimplementa isRack() checando exatamente
+    // esses dois marcadores primeiro — cada um deles voltava a se comportar
+    // como se o Rack ainda estivesse aberto ao interagir com qualquer outro
+    // elemento depois, inclusive o workspace óptico isolado de CTO/CDO/CEO.
+    function teardownRackModeOnClose() {
+        const root = qs("#map-master-container");
+        const dialog = qs("#container-dialog");
+        if (root) resetPhysicalMode(root);
+        if (dialog) {
+            delete dialog.dataset.containerType;
+            delete dialog.dataset.elementType;
+        }
+        state.currentKind = "unknown";
+        state.data = null;
+        state.root = null;
+        global.clearTimeout(state.lateTimer);
+        global.clearTimeout(state.saveTimer);
+        // Mesma geração usada por schedule()/enhance() pra descartar resposta
+        // atrasada — incrementar aqui invalida qualquer await em voo desta
+        // sessão do Rack que ainda não tinha resolvido no momento do fechamento.
+        state.enhanceGeneration += 1;
+    }
+
     function init() {
         document.addEventListener("map:container-rendered", (event) => schedule(event.detail?.data || null));
         document.addEventListener("map:container-opening", () => global.setTimeout(() => schedule(), 120));
         document.addEventListener("pointerdown", startRackDrag, true);
         document.addEventListener("click", interceptLegacyRackAdd, true);
         global.addEventListener("resize", scheduleRedraw);
+        qs("#container-dialog")?.addEventListener("close", teardownRackModeOnClose);
         global.setTimeout(() => schedule(), 800);
         const api = Object.freeze({
             version: VERSION,

@@ -1,5 +1,24 @@
 ## [0.75.50] - 2026-08-05
 
+## MAP v0.75.53 — corrige ciclo do Rack e abertura de CTO/CDO/CEO
+
+- causa raiz: fechar o Rack sem trocar pra Torre nunca limpava a classe
+  "v07542-physical-rack" nem containerType="rack" do dialog — todo runtime
+  do Rack reimplementa isRack() checando exatamente esses dois marcadores,
+  então continuavam se comportando como se o Rack ainda estivesse aberto
+  ao interagir com qualquer outro elemento depois, inclusive o workspace
+  óptico isolado de CTO/CDO/CEO;
+- fechar o dialog do Rack agora sempre reseta esses marcadores e invalida
+  qualquer resposta assíncrona em voo daquela sessão do Rack;
+- corrige acesso direto a `element.cto.splitters[0]` sem checar se a lista
+  existe, ao editar uma CTO sem splitter cadastrado;
+- normaliza o payload do workspace óptico (`session.optical`/`cableState`)
+  pra garantir arrays mesmo com resposta parcial do backend;
+- revalidados por código (sem alteração): Switch 8/12/16 em uma linha, pan
+  com botão esquerdo, uplinks únicos no topo da OLT, troca de posição dos
+  equipamentos e pares do DIO — nenhuma regressão encontrada nessas áreas;
+- sem migration e sem alteração na versão da Plataforma.
+
 ## MAP v0.75.52 — Rack navegável, uplinks funcionais e DIO pareado
 
 - Switches de 8, 12 e 16 portas usam uma única linha na largura útil do Rack;
