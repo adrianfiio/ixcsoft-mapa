@@ -1,5 +1,30 @@
 ## [0.75.50] - 2026-08-05
 
+## MAP v0.75.54 — corrige migrations que quebravam banco novo
+
+- validação real no navegador (Playwright, ambiente Docker isolado no
+  servidor, sem tocar em produção) confirmou que o hotfix da v0.75.53
+  resolve o bug relatado: Rack → fechar → CTO/CDO/CEO abriram normalmente
+  em vários ciclos, zero erro de console, zero requisição falha;
+- ao montar esse ambiente isolado com banco do zero, apareceram 2 bugs
+  reais de migration, sem relação com o hotfix acima, que só se manifestam
+  num banco novo (produção nunca bateu neles porque o schema dela já
+  existia antes dessas migrations):
+  - `access/0002_add_ftth_fields.py` tentava adicionar 12 campos que
+    `0001_initial.py` já cria — "column already exists" num banco novo;
+    virou no-op (mantido só pelo nome, por causa da dependência de outras
+    3 migrations);
+  - `network_map/0003_sync_company_fields_state.py` só atualizava o
+    estado do Django (`SeparateDatabaseAndState` com
+    `database_operations=[]`) — nunca criava de fato a coluna `company`
+    em FiberCable/NetworkElement/NetworkRoute num banco novo; agora cria;
+- sem efeito em produção: Django rastreia migration aplicada só pelo nome,
+  não pelo conteúdo — essas duas já estão marcadas como aplicadas lá, o
+  `migrate` não vai reexecutá-las; a correção só importa pra banco novo
+  (ambiente de teste, disaster recovery);
+- sem alteração de comportamento visível, sem migration nova, sem
+  alteração na versão da Plataforma.
+
 ## MAP v0.75.53 — corrige ciclo do Rack e abertura de CTO/CDO/CEO
 
 - causa raiz: fechar o Rack sem trocar pra Torre nunca limpava a classe

@@ -1,120 +1,21 @@
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
+    # No-op: 0001_initial já cria estes 12 campos diretamente em AccessPoint
+    # (ixc_customer_id, ixc_contract_id, onu_mac, cto_ixc_id, ftth_port,
+    # concentrator_id, concentrator, interface_transmission, connection_type,
+    # last_connection_start, last_connection_end, disconnect_reason).
+    # As AddField originais desta migration duplicavam esses campos e
+    # quebravam qualquer `migrate` num banco novo com "column already
+    # exists". Em produção esta migration já está registrada como aplicada
+    # (django_migrations rastreia só o nome, não o conteúdo), então esta
+    # troca não reaplica nada nem afeta bancos existentes — só corrige o
+    # caminho de banco novo/disaster recovery. Mantido como arquivo (não
+    # apagado) porque billing.0001, ixc_integration.0007 e network_map.0007
+    # dependem dele pelo nome.
     dependencies = [
         ("access", "0001_initial"),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name="accesspoint",
-            name="ixc_customer_id",
-            field=models.CharField(
-                blank=True,
-                db_index=True,
-                max_length=80,
-                verbose_name="ID Cliente IXC",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="ixc_contract_id",
-            field=models.CharField(
-                blank=True,
-                db_index=True,
-                max_length=80,
-                verbose_name="ID Contrato IXC",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="onu_mac",
-            field=models.CharField(
-                blank=True,
-                db_index=True,
-                max_length=80,
-                verbose_name="MAC ONU",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="cto_ixc_id",
-            field=models.CharField(
-                blank=True,
-                db_index=True,
-                max_length=80,
-                verbose_name="ID CTO IXC",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="ftth_port",
-            field=models.CharField(
-                blank=True,
-                max_length=30,
-                verbose_name="Porta FTTH",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="concentrator_id",
-            field=models.CharField(
-                blank=True,
-                max_length=80,
-                verbose_name="ID Concentrador",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="concentrator",
-            field=models.CharField(
-                blank=True,
-                max_length=120,
-                verbose_name="Concentrador",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="interface_transmission",
-            field=models.CharField(
-                blank=True,
-                max_length=120,
-                verbose_name="Interface transmissão",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="connection_type",
-            field=models.CharField(
-                blank=True,
-                max_length=80,
-                verbose_name="Tipo conexão",
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="last_connection_start",
-            field=models.DateTimeField(
-                blank=True,
-                null=True,
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="last_connection_end",
-            field=models.DateTimeField(
-                blank=True,
-                null=True,
-            ),
-        ),
-        migrations.AddField(
-            model_name="accesspoint",
-            name="disconnect_reason",
-            field=models.CharField(
-                blank=True,
-                max_length=255,
-            ),
-        ),
-    ]
+    operations = []
