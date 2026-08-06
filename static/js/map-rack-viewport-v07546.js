@@ -163,13 +163,15 @@
 
     function blockedPrimaryTarget(target) {
         if (!(target instanceof Element)) return true;
+        // MAP_V07555_PAN_FIX: mesma correção do v07552 — "dialog" batia no
+        // próprio #container-dialog que envolve todo o canvas (ancestral via
+        // closest()), não um modal aninhado, bloqueando o pan sempre.
         return Boolean(target.closest([
             "button",
             "a",
             "input",
             "select",
             "textarea",
-            "dialog",
             "[contenteditable='true']",
             "[data-port-id]",
             ".master-node-port",

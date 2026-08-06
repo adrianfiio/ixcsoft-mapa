@@ -258,7 +258,6 @@
         const extraTypes = [
             ["olt", "OLT", "Chassi óptico"],
             ["firewall", "Firewall", "Segurança e borda"],
-            ["server", "Servidor", "Servidor instalado no rack"],
             ["other", "Outro", "Equipamento personalizado"],
         ];
         extraTypes.forEach(([type, label, help]) => {
@@ -280,21 +279,29 @@
             addMenu.appendChild(button);
         });
 
-        if (empty && identity.type === "rack") {
+        if (empty) {
+            // MAP_V07555_STALE_EMPTY_BUTTONS: antes só existia este bloco
+            // pra "rack" — trocar de um Rack pra uma Torre na mesma sessão
+            // (sem recarregar a página) deixava os botões OLT/DIO/Switch do
+            // Rack presos no cartão vazio da Torre pra sempre, porque nada
+            // reescrevia as ações quando identity.type virava "tower".
             const actions = qs("div", empty);
             if (actions) {
-                actions.innerHTML = `
-                    <button type="button" data-empty-add="olt">Adicionar OLT</button>
-                    <button type="button" data-empty-add="dio">Adicionar DIO</button>
-                    <button type="button" data-empty-add="switch">Adicionar Switch</button>`;
+                actions.innerHTML = identity.type === "rack"
+                    ? `<button type="button" data-empty-add="olt">Adicionar OLT</button>
+                       <button type="button" data-empty-add="dio">Adicionar DIO</button>
+                       <button type="button" data-empty-add="switch">Adicionar Switch</button>`
+                    : `<button type="button" data-empty-add="dio">Adicionar DIO</button>
+                       <button type="button" data-empty-add="pto">Adicionar PTO</button>
+                       <button type="button" data-empty-add="switch">Adicionar Switch</button>`;
                 qsa("[data-empty-add]", actions).forEach((button) => {
                     button.onclick = () => qs(`[data-quick-add="${button.dataset.emptyAdd}"]`, root)?.click();
                 });
             }
         }
 
-        const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "server"]);
-        const towerAllowed = new Set(["olt", "dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
+        const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall"]);
+        const towerAllowed = new Set(["dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
         const allowed = identity.type === "rack" ? rackAllowed : towerAllowed;
         qsa("[data-quick-add]", root).forEach((button) => {
             button.hidden = !allowed.has(String(button.dataset.quickAdd));
