@@ -15,6 +15,24 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.83.0] - 2026-08-06
+
+Menu lateral e atalhos do dashboard restritos para usuário VIEW —
+antes ficavam idênticos aos de um usuário EDIT, mesmo sem acesso real
+às telas.
+
+- Novo `is_view_only_member` no contexto global (`company_navigation`),
+  calculado a partir do `role` da membership ativa na empresa atual.
+- `templates/base.html`: menu lateral do usuário VIEW mostra só "Visão
+  geral" e "Mapa operacional" — Equipamentos, Alertas, Financeiro e
+  Minha administração ficam ocultos (Financeiro já era bloqueado no
+  servidor pra VIEW; o link só não refletia isso).
+- `templates/dashboard.html` e `templates/dashboard_designer.html`: o
+  painel de atalhos operacionais (Equipamentos, OLTs/ONUs, Central de
+  alertas, Minha equipe) some inteiro para VIEW. O botão "Abrir mapa
+  operacional" continua visível — VIEW pode navegar o mapa, só não
+  edita (bloqueio já existente em `can_edit_map`/`can_edit_company`).
+
 ## [platform-0.82.0] - 2026-08-03
 
 Community SNMP padrão por empresa — evita pedir a community de novo em

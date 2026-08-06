@@ -123,7 +123,7 @@
         </article>
     </div>
     {% endif %}
-    {% if edit_mode or not widget_meta.panel_shortcuts.hidden %}
+    {% if not is_view_only_member and (edit_mode or not widget_meta.panel_shortcuts.hidden) %}
     <div class="grid-stack-item" data-widget="panel_shortcuts" gs-id="panel_shortcuts" gs-x="{{ widget_meta.panel_shortcuts.x }}" gs-y="{{ widget_meta.panel_shortcuts.y }}" gs-w="{{ widget_meta.panel_shortcuts.w }}" gs-h="{{ widget_meta.panel_shortcuts.h }}" style="grid-column: {{ widget_meta.panel_shortcuts.x1 }} / span {{ widget_meta.panel_shortcuts.w }}; grid-row: {{ widget_meta.panel_shortcuts.y1 }} / span {{ widget_meta.panel_shortcuts.h }};">
         <article class="panel grid-stack-item-content{% if widget_meta.panel_shortcuts.hidden %} widget-hidden{% endif %}">
             {% include "includes/widget_edit_bar.html" with widget_key="panel_shortcuts" hidden=widget_meta.panel_shortcuts.hidden %}
