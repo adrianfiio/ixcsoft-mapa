@@ -149,9 +149,9 @@ class MapV0750StaticTests(unittest.TestCase):
         settings = content("config/settings.py")
         compose = content("docker-compose.yml")
         self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.82.0"))', settings)
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.49")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.50")', settings)
         self.assertIn('PLATFORM_VERSION: ${PLATFORM_VERSION:-0.82.0}', compose)
-        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.49}', compose)
+        self.assertIn('MAP_VERSION: ${MAP_VERSION:-0.75.50}', compose)
 
     def test_tower_r7_has_contextual_creation_drop_and_fade(self):
         canvas = content("static/js/map-master-suite.js")

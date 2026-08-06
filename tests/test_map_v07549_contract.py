@@ -13,27 +13,27 @@ class MapV07549ContractTests(unittest.TestCase):
     def test_assets_are_loaded_after_v07548(self):
         template = content("templates/map.html")
         self.assertIn("map-rack-maintenance-v07549.css", template)
-        self.assertIn("map-rack-maintenance-v07549.js", template)
+        self.assertIn("map-rack-maintenance-v07550.js", template)
         self.assertLess(template.index("map-rack-integrity-v07548.css"), template.index("map-rack-maintenance-v07549.css"))
-        self.assertLess(template.index("map-rack-integrity-v07548.js"), template.index("map-rack-maintenance-v07549.js"))
+        self.assertLess(template.index("map-rack-integrity-v07548.js"), template.index("map-rack-maintenance-v07550.js"))
 
     def test_empty_rack_is_aligned(self):
         css = content("static/css/map-rack-maintenance-v07549.css")
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         self.assertIn("v07549-empty-aligned", css)
         self.assertIn("v07549-rack-backdrop", css)
         self.assertIn("syncEmptyAppearance", js)
 
     def test_left_mouse_pan_and_wheel_zoom_are_centralized(self):
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         self.assertIn('event.button !== 0', js)
         self.assertIn('event.button === 1', js)
         self.assertIn('global.addEventListener("wheel"', js)
         self.assertIn("applyView({ scale", js)
-        self.assertIn("v07549-is-panning", js)
+        self.assertIn("v07550-is-panning", js)
 
     def test_service_slot_click_and_context_menu(self):
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         self.assertIn('.v07545-service-slot.is-empty', js)
         self.assertIn('global.addEventListener("contextmenu"', js)
         self.assertIn("renderServiceDialog", js)
@@ -42,7 +42,7 @@ class MapV07549ContractTests(unittest.TestCase):
 
     def test_uplink_cards_have_model_and_per_port_types(self):
         backend = content("apps/network_map/api/map_v07549.py")
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         self.assertIn('UPLINK_PROFILE_KEY = "v07549_uplink_profiles"', backend)
         self.assertIn("save_uplink_card", backend)
         self.assertIn("remove_uplink_card", backend)
@@ -53,12 +53,12 @@ class MapV07549ContractTests(unittest.TestCase):
         self.assertIn("HU1A", js)
 
     def test_uplink_slots_are_rendered_before_service_slots(self):
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         self.assertIn("face.insertBefore(bank, serviceSlots)", js)
         self.assertIn("v07549-uplink-bank", js)
 
     def test_dio_connector_and_fusion_states_are_separate(self):
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         css = content("static/css/map-rack-maintenance-v07549.css")
         self.assertIn("rear-free-v07549", js)
         self.assertIn("has-rear-v07549", js)
@@ -68,7 +68,7 @@ class MapV07549ContractTests(unittest.TestCase):
         self.assertIn("#ff7b17", css)
 
     def test_rack_reflows_when_async_equipment_changes_size(self):
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         self.assertIn("ResizeObserver", js)
         self.assertIn("overlapPairs", js)
         self.assertIn("mapRackPhysicalV07542?.autoOrganize", js)
@@ -87,12 +87,12 @@ class MapV07549ContractTests(unittest.TestCase):
         self.assertIn("uplinks-v07549", urls)
 
     def test_version_and_release_are_current(self):
-        self.assertIn('0.75.49', content("config/settings.py"))
-        self.assertIn('v0.75.49', content("VERSIONS.md"))
-        self.assertIn('MAP v0.75.49', content("docs/releases/map/map-v0.75.49.md"))
+        self.assertIn('0.75.50', content("config/settings.py"))
+        self.assertIn('v0.75.50', content("VERSIONS.md"))
+        self.assertIn('MAP v0.75.50', content("docs/releases/map/map-v0.75.50.md"))
 
     def test_no_migration_or_native_browser_prompt(self):
-        js = content("static/js/map-rack-maintenance-v07549.js")
+        js = content("static/js/map-rack-maintenance-v07550.js")
         backend = content("apps/network_map/api/map_v07549.py")
         self.assertNotIn("window.alert(", js)
         self.assertNotIn("window.prompt(", js)
