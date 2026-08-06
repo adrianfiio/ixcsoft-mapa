@@ -61,4 +61,10 @@ def company_navigation(request):
         # superusuário, que nunca tem membership e sempre vê a marca padrão.
         "current_company": current_company,
         "topbar_alerts": topbar_alerts,
+        # Papel VIEW na empresa atual: menu lateral e atalhos do dashboard
+        # ficam restritos a Visão geral + Mapa operacional (o mapa em si já
+        # bloqueia edição via can_edit_map/can_edit_company no backend).
+        "is_view_only_member": bool(
+            membership and membership.role == CompanyMembership.Role.VIEW
+        ),
     }

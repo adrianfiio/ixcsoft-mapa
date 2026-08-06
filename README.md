@@ -13,13 +13,12 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 
 | Componente | Versão |
 |---|---:|
-| Plataforma | v0.82.0 |
+| Plataforma | v0.83.0 |
 | Mapa | v0.75.50 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
-  usuários): página de Equipamentos modernizada — sai do layout próprio
-  antigo (sem menu lateral) e passa a usar o mesmo shell/visual do resto
-  do site, com o menu lateral sempre visível.
+  usuários): usuário com papel VIEW passa a ver só Visão geral e Mapa
+  operacional no menu lateral, sem atalhos administrativos no dashboard.
   Changelog: [CHANGELOG_PLATFORM.md](CHANGELOG_PLATFORM.md).
 - **Mapa** (editor cartográfico, Rack/Torre, Canvas 2D, fusões, popups,
   SNMP/monitoramento visual, enlaces): Canvas unificado com identidade própria
