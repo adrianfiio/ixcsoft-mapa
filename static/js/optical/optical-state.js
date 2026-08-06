@@ -111,11 +111,31 @@
         };
     }
 
+    // MAP_V07553_EMPTY_BOX_GUARD: garante cables/splices/splitter_links como
+    // array mesmo se o backend devolver um objeto incompleto (ex.: {} sem
+    // "cables") — antes disso um payload parcial deixava session.optical
+    // truthy porém sem a chave esperada, e o primeiro acesso a
+    // session.optical.cables[0] quebrava com "Cannot read properties of
+    // undefined (reading '0')".
+    function normalizeOptical(raw) {
+        const source = raw && typeof raw === "object" ? raw : {};
+        return {
+            cables: Array.isArray(source.cables) ? source.cables : [],
+            splices: Array.isArray(source.splices) ? source.splices : [],
+            splitter_links: Array.isArray(source.splitter_links) ? source.splitter_links : [],
+        };
+    }
+
+    function normalizeCableState(raw) {
+        const source = raw && typeof raw === "object" ? raw : {};
+        return { ...source, cables: Array.isArray(source.cables) ? source.cables : [] };
+    }
+
     function hydrate(session, payload) {
         session.payload = payload;
         session.element = payload.element;
-        session.optical = payload.optical || session.optical;
-        session.cableState = payload.cableState || session.cableState;
+        session.optical = normalizeOptical(payload.optical);
+        session.cableState = normalizeCableState(payload.cableState);
         session.servicePorts = payload.servicePorts;
         session.layout = normalizeLayout(payload.layout);
         session.layoutMigrated = Number(session.layout.migratedFromVersion || 1) < 6;
