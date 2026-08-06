@@ -1,5 +1,14 @@
 ## [0.75.50] - 2026-08-05
 
+## MAP v0.75.52 — Rack navegável, uplinks funcionais e DIO pareado
+
+- Switches de 8, 12 e 16 portas usam uma única linha na largura útil do Rack;
+- clique esquerdo segurado movimenta o Canvas em qualquer nível de zoom;
+- slots de uplink aparecem apenas no topo e aceitam RJ45, SFP, SFP+, XFP e QSFP+;
+- equipamentos podem trocar posições em U ao serem arrastados um sobre o outro;
+- cada porta do DIO mantém frente e traseira pareadas;
+- sem migration e sem alteração na versão da Plataforma.
+
 ## MAP v0.75.51 — Switch de 16 portas, YAML tipado e cores por velocidade
 
 - adiciona 16 portas à criação de Switches e mantém as 16 numa única linha;
