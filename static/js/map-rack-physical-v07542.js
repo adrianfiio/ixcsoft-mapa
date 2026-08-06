@@ -799,10 +799,64 @@
         return units - topIndex - placement.height + 1;
     }
 
+    function setPlacementPreview(node, placement) {
+        if (!node || !placement || !state.layout) return;
+        node.style.top = `${placementTop(placement, state.layout.geometry, state.layout.units)}px`;
+        const badge = qs("[data-rack-u-badge-v07542]", node);
+        if (badge) badge.textContent = placement.height > 1
+            ? `U${placement.unit}–U${placement.unit + placement.height - 1}`
+            : `U${placement.unit}`;
+    }
+
+    function clearSwapPreview(drag) {
+        if (!drag?.swapNode || !drag.swapOriginal) return;
+        drag.swapNode.classList.remove("is-swap-target-v07552");
+        setPlacementPreview(drag.swapNode, drag.swapOriginal);
+        drag.swapEquipmentId = null;
+        drag.swapNode = null;
+        drag.swapOriginal = null;
+    }
+
+    function swapCandidate(preferred, drag) {
+        const candidateEnd = preferred + drag.original.height - 1;
+        for (const [equipmentId, placement] of state.layout.assignments.entries()) {
+            if (Number(equipmentId) === Number(drag.equipmentId)) continue;
+            const placementEnd = placement.unit + placement.height - 1;
+            if (preferred > placementEnd || candidateEnd < placement.unit) continue;
+
+            const temporary = new Map(state.layout.assignments);
+            temporary.delete(drag.equipmentId);
+            temporary.delete(equipmentId);
+            if (!rangeIsFree(temporary, placement.unit, drag.original.height, state.layout.units)) continue;
+            temporary.set(drag.equipmentId, { unit: placement.unit, height: drag.original.height });
+            if (!rangeIsFree(temporary, drag.original.unit, placement.height, state.layout.units)) continue;
+
+            const row = state.layout.rows.find((item) => Number(item.id) === Number(equipmentId));
+            if (!row?.node) continue;
+            return { equipmentId, placement: { ...placement }, node: row.node };
+        }
+        return null;
+    }
+
     function updateDragPreview(event) {
         const drag = state.drag;
         if (!drag || event.pointerId !== drag.pointerId || !state.layout) return;
         const preferred = rackUnitFromPointer(event.clientY, drag.original);
+        clearSwapPreview(drag);
+
+        const swap = swapCandidate(preferred, drag);
+        if (swap) {
+            drag.previewUnit = swap.placement.unit;
+            drag.swapEquipmentId = swap.equipmentId;
+            drag.swapOriginal = swap.placement;
+            drag.swapNode = swap.node;
+            swap.node.classList.add("is-swap-target-v07552");
+            setPlacementPreview(drag.node, { unit: swap.placement.unit, height: drag.original.height });
+            setPlacementPreview(swap.node, { unit: drag.original.unit, height: swap.placement.height });
+            scheduleRedraw();
+            return;
+        }
+
         const unit = findNearestAvailableUnit(
             preferred,
             drag.original.height,
@@ -812,9 +866,7 @@
         );
         if (unit == null) return;
         drag.previewUnit = unit;
-        drag.node.style.top = `${placementTop({ unit, height: drag.original.height }, state.layout.geometry, state.layout.units)}px`;
-        const badge = qs("[data-rack-u-badge-v07542]", drag.node);
-        if (badge) badge.textContent = drag.original.height > 1 ? `U${unit}–U${unit + drag.original.height - 1}` : `U${unit}`;
+        setPlacementPreview(drag.node, { unit, height: drag.original.height });
         scheduleRedraw();
     }
 
@@ -825,9 +877,25 @@
         global.removeEventListener("pointerup", finishRackDrag, true);
         global.removeEventListener("pointercancel", cancelRackDrag, true);
         drag.node.classList.remove("is-dragging-v07542");
-        const unit = cancelled ? drag.original.unit : (drag.previewUnit ?? drag.original.unit);
-        state.layout.assignments.set(drag.equipmentId, { unit, height: drag.original.height });
-        state.preferences[String(drag.equipmentId)] = { unit };
+
+        if (!cancelled && drag.swapEquipmentId && drag.swapOriginal) {
+            state.layout.assignments.set(drag.equipmentId, {
+                unit: drag.swapOriginal.unit,
+                height: drag.original.height,
+            });
+            state.layout.assignments.set(drag.swapEquipmentId, {
+                unit: drag.original.unit,
+                height: drag.swapOriginal.height,
+            });
+            state.preferences[String(drag.equipmentId)] = { unit: drag.swapOriginal.unit };
+            state.preferences[String(drag.swapEquipmentId)] = { unit: drag.original.unit };
+            drag.swapNode?.classList.remove("is-swap-target-v07552");
+        } else {
+            clearSwapPreview(drag);
+            const unit = cancelled ? drag.original.unit : (drag.previewUnit ?? drag.original.unit);
+            state.layout.assignments.set(drag.equipmentId, { unit, height: drag.original.height });
+            state.preferences[String(drag.equipmentId)] = { unit };
+        }
         placeEquipment(state.layout.rows, state.layout.assignments, state.layout.geometry, state.layout.units);
         state.drag = null;
         schedulePreferenceSave();
