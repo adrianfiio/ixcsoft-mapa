@@ -1,5 +1,14 @@
 ## [0.75.50] - 2026-08-05
 
+## MAP v0.75.51 — Switch de 16 portas, YAML tipado e cores por velocidade
+
+- adiciona 16 portas à criação de Switches e mantém as 16 numa única linha;
+- permite editar nome, RJ45, SFP, SFP+, XFP, QSFP+ e velocidade por porta;
+- preserva nomes do YAML e torna a reimportação idempotente por chave estável;
+- colore porta e conexão em verde/azul/roxo/laranja/vermelho para 1/10/25/40/100 Gbps;
+- preserva a estabilidade de pan, zoom, OLT e observers da MAP v0.75.50;
+- não requer migration.
+
 ### Estabilização crítica do Rack
 - O ciclo MutationObserver → enhance → fetch → render foi interrompido.
 - Consultas de uplink passam a usar cache, chamada compartilhada e cooldown após falha.

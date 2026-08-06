@@ -56,6 +56,7 @@ from apps.network_map.api.map_v07545 import equipment_collection_v07545, olt_cha
 from apps.network_map.api.map_v07547 import equipment_collection_v07547, olt_chassis_v07547
 from apps.network_map.api.map_v07548 import olt_editor_v07548, olt_port_path_v07548, rack_topology_v07548
 from apps.network_map.api.map_v07549 import olt_uplink_slots_v07549
+from apps.network_map.api.map_v07551 import import_equipment_yaml_v07551, switch_hardware_v07551
 from apps.network_map.api.map_master_views import (
     assign_cable_route_master,
     asset_qr_master,
@@ -131,6 +132,8 @@ urlpatterns = [
     path("v07548/elements/<int:element_id>/olt/<int:equipment_id>/editor/", olt_editor_v07548, name="olt-editor-v07548"),
     path("v07548/elements/<int:element_id>/olt/<int:equipment_id>/ports/<int:port_id>/path/", olt_port_path_v07548, name="olt-port-path-v07548"),
     path("v07549/elements/<int:element_id>/olt/<int:equipment_id>/uplinks/", olt_uplink_slots_v07549, name="uplinks-v07549"),
+    path("v07551/elements/<int:element_id>/switch/<int:equipment_id>/hardware/", switch_hardware_v07551, name="switch-hardware-v07551"),
+    path("v07551/elements/<int:element_id>/equipment/import-yaml/", import_equipment_yaml_v07551, name="equipment-import-yaml-v07551"),
     path("elements/<int:element_id>/container-layout-v3/", container_layout_v3, name="container-layout-v3"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/details-v3/", container_equipment_details_v3, name="container-equipment-details-v3"),
     path("elements/<int:element_id>/passive-endpoints-v3/", create_passive_endpoint_v3, name="passive-endpoints-v3"),

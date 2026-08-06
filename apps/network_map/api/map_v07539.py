@@ -451,7 +451,7 @@ def equipment_collection_v07539(request, element_id):
         ContainerEquipment.EquipmentType.FIREWALL,
     }:
         metadata["port_count"] = port_count
-        metadata["height_units"] = 1 if port_count <= 12 else 2 if port_count <= 24 else 3
+        metadata["height_units"] = 1 if port_count <= 16 else 2 if port_count <= 24 else 3
         metadata["rack_form_factor"] = "19-inch"
     if requested_type == ContainerEquipment.EquipmentType.ONU:
         metadata.update({
