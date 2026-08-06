@@ -1,12 +1,14 @@
 /* MAP v0.75.49 — alinhamento do Rack, placas de uplink, DIO legível e matriz compacta. */
 
-/* Rack vazio: o desenho de fundo e o cartão passam a compartilhar o mesmo eixo. */
+/* Rack vazio: o desenho de fundo e o cartão compartilham o mesmo eixo por
+   construção agora (MAP_V07555_BACKDROP_ALIGN — o backdrop passou a viver no
+   mesmo nível DOM que o cartão, dentro de .master-canvas-scroll, então os
+   dois já centralizam relativos à mesma caixa/viewport sem precisar de
+   nenhum ajuste manual de posição aqui). Mantido só o tamanho/estilo maior
+   do desenho de fundo do Rack (maior que o padrão da Torre). */
 #map-master-container.v07549-empty-aligned .tower-structure-backdrop-v0750.v07549-rack-backdrop {
-    top: 52% !important;
-    left: 50% !important;
     width: min(680px, 72vw) !important;
     height: min(430px, 58vh) !important;
-    transform: translate(-50%, -50%) !important;
     border-radius: 24px !important;
     color: rgba(34, 211, 238, .10) !important;
 }
@@ -19,17 +21,13 @@
     bottom: 24px !important;
     letter-spacing: .18em !important;
 }
-#map-master-container.v07549-empty-aligned .tower-empty-v0750.v07548-empty-visible {
-    top: 43% !important;
-    left: 50% !important;
-    width: min(560px, calc(100vw - 80px)) !important;
-    min-width: 0 !important;
-    transform: translate(-50%, -50%) !important;
-}
 
 /* Pan com clique esquerdo. */
 #map-master-container .master-canvas-scroll { cursor: grab; }
-#map-master-container .master-canvas-scroll.v07549-is-panning { cursor: grabbing !important; user-select: none !important; }
+/* MAP_V07555_PAN_FIX: a classe que o JS realmente adiciona durante o
+   arraste é "v07552-is-panning" (map-rack-maintenance-v07552.js), não
+   "v07549-is-panning" — o cursor de "arrastando" nunca trocava. */
+#map-master-container .master-canvas-scroll.v07552-is-panning { cursor: grabbing !important; user-select: none !important; }
 
 /* Diálogos da manutenção. */
 .v07549-dialog {

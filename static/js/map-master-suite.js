@@ -772,7 +772,7 @@
                 if (button.dataset.tab === "canvas") renderContainerCanvas();
             };
         });
-        qs("[data-container-add]", root).onclick = () => openEquipmentCreateDialog();
+        qs("[data-container-add]", root).onclick = () => openEquipmentCreateDialog().catch((error) => notify(error.message, true));
         qs("[data-container-organize]", root).onclick = () => organizeContainerNodes();
         qs("[data-container-lines]", root).onclick = (event) => {
             state.container.lineMode = !state.container.lineMode;
@@ -1740,12 +1740,24 @@
         }
     }
 
-    function openEquipmentCreateDialog() {
+    async function openEquipmentCreateDialog() {
+        // MAP_V07555_BOOTSTRAP_RACE: state.bootstrap só é preenchido em
+        // init() depois de esperar window.networkMap existir — mas
+        // window.networkMap já fica truthy antes de loadProjects() (em
+        // map-editor.js) terminar de selecionar o projeto no
+        // #project-select. Se o primeiro refreshBootstrap() rodar antes
+        // disso, projectId() lê "" e o bootstrap fica null pra sempre (não
+        // há retry automático — só reage a um "change" real do select, que
+        // nunca dispara quando o valor é setado por código). Sem isso, o
+        // <select> de tipo de equipamento ficava sempre vazio e qualquer
+        // criação (Rack ou Torre) falhava com "Tipo de equipamento
+        // inválido para esta estrutura." sem nenhum aviso claro.
+        if (!state.bootstrap) await refreshBootstrap();
         const dialog = equipmentCreateDialog();
         const containerType = String(state.container.data?.container?.type || "tower");
         const allowed = containerType === "rack"
-            ? new Set(["olt", "dio", "switch", "router", "firewall", "server", "pto", "other"])
-            : new Set(["olt", "dio", "switch", "router", "firewall", "pto", "other", "access_point", "ptp", "onu"]);
+            ? new Set(["olt", "dio", "switch", "router", "firewall", "pto", "other"])
+            : new Set(["dio", "switch", "router", "firewall", "pto", "other", "access_point", "ptp", "onu"]);
         const types = (state.bootstrap?.equipment_types || []).filter(([value]) => allowed.has(value));
         dialog.querySelector("select[name='equipment_type']").innerHTML = types.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
         const drops = (state.container.data?.cables || []).filter((cable) => cable.cable_type === "drop");

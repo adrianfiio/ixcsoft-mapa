@@ -1,5 +1,54 @@
 ## [0.75.50] - 2026-08-05
 
+## MAP v0.75.55 — corrige pan, alinhamento e criação de equipamento no Rack/Torre
+
+Achados e corrigidos ao vivo (Playwright, ambiente Docker isolado no servidor,
+sem tocar em produção), a partir de um relato direto do Adrian usando o
+editor:
+
+- **Pan não funcionava no Canvas 2D do Rack** — o filtro que bloqueia pan
+  sobre botões/inputs também tinha `"dialog"` na lista de seletores
+  bloqueados; como todo o editor vive dentro de `#container-dialog`,
+  `target.closest("dialog")` sempre batia nesse próprio dialog (ancestral,
+  não um modal aninhado), bloqueando 100% das tentativas de arrastar o
+  canvas, sempre. Corrigido em `map-rack-maintenance-v07552.js` e
+  `map-rack-viewport-v07546.js`; cursor de "arrastando" também corrigido
+  (CSS ainda referenciava uma classe de uma versão anterior);
+- **Grade "ESTRUTURA DO RACK/DA TORRE" desalinhada atrás do cartão vazio** —
+  o desenho de fundo vivia dentro de `.master-canvas` (a camada que recebe
+  o transform de pan/zoom, com tamanho fixo em CSS sem relação com o
+  viewport visível), enquanto o cartão "Monte o rack/a torre..." já vivia
+  fora dessa camada, sempre corretamente centralizado no viewport. Agora os
+  dois vivem no mesmo nível — sempre alinhados, sem depender de nenhum
+  ajuste manual de posição;
+- **Criar equipamento na Torre falhava sempre, sem aviso claro** — causa
+  raiz mais profunda que "o menu vazio não some": o `<select>` de tipo de
+  equipamento no diálogo "+ Equipamento" ficava permanentemente vazio
+  porque `state.bootstrap` podia nunca ser preenchido (corrida de
+  inicialização: o primeiro carregamento do bootstrap podia rodar antes do
+  projeto ser selecionado no `<select>`, e depois disso nada tentava de
+  novo — só reagia a um evento "change" real, que nunca dispara quando o
+  valor é setado por código). Toda tentativa de criar equipamento na Torre
+  falhava com "Tipo de equipamento inválido para esta estrutura." e o
+  cartão vazio continuava aparecendo (porque, de fato, nada tinha sido
+  criado). Corrigido esperando o bootstrap terminar de carregar antes de
+  abrir o diálogo;
+- **Botão "Servidor" removido do menu "Adicionar" do Rack** (a pedido);
+- **Opção "Adicionar OLT" removida da Torre** — Torre não instala OLT.
+  Corrigido tanto no menu "Adicionar" do topo quanto nos botões do cartão
+  vazio;
+- **Achado extra durante a validação**: o cartão vazio guardava os botões
+  da última estrutura aberta — abrir um Rack (que grava OLT/DIO/Switch) e
+  depois uma Torre vazia, na mesma sessão de página, deixava "Adicionar
+  OLT" preso na Torre mesmo já sem essa opção no menu do topo, porque só
+  existia o ramo que reescreve os botões quando o tipo é "rack", sem um
+  correspondente para "tower". Corrigido escrevendo os botões certos nos
+  dois casos.
+
+Todos os 6 itens validados com Playwright real (Chromium) contra um
+ambiente Docker isolado no servidor — banco/rede próprios, produção nunca
+tocada, ambiente derrubado por completo ao final.
+
 ## MAP v0.75.54 — corrige migrations que quebravam banco novo
 
 - validação real no navegador (Playwright, ambiente Docker isolado no

@@ -459,12 +459,21 @@
     }
 
     function ensureStructureBackdrop(root) {
-        const canvas = qs(".master-canvas", root);
-        if (!canvas || qs(".tower-structure-backdrop-v0750", canvas)) return;
+        // MAP_V07555_BACKDROP_ALIGN: antes ficava dentro de .master-canvas,
+        // a mesma camada que recebe o transform de pan/zoom — centralizado
+        // via top/left 50% relativo à caixa própria do .master-canvas (que
+        // tem largura/altura fixas via CSS, sem relação com o viewport
+        // visível). Resultado: o desenho de fundo quase nunca alinhava com
+        // o cartão "Monte o rack/a torre...", que já é filho de
+        // .master-canvas-scroll (preenche o viewport de verdade, "inset:0",
+        // nunca sofre o transform). Agora o backdrop mora no mesmo nível do
+        // cartão — mesma caixa, mesmo centro, sempre alinhados.
+        const scroll = qs(".master-canvas-scroll", root);
+        if (!scroll || qs(".tower-structure-backdrop-v0750", scroll)) return;
         const backdrop = document.createElement("div");
         backdrop.className = "tower-structure-backdrop-v0750";
         backdrop.innerHTML = `${icon("tower")}<span>ESTRUTURA DA TORRE</span>`;
-        canvas.prepend(backdrop);
+        scroll.prepend(backdrop);
     }
 
     function nodeAction(row, matcher) {

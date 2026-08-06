@@ -99,8 +99,13 @@
 
     function interactivePanTarget(target) {
         if (!(target instanceof Element)) return true;
+        // MAP_V07555_PAN_FIX: "dialog" nunca deveria estar aqui — todo o
+        // Canvas 2D do Rack/Torre vive DENTRO de #container-dialog, então
+        // target.closest("dialog") sempre batia no próprio container-dialog
+        // (ancestral, não um modal aninhado de verdade), bloqueando 100% das
+        // tentativas de pan em qualquer lugar do canvas, sempre.
         return Boolean(target.closest([
-            "button", "a", "input", "select", "textarea", "dialog", "[contenteditable='true']",
+            "button", "a", "input", "select", "textarea", "[contenteditable='true']",
             ".master-node-port", "[data-port-id]", "[data-cable-fiber]",
             ".master-canvas-node > header", ".master-cable-node > header",
             ".v07542-rack-toolbar", ".map-canvas-zoom-v0741", ".master-container-commandbar-v0741",
