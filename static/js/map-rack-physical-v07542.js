@@ -320,7 +320,7 @@
         const identity = `<div class="v07542-equipment-grid"><label>Nome<input name="name" required maxlength="120"></label><label>Fabricante<input name="vendor" maxlength="100"></label><label>Modelo<input name="model" maxlength="100"></label>`;
         if (SWITCH_TYPES.has(type)) {
             const defaultCount = type === "switch" ? 24 : 8;
-            return `${identity}<label>IP de gerência<input name="management_ip" placeholder="192.168.0.10"></label><label>Quantidade de portas<select name="port_count">${[4,8,12,24,48].map((count) => `<option value="${count}" ${count === defaultCount ? "selected" : ""}>${count} portas</option>`).join("")}</select></label></div><p class="v07542-form-hint">As portas serão desenhadas em linhas de no máximo 12, como na face física do equipamento.</p>`;
+            return `${identity}<label>IP de gerência<input name="management_ip" placeholder="192.168.0.10"></label><label>Quantidade de portas<select name="port_count">${[4,8,12,16,24,48].map((count) => `<option value="${count}" ${count === defaultCount ? "selected" : ""}>${count} portas</option>`).join("")}</select></label></div><p class="v07542-form-hint">As portas serão desenhadas em linhas de no máximo 12, como na face física do equipamento.</p>`;
         }
         if (type === "olt") {
             return `${identity}<label>IP de gerência<input name="management_ip"></label><label>Slots<input name="card_count" type="number" min="1" max="64" value="4"></label><label>PONs por slot<input name="pons_per_card" type="number" min="1" max="64" value="16"></label></div>`;

@@ -8,6 +8,7 @@
     if (!dialog || !yamlForm || !terminationForm) return;
 
     let containerData = null;
+    let lastYamlEquipmentTypeV07551 = "";
 
     function csrfToken() {
         const item = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="));
@@ -93,14 +94,28 @@
         const formData = new FormData(yamlForm);
         formData.set("action", action);
         setMessage(action === "preview" ? "Analisando device type..." : "Criando equipamento e interfaces...");
-        const data = await request(`/api/map/elements/${id}/equipment/import-yaml/`, {
-            method: "POST",
-            body: formData,
-        });
+        const legacyUrl = `/api/map/elements/${id}/equipment/import-yaml/`;
+        const typedUrl = `/api/map/v07551/elements/${id}/equipment/import-yaml/`;
+        const selectedType = String(yamlForm.elements.equipment_type?.value || "auto");
+        const useTypedSwitch = selectedType === "switch" || lastYamlEquipmentTypeV07551 === "switch";
+        let data;
+        try {
+            data = await request(useTypedSwitch ? typedUrl : legacyUrl, { method: "POST", body: formData });
+        } catch (error) {
+            // YAML genérico equipment/equipments não pertence ao formato NetBox
+            // legado. Em auto, tenta o importador tipado sem prejudicar OLT,
+            // ONU, rádios e demais device types já suportados.
+            if (action !== "preview" || selectedType !== "auto" || useTypedSwitch) throw error;
+            data = await request(typedUrl, { method: "POST", body: formData });
+        }
+        lastYamlEquipmentTypeV07551 = String(
+            data.preview?.equipment_type || data.preview?.suggested_equipment_type || selectedType
+        );
         showDevicePreview(data.preview);
         if (action === "import") {
             setMessage(`${data.created.name}: ${data.created.ports_created} porta(s) criada(s).`);
             yamlForm.reset();
+            lastYamlEquipmentTypeV07551 = "";
             await window.mapMasterSuite?.openContainerWorkspace?.(id);
         } else {
             setMessage("YAML válido. Confira as interfaces e clique em Importar equipamento.");
