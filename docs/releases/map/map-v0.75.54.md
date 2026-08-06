@@ -68,16 +68,22 @@ nesse formato atual. Isso quer dizer:
   `[]`), que as 3 migrations dependentes continuam apontando pra
   `access.0002_add_ftth_fields` pelo nome, e que nenhuma migration nova
   foi criada — só as 2 existentes foram corrigidas.
-- Suíte histórica completa, sem regressão.
+- Suíte histórica completa: mesmo conjunto de falhas pré-existentes antes
+  e depois desta mudança (comparado linha a linha via `git stash`) — zero
+  regressão nova introduzida.
 - Revisão manual do diff: nenhuma migration nova, `PLATFORM_VERSION`
   inalterada.
-- **Não validado num banco novo de verdade nesta rodada** (o ambiente
-  isolado onde o bug apareceu já foi derrubado, por instrução do Adrian,
-  antes desta correção ser escrita) — a correção foi validada pela mesma
-  investigação de código que a encontrou (rastreando exatamente as
-  operações de cada migration), não por um `migrate` real repetido. Se
-  quiser, dá pra montar o ambiente isolado de novo só pra confirmar ao
-  vivo antes de mergear.
+- **Validado com `migrate` real, banco Postgres novo de verdade**: subi
+  de novo um ambiente Docker isolado no servidor (projeto `ixcsoft-migtest`,
+  banco/volume próprios, sem tocar em produção), cloná esta branch exata
+  (`hotfix/map-v0.75.54-fresh-db-migrations`, commit `4277c1e`) e rodei
+  `python manage.py migrate --no-input` do zero: **as 91 migrations
+  aplicaram sem nenhum erro**, incluindo exatamente os dois pontos que
+  antes quebravam (`access.0002`, `network_map.0003`/`0007`). Confirmei
+  também com `migrate --check` que não sobrou nenhuma migration pendente.
+  Ambiente derrubado por completo depois (`docker compose down -v` +
+  remoção da pasta e da imagem) — nenhum dado, container ou volume ficou
+  para trás.
 
 ## Fora de escopo
 
