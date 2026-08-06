@@ -1,3 +1,13 @@
+## [0.75.50] - 2026-08-05
+
+### Estabilização crítica do Rack
+- O ciclo MutationObserver → enhance → fetch → render foi interrompido.
+- Consultas de uplink passam a usar cache, chamada compartilhada e cooldown após falha.
+- Alterações geradas pelo próprio painel de uplinks não disparam nova melhoria.
+- O fluxo físico deixa de chamar refresh recursivamente.
+- Falhas temporárias da API de uplink não derrubam a OLT nem o Rack.
+- Nenhuma migration foi adicionada.
+
 ## [0.75.49] - 2026-08-05
 
 ### Rack, navegação e fluxo físico

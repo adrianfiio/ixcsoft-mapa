@@ -70,9 +70,9 @@ class MapV07534ContractTests(unittest.TestCase):
         settings = self.read("config/settings.py")
         compose = self.read("docker-compose.yml")
         versions = self.read("VERSIONS.md")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.49")', settings)
-        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.49}", compose)
-        self.assertIn("Mapa | v0.75.49", versions)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.50")', settings)
+        self.assertIn("MAP_VERSION: ${MAP_VERSION:-0.75.50}", compose)
+        self.assertIn("Mapa | v0.75.50", versions)
         self.assertIn("MAP v0.75.34", self.read("docs/releases/map/map-v0.75.34.md"))
 
     def test_no_migration_was_added_for_release(self):
