@@ -15,6 +15,19 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.83.1] - 2026-08-06
+
+Hotfix crítico da v0.83.0: `templates/dashboard.html` e
+`templates/dashboard_designer.html` quebravam com HTTP 500 para
+**qualquer** usuário (não só VIEW) ao renderizar a "Visão geral" — a
+tag `{% if %}` do Django não aceita parênteses para agrupar
+`and`/`or` (`{% if not is_view_only_member and (edit_mode or ...) %}`
+lançava `TemplateSyntaxError` em tempo de render). Corrigido trocando
+por dois `{% if %}` aninhados, sem parênteses. Validado desta vez
+compilando os templates de verdade com o motor de template do Django
+(não só contagem de chaves), e varrendo todo `templates/` atrás do
+mesmo padrão — nenhuma outra ocorrência encontrada.
+
 ## [platform-0.83.0] - 2026-08-06
 
 Menu lateral e atalhos do dashboard restritos para usuário VIEW —
