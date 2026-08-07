@@ -3,7 +3,9 @@ from django.db.models import Q
 from .models import CompanyMembership
 
 
-EDIT_ROLES = (CompanyMembership.Role.EDIT,)
+EDIT_ROLES = (CompanyMembership.Role.EDIT, CompanyMembership.Role.ADMIN)
+ADMIN_ROLES = (CompanyMembership.Role.ADMIN,)
+TECHNICIAN_ROLES = (CompanyMembership.Role.TECHNICIAN, CompanyMembership.Role.ADMIN, CompanyMembership.Role.EDIT)
 
 
 def accessible_company_ids(user):
@@ -96,3 +98,18 @@ def has_any_edit_access(user):
     return user.is_superuser or CompanyMembership.objects.filter(
         user=user, active=True, role__in=EDIT_ROLES
     ).exists()
+
+
+def has_technician_access(user, company_id=None):
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    qs = CompanyMembership.objects.filter(
+        user=user,
+        active=True,
+        role__in=TECHNICIAN_ROLES,
+    )
+    if company_id:
+        qs = qs.filter(company_id=company_id)
+    return qs.exists()

@@ -136,6 +136,8 @@ class CompanyMembership(TimeStampedModel):
     class Role(models.TextChoices):
         VIEW = "view", "VIEW — somente visualizar"
         EDIT = "edit", "EDIT — visualizar e editar"
+        ADMIN = "admin", "ADMIN — administrar a empresa"
+        TECHNICIAN = "technician", "Técnico — aplicativo de campo"
 
     class DataSource(models.TextChoices):
         MANUAL = "manual", "Usuário padrão — sem ERP"
