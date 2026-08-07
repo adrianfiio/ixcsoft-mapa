@@ -26,24 +26,23 @@ class MapV07556ContractTests(unittest.TestCase):
         self.assertIn("is-swap-target-v07552", js)
 
     def test_dio_front_dot_reflects_pon_state_not_connector(self):
+        # MAP_V07558_DIO_SINGLE_PORT: front virou a bolinha central de um
+        # elemento único (não mais um quadrado próprio com borda por
+        # conector) — a cor por conector foi removida junto, a pedido do
+        # usuário; só sobrou preto/azul por estado de OLT/PON.
         js = content("static/js/map-rack-maintenance-v07552.js")
         start = js.index("async function enhanceDio")
-        end = js.index("// ------", start)
+        end = js.index("node.dataset.dioEnhancedV07552 = ", start)
         block = js[start:end]
-        self.assertIn('front?.classList.toggle("is-pon-linked-v07556", Boolean(row.front));', block)
+        self.assertIn('dot?.classList.toggle("is-pon-linked-v07558", Boolean(row.front));', block)
 
-        css = content("static/css/map-rack-maintenance-v07549.css")
-        self.assertIn(".v07549-dio-front > i { background: #e34f5f !important;", css)
-        self.assertIn(".v07549-dio-front.is-pon-linked-v07556 > i { background: #19d18a !important;", css)
-        # a bolinha da frente não segue mais a cor do conector diretamente
-        self.assertNotIn(".is-sc-apc > i", css)
-        self.assertNotIn(".is-sc-upc > i", css)
-        # a borda por conector continua intacta
-        self.assertIn(".v07549-dio-front.is-sc-apc { border-color: #2acb8c !important; }", css)
-        self.assertIn(".v07549-dio-front.is-sc-upc { border-color: #27a9ff !important; }", css)
-        # o lado de trás (fusão) não foi tocado
-        self.assertIn("rear-free-v07549", css)
-        self.assertIn("has-rear-v07549", css)
+        css = content("static/css/map-rack-runtime-v07552.css")
+        self.assertIn("#map-master-container .v07558-dio-dot {", css)
+        self.assertIn("background: #0a0d10 !important;", css)
+        self.assertIn(".v07558-dio-dot.is-pon-linked-v07558 {", css)
+        self.assertIn("background: #29b6ff !important;", css)
+        # o lado de trás (fusão) continua num toggle independente
+        self.assertIn('unit?.classList.toggle("is-fused-v07558", Boolean(row.rear));', block)
 
     def test_cable_left_click_no_longer_opens_a_popup(self):
         # MAP_V07557_CABLE_MENU_MERGE: o menu de botão direito próprio deste
@@ -84,9 +83,9 @@ class MapV07556ContractTests(unittest.TestCase):
         self.assertIn("cable?.requires_cut", workspace_js)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.57")', content("config/settings.py"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.58")', content("config/settings.py"))
         self.assertIn('"0.83.1"', content("config/settings.py"))
-        self.assertIn("v0.75.57", content("VERSIONS.md"))
+        self.assertIn("v0.75.58", content("VERSIONS.md"))
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
         self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
 

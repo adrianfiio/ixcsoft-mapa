@@ -54,43 +54,16 @@ class MapV07557ContractTests(unittest.TestCase):
         self.assertIn("window.networkMap = { map, loadStructure, showUnifilar, manageContainer, notify, startGeometryEdit };", js)
 
     def test_dio_pair_stacks_front_over_rear_not_side_by_side(self):
-        css = content("static/css/map-rack-runtime-v07552.css")
-        start = css.index('#map-master-container .v07539-dio-pair {')
-        end = css.index("MAP_V07557_DIO_STACKED_PAIR", start)
-        self.assertGreater(end, start)
-        block_end = css.index("}", start)
-        pair_block = css[start:block_end]
-        self.assertIn("grid-template-columns: 22px !important;", pair_block)
-        self.assertIn("grid-template-rows: repeat(2, 26px) !important;", pair_block)
-
-        # MAP_V07514_DIO_ORIENTATION (map-v0750-tower-workspace.css) força
-        # .dio-front/.dio-rear em colunas 1/2 diferentes — sem esta
-        # sobrescrita, o grid de 1 coluna acima nunca é suficiente pra
-        # empilhar de verdade, porque o item já vem com grid-column
-        # explícito daquele outro arquivo (explicit placement sempre vence
-        # auto-placement, mesmo com display:grid + 1 coluna só).
-        self.assertIn(
-            '#map-master-container .v07539-dio-pair [data-port-role="front"] { grid-column: 1 !important; grid-row: 1 !important;',
-            css,
-        )
-        self.assertIn(
-            '#map-master-container .v07539-dio-pair [data-port-role="rear"] { grid-column: 1 !important; grid-row: 2 !important;',
-            css,
-        )
-
-        tower_css = content("static/css/map-v0750-tower-workspace.css")
-        self.assertIn(".master-node-port.dio-front { grid-column: 1; }", tower_css)
-        self.assertIn(".master-node-port.dio-rear { grid-column: 2; }", tower_css)
-
-        # a regra antiga em map-rack-maintenance-v07549.css não define mais
-        # o grid do par (só sobrou o que map-rack-runtime-v07552.css não
-        # define), pra não deixar duas versões conflitantes do layout.
-        maintenance_css = content("static/css/map-rack-maintenance-v07549.css")
-        old_start = maintenance_css.index("#map-master-container .v07539-dio-pair {")
-        old_end = maintenance_css.index("}", old_start)
-        old_block = maintenance_css[old_start:old_end]
-        self.assertNotIn("grid-template-columns", old_block)
-        self.assertNotIn("display: grid", old_block)
+        # MAP_V07558_DIO_SINGLE_PORT (rodada seguinte) substituiu o par
+        # empilhado por 1 elemento só — ver test_map_v07558_contract.py.
+        # Aqui só confere que a classe do par antigo não sobrou em lugar
+        # nenhum do CSS (limpeza completa, sem regra morta espalhada).
+        for path in (
+            "static/css/map-rack-runtime-v07552.css",
+            "static/css/map-rack-maintenance-v07549.css",
+            "static/css/map-v07539-suite.css",
+        ):
+            self.assertNotIn(".v07539-dio-pair", content(path))
 
     def test_auto_fuse_button_has_blue_bolt_icon(self):
         js = content("static/js/map-dio-fusion-v07538.js")
@@ -102,9 +75,9 @@ class MapV07557ContractTests(unittest.TestCase):
         self.assertIn("fill: #38bdf8;", css)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.57")', content("config/settings.py"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.58")', content("config/settings.py"))
         self.assertIn('"0.83.1"', content("config/settings.py"))
-        self.assertIn("v0.75.57", content("VERSIONS.md"))
+        self.assertIn("v0.75.58", content("VERSIONS.md"))
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
         self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
 

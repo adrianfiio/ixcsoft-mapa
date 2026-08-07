@@ -27,13 +27,16 @@ class MapV07539ContractTests(unittest.TestCase):
 
     def test_dio_cavities_and_face_colors_exist(self):
         runtime = content("static/js/map-v07539-suite.js")
-        css = content("static/css/map-v07539-suite.css")
+        css = content("static/css/map-rack-runtime-v07552.css")
         self.assertIn("groupDioCavities", runtime)
         self.assertIn("CAVIDADE", runtime)
-        self.assertIn("v07539-front-linked", css)
-        self.assertIn("v07539-rear-linked", css)
-        self.assertIn("#fb923c", css)
-        self.assertIn("#a78bfa", css)
+        # MAP_V07558_DIO_SINGLE_PORT: cada porta virou 1 elemento só
+        # (quadrado = fusão, bolinha = OLT/PON), não mais 2 quadrados
+        # coloridos por "linked"/"rear" — as classes/cores antigas saíram.
+        self.assertIn("v07558-dio-unit", css)
+        self.assertIn("v07558-dio-dot", css)
+        self.assertIn("is-fused-v07558", css)
+        self.assertIn("is-pon-linked-v07558", css)
 
     def test_olt_size_is_persisted(self):
         runtime = content("static/js/map-v07539-suite.js")
@@ -110,12 +113,13 @@ class MapV07539ContractTests(unittest.TestCase):
         self.assertIn('name="responsible"', runtime)
 
     def test_dio_front_shows_rear_fusion_without_blocking_front(self):
+        # A bolinha (OLT/PON) e o quadrado (fusão) de uma mesma porta
+        # continuam com data-link-id independentes um do outro — só a
+        # apresentação visual mudou de "2 quadrados" pra "1 elemento só"
+        # (MAP_V07558_DIO_SINGLE_PORT).
         runtime = content("static/js/map-v07539-suite.js")
-        css = content("static/css/map-v07539-suite.css")
         self.assertIn("v07539-has-rear", runtime)
         self.assertIn("Frente livre para OLT", runtime)
-        self.assertIn("dio-front.v07539-has-rear::after", css)
-        self.assertIn("#f97316", css)
 
     def test_cable_information_contains_optical_budget(self):
         backend = content("apps/network_map/api/map_v07539.py")

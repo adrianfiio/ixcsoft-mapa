@@ -983,20 +983,17 @@
         return item?.metadata?.device_type || {};
     }
 
-    function renderDioPortPairV07510(port, compact = false) {
+    function renderDioPortPairV07510(port) {
         const rearLink = port.fusion_link_id || "";
         const frontLink = port.link_id || "";
-        // MAP_V07514_DIO_ORIENTATION: esquerda = frente (cordão para o
-        // equipamento, ex. OLT) — direita = traseira (fusão com o cabo da
-        // rua). Antes era o contrário.
-        if (!compact) {
-            return `<button type="button" class="master-node-port left dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · cordão para equipamento"><span>${escapeHtml(port.label)}</span><i></i></button>
-                <button type="button" class="master-node-port right dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · entrada do cabo"><span>${escapeHtml(port.label)}</span><i></i></button>`;
-        }
-        return `<div class="master-dio-position-v07510">
-            <button type="button" class="master-node-port dio-front ${port.used ? "used" : ""}" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="Frente · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
-            <button type="button" class="master-node-port dio-rear ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="Traseira · ${escapeHtml(port.label)}"><span>${escapeHtml(port.label)}</span><i></i></button>
-        </div>`;
+        // MAP_V07558_DIO_SINGLE_PORT: 1 elemento só por porta física, a
+        // pedido do usuário (mockup "Painel D.I.O") — antes eram 2
+        // quadrados (frente/trás) lado a lado ou empilhados, sempre lendo
+        // como "2 portas". Agora é 1 quadrado (clique = fusão/rua, cor
+        // vermelho/laranja) com 1 bolinha central (clique = OLT/PON, cor
+        // preto/azul) — mesmo par de dados de sempre (front = PON,
+        // rear = fusão), só que num único elemento visual.
+        return `<button type="button" class="master-node-port v07558-dio-unit ${port.fusion_used ? "used" : ""}" data-port-id="${port.id}" data-port-role="rear" data-port-type="${port.type}" data-link-id="${rearLink}" title="${escapeHtml(port.label)} · fusão com o cabo da rua"><i class="v07558-dio-dot" data-port-id="${port.id}" data-port-role="front" data-port-type="${port.type}" data-link-id="${frontLink}" title="${escapeHtml(port.label)} · porta da OLT/PON"></i><span>${escapeHtml(port.label)}</span></button>`;
     }
 
     function renderDioTraysV07510(ports) {
@@ -1006,7 +1003,7 @@
         return `<div class="master-dio-trays-v07510">${chunkV07510(ports, 12).map((tray, index) => `
             <section class="master-dio-tray-v07510" data-dio-tray="${index + 1}">
                 <strong class="master-dio-tray-label-v07510">T${index + 1}</strong>
-                <div class="master-dio-tray-ports-v07510">${tray.map((port) => renderDioPortPairV07510(port, true)).join("")}</div>
+                <div class="master-dio-tray-ports-v07510">${tray.map((port) => renderDioPortPairV07510(port)).join("")}</div>
             </section>`).join("")}</div>`;
     }
 
@@ -1261,7 +1258,11 @@
             event.stopPropagation();
             openEquipmentEditor(button.dataset.nodeEdit);
         });
-        qsa("[data-port-id]", nodes).forEach((button) => button.onclick = () => selectContainerPort(button));
+        // MAP_V07558_DIO_SINGLE_PORT: a bolinha (front) fica dentro do
+        // quadrado (rear) — sem parar a propagação aqui, um clique na
+        // bolinha dispararia selectContainerPort duas vezes (bolinha E
+        // quadrado, já que o clique borbulha do filho pro pai).
+        qsa("[data-port-id]", nodes).forEach((button) => button.onclick = (event) => { event.stopPropagation(); selectContainerPort(button); });
         qsa("[data-delete-note]", nodes).forEach((button) => button.onclick = async (event) => {
             event.stopPropagation();
             const accepted = await window.mapV0758?.confirmAction?.({

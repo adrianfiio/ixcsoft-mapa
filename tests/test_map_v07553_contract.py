@@ -88,18 +88,17 @@ class MapV07553ContractTests(unittest.TestCase):
         self.assertIn("is-swap-target-v07552", js)
 
     def test_v07552_dio_pairs_are_unchanged(self):
+        # MAP_V07558_DIO_SINGLE_PORT: substituiu o par de elementos por 1
+        # elemento só — ver test_map_v07558_contract.py pro desenho novo.
         js = content("static/js/map-rack-maintenance-v07552.js")
-        css = content("static/css/map-rack-runtime-v07552.css")
-        self.assertIn("pair.appendChild(front); pair.appendChild(rear);", js)
-        # MAP_V07557_DIO_STACKED_PAIR: ganhou grid-column/row explícito
-        # (sobrescrevendo map-v0750-tower-workspace.css), order continua.
-        self.assertIn('[data-port-role="front"] { grid-column: 1 !important; grid-row: 1 !important; order: 1; }', css)
+        self.assertIn("async function enhanceDio(node, generation)", js)
+        self.assertIn("dot?.classList.toggle", js)
 
     def test_version_is_current_and_platform_untouched(self):
         settings = content("config/settings.py")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.57")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.58")', settings)
         self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.83.1"))', settings)
-        self.assertIn("v0.75.57", content("VERSIONS.md"))
+        self.assertIn("v0.75.58", content("VERSIONS.md"))
         self.assertIn("MAP v0.75.53", content("docs/releases/map/map-v0.75.53.md"))
 
     def test_no_new_migration_was_added(self):

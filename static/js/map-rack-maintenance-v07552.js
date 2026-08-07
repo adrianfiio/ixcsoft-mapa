@@ -539,7 +539,8 @@
     }
 
     // ------------------------------------------------------------------
-    // DIO: frente pela cor do conector, traseira vermelha/laranja e pontos separados.
+    // DIO: 1 elemento por porta — quadrado (fusão, vermelho/laranja) com
+    // bolinha central (OLT/PON, preto/azul). MAP_V07558_DIO_SINGLE_PORT.
     // ------------------------------------------------------------------
 
     async function enhanceDio(node, generation) {
@@ -549,24 +550,13 @@
         if (node.dataset.dioEnhancedV07552 === "1") return;
         const data = await request(`/api/map/v07539/elements/${id}/dio/${dioId}/dual-face/`);
         if (generation !== state.generation || !node.isConnected) return;
-        const connector = data.dio.connector_type === "sc_upc" ? "sc-upc" : "sc-apc";
-        node.dataset.connectorV07549 = connector;
         data.ports.forEach((row) => {
-            const pair = qs(`[data-port-pair="${row.id}"]`, node);
-            const front = qs(`[data-port-id="${row.id}"][data-port-role="front"]`, node);
-            const rear = qs(`[data-port-id="${row.id}"][data-port-role="rear"]`, node);
-            pair?.classList.toggle("has-front-v07549", Boolean(row.front));
-            pair?.classList.toggle("has-rear-v07549", Boolean(row.rear));
-            pair?.classList.toggle("rear-free-v07549", !row.rear);
-            front?.classList.add("v07549-dio-front", `is-${connector}`);
-            // MAP_V07556_DIO_PON_DOT: a bolinha da frente passa a refletir
-            // se há PON ligada (verde) ou não (vermelho) — antes seguia a
-            // cor do tipo de conector, igual à borda.
-            front?.classList.toggle("is-pon-linked-v07556", Boolean(row.front));
-            rear?.classList.add("v07549-dio-rear");
-            if (pair && front && rear) { pair.appendChild(front); pair.appendChild(rear); }
-            front?.setAttribute("title", `${row.label} · frente ${data.dio.connector_type_label || "SC/APC"}${row.front ? " · ligada" : " · livre"}`);
-            rear?.setAttribute("title", `${row.label} · traseira${row.rear ? ` · ${row.rear.cable || "fundida"}` : " · sem fusão"}`);
+            const unit = qs(`.v07558-dio-unit[data-port-id="${row.id}"]`, node);
+            const dot = qs(`.v07558-dio-dot[data-port-id="${row.id}"]`, node);
+            unit?.classList.toggle("is-fused-v07558", Boolean(row.rear));
+            dot?.classList.toggle("is-pon-linked-v07558", Boolean(row.front));
+            unit?.setAttribute("title", `${row.label} · quadrado = fusão com a rua${row.rear ? ` · ${row.rear.cable || "fundida"}` : " · sem fusão"}`);
+            dot?.setAttribute("title", `${row.label} · bolinha = porta da OLT/PON${row.front ? " · ligada" : " · livre"}`);
         });
         node.dataset.dioEnhancedV07552 = "1";
     }
