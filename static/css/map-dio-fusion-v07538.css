@@ -279,10 +279,23 @@ body.map-dio-fusion-open-v07538 { overflow: hidden; }
 .map-dio-fusion-workspace-v07538 button:hover:not(:disabled) { border-color: #ff781a; color: #fff; }
 .map-dio-fusion-workspace-v07538 button:disabled { opacity: .36; cursor: not-allowed; }
 [data-dio-auto-fuse-v07538] {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
     border-color: #ff5c00 !important;
     color: #fff !important;
     background: linear-gradient(135deg, #f65b00, #ff781a) !important;
     font-weight: 800 !important;
+}
+/* MAP_V07557_AUTO_FUSE_BOLT: raio azul ao lado do texto, a pedido. */
+.v07557-auto-fuse-bolt {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    fill: #38bdf8;
+    stroke: #0c4a6e;
+    stroke-width: 1;
+    filter: drop-shadow(0 0 3px rgba(56, 189, 248, .65));
 }
 [data-dio-close-v07538] {
     width: 38px;

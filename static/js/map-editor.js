@@ -1562,13 +1562,20 @@
                 weight: 4,
                 opacity: .86,
             } });
-            const editing = canEdit && state.mapMode === "edit";
             // MAP_V07556_CABLE_CONTEXT_MENU: clique esquerdo não abre mais
             // popup nenhum (bindPopup removido) — só os fluxos de ferramenta
             // armada abaixo ("+ Reserva"/"+ CTO/CEO") continuam reagindo ao
-            // clique esquerdo. Todas as ações que ficavam no popup (editar,
-            // reserva, inserir, excluir) migraram pro menu de botão direito,
-            // que também ganhou "Editar rota".
+            // clique esquerdo.
+            // MAP_V07557_CABLE_MENU_MERGE: o menu de botão direito do cabo
+            // (com "Editar rota") não é mais montado aqui — existia um
+            // menu de contexto de cabo SEPARADO e já em uso em
+            // map-v07539-suite.js ("Ações da topologia", scanLeafletLayers/
+            // openCableContext), registrado depois deste em todo layer de
+            // cabo. Leaflet chama TODOS os listeners "contextmenu" de um
+            // layer, não só o primeiro — os dois menus abriam ao mesmo
+            // tempo, e o de lá sempre vencia visualmente (criado por
+            // último, mesmo z-index). "Editar rota" foi mesclado nesse
+            // menu de verdade, ver map-v07539-suite.js.
             line.bindTooltip(escapeHtml(p.nome), { permanent: true, sticky: true, className: "cable-name-label" });
             line.on("click", (event) => {
                 if (state.tool === "reserve" && state.reserveCableId === p.id) {
@@ -1578,15 +1585,6 @@
                     L.DomEvent.stopPropagation(event);
                     insertElementAt(p.id, event.latlng).catch((error) => notify(error.message, true));
                 }
-            });
-            line.on("contextmenu", (event) => {
-                if (event.originalEvent) {
-                    L.DomEvent.preventDefault(event.originalEvent);
-                    L.DomEvent.stopPropagation(event.originalEvent);
-                    event.originalEvent.stopImmediatePropagation?.();
-                }
-                mapContextMenu.hidden = true;
-                openCableContextMenu(p, event, editing);
             });
             line.addTo(cableLayer);
             if (illuminated) {
@@ -1689,7 +1687,6 @@
     }
     map.on("click", (event) => {
         mapContextMenu.hidden = true;
-        cableContextMenu.hidden = true;
         if (!state.tool) return;
         if (state.tool === "reserve") {
             createReserveAt(state.reserveCableId, event.latlng).catch((error) => notify(error.message, true));
@@ -1708,7 +1705,7 @@
         }
         openElementDialogAt(state.tool, event.latlng);
     });
-    map.on("movestart zoomstart", () => { mapContextMenu.hidden = true; cableContextMenu.hidden = true; });
+    map.on("movestart zoomstart", () => { mapContextMenu.hidden = true; });
     // Menu de adicionar por clique direito: atalho para CTO/CEO/Rack/Torre
     // direto no ponto clicado, sem precisar armar a ferramenta na barra lateral.
     const mapContextMenu = document.createElement("div");
@@ -1739,54 +1736,6 @@
             openElementDialogAt(button.dataset.addAt, contextMenuLatLng);
         });
     });
-
-    // MAP_V07556_CABLE_CONTEXT_MENU: menu de botão direito do cabo — mesmo
-    // padrão do mapContextMenu acima (div posicionada no ponto do clique,
-    // clique propagado bloqueado pra não vazar pro mapa). "Editar rota" é
-    // novo; as outras ações só migraram do popup antigo (removido) pra cá.
-    const cableContextMenu = document.createElement("div");
-    cableContextMenu.className = "map-context-menu map-cable-context-menu-v07556";
-    cableContextMenu.hidden = true;
-    document.getElementById("map").appendChild(cableContextMenu);
-    L.DomEvent.disableClickPropagation(cableContextMenu);
-    function openCableContextMenu(p, event, editing) {
-        const point = map.latLngToContainerPoint(event.latlng);
-        cableContextMenu.style.left = `${point.x}px`;
-        cableContextMenu.style.top = `${point.y}px`;
-        cableContextMenu.innerHTML = `
-            <strong>${escapeHtml(p.nome)}</strong>
-            <small>Cabo óptico · ${p.fibras} fibras · ${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}</small>
-            ${editing ? `
-                <button type="button" data-cable-action="route">Editar rota</button>
-                <button type="button" data-cable-action="edit">Editar/conectar</button>
-                <button type="button" data-cable-action="reserve">+ Reserva</button>
-                <button type="button" data-cable-action="insert">+ CTO/CEO</button>
-                <button class="danger" type="button" data-cable-action="delete">Excluir</button>` : ""}`;
-        cableContextMenu.hidden = false;
-        if (!editing) return;
-        cableContextMenu.querySelector('[data-cable-action="route"]').onclick = () => {
-            cableContextMenu.hidden = true;
-            startGeometryEdit(p.id).catch((error) => notify(error.message, true));
-        };
-        cableContextMenu.querySelector('[data-cable-action="edit"]').onclick = () => {
-            cableContextMenu.hidden = true;
-            editCable(p.id).catch((error) => notify(error.message, true));
-        };
-        cableContextMenu.querySelector('[data-cable-action="reserve"]').onclick = () => {
-            cableContextMenu.hidden = true;
-            clearTool(); state.tool = "reserve"; state.reserveCableId = p.id;
-            notify("Clique no ponto do cabo onde ficará a reserva.");
-        };
-        cableContextMenu.querySelector('[data-cable-action="insert"]').onclick = () => {
-            cableContextMenu.hidden = true;
-            clearTool(); state.tool = "insert"; state.insertCableId = p.id;
-            notify("Clique no ponto do cabo onde deseja inserir a CTO ou CEO.");
-        };
-        cableContextMenu.querySelector('[data-cable-action="delete"]').onclick = () => {
-            cableContextMenu.hidden = true;
-            deleteCable(p.id).catch((error) => notify(error.message, true));
-        };
-    }
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };
     document.querySelectorAll("[data-map-mode]").forEach((button) => {
@@ -2119,5 +2068,9 @@
     // Usado pelo assistente de importação KMZ para desenhar a prévia
     // temporária no Leaflet sem gravar nada, e para recarregar a estrutura
     // depois de uma importação definitiva.
-    window.networkMap = { map, loadStructure, showUnifilar, manageContainer, notify };
+    // MAP_V07557_CABLE_MENU_MERGE: exposto pra ser chamado pelo menu de
+    // contexto de cabo de verdade (map-v07539-suite.js), que é quem
+    // realmente recebe o clique direito no cabo — ver nota em
+    // startGeometryEdit sobre o menu conflitante que existia antes.
+    window.networkMap = { map, loadStructure, showUnifilar, manageContainer, notify, startGeometryEdit };
 })();
