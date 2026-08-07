@@ -1,3 +1,13 @@
+## MAP v0.75.64 — organizador visual no Switch
+
+- A pedido do usuário: uma barra vertical, tracejada e só decorativa,
+  divide a grade de portas do Switch ao meio (entre a área de
+  uplinks e a de serviço) — mesma ideia visual do organizador que a
+  OLT já tinha, mas sem criar nenhum tipo de porta novo nem mexer no
+  layout/numeração das portas reais (fica fora do fluxo do grid,
+  `position: absolute`, não desloca nenhuma porta);
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.63 — duplo clique "Remover fusão" de verdade
 
 - Clicar 1x numa porta já fundida da matriz chamava

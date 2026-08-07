@@ -215,6 +215,16 @@
             const existing = buttons.get(Number(port.id)) || null;
             holder.appendChild(takePortButton(node, port, existing));
         });
+        // MAP_V07564_SWITCH_ORGANIZER_DIVIDER: barra visual dividindo a
+        // grade de portas ao meio (a pedido do usuário -- só estética,
+        // não cria um tipo de porta "uplink"/"serviço" novo nem mexe nos
+        // dados, diferente do organizador real que a OLT já tem).
+        if (data.ports.length > 1) {
+            const divider = document.createElement("div");
+            divider.className = "v07564-switch-half-divider";
+            divider.setAttribute("aria-hidden", "true");
+            holder.appendChild(divider);
+        }
         legacy?.remove();
         const nodeHeader = qs(":scope > header", node);
         if (nodeHeader?.nextSibling) node.insertBefore(face, nodeHeader.nextSibling);
