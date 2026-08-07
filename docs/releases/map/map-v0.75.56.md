@@ -80,9 +80,30 @@ chegam prontos pro usuário pelo tratamento de erro existente.
 - `tests/test_map_v07556_contract.py` (novo, 8 testes).
 - Suíte histórica completa, rolling-bump dos testes que travam "versão
   atual".
-- Validação real no navegador (Playwright, ambiente Docker isolado no
-  servidor, produção nunca tocada) cobrindo os 4 itens, ver seção
-  própria no relatório desta rodada.
+- **Validação real no navegador** (Playwright + Chromium, ambiente Docker
+  isolado no servidor com dados sintéticos, produção nunca tocada) — os
+  4 itens confirmados de ponta a ponta, com evidência real:
+  1. Rack vazio, Switch → Router → OLT adicionados nessa ordem: posição
+     visual final foi exatamente Switch (topo) → Router → OLT (base),
+     na ordem de criação — OLT não pulou pro topo.
+  2. DIO com 4 portas em estados diferentes (livre / só PON / só fusão /
+     os dois): bolinha da frente e borda de trás confirmadas
+     independentes — vermelho/verde na bolinha por PON, vermelho/laranja
+     na borda por fusão, inclusive no caso combinado (PON + fusão juntas
+     na mesma porta).
+  3. Clique esquerdo no cabo: nada abriu. Clique direito: menu apareceu
+     com "Cabo Rota Teste · 24 fibras · Sem origem → Sem destino" e os 5
+     botões (Editar rota, Editar/conectar, +Reserva, +CTO/CEO, Excluir).
+     "Editar rota" abriu o modo de edição com 3 handles arrastáveis
+     (um por vértice do traçado real); arrastei o do meio e salvei.
+  4. CEO com um cabo passando perto sem corte: painel "Cabos" mostrou
+     "Cabo Passagem Teste · corte necessário · Realizar corte"; cliquei,
+     confirmei no diálogo ("O cabo será dividido em dois trechos nesta
+     caixa..."), e o cabo virou de fato dois trechos
+     ("Cabo Passagem Teste" + "Cabo Passagem Teste · trecho 2"), ambos
+     já marcados "cut" — corte real, não simulado.
+  Ambiente derrubado por completo ao final (containers, volumes,
+  imagens, pasta) — nada ficou para trás.
 
 ## Fora de escopo
 
