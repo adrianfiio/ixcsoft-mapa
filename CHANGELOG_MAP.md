@@ -1,3 +1,15 @@
+## MAP v0.75.62 — cabo não aparece mais sozinho no Canvas do Rack
+
+- A pedido do usuário: o cabo (card com as fibras coloridas, "arraste
+  até um DIO") não aparece mais como um widget separado no Canvas 2D
+  do Rack — só na Matriz de Fusão, onde já tem seu próprio "+
+  Vincular" (não perde nenhuma funcionalidade, só o card duplicado). A
+  Torre não muda;
+- Confirmado que o agrupamento por tubo de 12 fibras já funciona certo
+  (herda o fix da v0.75.61): um cabo de 24F mostra T1 com as fibras
+  1-12 e T2 embaixo com 13-24, cada tubo relacionado ao cabo certo;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.61 — cabo sumindo da matriz de fusão e Auto fusão quebrada
 
 - **Cabo vinculado sumia da matriz**: "+ Vincular" só grava o cabo em

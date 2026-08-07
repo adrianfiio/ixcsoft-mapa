@@ -1211,7 +1211,15 @@
         const canvas = qs(".master-canvas", root);
         const nodes = qs(".master-canvas-nodes", canvas);
         const equipment = state.container.data.equipment || [];
-        const cables = state.container.data.cables || [];
+        // MAP_V07562_RACK_CABLES_MATRIX_ONLY: a pedido do usuário — o
+        // "widget" do cabo (card com as fibras coloridas, arraste até
+        // um DIO) não aparece mais sozinho no Canvas do Rack; o cabo
+        // já tem seu próprio jeito de virar fusão direto na Matriz de
+        // Fusão (+ Vincular, ver map-dio-fusion-v07538.js), então isso
+        // não tira nenhuma funcionalidade, só o card duplicado. A Torre
+        // não muda — só o Rack tinha esse pedido.
+        const isRackContainer = state.container.data.container?.type === "rack";
+        const cables = isRackContainer ? [] : (state.container.data.cables || []);
         root.classList.toggle("line-mode-active", state.container.lineMode);
         nodes.innerHTML = equipment.map((item, index) => {
             const position = nodePosition(item, index);
