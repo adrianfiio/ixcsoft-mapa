@@ -1275,15 +1275,20 @@
         });
         return match;
     }
-    async function startGeometryEdit() {
+    async function startGeometryEdit(cableId) {
+        // MAP_V07556_CABLE_CONTEXT_MENU: aceita um id direto (chamado pelo
+        // menu de botão direito, sem precisar abrir o diálogo antes); sem
+        // argumento, cai no comportamento antigo (botão dentro do diálogo,
+        // que já deixa state.editingCableId setado via editCable()).
+        if (cableId != null) state.editingCableId = cableId;
         const data = await api(`/api/map/cables/${state.editingCableId}/`);
-        cableDialog.close();
+        if (cableDialog.open) cableDialog.close();
         map.closePopup();
         clearTool();
         state.geometryCableId = data.cable.id;
         state.tool = "geometry";
         const coordinates = data.cable.geometry.coordinates[0];
-        state.drawingLine = L.polyline(coordinates.map((p) => [p[1], p[0]]), { color: "#2dd4bf", weight: 5 }).addTo(map);
+        state.drawingLine = L.polyline(coordinates.map((p) => [p[1], p[0]]), { color: "#2dd4bf", weight: 5, dashArray: "10 6" }).addTo(map);
         state.geometryHandles = coordinates.map((p, index) => {
             const handle = L.marker([p[1], p[0]], {
                 draggable: true,
@@ -1558,21 +1563,13 @@
                 opacity: .86,
             } });
             const editing = canEdit && state.mapMode === "edit";
-            const actions = editing ? `<br><button type="button" data-edit-cable="${p.id}">Editar/conectar</button><button type="button" data-reserve-cable="${p.id}">+ Reserva</button><button type="button" data-insert-cable="${p.id}">+ CTO/CEO</button><button class="danger" type="button" data-delete-cable="${p.id}">Excluir</button>` : "";
-            line.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>Cabo óptico · ${p.fibras} fibras<br>${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}${actions}`);
+            // MAP_V07556_CABLE_CONTEXT_MENU: clique esquerdo não abre mais
+            // popup nenhum (bindPopup removido) — só os fluxos de ferramenta
+            // armada abaixo ("+ Reserva"/"+ CTO/CEO") continuam reagindo ao
+            // clique esquerdo. Todas as ações que ficavam no popup (editar,
+            // reserva, inserir, excluir) migraram pro menu de botão direito,
+            // que também ganhou "Editar rota".
             line.bindTooltip(escapeHtml(p.nome), { permanent: true, sticky: true, className: "cable-name-label" });
-            line.on("popupopen", () => {
-                popupAction(`[data-edit-cable="${p.id}"]`, () => editCable(p.id).catch((error) => notify(error.message, true)));
-                popupAction(`[data-delete-cable="${p.id}"]`, () => deleteCable(p.id).catch((error) => notify(error.message, true)));
-                popupAction(`[data-reserve-cable="${p.id}"]`, () => {
-                    map.closePopup(); clearTool(); state.tool = "reserve"; state.reserveCableId = p.id;
-                    notify("Clique no ponto do cabo onde ficará a reserva.");
-                });
-                popupAction(`[data-insert-cable="${p.id}"]`, () => {
-                    map.closePopup(); clearTool(); state.tool = "insert"; state.insertCableId = p.id;
-                    notify("Clique no ponto do cabo onde deseja inserir a CTO ou CEO.");
-                });
-            });
             line.on("click", (event) => {
                 if (state.tool === "reserve" && state.reserveCableId === p.id) {
                     L.DomEvent.stopPropagation(event);
@@ -1581,6 +1578,15 @@
                     L.DomEvent.stopPropagation(event);
                     insertElementAt(p.id, event.latlng).catch((error) => notify(error.message, true));
                 }
+            });
+            line.on("contextmenu", (event) => {
+                if (event.originalEvent) {
+                    L.DomEvent.preventDefault(event.originalEvent);
+                    L.DomEvent.stopPropagation(event.originalEvent);
+                    event.originalEvent.stopImmediatePropagation?.();
+                }
+                mapContextMenu.hidden = true;
+                openCableContextMenu(p, event, editing);
             });
             line.addTo(cableLayer);
             if (illuminated) {
@@ -1683,6 +1689,7 @@
     }
     map.on("click", (event) => {
         mapContextMenu.hidden = true;
+        cableContextMenu.hidden = true;
         if (!state.tool) return;
         if (state.tool === "reserve") {
             createReserveAt(state.reserveCableId, event.latlng).catch((error) => notify(error.message, true));
@@ -1701,7 +1708,7 @@
         }
         openElementDialogAt(state.tool, event.latlng);
     });
-    map.on("movestart zoomstart", () => { mapContextMenu.hidden = true; });
+    map.on("movestart zoomstart", () => { mapContextMenu.hidden = true; cableContextMenu.hidden = true; });
     // Menu de adicionar por clique direito: atalho para CTO/CEO/Rack/Torre
     // direto no ponto clicado, sem precisar armar a ferramenta na barra lateral.
     const mapContextMenu = document.createElement("div");
@@ -1732,6 +1739,54 @@
             openElementDialogAt(button.dataset.addAt, contextMenuLatLng);
         });
     });
+
+    // MAP_V07556_CABLE_CONTEXT_MENU: menu de botão direito do cabo — mesmo
+    // padrão do mapContextMenu acima (div posicionada no ponto do clique,
+    // clique propagado bloqueado pra não vazar pro mapa). "Editar rota" é
+    // novo; as outras ações só migraram do popup antigo (removido) pra cá.
+    const cableContextMenu = document.createElement("div");
+    cableContextMenu.className = "map-context-menu map-cable-context-menu-v07556";
+    cableContextMenu.hidden = true;
+    document.getElementById("map").appendChild(cableContextMenu);
+    L.DomEvent.disableClickPropagation(cableContextMenu);
+    function openCableContextMenu(p, event, editing) {
+        const point = map.latLngToContainerPoint(event.latlng);
+        cableContextMenu.style.left = `${point.x}px`;
+        cableContextMenu.style.top = `${point.y}px`;
+        cableContextMenu.innerHTML = `
+            <strong>${escapeHtml(p.nome)}</strong>
+            <small>Cabo óptico · ${p.fibras} fibras · ${escapeHtml(p.origem || "Sem origem")} → ${escapeHtml(p.destino || "Sem destino")}</small>
+            ${editing ? `
+                <button type="button" data-cable-action="route">Editar rota</button>
+                <button type="button" data-cable-action="edit">Editar/conectar</button>
+                <button type="button" data-cable-action="reserve">+ Reserva</button>
+                <button type="button" data-cable-action="insert">+ CTO/CEO</button>
+                <button class="danger" type="button" data-cable-action="delete">Excluir</button>` : ""}`;
+        cableContextMenu.hidden = false;
+        if (!editing) return;
+        cableContextMenu.querySelector('[data-cable-action="route"]').onclick = () => {
+            cableContextMenu.hidden = true;
+            startGeometryEdit(p.id).catch((error) => notify(error.message, true));
+        };
+        cableContextMenu.querySelector('[data-cable-action="edit"]').onclick = () => {
+            cableContextMenu.hidden = true;
+            editCable(p.id).catch((error) => notify(error.message, true));
+        };
+        cableContextMenu.querySelector('[data-cable-action="reserve"]').onclick = () => {
+            cableContextMenu.hidden = true;
+            clearTool(); state.tool = "reserve"; state.reserveCableId = p.id;
+            notify("Clique no ponto do cabo onde ficará a reserva.");
+        };
+        cableContextMenu.querySelector('[data-cable-action="insert"]').onclick = () => {
+            cableContextMenu.hidden = true;
+            clearTool(); state.tool = "insert"; state.insertCableId = p.id;
+            notify("Clique no ponto do cabo onde deseja inserir a CTO ou CEO.");
+        };
+        cableContextMenu.querySelector('[data-cable-action="delete"]').onclick = () => {
+            cableContextMenu.hidden = true;
+            deleteCable(p.id).catch((error) => notify(error.message, true));
+        };
+    }
 
     document.getElementById("collapse-sidebar").onclick = () => { sidebar.classList.toggle("collapsed"); setTimeout(() => map.invalidateSize(), 220); };
     document.querySelectorAll("[data-map-mode]").forEach((button) => {

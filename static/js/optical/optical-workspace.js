@@ -239,10 +239,20 @@
             ? session.optical.cables.map((cable) => {
                 const selected = Number(session.selection.cableId) === Number(cable.id);
                 const cut = cable.requires_cut ? '<span class="ixc-optical-warning">corte necessário</span>' : "";
-                return `<button type="button" class="ixc-optical-cable-card ${selected ? "is-selected" : ""}" data-action="select-cable" data-cable-id="${cable.id}">
-                    <strong>${escapeHtml(cable.name)}</strong>
-                    <small>${cable.fibers.length} fibras · ${escapeHtml(cable.relation_action || "conectado")}</small>${cut}
-                </button>`;
+                // MAP_V07556_CABLE_CUT: card do cabo virou um <div> com o
+                // botão de seleção original + um botão irmão "Realizar
+                // corte" quando o cabo está só passando (requires_cut) —
+                // antes o card já mostrava "corte necessário" mas não tinha
+                // nenhuma ação pra corrigir isso.
+                const cutButton = cable.requires_cut
+                    ? `<button type="button" class="ixc-optical-cable-cut-button-v07556" data-action="cut-passing-cable" data-cable-id="${cable.id}" ${!canEdit() ? "disabled" : ""}>Realizar corte</button>`
+                    : "";
+                return `<div class="ixc-optical-cable-row-v07556">
+                    <button type="button" class="ixc-optical-cable-card ${selected ? "is-selected" : ""}" data-action="select-cable" data-cable-id="${cable.id}">
+                        <strong>${escapeHtml(cable.name)}</strong>
+                        <small>${cable.fibers.length} fibras · ${escapeHtml(cable.relation_action || "conectado")}</small>${cut}
+                    </button>${cutButton}
+                </div>`;
             }).join("")
             : '<p class="ixc-optical-empty">Nenhum cabo conectado ou em passagem.</p>';
 
@@ -624,6 +634,24 @@
             ], world);
             return;
         }
+        // MAP_V07556_CABLE_CUT: cabo em passagem (requires_cut) ganha
+        // "Realizar corte" no menu de botão direito também — os cabos já
+        // são hit-testáveis no canvas (renderer.hitTest devolve
+        // {type:"cable", id}), não precisou de geometria nova.
+        const cableHit = renderer.hitTest(session, screen);
+        if (cableHit?.type === "cable") {
+            const cable = state.cableById(session, cableHit.id);
+            session.selection.cableId = Number(cableHit.id);
+            renderer.render(session);
+            const items = [];
+            if (cable?.requires_cut) {
+                items.push({ label: "Realizar corte", danger: true, disabled: !canEdit(), run: () => cutPassingCable(session, cableHit.id) });
+            } else {
+                items.push({ label: "Cabo já cortado nesta caixa", disabled: true });
+            }
+            openContextMenu(session, event.clientX, event.clientY, items, world);
+            return;
+        }
         openContextMenu(session, event.clientX, event.clientY, [
             { label: "Adicionar splitter", hint: "Criar no ponto central", disabled: !canEdit(), run: () => addSplitter(session) },
             { label: "Adicionar nota", hint: "Criar neste ponto", disabled: !canEdit(), run: () => addNote(session, world) },
@@ -668,6 +696,21 @@
             }
         });
         bindCanvas(session);
+    }
+
+    // MAP_V07556_CABLE_CUT: ação compartilhada entre o botão do painel
+    // "Cabos" e o item novo do menu de botão direito do canvas — mesmo
+    // padrão de confirmação já usado em delete-splice/delete-splitter.
+    async function cutPassingCable(session, cableId) {
+        const { api, dialog } = dependencies();
+        const accepted = await dialog.confirm({
+            title: "Realizar corte do cabo",
+            message: "O cabo será dividido em dois trechos nesta caixa. Essa ação não pode ser desfeita pela interface.",
+            confirmLabel: "Realizar corte",
+            danger: true,
+        });
+        if (!accepted || !isCurrent(session)) return;
+        return runMutation(session, () => api.cutCable(session.elementId, cableId, session.controller.signal), "Cabo cortado nesta caixa.");
     }
 
     async function handleClick(session, event) {
@@ -766,6 +809,9 @@
         }
         if (action === "clear-splitter-output") {
             return runMutation(session, () => api.clearSplitterOutput(session.elementId, Number(button.dataset.portId), session.controller.signal), "Saída do splitter desligada.");
+        }
+        if (action === "cut-passing-cable") {
+            return cutPassingCable(session, Number(button.dataset.cableId));
         }
         if (action === "toggle-cable-membership") {
             const cableId = Number(button.dataset.cableId);

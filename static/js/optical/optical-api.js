@@ -142,6 +142,9 @@
         excludeCable(elementId, cableId, signal) {
             return request(`/api/map/elements/${elementId}/fusion-cables/${cableId}/`, { method: "DELETE", signal });
         },
+        cutCable(elementId, cableId, signal) {
+            return request(`/api/map/elements/${elementId}/cables/${cableId}/cut/`, json("POST", {}, signal));
+        },
         updateServicePort(elementId, payload, signal) {
             return request(`/api/map/master/ctos/${elementId}/splitter-ports/`, json("PATCH", payload, signal));
         },

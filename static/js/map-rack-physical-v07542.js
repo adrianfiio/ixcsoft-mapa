@@ -201,10 +201,13 @@
         return number(saved?.unit, 0) || explicitRackUnit(row);
     }
 
-    function priority(row) {
-        return ({ olt: 1, dio: 2, switch: 3, router: 4, firewall: 5 })[
-            String(row.item?.type || row.node.dataset.equipmentType || "").toLowerCase()
-        ] || 20;
+    function priority() {
+        // MAP_V07556_RACK_ORDER: antes OLT tinha prioridade 1 e sempre
+        // vencia o topo do rack, não importa quando foi adicionada — o
+        // desempate por a.id - b.id (ordem de criação, no chamador) nunca
+        // era alcançado pra ela. Agora todo tipo empata aqui, e a ordem de
+        // criação sempre decide o posicionamento automático.
+        return 20;
     }
 
     function rangeIsFree(assignments, unit, height, units, excludedId = null) {

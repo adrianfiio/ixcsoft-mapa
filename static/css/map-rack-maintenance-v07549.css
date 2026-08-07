@@ -230,9 +230,12 @@
     border-radius: 8px !important;
 }
 #map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-apc { border-color: #2acb8c !important; }
-#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-apc > i { background: #2acb8c !important; box-shadow: 0 0 7px rgba(42, 203, 140, .55); }
 #map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-upc { border-color: #27a9ff !important; }
-#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-sc-upc > i { background: #27a9ff !important; box-shadow: 0 0 7px rgba(39, 169, 255, .55); }
+/* MAP_V07556_DIO_PON_DOT: bolinha da frente por estado de PON (vermelho
+   sem PON ligada, verde com PON ligada) — desacoplada da cor do
+   conector, que continua só na borda acima. */
+#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front > i { background: #e34f5f !important; box-shadow: 0 0 7px rgba(227, 79, 95, .52); }
+#map-master-container .v07539-dio-pair .master-node-port.v07549-dio-front.is-pon-linked-v07556 > i { background: #19d18a !important; box-shadow: 0 0 8px rgba(25, 209, 138, .55); }
 #map-master-container .v07539-dio-pair.rear-free-v07549 .master-node-port.v07549-dio-rear { border-color: #e34f5f !important; background: rgba(96, 25, 36, .32) !important; }
 #map-master-container .v07539-dio-pair.rear-free-v07549 .master-node-port.v07549-dio-rear > i { background: #e34f5f !important; box-shadow: 0 0 7px rgba(227, 79, 95, .52); }
 #map-master-container .v07539-dio-pair.has-rear-v07549 .master-node-port.v07549-dio-rear { border-color: #ff7b17 !important; background: rgba(106, 48, 14, .35) !important; }

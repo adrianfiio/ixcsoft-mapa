@@ -234,9 +234,24 @@ body:has(#map-sidebar.master-minimized) .ixc-optical-workspace { left: 54px; }
     width: 100%;
     display: grid;
     gap: 3px;
-    margin-bottom: 6px;
     text-align: left;
 }
+/* MAP_V07556_CABLE_CUT */
+.ixc-optical-cable-row-v07556 { margin-bottom: 6px; }
+.ixc-optical-cable-cut-button-v07556 {
+    width: 100%;
+    margin-top: 4px;
+    padding: 5px 8px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #ffdca8;
+    background: rgba(255, 140, 20, .14);
+    border: 1px solid rgba(255, 140, 20, .4);
+    border-radius: 6px;
+    cursor: pointer;
+}
+.ixc-optical-cable-cut-button-v07556:hover { background: rgba(255, 140, 20, .26); }
+.ixc-optical-cable-cut-button-v07556:disabled { opacity: .5; cursor: not-allowed; }
 .ixc-optical-cable-card strong {
     overflow: hidden;
     font-size: 10px;

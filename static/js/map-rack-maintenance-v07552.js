@@ -559,6 +559,10 @@
             pair?.classList.toggle("has-rear-v07549", Boolean(row.rear));
             pair?.classList.toggle("rear-free-v07549", !row.rear);
             front?.classList.add("v07549-dio-front", `is-${connector}`);
+            // MAP_V07556_DIO_PON_DOT: a bolinha da frente passa a refletir
+            // se há PON ligada (verde) ou não (vermelho) — antes seguia a
+            // cor do tipo de conector, igual à borda.
+            front?.classList.toggle("is-pon-linked-v07556", Boolean(row.front));
             rear?.classList.add("v07549-dio-rear");
             if (pair && front && rear) { pair.appendChild(front); pair.appendChild(rear); }
             front?.setAttribute("title", `${row.label} · frente ${data.dio.connector_type_label || "SC/APC"}${row.front ? " · ligada" : " · livre"}`);
