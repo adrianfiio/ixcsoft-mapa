@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AFService Map — Aplicativo de Campo</title>
+    <link rel="manifest" href="/app/manifest.json">
+    <meta name="theme-color" content="#0d6efd">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .app-header { background: #0d6efd; color: #fff; padding: 1rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .card-custom { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,.05); margin-bottom: 1rem; }
+        .btn-action { border-radius: 50px; padding: 0.75rem 1.5rem; font-weight: 600; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #dee2e6; display: flex; justify-content: space-around; padding: 0.5rem 0; z-index: 1000; }
+        .bottom-nav a { color: #6c757d; text-decoration: none; font-size: 0.8rem; text-align: center; }
+        .bottom-nav a.active { color: #0d6efd; }
+        .bottom-nav a i { font-size: 1.2rem; display: block; margin-bottom: 2px; }
+        .content-container { padding-bottom: 70px; }
+    </style>
+</head>
+<body>
+    <div class="app-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-helmet-safety me-2"></i>AFService Campo</h5>
+            <small class="text-white-50">Técnico: {{ request.user.get_full_name|default:request.user.username }}</small>
+        </div>
+        <div>
+            <a href="{% url 'logout' %}" class="btn btn-sm btn-light text-danger"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </div>
+
+    <div class="container mt-3 content-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Visão Geral / Atalhos -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-custom bg-primary text-white p-3 mb-3">
+                    <h4>Modo Operacional Ativo</h4>
+                    <p class="mb-2">Localize caixas CTO, ordens de serviço, portas de OLT e execute testes rápidos de ponta a ponta em campo.</p>
+                    <a href="/mapa/" class="btn btn-light btn-action text-primary w-100 mt-2"><i class="fa-solid fa-map-location-dot me-2"></i>Abrir Mapa Tático de Fibra</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <div class="card card-custom text-center p-3">
+                    <i class="fa-solid fa-boxes-stacked fa-2x text-primary mb-2"></i>
+                    <h6 class="fw-bold">Caixas CTO</h6>
+                    <span class="badge bg-secondary">Consulta</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card card-custom text-center p-3">
+                    <i class="fa-solid fa-network-wired fa-2x text-success mb-2"></i>
+                    <h6 class="fw-bold">Portas / OLT</h6>
+                    <span class="badge bg-secondary">Verificação</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-custom p-3 mt-2">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-clipboard-list me-2"></i>Atividades Recentes / Ordens</h5>
+            <div class="list-group list-group-flush">
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Ativação Cliente #10482</h6>
+                        <small class="text-muted">CTO-CENTRO-02 · Porta 4</small>
+                    </div>
+                    <span class="badge bg-success">Concluído</span>
+                </div>
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Manutenção Drop #9931</h6>
+                        <small class="text-muted">CTO-NORTE-01 · Porta 12</small>
+                    </div>
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação Inferior PWA -->
+    <div class="bottom-nav">
+        <a href="/app/" class="active">
+            <i class="fa-solid fa-house"></i>
+            Início
+        </a>
+        <a href="/mapa/">
+            <i class="fa-solid fa-map"></i>
+            Mapa
+        </a>
+        <a href="/app/equipamentos/">
+            <i class="fa-solid fa-server"></i>
+            Ativos
+        </a>
+        <a href="/app/perfil/">
+            <i class="fa-solid fa-user"></i>
+            Perfil
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/app/sw.js')
+                .then(() => console.log('Service Worker registrado com sucesso.'))
+                .catch(err => console.log('Falha ao registrar Service Worker:', err));
+        }
+    </script>
+</body>
+</html>
