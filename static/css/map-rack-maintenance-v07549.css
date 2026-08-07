@@ -226,9 +226,18 @@
 }
 .map-dio-fusion-workspace-v07538 main > section > div { padding: 10px !important; }
 .map-dio-tube-v07538 > div {
-    grid-template-columns: repeat(12, 30px) !important;
-    justify-content: start !important;
-    gap: 5px !important;
+    /* MAP_V07561_DIO_FUSION_FIBERS_VISIBLE: ESTA é a regra que
+       realmente vencia (carrega depois de map-dio-fusion-v07538.css,
+       mesmo seletor + !important) -- a largura fixa antiga nunca
+       encolhia, e a coluna "CABOS VINCULADOS" só tem até 410px
+       (map-dio-fusion-workspace-v07538 main, algumas linhas acima)
+       menos os 28px+gap da etiqueta do tubo: 12×30px + 11 gaps de 5px
+       passa dos ~370px realmente disponíveis, cortando as últimas
+       fibras por baixo do overflow:hidden do card. 1fr sem mínimo
+       sempre cabe, encolhendo o quanto precisar. */
+    grid-template-columns: repeat(12, 1fr) !important;
+    justify-content: stretch !important;
+    gap: 4px !important;
 }
 .map-dio-fusion-workspace-v07538 button {
     border-radius: 9px !important;

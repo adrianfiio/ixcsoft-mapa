@@ -37,9 +37,9 @@ class MapV07560ContractTests(unittest.TestCase):
         self.assertIn("transform: none !important;", dot_block)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.60")', content("config/settings.py"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.61")', content("config/settings.py"))
         self.assertIn('"0.83.1"', content("config/settings.py"))
-        self.assertIn("v0.75.60", content("VERSIONS.md"))
+        self.assertIn("v0.75.61", content("VERSIONS.md"))
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
         self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
 

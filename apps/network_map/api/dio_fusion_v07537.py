@@ -47,12 +47,21 @@ def _dio_for_container(container: NetworkElement, equipment_id: int) -> Containe
     )
 
 
-def _candidate_cables(container: NetworkElement):
+def _candidate_cables(container: NetworkElement, extra_ids=()):
+    # MAP_V07561_DIO_FUSION_CABLE_VISIBILITY: "+ Vincular" só grava o
+    # cabo em dio.metadata (_save_linked_cable_ids) -- nenhum
+    # ContainerPortLink existe ainda (a fusão em si é que cria isso), e
+    # o cabo pode não ter origin/destination apontando pra este
+    # container (ele só está sendo fundido aqui, não necessariamente
+    # nasce ou termina aqui). Sem extra_ids, um cabo recém-vinculado
+    # (ainda sem nenhuma fibra fundida) sumia da lista "CABOS
+    # VINCULADOS" da matriz — o filtro original não tinha como achá-lo.
     return (
         FiberCable.objects.filter(
             Q(origin=container)
             | Q(destination=container)
             | Q(container_port_links__container=container)
+            | Q(id__in=list(extra_ids))
         )
         .distinct()
         .prefetch_related("fibers__color", "fibers__tube__color")
@@ -125,11 +134,11 @@ def _fusion_links(container: NetworkElement, dio: ContainerEquipment):
 
 
 def _payload(container: NetworkElement, dio: ContainerEquipment) -> dict:
-    candidates = list(_candidate_cables(container))
-    candidate_by_id = {item.id: item for item in candidates}
     linked_ids = _linked_cable_ids(dio, container)
     links = list(_fusion_links(container, dio))
     linked_ids.update(link.cable_id for link in links if link.cable_id)
+    candidates = list(_candidate_cables(container, extra_ids=linked_ids))
+    candidate_by_id = {item.id: item for item in candidates}
     link_by_port = {link.destination_port_id: link for link in links}
     link_by_fiber = {link.cable_fiber_id: link for link in links}
 
@@ -266,7 +275,13 @@ def dio_fusion_matrix_v07537(request, element_id, equipment_id):
 
     action = str(request.data.get("action") or "").strip().lower()
     linked_ids = _linked_cable_ids(dio, container)
-    candidates = _candidate_cables(container)
+    # MAP_V07561_DIO_FUSION_CABLE_VISIBILITY: mesma correção de
+    # _payload() -- sem extra_ids aqui, um cabo já vinculado (metadata)
+    # mas sem origin/destination/link apontando pra este container
+    # aparecia na lista (GET, já corrigido) mas toda ação sobre ele
+    # (auto_fuse, criar fusão manual, desvincular) batia em
+    # "No FiberCable matches the given query." -- confirmado ao vivo.
+    candidates = _candidate_cables(container, extra_ids=linked_ids)
 
     if action == "attach_cable":
         cable = get_object_or_404(candidates, pk=request.data.get("cable_id"))

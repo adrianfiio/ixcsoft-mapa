@@ -1,3 +1,26 @@
+## MAP v0.75.61 — cabo sumindo da matriz de fusão e Auto fusão quebrada
+
+- **Cabo vinculado sumia da matriz**: "+ Vincular" só grava o cabo em
+  `dio.metadata` — nenhum `ContainerPortLink` existe ainda (a fusão em
+  si que cria isso), e o cabo pode não ter `origin`/`destination`
+  apontando pra este container específico (só está sendo fundido ali,
+  não nasce nem termina fisicamente ali). A consulta que monta a lista
+  "CABOS VINCULADOS" não sabia disso e descartava silenciosamente
+  qualquer cabo só vinculado por metadata — corrigido em dois lugares
+  (`_payload`, usado pela listagem, e o dispatcher de ações, usado por
+  `attach_cable`/`auto_fuse`/`create_fusion`/`detach_cable` — os dois
+  tinham a mesma consulta restrita demais, separadamente);
+- **Auto fusão "quebrada"**: era o mesmo bug acima — sem o cabo
+  aparecendo na lista, não tinha como selecioná-lo, e mesmo forçando a
+  seleção a ação batia em "No FiberCable matches the given query.";
+- **Só 10-11 das 12 fibras apareciam na matriz**: `repeat(12, 30px)
+  !important` (num arquivo diferente do que parecia, carregado por
+  cima) nunca encolhia — numa coluna com só ~370px reais disponíveis,
+  as últimas fibras ficavam cortadas por baixo do `overflow: hidden`
+  do card. Trocado pra `repeat(12, 1fr)`, sempre cabe, encolhendo o
+  quanto precisar;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.60 — bolinha do DIO maior e realmente centralizada
 
 - A pedido do usuário: bolinha (OLT/PON) de 20px → 28px, quadrado de
