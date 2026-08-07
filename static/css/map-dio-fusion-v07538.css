@@ -282,10 +282,19 @@ body.map-dio-fusion-open-v07538 { overflow: hidden; }
     display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
+    width: auto !important;
+    white-space: nowrap !important;
     border-color: #ff5c00 !important;
     color: #fff !important;
     background: linear-gradient(135deg, #f65b00, #ff781a) !important;
     font-weight: 800 !important;
+}
+/* MAP_V07559: reforça o texto em branco explicitamente no <span>, a
+   pedido — o botão só mostrava o raio antes, sem o rótulo visível. */
+[data-dio-auto-fuse-v07538] span {
+    display: inline !important;
+    color: #fff !important;
+    font-size: 11px !important;
 }
 /* MAP_V07557_AUTO_FUSE_BOLT: raio azul ao lado do texto, a pedido. */
 .v07557-auto-fuse-bolt {

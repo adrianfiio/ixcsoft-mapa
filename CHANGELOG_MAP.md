@@ -1,3 +1,13 @@
+## MAP v0.75.59 — texto "Auto fusão" reforçado em branco
+
+- O botão "Auto fusão" da matriz de fusão do DIO só mostrava o ícone do
+  raio — o `<span>` com o texto existia no HTML e já tinha
+  `color: #fff`, mas não estava aparecendo de verdade na tela. Reforçado
+  com `display:inline !important; color:#fff !important` direto no
+  `<span>`, confirmado ao vivo (screenshot) que o texto "Auto fusão"
+  aparece nítido em branco ao lado do ícone agora;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.58 — porta do D.I.O vira 1 elemento só (quadrado = fusão, bolinha = OLT/PON)
 
 O empilhamento da v0.75.57 corrigiu o CSS mas não resolveu o pedido de

@@ -6,7 +6,7 @@ x-common-environment: &common-environment
   APP_ENV: ${APP_ENV:-production}
   APP_VERSION: ${APP_VERSION:-0.82.0}
   PLATFORM_VERSION: ${PLATFORM_VERSION:-0.83.1}
-  MAP_VERSION: ${MAP_VERSION:-0.75.58}
+  MAP_VERSION: ${MAP_VERSION:-0.75.59}
   WEB_URL: ${WEB_URL:-}
   PORT: ${PORT:-8000}
   TZ: ${TZ:-America/Sao_Paulo}
