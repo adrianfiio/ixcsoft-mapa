@@ -571,8 +571,18 @@
         if (portButton) {
             const portId = Number(portButton.dataset.dioPortV07538);
             const port = state.data.ports.find((item) => Number(item.id) === portId);
+            // MAP_V07563_DIO_DOUBLE_CLICK_REMOVE_FUSION: porta já fundida
+            // não tem nada pra fazer num clique simples (o duplo clique é
+            // quem remove, via handleWorkspaceDoubleClick) -- antes,
+            // clicar aqui chamava renderWorkspace() (reconstrução
+            // completa do DOM) sem mudar nada de verdade. Esse reflow no
+            // meio dos dois cliques de um duplo clique interferia na
+            // detecção nativa do navegador: confirmado ao vivo que
+            // NENHUM evento dblclick chegava a disparar (0 de 2 cliques
+            // reais), mesmo o duplo clique físico acontecendo.
+            if (port?.fusion) return;
             state.selectedPortId = portId;
-            if (!port?.fusion && state.selectedFiberId) await createFusion(portId);
+            if (state.selectedFiberId) await createFusion(portId);
             else renderWorkspace();
             return;
         }

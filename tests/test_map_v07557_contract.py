@@ -75,9 +75,9 @@ class MapV07557ContractTests(unittest.TestCase):
         self.assertIn("fill: #38bdf8;", css)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.62")', content("config/settings.py"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.63")', content("config/settings.py"))
         self.assertIn('"0.83.1"', content("config/settings.py"))
-        self.assertIn("v0.75.62", content("VERSIONS.md"))
+        self.assertIn("v0.75.63", content("VERSIONS.md"))
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
         self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
 

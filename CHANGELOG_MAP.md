@@ -1,3 +1,15 @@
+## MAP v0.75.63 — duplo clique "Remover fusão" de verdade
+
+- Clicar 1x numa porta já fundida da matriz chamava
+  `renderWorkspace()` (reconstrução completa do DOM) sem mudar nada de
+  verdade — e esse reflow no meio dos 2 cliques de um duplo clique
+  impedia o navegador de disparar o evento `dblclick`. Confirmado ao
+  vivo com um listener de diagnóstico: 0 de 2 eventos `dblclick`
+  chegavam antes da correção (mesmo com 2 cliques reais acontecendo),
+  1 de 2 depois — e a fusão sendo removida de ponta a ponta ("Fusão
+  rompida.", porta volta a ficar livre);
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.62 — cabo não aparece mais sozinho no Canvas do Rack
 
 - A pedido do usuário: o cabo (card com as fibras coloridas, "arraste
