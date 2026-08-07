@@ -1,3 +1,20 @@
+## MAP v0.75.60 — bolinha do DIO maior e realmente centralizada
+
+- A pedido do usuário: bolinha (OLT/PON) de 20px → 28px, quadrado de
+  44px → 52px, mais fácil de clicar;
+- **Causa raiz real, achada só ao medir de verdade no navegador**: a
+  bolinha continuava ~10px abaixo do centro do quadrado mesmo com
+  `place-items: center` no grid pai. Uma regra genérica bem mais antiga
+  (`.master-node-port i`, usada pela bolinha de status de QUALQUER
+  porta do sistema) tem `position: absolute; top: 50%; transform:
+  translateY(-50%)` — o truque clássico de centralizar via absolute.
+  A bolinha do DIO virou `position: relative` na v0.75.58 (pra resolver
+  o bug do raio-x roubando clique), e sem zerar TAMBÉM o `top`/
+  `transform` daquela regra antiga, eles deixaram de ser inertes e
+  passaram a empurrar a bolinha pra baixo de verdade. Zerado agora
+  (`top: auto; transform: none`), o grid centraliza sozinho;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.59 — texto "Auto fusão" reforçado em branco
 
 - O botão "Auto fusão" da matriz de fusão do DIO só mostrava o ícone do

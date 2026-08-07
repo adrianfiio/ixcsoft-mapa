@@ -402,10 +402,10 @@
     display: grid !important;
     place-items: center !important;
     box-sizing: border-box;
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    width: 52px !important;
+    min-width: 52px !important;
+    height: 52px !important;
+    min-height: 52px !important;
     padding: 0 !important;
     border: 2px solid #e34f5f !important;
     border-radius: 9px !important;
@@ -436,10 +436,19 @@
        cair no quadrado por baixo. position+z-index aqui resolve isso. */
     position: relative !important;
     z-index: 5 !important;
-    width: 20px !important;
-    min-width: 20px !important;
-    height: 20px !important;
-    min-height: 20px !important;
+    /* map-master-suite.css:669-677 (.master-node-port i, a bolinha de
+       status genérica de QUALQUER porta) tem top:50% + translateY(-50%)
+       pensado pra centralizar via position:absolute. Como aqui a bolinha
+       é position:relative (pro fix do z-index acima), esse top/transform
+       não fica inerte — vira um deslocamento relativo de verdade e
+       empurra a bolinha pra baixo do centro. O grid do quadrado
+       (place-items:center) já centraliza sozinho; zera os dois aqui. */
+    top: auto !important;
+    transform: none !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
     border-radius: 50% !important;
     background: #0a0d10 !important;
     box-shadow: 0 0 0 2px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(255, 255, 255, .08) !important;
