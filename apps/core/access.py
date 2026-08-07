@@ -34,6 +34,20 @@ def editable_company_ids(user):
     )
 
 
+def admin_company_ids(user):
+    if not user or not user.is_authenticated:
+        return []
+    if user.is_superuser:
+        return None
+    return list(
+        CompanyMembership.objects.filter(
+            user=user,
+            active=True,
+            role__in=ADMIN_ROLES,
+        ).values_list("company_id", flat=True)
+    )
+
+
 def scope_company_queryset(queryset, user, field="company_id"):
     company_ids = accessible_company_ids(user)
     if company_ids is None:
@@ -64,6 +78,19 @@ def can_edit_company(user, company_id):
     ).exists()
 
 
+def user_can_admin_company(user, company_id):
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return CompanyMembership.objects.filter(
+        user=user,
+        company_id=company_id,
+        active=True,
+        role__in=ADMIN_ROLES,
+    ).exists()
+
+
 def onboarding_redirect_name(user):
     """Nome da url de onboarding pendente para o usuário, ou None se já completo."""
     from apps.ixc_integration.models import IXCConfiguration
@@ -73,7 +100,7 @@ def onboarding_redirect_name(user):
     membership = CompanyMembership.objects.filter(
         user=user, active=True
     ).select_related("company").first()
-    if membership and membership.role == CompanyMembership.Role.EDIT:
+    if membership and membership.role == CompanyMembership.Role.ADMIN:
         company = membership.company
         if company.needs_type_choice:
             return "company-onboarding"
@@ -97,6 +124,26 @@ def has_any_edit_access(user):
         return False
     return user.is_superuser or CompanyMembership.objects.filter(
         user=user, active=True, role__in=EDIT_ROLES
+    ).exists()
+
+
+def has_any_admin_access(user):
+    if not user or not user.is_authenticated:
+        return False
+    return user.is_superuser or CompanyMembership.objects.filter(
+        user=user, active=True, role__in=ADMIN_ROLES
+    ).exists()
+
+
+def is_technician_only(user):
+    """Verdadeiro só quando o usuário não tem NENHUM vínculo ativo que não
+    seja TÉCNICO -- alguém que é Técnico numa empresa e ADMIN/EDIT/VIEW em
+    outra não é bloqueado globalmente no /app/ por isso."""
+    if not user or not user.is_authenticated or user.is_superuser:
+        return False
+    memberships = CompanyMembership.objects.filter(user=user, active=True)
+    return memberships.exists() and not memberships.exclude(
+        role=CompanyMembership.Role.TECHNICIAN
     ).exists()
 
 

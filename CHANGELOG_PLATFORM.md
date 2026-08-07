@@ -15,6 +15,81 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.84.0] - 2026-08-07
+
+PWA de Técnico de Campo (`/app/`) integrada de verdade, e correção de
+uma regressão de acesso que já estava em produção.
+
+**O PR anterior (`feat/technician-pwa`) só fez a parte rasa**: papel
+`TECHNICIAN`, a migration de compatibilidade `edit→admin`, e um
+`TemplateView` solto. Comparando com o pacote de especificação completo
+(`AFService_Map_Tecnico_v0.1.0/`, fornecido à parte, checksums
+conferidos), achei dois problemas reais:
+
+1. **`/app/` nem resolvia**: o commit que registrava a rota
+   (`apps/network_map/urls.py`) foi feito *depois* do merge do PR e
+   nunca chegou no `main` — confirmado com HTTP 404 direto no servidor
+   de produção (contornando o redirect HTTPS que mascarava isso como
+   301). O template também referenciava `/app/manifest.json` e
+   `/app/sw.js`, que nunca existiram como rota — sem PWA instalável,
+   sem Service Worker, sem funcionamento offline.
+2. **Regressão de acesso ativa em produção**: 10 pontos do código
+   (`apps/core/views.py`, `apps/core/access.py`,
+   `apps/billing/views.py`) checavam literalmente
+   `role == CompanyMembership.Role.EDIT` esperando a semântica antiga
+   ("edit" = administrador). A migration 0014 (já aplicada em
+   produção) promoveu todo `edit` legado para `admin` — e esses 10
+   pontos pararam de reconhecer qualquer um deles. Isso incluía gestão
+   de equipe (`company_team`), branding, e-mail SMTP, SNMP padrão,
+   onboarding, modo de operação ERP e o painel Financeiro
+   (`_editable_company`, `apps/billing/views.py`). Também achei um bug
+   correlato no template `company_team.html`: o botão de trocar papel
+   só conhecia dois estados (`edit`↔`view`) e rebaixaria silenciosamente
+   qualquer ADMIN ou TÉCNICO pra EDIT ao ser clicado.
+
+## Correção
+
+- `apps/core/access.py`: novos helpers `admin_company_ids`,
+  `has_any_admin_access`, `user_can_admin_company`, `is_technician_only`
+  — sem alterar os já existentes (`editable_company_ids`,
+  `can_edit_company`, `has_any_edit_access` continuam ADMIN+EDIT).
+- Os 10 pontos que checavam `role == EDIT` esperando "administrador"
+  agora checam `role == ADMIN` de verdade (7 em `apps/core/views.py`,
+  1 em `apps/core/access.py::onboarding_redirect_name`, 1 no seletor
+  interno de `erp_onboarding`, 1 em `apps/billing/views.py`).
+- `templates/company_team.html`: botão de papel vira um `<select>` com
+  as 4 opções reais (`CompanyMembership.Role.choices`), não mais um
+  toggle binário.
+- PWA integrada de verdade: `apps/core/technician_app.py` (view +
+  Service Worker), `apps/core/middleware_technician.py`
+  (`TechnicianAppOnlyMiddleware`, registrado depois do
+  `SubscriptionAccessMiddleware` de propósito, pra não gerar loop de
+  redirect com empresa bloqueada), rotas `/app/` e `/app/sw.js`
+  registradas em `apps/network_map/urls.py`, manifest/ícones/CSS/JS/
+  offline.html do app técnico. Os 3 arquivos rasos e mortos
+  (`templates/network_map/technician_app.py.html`,
+  `manifest.json.html`, `sw.js.html`) foram removidos.
+- `apps/core/models.py`: `role` sobe de `max_length=10` pra `15`, só
+  pra bater com o schema já aplicado pela migration 0014 (sem
+  migration nova).
+
+## Validação
+
+- `apps/core/tests/test_technician_access.py` (novo, 16 testes:
+  ADMIN/EDIT/VIEW/TÉCNICO cobrindo gestão de equipe, escrita/leitura no
+  mapa, isolamento de tenant, redirecionamento do Técnico, papel misto
+  entre empresas, Service Worker, exigência de login).
+- `python manage.py check`, `makemigrations --check` (nenhuma migration
+  nova esperada).
+- Suíte completa `apps.core apps.network_map apps.billing`.
+- Validação real no ambiente Docker isolado do servidor (nunca
+  produção): ADMIN volta a gerenciar equipe/branding/SMTP/financeiro;
+  TÉCNICO logando cai direto em `/app/` mesmo tentando `?next=/mapa/`;
+  Manifest + Service Worker registrados de verdade em DevTools;
+  POST na API do mapa como TÉCNICO devolve 403.
+- `MAP_VERSION` inalterada (`0.75.64`) — este release é só da trilha
+  Plataforma.
+
 ## [platform-0.83.1] - 2026-08-06
 
 Hotfix crítico da v0.83.0: `templates/dashboard.html` e

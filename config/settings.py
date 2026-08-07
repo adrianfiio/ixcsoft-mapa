@@ -23,7 +23,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "inseguro-apenas-desenvolvimento")
 # genérica. Ver VERSIONS.md. APP_VERSION continua existindo só por
 # compatibilidade com código legado que ainda lê essa variável — ela é
 # sempre igual a PLATFORM_VERSION, nunca uma versão própria.
-PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.83.1"))
+PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.84.0"))
 APP_VERSION = PLATFORM_VERSION
 MAP_VERSION = os.getenv("MAP_VERSION", "0.75.64")
 
@@ -75,6 +75,10 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.billing.middleware.SubscriptionAccessMiddleware",
+    # MAP_V084_TECHNICIAN_MIDDLEWARE: depois do billing de propósito -- o
+    # bloqueio de assinatura precisa vencer primeiro (ver comentário em
+    # apps/core/middleware_technician.py sobre o loop que isso evita).
+    "apps.core.middleware_technician.TechnicianAppOnlyMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

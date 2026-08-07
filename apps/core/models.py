@@ -156,7 +156,7 @@ class CompanyMembership(TimeStampedModel):
         verbose_name="Usuário",
     )
     role = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=Role.choices,
         default=Role.EDIT,
         verbose_name="Nível de acesso",
