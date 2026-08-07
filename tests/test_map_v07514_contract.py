@@ -32,14 +32,16 @@ class MapV07514ContractTests(unittest.TestCase):
         self.assertIn("MAP_V07514_PTP_NO_CANDIDATES_ALERT", runtime)
 
     def test_dio_orientation_swapped(self):
+        # MAP_V07558_DIO_SINGLE_PORT: front/rear deixaram de ser 2
+        # elementos lado a lado — viraram bolinha (front) dentro do
+        # quadrado (rear) do mesmo elemento. A lógica de por onde o cabo
+        # se aproxima (runtime, approachFromRight) é geométrica pura,
+        # continua igual e sem relação com o markup do DIO.
         canvas = self.read("static/js/map-master-suite.js")
-        css = self.read("static/css/map-v0750-tower-workspace.css")
         runtime = self.read("static/js/map-v07512-links-ptp.js")
-        self.assertIn("MAP_V07514_DIO_ORIENTATION", canvas)
-        self.assertIn('class="master-node-port left dio-front', canvas)
-        self.assertIn('class="master-node-port right dio-rear', canvas)
-        self.assertIn(".master-node-port.dio-front { grid-column: 1; }", css)
-        self.assertIn(".master-node-port.dio-rear { grid-column: 2; }", css)
+        self.assertIn("MAP_V07558_DIO_SINGLE_PORT", canvas)
+        self.assertIn('data-port-role="rear"', canvas)
+        self.assertIn('data-port-role="front"', canvas)
         self.assertIn("MAP_V07514_DIO_ORIENTATION", runtime)
         self.assertIn("approachFromRight", runtime)
 

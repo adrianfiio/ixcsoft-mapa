@@ -58,14 +58,16 @@ class MapV07549ContractTests(unittest.TestCase):
         self.assertIn("v07549-uplink-bank", js)
 
     def test_dio_connector_and_fusion_states_are_separate(self):
-        js = content("static/js/map-rack-maintenance-v07550.js")
-        css = content("static/css/map-rack-maintenance-v07549.css")
-        self.assertIn("rear-free-v07549", js)
-        self.assertIn("has-rear-v07549", js)
-        self.assertIn("is-sc-apc", css)
-        self.assertIn("is-sc-upc", css)
-        self.assertIn("#e34f5f", css)
-        self.assertIn("#ff7b17", css)
+        # MAP_V07558_DIO_SINGLE_PORT: o conector deixou de ter cor própria
+        # (o pedido do usuário não previa isso); o que continua separado
+        # é o estado de fusão (quadrado) do estado de OLT/PON (bolinha),
+        # agora dois elementos aninhados só, não mais dois quadrados.
+        js = content("static/js/map-rack-maintenance-v07552.js")
+        css = content("static/css/map-rack-runtime-v07552.css")
+        self.assertIn("is-fused-v07558", js)
+        self.assertIn("is-pon-linked-v07558", js)
+        self.assertIn("v07558-dio-unit.is-fused-v07558", css)
+        self.assertIn("v07558-dio-dot.is-pon-linked-v07558", css)
 
     def test_rack_reflows_when_async_equipment_changes_size(self):
         js = content("static/js/map-rack-maintenance-v07550.js")

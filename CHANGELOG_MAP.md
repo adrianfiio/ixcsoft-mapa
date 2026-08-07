@@ -1,3 +1,26 @@
+## MAP v0.75.58 — porta do D.I.O vira 1 elemento só (quadrado = fusão, bolinha = OLT/PON)
+
+O empilhamento da v0.75.57 corrigiu o CSS mas não resolveu o pedido de
+verdade: o usuário queria 1 elemento por porta, não 2 (nem lado a lado,
+nem empilhado). Redesenhado do zero seguindo um mockup exato que ele
+mandou ("Painel D.I.O"):
+
+- Cada porta física agora é **1 `<button>` só**: o quadrado (clique =
+  liga/desliga a fusão com o cabo da rua — vermelho sem fusão, laranja
+  fundido) com **1 bolinha central** dentro dele (clique = liga/desliga
+  a porta da OLT/PON — preta desconectada, azul conectada);
+- A cor por tipo de conector (verde/azul na borda) saiu — não fazia
+  parte do pedido, e o quadrado já usa essas cores pro estado de fusão;
+- Clique na bolinha e clique no quadrado (fora da bolinha) continuam
+  disparando ações independentes (a bolinha era "frente/PON", o
+  quadrado era "trás/fusão" — mesma lógica de sempre, só que dentro de
+  1 elemento visual, com a propagação do clique cortada pra bolinha não
+  disparar a ação do quadrado também);
+- `.v07539-dio-pair` e todo o CSS do par antigo foram removidos por
+  completo (não só esvaziados) dos 3 arquivos que competiam entre si na
+  v0.75.57 — sem regra morta escondida pra próxima rodada tropeçar;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.57 — corrige empilhamento real do DIO, mescla no menu de cabo e portas do Switch/Router/Firewall/Server na Torre
 
 Correções ao vivo (Playwright, ambiente Docker isolado no servidor, produção

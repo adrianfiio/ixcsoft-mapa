@@ -57,19 +57,20 @@ class MapV07552ContractTests(unittest.TestCase):
         self.assertIn("[4,8,12,16,24,48]", js)
 
     def test_dio_pairs_are_front_then_rear(self):
+        # MAP_V07558_DIO_SINGLE_PORT: não existe mais par de 2 elementos
+        # pra ordenar (front então rear) — os dois viraram 1 elemento só,
+        # a bolinha (front) dentro do quadrado (rear). O que continua
+        # verdadeiro é a cavidade organizando 12 unidades por linha.
         js = content("static/js/map-rack-maintenance-v07552.js")
         css = content("static/css/map-rack-runtime-v07552.css")
-        self.assertIn("pair.appendChild(front); pair.appendChild(rear);", js)
-        # MAP_V07557_DIO_STACKED_PAIR: front/rear ganharam grid-column/row
-        # explícito (sobrescrevendo o posicionamento de map-v0750-tower-
-        # workspace.css), mas a ordem lógica front-antes-de-rear continua.
-        self.assertIn('[data-port-role="front"] { grid-column: 1 !important; grid-row: 1 !important; order: 1; }', css)
-        self.assertIn('[data-port-role="rear"] { grid-column: 1 !important; grid-row: 2 !important; order: 2; }', css)
+        self.assertIn('<i class="v07558-dio-dot" data-port-id="${port.id}" data-port-role="front"', content("static/js/map-master-suite.js"))
+        self.assertIn("is-fused-v07558", js)
+        self.assertIn("is-pon-linked-v07558", js)
         self.assertIn("grid-template-columns: repeat(12", css)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('0.75.57', content("config/settings.py"))
-        self.assertIn('v0.75.57', content("VERSIONS.md"))
+        self.assertIn('0.75.58', content("config/settings.py"))
+        self.assertIn('v0.75.58', content("VERSIONS.md"))
         self.assertIn('MAP v0.75.52', content("docs/releases/map/map-v0.75.52.md"))
 
 if __name__ == "__main__":

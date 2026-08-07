@@ -518,12 +518,13 @@
             section.dataset.cavity = String(index / 12 + 1);
             section.innerHTML = `<header><strong>CAVIDADE ${index / 12 + 1}</strong><small>frente / traseira</small><button type="button" data-cavity-toggle>−</button></header><div></div>`;
             const body = qs(":scope > div", section);
+            // MAP_V07558_DIO_SINGLE_PORT: 1 elemento só por porta agora
+            // (bolinha do PON já vive dentro do quadrado da fusão) — não
+            // precisa mais de um "par" pra empilhar frente/trás, o
+            // quadrado vira direto uma célula do grid da cavidade.
             group.forEach((portId) => {
-                const pair = document.createElement("div");
-                pair.className = "v07539-dio-pair";
-                pair.dataset.portPair = String(portId);
-                qsa(`[data-port-id="${portId}"]`, node).forEach((button) => pair.appendChild(button));
-                body.appendChild(pair);
+                const unit = qs(`.master-node-port[data-port-id="${portId}"]`, node);
+                if (unit) body.appendChild(unit);
             });
             qs("[data-cavity-toggle]", section).onclick = () => {
                 section.classList.toggle("collapsed");
@@ -808,8 +809,15 @@
                 if (equipmentId) openEquipmentEditor(currentContainerId(), equipmentId).catch((error) => notify(error.message, true));
                 return;
             }
-            const dioButton = event.target.closest('.master-canvas-node[data-equipment-type="dio"] [data-port-id][data-link-id]:not([data-link-id=""])');
-            if (dioButton && qs("#container-dialog")?.open) {
+            // MAP_V07558_DIO_SINGLE_PORT: a bolinha (frente) fica dentro do
+            // quadrado (trás), então precisa achar o alvo MAIS PRÓXIMO
+            // (bolinha, se o clique foi nela) e checar o link-id dele
+            // mesmo — não do quadrado ancestral. Antes o seletor exigia
+            // link-id preenchido já na busca do closest(), o que fazia um
+            // clique numa bolinha livre (sem link) "vazar" pro link do
+            // quadrado ancestral quando o quadrado tinha fusão feita.
+            const dioButton = event.target.closest('.master-canvas-node[data-equipment-type="dio"] [data-port-id]');
+            if (dioButton && qs("#container-dialog")?.open && dioButton.dataset.linkId) {
                 event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
                 disconnectDioFace(dioButton).catch((error) => notify(error.message, true));
             }
