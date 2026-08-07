@@ -1702,7 +1702,7 @@
         dialog = document.createElement("dialog");
         dialog.id = "map-master-equipment-create";
         dialog.className = "editor-dialog map-master-equipment-dialog";
-        dialog.innerHTML = `<form><header><h2>Novo equipamento</h2><button type="button" data-close>×</button></header><div class="master-form-grid"><label>Tipo<select name="equipment_type"></select></label><label>Nome<input name="name" required></label><label>Fabricante<input name="vendor"></label><label>Modelo<input name="model"></label><label data-create-field="management">IP de gerência<input name="management_ip"></label><label data-create-field="onu-lan">Portas LAN da ONU<input name="onu_lan_count" type="number" min="1" max="16" value="4"></label><label data-create-field="drop">Cabo DROP ligado à torre<select name="drop_cable_id"></select><small>Opcional. Se escolhido, o DROP será conectado diretamente à porta óptica da ONU.</small></label><label data-create-field="dio-capacity">Portas do DIO<select name="dio_port_capacity"><option>12</option><option selected>24</option><option>36</option><option>48</option><option>72</option><option>96</option><option>144</option><option>192</option><option>244</option></select></label><label data-create-field="connector">Conector<select name="connector_type"><option value="sc_apc">SC/APC</option><option value="sc_upc">SC/UPC</option><option value="lc_upc">LC/UPC</option><option value="lc_apc">LC/APC</option></select></label></div><p data-status></p><footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Adicionar</button></footer></form>`;
+        dialog.innerHTML = `<form><header><h2>Novo equipamento</h2><button type="button" data-close>×</button></header><div class="master-form-grid"><label>Tipo<select name="equipment_type"></select></label><label>Nome<input name="name" required></label><label>Fabricante<input name="vendor"></label><label>Modelo<input name="model"></label><label data-create-field="management">IP de gerência<input name="management_ip"></label><label data-create-field="onu-lan">Portas LAN da ONU<input name="onu_lan_count" type="number" min="1" max="16" value="4"></label><label data-create-field="port-count">Quantidade de portas<select name="port_count">${[4, 8, 12, 16, 24, 48].map((count) => `<option value="${count}">${count} portas</option>`).join("")}</select></label><label data-create-field="drop">Cabo DROP ligado à torre<select name="drop_cable_id"></select><small>Opcional. Se escolhido, o DROP será conectado diretamente à porta óptica da ONU.</small></label><label data-create-field="dio-capacity">Portas do DIO<select name="dio_port_capacity"><option>12</option><option selected>24</option><option>36</option><option>48</option><option>72</option><option>96</option><option>144</option><option>192</option><option>244</option></select></label><label data-create-field="connector">Conector<select name="connector_type"><option value="sc_apc">SC/APC</option><option value="sc_upc">SC/UPC</option><option value="lc_upc">LC/UPC</option><option value="lc_apc">LC/APC</option></select></label></div><p data-status></p><footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Adicionar</button></footer></form>`;
         document.body.appendChild(dialog);
         dialog.querySelector("[data-close]").onclick = () => dialog.close();
         dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
@@ -1729,6 +1729,15 @@
         show("drop", type === "onu");
         show("dio-capacity", type === "dio");
         show("connector", ["dio", "pto"].includes(type));
+        // MAP_V07557_TOWER_SWITCH_PORTS: sem este campo, Switch/Router/
+        // Firewall/Servidor criados por aqui sempre caíam no valor padrão
+        // do backend, sem opção de escolher a quantidade de portas.
+        const portCountTypes = ["switch", "router", "firewall", "server"];
+        show("port-count", portCountTypes.includes(type));
+        const portCount = form.elements.port_count;
+        if (portCount && portCountTypes.includes(type)) {
+            portCount.value = type === "switch" ? "24" : "8";
+        }
         const capacity = form.elements.dio_port_capacity;
         if (capacity) {
             const tower = state.container.data?.container?.type === "tower";

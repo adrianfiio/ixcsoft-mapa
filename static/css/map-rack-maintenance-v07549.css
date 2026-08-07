@@ -212,12 +212,10 @@
     gap: 9px 10px !important;
 }
 #map-master-container .v07539-dio-pair {
-    display: grid !important;
-    grid-template-columns: 31px 31px !important;
-    gap: 7px !important;
-    width: 69px !important;
-    min-width: 69px !important;
-    padding: 3px !important;
+    /* O grid/tamanho do par (empilhado frente-em-cima-de-trás, MAP_V07557)
+       é controlado por map-rack-runtime-v07552.css, carregado depois —
+       mesmo seletor + !important, a regra de lá é quem vale de verdade.
+       Aqui só sobra o que aquele arquivo não define. */
     border-radius: 10px;
     background: rgba(7, 22, 33, .55);
 }

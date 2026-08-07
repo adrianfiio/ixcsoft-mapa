@@ -46,6 +46,12 @@ class MapV07556ContractTests(unittest.TestCase):
         self.assertIn("has-rear-v07549", css)
 
     def test_cable_left_click_no_longer_opens_a_popup(self):
+        # MAP_V07557_CABLE_MENU_MERGE: o menu de botão direito próprio deste
+        # arquivo foi removido (conflitava com o menu real, já existente em
+        # map-v07539-suite.js, que sempre vencia visualmente) — ver
+        # test_map_v07557_contract.py para o que ficou no lugar. Este teste
+        # continua cobrindo só a parte que não mudou: clique esquerdo sem
+        # popup, clique com ferramenta armada intacto.
         js = content("static/js/map-editor.js")
         start = js.index("MAP_V07556_CABLE_CONTEXT_MENU: clique esquerdo")
         end = js.index("line.addTo(cableLayer);", start)
@@ -53,19 +59,6 @@ class MapV07556ContractTests(unittest.TestCase):
         self.assertNotIn("line.bindPopup(", block)
         self.assertIn('line.bindTooltip(escapeHtml(p.nome)', block)
         self.assertIn('line.on("click"', block)
-        self.assertIn('line.on("contextmenu"', block)
-        self.assertIn("openCableContextMenu(p, event, editing);", block)
-
-    def test_cable_context_menu_keeps_every_old_action_plus_edit_route(self):
-        js = content("static/js/map-editor.js")
-        start = js.index("function openCableContextMenu")
-        end = js.index("document.getElementById(\"collapse-sidebar\")", start)
-        block = js[start:end]
-        for action in ("route", "edit", "reserve", "insert", "delete"):
-            self.assertIn(f'data-cable-action="{action}"', block)
-        self.assertIn("startGeometryEdit(p.id)", block)
-        self.assertIn("editCable(p.id)", block)
-        self.assertIn("deleteCable(p.id)", block)
 
     def test_start_geometry_edit_accepts_direct_cable_id_and_is_dashed(self):
         js = content("static/js/map-editor.js")
@@ -91,9 +84,9 @@ class MapV07556ContractTests(unittest.TestCase):
         self.assertIn("cable?.requires_cut", workspace_js)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.56")', content("config/settings.py"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.57")', content("config/settings.py"))
         self.assertIn('"0.83.1"', content("config/settings.py"))
-        self.assertIn("v0.75.56", content("VERSIONS.md"))
+        self.assertIn("v0.75.57", content("VERSIONS.md"))
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
         self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
 

@@ -393,8 +393,14 @@
     gap: 7px !important;
 }
 #map-master-container .v07539-dio-pair {
+    /* MAP_V07557_DIO_STACKED_PAIR: esta é a regra que realmente valia
+       (carregada depois de map-rack-maintenance-v07549.css, mesma
+       especificidade + !important — a última no arquivo vence). Frente
+       empilhada em cima da traseira, não mais lado a lado — uma
+       cavidade de 12 portas lia como "24 quadrados numa fileira" antes. */
     display: grid !important;
-    grid-template-columns: repeat(2, 22px) !important;
+    grid-template-columns: 22px !important;
+    grid-template-rows: repeat(2, 26px) !important;
     justify-content: center !important;
     gap: 3px !important;
     box-sizing: border-box;
@@ -403,8 +409,11 @@
     padding: 3px !important;
     border-radius: 7px !important;
 }
-#map-master-container .v07539-dio-pair [data-port-role="front"] { order: 1; }
-#map-master-container .v07539-dio-pair [data-port-role="rear"] { order: 2; }
+/* map-v0750-tower-workspace.css:388-389 põe .dio-front na coluna 1 e
+   .dio-rear na coluna 2 (lado a lado) — aqui as duas ficam na coluna 1,
+   uma em cada linha, pra valer o empilhamento acima. */
+#map-master-container .v07539-dio-pair [data-port-role="front"] { grid-column: 1 !important; grid-row: 1 !important; order: 1; }
+#map-master-container .v07539-dio-pair [data-port-role="rear"] { grid-column: 1 !important; grid-row: 2 !important; order: 2; }
 #map-master-container .v07539-dio-pair .master-node-port {
     width: 22px !important;
     min-width: 22px !important;

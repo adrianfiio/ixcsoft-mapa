@@ -60,13 +60,16 @@ class MapV07552ContractTests(unittest.TestCase):
         js = content("static/js/map-rack-maintenance-v07552.js")
         css = content("static/css/map-rack-runtime-v07552.css")
         self.assertIn("pair.appendChild(front); pair.appendChild(rear);", js)
-        self.assertIn('[data-port-role="front"] { order: 1; }', css)
-        self.assertIn('[data-port-role="rear"] { order: 2; }', css)
+        # MAP_V07557_DIO_STACKED_PAIR: front/rear ganharam grid-column/row
+        # explícito (sobrescrevendo o posicionamento de map-v0750-tower-
+        # workspace.css), mas a ordem lógica front-antes-de-rear continua.
+        self.assertIn('[data-port-role="front"] { grid-column: 1 !important; grid-row: 1 !important; order: 1; }', css)
+        self.assertIn('[data-port-role="rear"] { grid-column: 1 !important; grid-row: 2 !important; order: 2; }', css)
         self.assertIn("grid-template-columns: repeat(12", css)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('0.75.56', content("config/settings.py"))
-        self.assertIn('v0.75.56', content("VERSIONS.md"))
+        self.assertIn('0.75.57', content("config/settings.py"))
+        self.assertIn('v0.75.57', content("VERSIONS.md"))
         self.assertIn('MAP v0.75.52', content("docs/releases/map/map-v0.75.52.md"))
 
 if __name__ == "__main__":

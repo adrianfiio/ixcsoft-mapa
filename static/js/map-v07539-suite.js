@@ -358,6 +358,7 @@
             <header><strong>Cabo #${Number(cableId)}</strong><small>Ações da topologia</small></header>
             <button type="button" data-cable-action="info">Informações</button>
             <button type="button" data-cable-action="edit" ${canEdit() ? "" : "disabled"}>Editar cabo</button>
+            <button type="button" data-cable-action="route" ${canEdit() ? "" : "disabled"}>Editar rota</button>
             <button type="button" data-cable-action="reverse" ${canEdit() ? "" : "disabled"}>Alterar sentido</button>
             <hr><button type="button" data-cable-action="cto" ${canEdit() ? "" : "disabled"}>Adicionar CTO</button><button type="button" data-cable-action="ceo" ${canEdit() ? "" : "disabled"}>Adicionar CEO</button><button type="button" data-cable-action="cdo" ${canEdit() ? "" : "disabled"}>Adicionar CDO</button>
             <button type="button" data-cable-action="reserve" ${canEdit() ? "" : "disabled"}>Adicionar reserva</button><button type="button" data-cable-action="associate" ${canEdit() ? "" : "disabled"}>Associar à caixa</button>
@@ -369,6 +370,11 @@
             try {
                 if (action === "info") return openCableInfo(cableId);
                 if (action === "edit") return openCableEdit(cableId);
+                // MAP_V07557_CABLE_MENU_MERGE: cai direto no modo de edição
+                // de traçado completo (arrastar qualquer ponto), já
+                // implementado em map-editor.js e exposto via
+                // window.networkMap especificamente pra ser chamado daqui.
+                if (action === "route") return global.networkMap?.startGeometryEdit?.(cableId);
                 if (action === "reverse") return reverseCable(cableId);
                 if (["cto", "ceo", "cdo"].includes(action)) return openCreateBox(cableId, action, latlng);
                 if (action === "reserve") return openReserveForm(cableId, latlng);

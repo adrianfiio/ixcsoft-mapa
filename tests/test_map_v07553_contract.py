@@ -91,13 +91,15 @@ class MapV07553ContractTests(unittest.TestCase):
         js = content("static/js/map-rack-maintenance-v07552.js")
         css = content("static/css/map-rack-runtime-v07552.css")
         self.assertIn("pair.appendChild(front); pair.appendChild(rear);", js)
-        self.assertIn('[data-port-role="front"] { order: 1; }', css)
+        # MAP_V07557_DIO_STACKED_PAIR: ganhou grid-column/row explícito
+        # (sobrescrevendo map-v0750-tower-workspace.css), order continua.
+        self.assertIn('[data-port-role="front"] { grid-column: 1 !important; grid-row: 1 !important; order: 1; }', css)
 
     def test_version_is_current_and_platform_untouched(self):
         settings = content("config/settings.py")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.56")', settings)
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.57")', settings)
         self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.83.1"))', settings)
-        self.assertIn("v0.75.56", content("VERSIONS.md"))
+        self.assertIn("v0.75.57", content("VERSIONS.md"))
         self.assertIn("MAP v0.75.53", content("docs/releases/map/map-v0.75.53.md"))
 
     def test_no_new_migration_was_added(self):

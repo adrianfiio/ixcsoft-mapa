@@ -949,6 +949,10 @@ def container_equipment(request, element_id):
             card_count = int(request.data.get("card_count") or 0)
             pons_per_card = int(request.data.get("pons_per_card") or 0)
             onu_lan_count = int(request.data.get("onu_lan_count") or 4)
+            # MAP_V07557_TOWER_SWITCH_PORTS: o diálogo genérico "+ Equipamento"
+            # não tinha campo de quantidade de portas — sem isto, Switch/
+            # Router/Firewall/Servidor sempre caíam no valor padrão.
+            port_count = int(request.data["port_count"]) if request.data.get("port_count") else None
         except (TypeError, ValueError):
             return JsonResponse({"detail": "Capacidades informadas são inválidas."}, status=400)
         if is_onu and not 1 <= onu_lan_count <= 16:
@@ -992,6 +996,13 @@ def container_equipment(request, element_id):
             })
         elif equipment_type == ContainerEquipment.EquipmentType.OTHER:
             metadata["equipment_subtype"] = str(request.data.get("equipment_subtype") or "other").strip() or "other"
+        if port_count and equipment_type in {
+            ContainerEquipment.EquipmentType.SWITCH,
+            ContainerEquipment.EquipmentType.ROUTER,
+            ContainerEquipment.EquipmentType.FIREWALL,
+            ContainerEquipment.EquipmentType.SERVER,
+        }:
+            metadata["port_count"] = max(1, min(port_count, 96))
         snmp_community = str(request.data.get("snmp_community", "")).strip()
         if snmp_community:
             metadata["snmp_community_encrypted"] = SecretCipher().encrypt(snmp_community)
@@ -1502,6 +1513,31 @@ def _generate_container_equipment_ports(equipment):
                 label=f"Porta {number}",
             )
             for number in range(1, equipment.dio_port_capacity + 1)
+        ]
+    elif equipment.equipment_type in {
+        ContainerEquipment.EquipmentType.SWITCH,
+        ContainerEquipment.EquipmentType.ROUTER,
+        ContainerEquipment.EquipmentType.FIREWALL,
+        ContainerEquipment.EquipmentType.SERVER,
+    }:
+        # MAP_V07557_TOWER_SWITCH_PORTS: este endpoint (container_equipment,
+        # usado pelo diálogo genérico "+ Equipamento" da Torre) nunca gerava
+        # nenhuma porta pra Switch/Router/Firewall/Servidor — só o diálogo
+        # próprio do Rack (equipment_collection_v07539) fazia isso. Um
+        # Switch criado pela Torre ficava com 0 portas reais, e o editor de
+        # portas mostrava "Da porta 1 até 1" (o mínimo de segurança da UI),
+        # sem deixar editar nada de verdade.
+        default_count = 24 if equipment.equipment_type == ContainerEquipment.EquipmentType.SWITCH else 8
+        port_count = max(1, min(int(equipment.metadata.get("port_count") or default_count), 96))
+        ports = [
+            ContainerEquipmentPort(
+                equipment=equipment,
+                port_type=ContainerEquipmentPort.PortType.RJ45_1G,
+                number=number,
+                port_number=number,
+                label=f"Porta {number}",
+            )
+            for number in range(1, port_count + 1)
         ]
     elif equipment.equipment_type in {
         ContainerEquipment.EquipmentType.PTP,

@@ -415,7 +415,7 @@
                 <header>
                     <div><span>MATRIZ DE FUSÃO</span><h2 id="map-dio-fusion-title-v07538">DIO</h2><p>Clique numa fibra e depois numa porta. A fusão traseira é gravada imediatamente; a frente do DIO continua disponível para a OLT.</p></div>
                     <div class="map-dio-fusion-header-actions-v07538">
-                        <button type="button" data-dio-auto-fuse-v07538>⚡ Auto fusão</button>
+                        <button type="button" data-dio-auto-fuse-v07538><svg class="v07557-auto-fuse-bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"></path></svg><span>Auto fusão</span></button>
                         <button type="button" data-dio-close-v07538 aria-label="Fechar">×</button>
                     </div>
                 </header>

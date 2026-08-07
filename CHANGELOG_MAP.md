@@ -1,3 +1,32 @@
+## MAP v0.75.57 — corrige empilhamento real do DIO, mescla no menu de cabo e portas do Switch/Router/Firewall/Server na Torre
+
+Correções ao vivo (Playwright, ambiente Docker isolado no servidor, produção
+nunca tocada), a partir de novo relato do Adrian usando o editor:
+
+- **Switch/Router/Firewall/Server criados pela Torre ficavam com 0 portas** —
+  o diálogo genérico "+ Equipamento" da Torre (`container_equipment`) nunca
+  gerava portas pra esses tipos (só o diálogo próprio do Rack fazia isso);
+  o editor de portas ficava travado em "Da porta 1 até 1". Corrigido no
+  backend (`_generate_container_equipment_ports`, `views.py`) e no diálogo
+  da Torre, que ganhou o campo "Quantidade de portas";
+- **"Editar rota" não aparecia no menu de cabo** — na rodada anterior o botão
+  foi adicionado no sistema de menu errado (um duplicado, criado à parte,
+  que nunca vencia visualmente o menu real de `map-v07539-suite.js`).
+  Removido o sistema duplicado e mesclado "Editar rota" no menu que
+  realmente aparece pro usuário;
+- **Portas do DIO ainda apareciam lado a lado** (12 pares lendo como 24
+  quadrados numa fileira) mesmo depois da tentativa da rodada anterior —
+  causa raiz dupla: (1) a regra de grid que realmente valia estava em
+  `map-rack-runtime-v07552.css` (carrega depois de
+  `map-rack-maintenance-v07549.css`, onde a tentativa anterior mexeu, sem
+  efeito nenhum); (2) mesmo corrigindo o grid pra 1 coluna, uma regra bem
+  mais antiga (`map-v0750-tower-workspace.css`) já forçava
+  `.dio-front`/`.dio-rear` em colunas explícitas 1/2 — posicionamento
+  explícito sempre vence auto-placement, então o grid de 1 coluna sozinho
+  não bastava. Agora frente fica em cima, trás embaixo, mesma coluna;
+- **Auto fusão** ganhou um ícone de raio azul ao lado do texto do botão;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## [0.75.50] - 2026-08-05
 
 ## MAP v0.75.56 — ordem do Rack, portas do DIO, edição de rota do cabo e corte em passagem
