@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import TemplateView
 
 from .views import (
     EquipmentCreateView,
@@ -11,6 +12,11 @@ from .views import (
 
 
 urlpatterns = [
+    path(
+        "app/",
+        TemplateView.as_view(template_name="network_map/technician_app.py.html"),
+        name="technician-app",
+    ),
     path(
         "rede/equipamentos/",
         EquipmentListView.as_view(),
