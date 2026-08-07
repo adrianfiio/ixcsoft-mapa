@@ -1,5 +1,25 @@
 ## [0.75.50] - 2026-08-05
 
+## MAP v0.75.56 — ordem do Rack, portas do DIO, edição de rota do cabo e corte em passagem
+
+- Rack: equipamento adicionado depois de outros não pula mais pro topo —
+  OLT tinha prioridade fixa (sempre no topo) enquanto os outros tipos
+  empilhavam pela ordem de adição; agora todo tipo usa a mesma ordem.
+  Reposicionar/trocar equipamento arrastando já existia e continua igual;
+- DIO: bolinha da frente passa a refletir se há PON ligada (vermelho sem
+  PON, verde com PON), desacoplada da cor do conector (que continua só
+  na borda). O lado de trás (fusão, vermelho/laranja) não mudou;
+- Cabo: clique esquerdo não abre mais nada; botão direito mostra um menu
+  com "Editar rota" (novo — cai direto no modo de edição tracejado,
+  arrastando qualquer ponto do traçado) além das ações que já existiam
+  (Editar/conectar, +Reserva, +CTO/CEO, Excluir), só que agora ali;
+- CTO/CDO/CEO: cabo passando perto sem corte (já detectado e sinalizado
+  "corte necessário" no painel da caixa) ganhou um botão "Realizar
+  corte" — no painel e no menu de botão direito do canvas. A detecção de
+  proximidade já era uma consulta por caixa (não varre todas as caixas),
+  então não precisou de nenhum trabalho extra de performance;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.55 — corrige pan, alinhamento e criação de equipamento no Rack/Torre
 
 Achados e corrigidos ao vivo (Playwright, ambiente Docker isolado no servidor,
