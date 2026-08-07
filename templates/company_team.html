@@ -8,7 +8,7 @@
     <div>
         <p class="eyebrow">{{ company.trade_name|default:company.name }}</p>
         <h1>Minha equipe</h1>
-        <p>Cadastre pessoas da sua empresa com acesso de visualização (VIEW) ou edição (EDIT).</p>
+        <p>Cadastre pessoas da sua empresa com acesso de ADMIN, EDIT, VIEW ou TÉCNICO (aplicativo de campo).</p>
     </div>
 </section>
 
@@ -48,12 +48,16 @@
                         <span class="team-status {% if membership.active %}active{% else %}inactive{% endif %}">
                             {% if membership.active %}Ativo{% else %}Inativo{% endif %}
                         </span>
-                        <form method="post">
+                        <form method="post" class="team-role-form">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="change_role">
                             <input type="hidden" name="membership_id" value="{{ membership.pk }}">
-                            <input type="hidden" name="role" value="{% if membership.role == 'edit' %}view{% else %}edit{% endif %}">
-                            <button type="submit">{% if membership.role == 'edit' %}Tornar VIEW{% else %}Tornar EDIT{% endif %}</button>
+                            <select name="role">
+                                {% for value, label in role_choices %}
+                                <option value="{{ value }}" {% if membership.role == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit">Salvar</button>
                         </form>
                         <form method="post">
                             {% csrf_token %}

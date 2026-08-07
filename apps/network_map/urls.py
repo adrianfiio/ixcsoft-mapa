@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.core.technician_app import TechnicianAppView, technician_service_worker
+
 from .views import (
     EquipmentCreateView,
     EquipmentDeleteView,
@@ -11,6 +13,12 @@ from .views import (
 
 
 urlpatterns = [
+    path("app/", TechnicianAppView.as_view(), name="technician-app"),
+    path(
+        "app/sw.js",
+        technician_service_worker,
+        name="technician-service-worker",
+    ),
     path(
         "rede/equipamentos/",
         EquipmentListView.as_view(),

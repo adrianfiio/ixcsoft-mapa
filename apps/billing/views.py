@@ -22,12 +22,12 @@ from .models import CompanyPaymentGatewayConfiguration, CompanySubscription, Inv
 
 
 def _editable_company(request):
-    """Empresa do primeiro vínculo EDIT ativo do usuário logado (mesma
+    """Empresa do primeiro vínculo ADMIN ativo do usuário logado (mesma
     resolução de company_team/company_alerts). Financeiro é sensível o
-    bastante pra seguir essa mesma regra restrita — VIEW nunca entra."""
+    bastante pra seguir essa mesma regra restrita — EDIT/VIEW nunca entram."""
     membership = (
         CompanyMembership.objects.filter(
-            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+            user=request.user, active=True, role=CompanyMembership.Role.ADMIN
         )
         .select_related("company")
         .first()

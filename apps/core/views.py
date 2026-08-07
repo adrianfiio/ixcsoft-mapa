@@ -142,7 +142,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def _can_edit_dashboard(self, company):
         """Mesmo critério de `company_email_settings`/`company_team`: só um
-        membro EDIT ativo da PRÓPRIA empresa (nunca superusuário genérico,
+        membro ADMIN ativo da PRÓPRIA empresa (nunca superusuário genérico,
         nunca outra empresa) pode reordenar/esconder os widgets dela."""
         if not company:
             return False
@@ -150,7 +150,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             user=self.request.user,
             company=company,
             active=True,
-            role=CompanyMembership.Role.EDIT,
+            role=CompanyMembership.Role.ADMIN,
         ).exists()
 
     def _dashboard_layout_context(self, company):
@@ -677,10 +677,10 @@ def company_onboarding(request):
     ).select_related("company").first()
     if request.user.is_superuser or membership is None:
         return redirect("account-panel")
-    if membership.role != CompanyMembership.Role.EDIT:
+    if membership.role != CompanyMembership.Role.ADMIN:
         messages.info(
             request,
-            "Seu acesso é somente para visualização. Solicite permissão de edição para configurar a empresa.",
+            "Somente um administrador da empresa pode configurar a empresa.",
         )
         return redirect("account-panel")
     company = membership.company
@@ -710,10 +710,10 @@ def company_provider_mode(request):
     ).select_related("company").first()
     if request.user.is_superuser or membership is None:
         return redirect("account-panel")
-    if membership.role != CompanyMembership.Role.EDIT:
+    if membership.role != CompanyMembership.Role.ADMIN:
         messages.info(
             request,
-            "Seu acesso é somente para visualização. Solicite permissão de edição para configurar a empresa.",
+            "Somente um administrador da empresa pode configurar a empresa.",
         )
         return redirect("account-panel")
     company = membership.company
@@ -737,7 +737,7 @@ def company_provider_mode(request):
 def company_team(request):
     membership = (
         CompanyMembership.objects.filter(
-            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+            user=request.user, active=True, role=CompanyMembership.Role.ADMIN
         )
         .select_related("company")
         .first()
@@ -745,7 +745,7 @@ def company_team(request):
     if request.user.is_superuser or membership is None:
         messages.info(
             request,
-            "Somente um usuário com permissão de edição pode gerenciar a equipe da empresa.",
+            "Somente um administrador da empresa pode gerenciar a equipe.",
         )
         return redirect("account-panel")
     company = membership.company
@@ -797,7 +797,13 @@ def company_team(request):
     return render(
         request,
         "company_team.html",
-        {"form": form, "company": company, "team": team, "own_membership_id": membership.pk},
+        {
+            "form": form,
+            "company": company,
+            "team": team,
+            "own_membership_id": membership.pk,
+            "role_choices": CompanyMembership.Role.choices,
+        },
     )
 
 
@@ -805,7 +811,7 @@ def company_team(request):
 def company_email_settings(request):
     membership = (
         CompanyMembership.objects.filter(
-            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+            user=request.user, active=True, role=CompanyMembership.Role.ADMIN
         )
         .select_related("company")
         .first()
@@ -813,7 +819,7 @@ def company_email_settings(request):
     if request.user.is_superuser or membership is None:
         messages.info(
             request,
-            "Somente um usuário com permissão de edição pode configurar o e-mail da empresa.",
+            "Somente um administrador da empresa pode configurar o e-mail da empresa.",
         )
         return redirect("account-panel")
     company = membership.company
@@ -858,7 +864,7 @@ def company_email_settings(request):
 def company_snmp_defaults(request):
     membership = (
         CompanyMembership.objects.filter(
-            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+            user=request.user, active=True, role=CompanyMembership.Role.ADMIN
         )
         .select_related("company")
         .first()
@@ -866,7 +872,7 @@ def company_snmp_defaults(request):
     if request.user.is_superuser or membership is None:
         messages.info(
             request,
-            "Somente um usuário com permissão de edição pode configurar a community SNMP padrão.",
+            "Somente um administrador da empresa pode configurar a community SNMP padrão.",
         )
         return redirect("account-panel")
     company = membership.company
@@ -893,7 +899,7 @@ def company_snmp_defaults(request):
 def company_branding(request):
     membership = (
         CompanyMembership.objects.filter(
-            user=request.user, active=True, role=CompanyMembership.Role.EDIT
+            user=request.user, active=True, role=CompanyMembership.Role.ADMIN
         )
         .select_related("company")
         .first()
@@ -901,7 +907,7 @@ def company_branding(request):
     if request.user.is_superuser or membership is None:
         messages.info(
             request,
-            "Somente um usuário com permissão de edição pode configurar a marca da empresa.",
+            "Somente um administrador da empresa pode configurar a marca da empresa.",
         )
         return redirect("account-panel")
     company = membership.company
@@ -1133,7 +1139,7 @@ def erp_onboarding(request):
         has_erp_access = CompanyMembership.objects.filter(
             user=request.user,
             active=True,
-            role=CompanyMembership.Role.EDIT,
+            role=CompanyMembership.Role.ADMIN,
             data_source=CompanyMembership.DataSource.ERP,
             company__integration_mode=Company.IntegrationMode.ERP,
         ).exists()
