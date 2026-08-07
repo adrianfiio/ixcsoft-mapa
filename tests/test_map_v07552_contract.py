@@ -69,8 +69,8 @@ class MapV07552ContractTests(unittest.TestCase):
         self.assertIn("grid-template-columns: repeat(12", css)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('0.75.58', content("config/settings.py"))
-        self.assertIn('v0.75.58', content("VERSIONS.md"))
+        self.assertIn('0.75.64', content("config/settings.py"))
+        self.assertIn('v0.75.64', content("VERSIONS.md"))
         self.assertIn('MAP v0.75.52', content("docs/releases/map/map-v0.75.52.md"))
 
 if __name__ == "__main__":

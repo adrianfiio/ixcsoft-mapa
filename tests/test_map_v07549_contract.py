@@ -79,7 +79,11 @@ class MapV07549ContractTests(unittest.TestCase):
         css = content("static/css/map-rack-maintenance-v07549.css")
         fusion = content("static/js/map-dio-fusion-v07538.js")
         self.assertIn("max-width: 1460px", css)
-        self.assertIn("repeat(12, 30px)", css)
+        # MAP_V07561_DIO_FUSION_FIBERS_VISIBLE: "repeat(12, 30px)" fixo
+        # nunca encolhia e cortava as últimas fibras da lista "CABOS
+        # VINCULADOS" por baixo do overflow:hidden do card -- trocado
+        # por 1fr sem mínimo, que sempre cabe.
+        self.assertIn("repeat(12, 1fr) !important", css)
         self.assertIn("detach.dataset.dioDetachCableV07538", fusion)
         self.assertNotIn("detach.dataset.dioDetachCableV07537", fusion)
 

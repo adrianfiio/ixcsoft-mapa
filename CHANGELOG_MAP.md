@@ -1,3 +1,87 @@
+## MAP v0.75.64 — organizador visual no Switch
+
+- A pedido do usuário: uma barra vertical, tracejada e só decorativa,
+  divide a grade de portas do Switch ao meio (entre a área de
+  uplinks e a de serviço) — mesma ideia visual do organizador que a
+  OLT já tinha, mas sem criar nenhum tipo de porta novo nem mexer no
+  layout/numeração das portas reais (fica fora do fluxo do grid,
+  `position: absolute`, não desloca nenhuma porta);
+- sem migration, sem alteração na versão da Plataforma.
+
+## MAP v0.75.63 — duplo clique "Remover fusão" de verdade
+
+- Clicar 1x numa porta já fundida da matriz chamava
+  `renderWorkspace()` (reconstrução completa do DOM) sem mudar nada de
+  verdade — e esse reflow no meio dos 2 cliques de um duplo clique
+  impedia o navegador de disparar o evento `dblclick`. Confirmado ao
+  vivo com um listener de diagnóstico: 0 de 2 eventos `dblclick`
+  chegavam antes da correção (mesmo com 2 cliques reais acontecendo),
+  1 de 2 depois — e a fusão sendo removida de ponta a ponta ("Fusão
+  rompida.", porta volta a ficar livre);
+- sem migration, sem alteração na versão da Plataforma.
+
+## MAP v0.75.62 — cabo não aparece mais sozinho no Canvas do Rack
+
+- A pedido do usuário: o cabo (card com as fibras coloridas, "arraste
+  até um DIO") não aparece mais como um widget separado no Canvas 2D
+  do Rack — só na Matriz de Fusão, onde já tem seu próprio "+
+  Vincular" (não perde nenhuma funcionalidade, só o card duplicado). A
+  Torre não muda;
+- Confirmado que o agrupamento por tubo de 12 fibras já funciona certo
+  (herda o fix da v0.75.61): um cabo de 24F mostra T1 com as fibras
+  1-12 e T2 embaixo com 13-24, cada tubo relacionado ao cabo certo;
+- sem migration, sem alteração na versão da Plataforma.
+
+## MAP v0.75.61 — cabo sumindo da matriz de fusão e Auto fusão quebrada
+
+- **Cabo vinculado sumia da matriz**: "+ Vincular" só grava o cabo em
+  `dio.metadata` — nenhum `ContainerPortLink` existe ainda (a fusão em
+  si que cria isso), e o cabo pode não ter `origin`/`destination`
+  apontando pra este container específico (só está sendo fundido ali,
+  não nasce nem termina fisicamente ali). A consulta que monta a lista
+  "CABOS VINCULADOS" não sabia disso e descartava silenciosamente
+  qualquer cabo só vinculado por metadata — corrigido em dois lugares
+  (`_payload`, usado pela listagem, e o dispatcher de ações, usado por
+  `attach_cable`/`auto_fuse`/`create_fusion`/`detach_cable` — os dois
+  tinham a mesma consulta restrita demais, separadamente);
+- **Auto fusão "quebrada"**: era o mesmo bug acima — sem o cabo
+  aparecendo na lista, não tinha como selecioná-lo, e mesmo forçando a
+  seleção a ação batia em "No FiberCable matches the given query.";
+- **Só 10-11 das 12 fibras apareciam na matriz**: `repeat(12, 30px)
+  !important` (num arquivo diferente do que parecia, carregado por
+  cima) nunca encolhia — numa coluna com só ~370px reais disponíveis,
+  as últimas fibras ficavam cortadas por baixo do `overflow: hidden`
+  do card. Trocado pra `repeat(12, 1fr)`, sempre cabe, encolhendo o
+  quanto precisar;
+- sem migration, sem alteração na versão da Plataforma.
+
+## MAP v0.75.60 — bolinha do DIO maior e realmente centralizada
+
+- A pedido do usuário: bolinha (OLT/PON) de 20px → 28px, quadrado de
+  44px → 52px, mais fácil de clicar;
+- **Causa raiz real, achada só ao medir de verdade no navegador**: a
+  bolinha continuava ~10px abaixo do centro do quadrado mesmo com
+  `place-items: center` no grid pai. Uma regra genérica bem mais antiga
+  (`.master-node-port i`, usada pela bolinha de status de QUALQUER
+  porta do sistema) tem `position: absolute; top: 50%; transform:
+  translateY(-50%)` — o truque clássico de centralizar via absolute.
+  A bolinha do DIO virou `position: relative` na v0.75.58 (pra resolver
+  o bug do raio-x roubando clique), e sem zerar TAMBÉM o `top`/
+  `transform` daquela regra antiga, eles deixaram de ser inertes e
+  passaram a empurrar a bolinha pra baixo de verdade. Zerado agora
+  (`top: auto; transform: none`), o grid centraliza sozinho;
+- sem migration, sem alteração na versão da Plataforma.
+
+## MAP v0.75.59 — texto "Auto fusão" reforçado em branco
+
+- O botão "Auto fusão" da matriz de fusão do DIO só mostrava o ícone do
+  raio — o `<span>` com o texto existia no HTML e já tinha
+  `color: #fff`, mas não estava aparecendo de verdade na tela. Reforçado
+  com `display:inline !important; color:#fff !important` direto no
+  `<span>`, confirmado ao vivo (screenshot) que o texto "Auto fusão"
+  aparece nítido em branco ao lado do ícone agora;
+- sem migration, sem alteração na versão da Plataforma.
+
 ## MAP v0.75.58 — porta do D.I.O vira 1 elemento só (quadrado = fusão, bolinha = OLT/PON)
 
 O empilhamento da v0.75.57 corrigiu o CSS mas não resolveu o pedido de

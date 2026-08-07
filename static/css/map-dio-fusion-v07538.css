@@ -282,10 +282,19 @@ body.map-dio-fusion-open-v07538 { overflow: hidden; }
     display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
+    width: auto !important;
+    white-space: nowrap !important;
     border-color: #ff5c00 !important;
     color: #fff !important;
     background: linear-gradient(135deg, #f65b00, #ff781a) !important;
     font-weight: 800 !important;
+}
+/* MAP_V07559: reforça o texto em branco explicitamente no <span>, a
+   pedido — o botão só mostrava o raio antes, sem o rótulo visível. */
+[data-dio-auto-fuse-v07538] span {
+    display: inline !important;
+    color: #fff !important;
+    font-size: 11px !important;
 }
 /* MAP_V07557_AUTO_FUSE_BOLT: raio azul ao lado do texto, a pedido. */
 .v07557-auto-fuse-bolt {
@@ -410,13 +419,30 @@ body.map-dio-fusion-open-v07538 { overflow: hidden; }
     font-size: 8px;
 }
 .map-dio-tube-v07538 > div {
+    /* MAP_V07561_DIO_FUSION_FIBERS_VISIBLE: "repeat(12, minmax(25px,
+       1fr))" com o botão em min-width:25px nunca deixava a coluna
+       encolher abaixo de 25px — dentro de um card com
+       "overflow: hidden" e menos espaço disponível (coluna esquerda da
+       matriz é estreita, pensada pra lista compacta), as fibras que
+       não cabiam nesses 25px mínimos ficavam cortadas e invisíveis.
+       "repeat(12, 1fr)" sem mínimo nenhum garante 12 colunas iguais
+       que sempre cabem, encolhendo o quanto precisar — nunca corta. */
     display: grid;
-    grid-template-columns: repeat(12, minmax(25px, 1fr));
+    grid-template-columns: repeat(12, 1fr);
     gap: 4px;
+    /* este div é grid-item do grid pai (28px minmax(0,1fr)) e AO MESMO
+       TEMPO um grid container próprio -- mesmo com minmax(0,1fr) no
+       pai e min-width:0 nos botões, ele sozinho ainda tinha
+       min-width:auto implícito (resolvido pelo min-content dos 12
+       botões), o que bastava pra empurrar a largura real pra além do
+       espaço alocado e vazar por baixo do overflow:hidden do card. */
+    min-width: 0;
+    overflow: hidden;
 }
 .map-dio-tube-v07538 button {
     position: relative;
-    min-width: 25px;
+    width: 100%;
+    min-width: 0;
     height: 34px;
     min-height: 34px;
     padding: 0;
