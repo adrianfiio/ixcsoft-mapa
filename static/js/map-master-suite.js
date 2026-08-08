@@ -1608,30 +1608,60 @@
         };
     }
 
+    function cableAnchor(cableId, end) {
+        const canvas = qs("#map-master-container .master-canvas");
+        const node = qs(`.master-cable-node[data-cable-node="${cableId}"]`, canvas);
+        if (!canvas || !node) return null;
+        const canvasRect = canvas.getBoundingClientRect();
+        const rect = node.getBoundingClientRect();
+        const scale = Number(canvas.dataset.v0741Scale || 1) || 1;
+        const centerX = (rect.left + rect.width / 2 - canvasRect.left) / scale;
+        const endX = Number(end?.x ?? centerX);
+        const x = ((endX >= centerX ? rect.right : rect.left) - canvasRect.left) / scale;
+        const y = (rect.top + Math.min(42, rect.height / 2) - canvasRect.top) / scale;
+        return { x, y };
+    }
+
     function orthogonalPath(start, end, manual = []) {
         if (manual.length) return `M${start.x},${start.y} ${manual.map((point) => `L${point.x},${point.y}`).join(" ")} L${end.x},${end.y}`;
         const middle = start.x + (end.x - start.x) / 2;
         return `M${start.x},${start.y} L${middle},${start.y} L${middle},${end.y} L${end.x},${end.y}`;
     }
 
+    function towerOrthogonalPath(start, end, manual = [], laneIndex = 0) {
+        if (manual.length) return orthogonalPath(start, end, manual);
+        const direction = end.x >= start.x ? 1 : -1;
+        const lane = Math.abs(Number(laneIndex || 0)) % 8;
+        const sourceX = start.x + direction * (28 + lane * 11);
+        const targetX = end.x - direction * (28 + lane * 11);
+        const band = ((Math.floor(Number(laneIndex || 0) / 8) % 5) - 2) * 13;
+        const middleY = start.y + (end.y - start.y) / 2 + band;
+        return `M${start.x},${start.y} L${sourceX},${start.y} L${sourceX},${middleY} L${targetX},${middleY} L${targetX},${end.y} L${end.x},${end.y}`;
+    }
+
     function drawContainerLinks() {
         const svg = qs("#map-master-container .master-canvas-links");
         if (!svg) return;
         const links = state.container.data?.links || [];
-        svg.innerHTML = links.map((link) => {
+        svg.innerHTML = links.map((link, linkIndex) => {
             const destinationRole = !link.source_port_id && (link.cable_id || link.cable_fiber_id) ? "rear" : "front";
             const end = portAnchor(link.destination_port_id, destinationRole);
             const externalPosition = state.container.layout.externalLinks?.[String(link.id)];
             const fiberStart = link.cable_fiber_id ? fiberAnchor(link.cable_fiber_id) : null;
+            const cableStart = link.cable_id ? cableAnchor(link.cable_id, end) : null;
             const start = link.source_port_id
                 ? portAnchor(link.source_port_id, "front")
-                : fiberStart || (end ? externalPosition || { x: 24, y: end.y } : null);
+                : fiberStart || cableStart || (end ? externalPosition || { x: 24, y: end.y } : null);
             if (!start || !end) return "";
             const manual = state.container.layout.routes[String(link.id)] || [];
-            const external = !link.source_port_id && !fiberStart
+            const external = !link.source_port_id && !fiberStart && !cableStart
                 ? `<circle data-drop-entry="${link.id}" class="master-drop-entry" cx="${start.x}" cy="${start.y}" r="7"></circle><text class="master-drop-label" x="${start.x + 11}" y="${start.y - 9}">${escapeHtml(link.cable || "DROP")}</text>`
                 : "";
-            return `${external}<path data-master-link="${link.id}" class="link-${link.link_type} ${state.container.selectedLink === String(link.id) ? "selected" : ""}" d="${orthogonalPath(start, end, manual)}"></path>`;
+            const isTower = String(state.container.data?.container?.type || "") === "tower";
+            const route = isTower
+                ? towerOrthogonalPath(start, end, manual, linkIndex)
+                : orthogonalPath(start, end, manual);
+            return `${external}<path data-master-link="${link.id}" class="link-${link.link_type} ${state.container.selectedLink === String(link.id) ? "selected" : ""}" d="${route}"></path>`;
         }).join("");
         qsa("[data-master-link]", svg).forEach((path) => {
             path.onclick = (event) => {

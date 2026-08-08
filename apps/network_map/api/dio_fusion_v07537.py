@@ -109,6 +109,24 @@ def _fiber_is_used(fiber: FiberStrand, *, exclude_link_id: int | None = None) ->
     )
 
 
+def _fiber_is_used_at_container(
+    fiber: FiberStrand,
+    container: NetworkElement,
+    *,
+    exclude_link_id: int | None = None,
+) -> bool:
+    """Bloqueia somente uso duplicado da mesma fibra neste Rack/Torre.
+
+    Uma fibra pode ter emendas/splitters em outras caixas ao longo do caminho.
+    Isso é continuidade óptica normal e não deve impedir uma terminação local
+    no DIO deste container.
+    """
+    links = ContainerPortLink.objects.filter(container=container, cable_fiber=fiber)
+    if exclude_link_id is not None:
+        links = links.exclude(pk=exclude_link_id)
+    return links.exists()
+
+
 def _sync_fiber_status(fiber: FiberStrand) -> None:
     fiber.status = (
         FiberStrand.Status.USED if _fiber_is_used(fiber) else FiberStrand.Status.FREE
@@ -325,9 +343,9 @@ def dio_fusion_matrix_v07537(request, element_id, equipment_id):
                 {"success": False, "detail": "Esta porta já possui uma fibra fusionada."},
                 status=409,
             )
-        if _fiber_is_used(fiber):
+        if _fiber_is_used_at_container(fiber, container):
             return JsonResponse(
-                {"success": False, "detail": "Esta fibra já está utilizada em outra ligação."},
+                {"success": False, "detail": "Esta fibra já está ligada neste DIO/Rack."},
                 status=409,
             )
         try:
@@ -398,7 +416,7 @@ def dio_fusion_matrix_v07537(request, element_id, equipment_id):
         free_fibers = [
             fiber
             for fiber in cable.fibers.select_related("color").order_by("number")
-            if not _fiber_is_used(fiber)
+            if not _fiber_is_used_at_container(fiber, container)
         ]
         pairs = list(zip(free_fibers, free_ports))[: max(1, min(requested_count, MAX_AUTO_FUSIONS))]
         if not pairs:

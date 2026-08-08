@@ -948,3 +948,66 @@ body.map-master-suite .master-equipment-expand > div {
 }
 /* A rota pertence ao cabo; o botão legado em caixas fica permanentemente oculto. */
 body.map-master-suite [data-asset-route-v3] { display: none !important; }
+
+/* AFSERVICE_MAP_V0761_TOWER_PORT_ROUTING_BEGIN */
+/* Torre: portas realmente nas laterais e nós largos o bastante para não empilhar tudo. */
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="switch"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="router"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="firewall"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="ptp"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="access_point"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="onu"] {
+    width: 310px;
+}
+#container-dialog.map-v0758-tower .master-node-ports {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 30px;
+    row-gap: 6px;
+    padding: 10px 16px;
+    overflow: visible;
+}
+#container-dialog.map-v0758-tower .master-node-port {
+    min-height: 31px !important;
+    padding: 5px 8px !important;
+    overflow: visible !important;
+    border-color: rgba(56, 189, 248, .20) !important;
+    background: rgba(7, 22, 35, .88) !important;
+}
+#container-dialog.map-v0758-tower .master-node-port.left { text-align: left; }
+#container-dialog.map-v0758-tower .master-node-port.right { text-align: right; }
+#container-dialog.map-v0758-tower .master-node-port.left i { left: -21px; }
+#container-dialog.map-v0758-tower .master-node-port.right i { right: -21px; }
+#container-dialog.map-v0758-tower .master-node-port i {
+    width: 11px;
+    height: 11px;
+    border-width: 2px;
+    box-shadow: 0 0 0 3px rgba(8, 25, 39, .92), 0 0 10px rgba(56, 189, 248, .15);
+}
+#container-dialog.map-v0758-tower .master-node-port.used i {
+    box-shadow: 0 0 0 3px rgba(8, 25, 39, .92), 0 0 11px rgba(34, 197, 94, .22);
+}
+#container-dialog.map-v0758-tower .master-canvas-node > header {
+    min-height: 39px;
+    background: linear-gradient(180deg, rgba(14, 40, 59, .9), rgba(8, 25, 40, .92));
+}
+#container-dialog.map-v0758-tower .master-canvas-links path {
+    stroke-width: 2.4;
+    filter: drop-shadow(0 0 2px rgba(56, 189, 248, .13));
+}
+#container-dialog.map-v0758-tower .master-cable-node {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .34), 0 0 0 1px rgba(34, 211, 238, .04);
+}
+
+/* Rack um pouco mais enxuto. Zoom continua disponível para ampliar quando necessário. */
+#container-dialog.map-v0758-rack .master-canvas-node:not(.master-olt-chassis-v07510) {
+    width: 225px;
+}
+#container-dialog.map-v0758-rack .master-node-ports {
+    gap: 4px 8px;
+    padding: 6px 8px;
+}
+#container-dialog.map-v0758-rack .master-node-port {
+    min-height: 25px !important;
+    font-size: 8px !important;
+}
+/* AFSERVICE_MAP_V0761_TOWER_PORT_ROUTING_END */

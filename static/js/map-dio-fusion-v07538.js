@@ -766,3 +766,310 @@
         close: closeWorkspace,
     });
 })(window);
+
+/* AFSERVICE_MAP_V0761_DIO_PORT_MATRIX_BEGIN */
+(function () {
+    "use strict";
+
+    const VERSION = "0.76.1";
+    const OPTICAL_TYPES = new Set([
+        "pon", "dio", "sfp_1g", "sfp_plus_10g", "sfp28_25g",
+        "qsfp_plus_40g", "qsfp28_100g", "sc_apc", "sc_upc", "lc",
+    ]);
+    const state = {
+        elementId: null,
+        dioId: null,
+        equipment: [],
+        dio: null,
+        selectedSourceId: null,
+        busy: false,
+    };
+
+    const qs = (selector, root = document) => root?.querySelector?.(selector) || null;
+    const qsa = (selector, root = document) => [...(root?.querySelectorAll?.(selector) || [])];
+
+    function escapeHtml(value) {
+        const node = document.createElement("span");
+        node.textContent = value == null ? "" : String(value);
+        return node.innerHTML;
+    }
+
+    function csrfToken() {
+        const input = document.querySelector("input[name='csrfmiddlewaretoken']");
+        if (input?.value) return input.value;
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    async function request(url, options = {}) {
+        const headers = { Accept: "application/json", ...(options.headers || {}) };
+        if (options.body !== undefined) headers["Content-Type"] = "application/json";
+        const csrf = csrfToken();
+        if (csrf && !["GET", "HEAD", "OPTIONS"].includes(String(options.method || "GET").toUpperCase())) {
+            headers["X-CSRFToken"] = csrf;
+        }
+        const response = await fetch(url, { credentials: "same-origin", ...options, headers });
+        let data = {};
+        try { data = await response.json(); } catch (_error) { data = {}; }
+        if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+        return data;
+    }
+
+    function notify(message, error = false) {
+        window.networkMap?.notify?.(message, error);
+    }
+
+    function dualFaceUrl() {
+        return `/api/map/v07539/elements/${state.elementId}/dio/${state.dioId}/dual-face/`;
+    }
+
+    function equipmentUrl() {
+        return `/api/map/elements/${state.elementId}/equipment/`;
+    }
+
+    function ensureWorkspace() {
+        let dialog = qs("#dio-port-matrix-v0761");
+        if (dialog) return dialog;
+        dialog = document.createElement("dialog");
+        dialog.id = "dio-port-matrix-v0761";
+        dialog.className = "dio-port-matrix-v0761";
+        dialog.innerHTML = `
+            <section>
+                <header class="dio-port-matrix-head-v0761">
+                    <div>
+                        <span class="dio-port-eyebrow-v0761">MATRIZ DE PORTAS</span>
+                        <h2 data-port-matrix-title>OLT → D.I.O</h2>
+                        <p data-port-matrix-subtitle>Selecione uma porta óptica da OLT e depois a porta frontal do D.I.O.</p>
+                    </div>
+                    <div class="dio-port-matrix-head-actions-v0761">
+                        <button type="button" data-port-matrix-refresh title="Atualizar">↻</button>
+                        <button type="button" data-port-matrix-close title="Fechar">×</button>
+                    </div>
+                </header>
+                <div class="dio-port-matrix-status-v0761" data-port-matrix-status></div>
+                <main class="dio-port-matrix-body-v0761">
+                    <section class="dio-port-column-v0761 source">
+                        <header><strong>Portas de origem</strong><small>PONs e interfaces ópticas livres da OLT</small></header>
+                        <div data-port-matrix-sources></div>
+                    </section>
+                    <section class="dio-port-column-v0761 destination">
+                        <header><strong>Portas frontais do D.I.O</strong><small>Cada porta recebe um cordão óptico</small></header>
+                        <div class="dio-front-grid-v0761" data-port-matrix-dio></div>
+                    </section>
+                </main>
+                <footer>
+                    <span><b>Fluxo:</b> origem → frente do D.I.O. As fusões do cabo da rua continuam na matriz <b>Fusões</b>.</span>
+                    <button type="button" data-port-matrix-close-footer>Fechar</button>
+                </footer>
+            </section>`;
+        document.body.appendChild(dialog);
+        qsa("[data-port-matrix-close], [data-port-matrix-close-footer]", dialog).forEach((button) => {
+            button.onclick = () => dialog.close();
+        });
+        qs("[data-port-matrix-refresh]", dialog).onclick = () => reload().catch((error) => notify(error.message, true));
+        dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            dialog.close();
+        });
+        return dialog;
+    }
+
+    function sourceRows() {
+        return state.equipment.flatMap((equipment) => {
+            if (Number(equipment.id) === Number(state.dioId)) return [];
+            if (String(equipment.type || "").toLowerCase() !== "olt") return [];
+            const ports = (equipment.ports || []).filter((port) => OPTICAL_TYPES.has(String(port.type || "")));
+            return ports.map((port) => ({ equipment, port }));
+        });
+    }
+
+    function frontBySourceId() {
+        const result = new Map();
+        for (const row of state.dio?.ports || []) {
+            if (row.front?.source_port_id) result.set(Number(row.front.source_port_id), row);
+        }
+        return result;
+    }
+
+    function render() {
+        const dialog = ensureWorkspace();
+        const sourceHost = qs("[data-port-matrix-sources]", dialog);
+        const dioHost = qs("[data-port-matrix-dio]", dialog);
+        const status = qs("[data-port-matrix-status]", dialog);
+        const dioName = state.dio?.dio?.name || "D.I.O";
+        qs("[data-port-matrix-title]", dialog).textContent = `Portas · ${dioName}`;
+
+        const assigned = frontBySourceId();
+        const rows = sourceRows();
+        const groups = new Map();
+        rows.forEach((row) => {
+            const key = String(row.equipment.id);
+            if (!groups.has(key)) groups.set(key, { equipment: row.equipment, rows: [] });
+            groups.get(key).rows.push(row);
+        });
+
+        sourceHost.innerHTML = groups.size ? [...groups.values()].map(({ equipment, rows: groupRows }) => `
+            <article class="dio-source-equipment-v0761">
+                <header><strong>${escapeHtml(equipment.name)}</strong><small>${escapeHtml(equipment.type_label || equipment.type || "Equipamento")}</small></header>
+                <div class="dio-source-ports-v0761">
+                    ${groupRows.map(({ port }) => {
+                        const linkedHere = assigned.get(Number(port.id));
+                        const unavailable = Boolean(port.used) && !linkedHere;
+                        const selected = Number(state.selectedSourceId) === Number(port.id);
+                        return `<button type="button"
+                            class="dio-source-port-v0761 ${selected ? "selected" : ""} ${linkedHere ? "linked" : ""} ${unavailable ? "busy" : ""}"
+                            data-source-port-id="${port.id}" ${unavailable || linkedHere ? "disabled" : ""}
+                            title="${escapeHtml(unavailable ? "Porta já usada em outra ligação" : linkedHere ? `Ligada ao ${dioName} · porta ${linkedHere.number}` : "Selecionar como origem")}">
+                            <span>${escapeHtml(port.label)}</span>
+                            <small>${linkedHere ? `→ DIO P${linkedHere.number}` : unavailable ? "em uso" : escapeHtml(port.type_label || port.type || "óptica")}</small>
+                        </button>`;
+                    }).join("")}
+                </div>
+            </article>`).join("") : `<div class="dio-port-empty-v0761">Nenhuma porta óptica disponível nas OLTs deste Rack/Torre.</div>`;
+
+        const dioPorts = state.dio?.ports || [];
+        dioHost.innerHTML = dioPorts.map((row) => {
+            const front = row.front;
+            return `<article class="dio-front-port-v0761 ${front ? "occupied" : "free"}">
+                <button type="button" data-dio-front-port-id="${row.id}" ${front ? "disabled" : ""}>
+                    <b>P${row.number}</b>
+                    <span>${escapeHtml(row.label || `Porta ${row.number}`)}</span>
+                    <small>${front ? `${escapeHtml(front.source_equipment || "Origem")} · ${escapeHtml(front.source_port || "porta")}` : "Livre"}</small>
+                </button>
+                ${front ? `<button type="button" class="dio-front-unlink-v0761" data-front-link-id="${front.id}" title="Desligar cordão">×</button>` : ""}
+            </article>`;
+        }).join("") || `<div class="dio-port-empty-v0761">Este D.I.O não possui portas cadastradas.</div>`;
+
+        if (state.selectedSourceId) {
+            const source = rows.find((row) => Number(row.port.id) === Number(state.selectedSourceId));
+            status.innerHTML = source
+                ? `<b>Origem selecionada:</b> ${escapeHtml(source.equipment.name)} · ${escapeHtml(source.port.label)} <span>Agora clique em uma porta livre do D.I.O.</span>`
+                : "";
+        } else {
+            status.innerHTML = `<b>Nenhuma origem selecionada.</b> Clique primeiro em uma porta óptica da OLT/equipamento.`;
+        }
+
+        qsa("[data-source-port-id]", dialog).forEach((button) => {
+            button.onclick = () => {
+                state.selectedSourceId = Number(button.dataset.sourcePortId);
+                render();
+            };
+        });
+        qsa("[data-dio-front-port-id]", dialog).forEach((button) => {
+            button.onclick = () => connectFront(Number(button.dataset.dioFrontPortId));
+        });
+        qsa("[data-front-link-id]", dialog).forEach((button) => {
+            button.onclick = () => disconnectFront(Number(button.dataset.frontLinkId));
+        });
+    }
+
+    async function reload() {
+        if (!state.elementId || !state.dioId) return;
+        const [equipmentData, dioData] = await Promise.all([
+            request(equipmentUrl()),
+            request(dualFaceUrl()),
+        ]);
+        state.equipment = equipmentData.equipment || [];
+        state.dio = dioData;
+        if (state.selectedSourceId) {
+            const exists = sourceRows().some((row) => Number(row.port.id) === Number(state.selectedSourceId));
+            if (!exists || frontBySourceId().has(Number(state.selectedSourceId))) state.selectedSourceId = null;
+        }
+        render();
+    }
+
+    async function connectFront(destinationPortId) {
+        if (state.busy) return;
+        if (!state.selectedSourceId) {
+            notify("Selecione primeiro uma porta de origem da OLT/equipamento.", true);
+            return;
+        }
+        state.busy = true;
+        try {
+            await request(dualFaceUrl(), {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "connect_front",
+                    source_port_id: Number(state.selectedSourceId),
+                    destination_port_id: Number(destinationPortId),
+                }),
+            });
+            state.selectedSourceId = null;
+            await reload();
+            await window.mapMasterSuite?.openContainerWorkspace?.(state.elementId);
+            notify("Porta ligada à frente do D.I.O.");
+        } catch (error) {
+            notify(error.message, true);
+        } finally {
+            state.busy = false;
+        }
+    }
+
+    async function disconnectFront(linkId) {
+        if (state.busy) return;
+        if (!window.confirm("Desligar este cordão da frente do D.I.O?")) return;
+        state.busy = true;
+        try {
+            await request(dualFaceUrl(), {
+                method: "DELETE",
+                body: JSON.stringify({ action: "disconnect_front", link_id: Number(linkId) }),
+            });
+            await reload();
+            await window.mapMasterSuite?.openContainerWorkspace?.(state.elementId);
+            notify("Cordão removido da porta do D.I.O.");
+        } catch (error) {
+            notify(error.message, true);
+        } finally {
+            state.busy = false;
+        }
+    }
+
+    async function openWorkspace(elementId, dioId) {
+        state.elementId = Number(elementId);
+        state.dioId = Number(dioId);
+        state.selectedSourceId = null;
+        const dialog = ensureWorkspace();
+        if (!dialog.open) dialog.showModal();
+        try {
+            await reload();
+        } catch (error) {
+            dialog.close();
+            notify(error.message, true);
+        }
+    }
+
+    function injectButtons(root = document) {
+        const containerDialog = qs("#container-dialog");
+        const elementId = Number(containerDialog?.dataset.elementId || 0);
+        if (!elementId) return;
+        qsa('[data-equipment-node][data-equipment-type="dio"]', root).forEach((node) => {
+            const dioId = Number(node.dataset.equipmentNode || 0);
+            const header = qs(":scope > header", node);
+            if (!header || !dioId || qs("[data-open-dio-ports-v0761]", header)) return;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.dataset.openDioPortsV0761 = "true";
+            button.className = "map-open-dio-ports-v0761";
+            button.title = "Matriz de portas OLT → D.I.O";
+            button.innerHTML = '<span>▦</span> Portas';
+            const actions = qs(".master-node-actions", header);
+            if (actions) header.insertBefore(button, actions);
+            else header.appendChild(button);
+            button.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openWorkspace(elementId, dioId);
+            };
+        });
+    }
+
+    document.addEventListener("map:container-rendered", (event) => {
+        window.requestAnimationFrame(() => injectButtons(event.detail?.root || document));
+    });
+    document.addEventListener("map:container-opening", () => {
+        window.setTimeout(() => injectButtons(document), 0);
+    });
+
+    window.mapDioPortMatrixV0761 = { VERSION, open: openWorkspace, refresh: reload };
+}());
+/* AFSERVICE_MAP_V0761_DIO_PORT_MATRIX_END */

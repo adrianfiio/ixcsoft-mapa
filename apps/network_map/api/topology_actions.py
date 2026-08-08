@@ -99,41 +99,55 @@ def _is_downstream_element(host, cut_element, old_destination, first, second):
 
 
 def _ensure_second_segment_fibers(source, target):
-    """Cria a estrutura física do segundo segmento e devolve mapa número->fibra."""
+    """Garante a estrutura do segundo segmento sem gerar fibras duas vezes.
+
+    FiberCable com cable_model já recebe tubos/fibras pelo signal post_save.
+    O corte deve reutilizar essa estrutura. Só geramos manualmente quando o
+    segmento realmente nasceu vazio.
+    """
     source_fibers = list(source.fibers.select_related("tube", "color").order_by("number"))
     if not source_fibers:
         return {}, {}
 
-    if target.cable_model:
-        try:
-            generate_cable_fibers(target)
-        except FiberStructureError as exc:
-            raise ValueError(f"Não foi possível gerar as fibras do novo segmento: {exc}") from exc
-    else:
-        tube_map = {}
-        for tube in source.tubes.select_related("color").order_by("number"):
-            clone = FiberTube.objects.create(
-                cable=target,
-                number=tube.number,
-                color=tube.color,
-                identification=tube.identification,
-            )
-            tube_map[tube.id] = clone
-        for fiber in source_fibers:
-            FiberStrand.objects.create(
-                cable=target,
-                tube=tube_map.get(fiber.tube_id),
-                number=fiber.number,
-                position_in_tube=fiber.position_in_tube,
-                color=fiber.color,
-                status=fiber.status,
-                origin_element=None,
-                destination_element=None,
-                usage=fiber.usage,
-                notes=fiber.notes,
-            )
+    target_fibers = list(target.fibers.select_related("tube", "color").order_by("number"))
+    target_tube_count = target.tubes.count()
 
-    target_by_number = {fiber.number: fiber for fiber in target.fibers.select_related("tube", "color").order_by("number")}
+    if not target_fibers:
+        if target_tube_count:
+            raise ValueError(
+                "O novo segmento ficou com tubos sem fibras. O corte foi cancelado para não corromper a estrutura óptica."
+            )
+        if target.cable_model:
+            try:
+                generate_cable_fibers(target)
+            except FiberStructureError as exc:
+                raise ValueError(f"Não foi possível gerar as fibras do novo segmento: {exc}") from exc
+        else:
+            tube_map = {}
+            for tube in source.tubes.select_related("color").order_by("number"):
+                clone = FiberTube.objects.create(
+                    cable=target,
+                    number=tube.number,
+                    color=tube.color,
+                    identification=tube.identification,
+                )
+                tube_map[tube.id] = clone
+            for fiber in source_fibers:
+                FiberStrand.objects.create(
+                    cable=target,
+                    tube=tube_map.get(fiber.tube_id),
+                    number=fiber.number,
+                    position_in_tube=fiber.position_in_tube,
+                    color=fiber.color,
+                    status=fiber.status,
+                    origin_element=None,
+                    destination_element=None,
+                    usage=fiber.usage,
+                    notes=fiber.notes,
+                )
+        target_fibers = list(target.fibers.select_related("tube", "color").order_by("number"))
+
+    target_by_number = {fiber.number: fiber for fiber in target_fibers}
     source_by_number = {fiber.number: fiber for fiber in source_fibers}
     missing = sorted(set(source_by_number) - set(target_by_number))
     if missing:
@@ -141,6 +155,20 @@ def _ensure_second_segment_fibers(source, target):
             "O novo segmento não reproduziu todas as fibras do cabo original: "
             + ", ".join(f"F{number}" for number in missing)
         )
+
+    # O signal cria a estrutura física, mas o estado operacional pertence ao
+    # cabo que está sendo cortado. Copiamos esses dados para o novo trecho.
+    for number, source_fiber in source_by_number.items():
+        target_fiber = target_by_number[number]
+        changed = []
+        for field in ("status", "usage", "notes"):
+            value = getattr(source_fiber, field)
+            if getattr(target_fiber, field) != value:
+                setattr(target_fiber, field, value)
+                changed.append(field)
+        if changed:
+            target_fiber.save(update_fields=[*changed, "updated_at"])
+
     return source_by_number, target_by_number
 
 

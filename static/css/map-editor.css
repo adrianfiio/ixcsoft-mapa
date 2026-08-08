@@ -454,3 +454,130 @@ body.map-labels-hidden .cable-name-label { display: none !important; }
 }
 .container-optical-links { margin: 14px 22px; padding: 14px; background: #091727; border: 1px solid #24435f; border-radius: 10px; }
 .container-optical-links > p { color: #9fb2c8; font-size: 12px; }
+
+/* AFSERVICE_MAP_V0761_EDITOR_POLISH_BEGIN */
+/* Tooltip de hover independente do toggle de labels permanentes. */
+body.map-labels-hidden .network-name-label.network-hover-name { display: block !important; }
+.network-name-label.network-hover-name {
+    padding: 5px 9px;
+    border: 1px solid rgba(34, 211, 238, .48);
+    border-radius: 7px;
+    color: #ecfeff;
+    background: rgba(4, 18, 31, .96);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .42), 0 0 13px rgba(34, 211, 238, .10);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+
+/* Menus do mapa, incluindo Criar ponto e Editar informações. */
+body.map-master-suite .map-context-menu,
+body.map-master-suite #map-v0758-element-menu {
+    min-width: 220px;
+    padding: 7px;
+    border: 1px solid rgba(56, 189, 248, .30);
+    border-radius: 11px;
+    color: #e6f5ff;
+    background: linear-gradient(180deg, rgba(8, 25, 40, .98), rgba(5, 16, 28, .98));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .50), 0 0 18px rgba(34, 211, 238, .06);
+    backdrop-filter: blur(10px);
+}
+body.map-master-suite .map-context-menu > strong,
+body.map-master-suite #map-v0758-element-menu > strong {
+    display: block;
+    margin: -1px -1px 6px;
+    padding: 7px 9px 9px;
+    border-bottom: 1px solid rgba(56, 189, 248, .14);
+    color: #9de7ff;
+    font-size: 10px;
+    letter-spacing: .02em;
+}
+body.map-master-suite .map-context-menu button,
+body.map-master-suite #map-v0758-element-menu button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 34px;
+    margin: 2px 0;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #cfe7f6;
+    background: transparent;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    transition: border-color .12s ease, background .12s ease, box-shadow .12s ease, color .12s ease;
+}
+body.map-master-suite .map-context-menu button:hover,
+body.map-master-suite #map-v0758-element-menu button:hover {
+    border-color: rgba(34, 211, 238, .38);
+    color: #fff;
+    background: rgba(10, 56, 78, .62);
+    box-shadow: inset 3px 0 0 #22d3ee, 0 0 12px rgba(34, 211, 238, .07);
+}
+body.map-master-suite .map-context-menu button.danger:hover,
+body.map-master-suite #map-v0758-element-menu button.danger:hover {
+    border-color: rgba(251, 113, 133, .38) !important;
+    background: rgba(90, 24, 37, .58) !important;
+    box-shadow: inset 3px 0 0 #fb7185 !important;
+}
+
+/* Modal de criação/edição do ponto no mesmo acabamento dos editores ópticos. */
+body.map-master-suite #element-dialog.editor-dialog {
+    width: min(720px, calc(100vw - 28px));
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgba(56, 189, 248, .34);
+    border-radius: 14px;
+    color: #e7f5ff;
+    background: #07131f;
+    box-shadow: 0 24px 76px rgba(0, 0, 0, .55), 0 0 24px rgba(34, 211, 238, .07);
+}
+body.map-master-suite #element-dialog.editor-dialog::backdrop {
+    background: rgba(1, 8, 18, .72);
+    backdrop-filter: blur(2px);
+}
+body.map-master-suite #element-dialog.editor-dialog form > header,
+body.map-master-suite #element-dialog.editor-dialog section > header {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(56, 189, 248, .18);
+    background: linear-gradient(180deg, rgba(11, 36, 55, .95), rgba(7, 23, 37, .95));
+}
+body.map-master-suite #element-dialog.editor-dialog label {
+    color: #a9c4d5;
+    font-size: 10px;
+    font-weight: 700;
+}
+body.map-master-suite #element-dialog.editor-dialog input,
+body.map-master-suite #element-dialog.editor-dialog select,
+body.map-master-suite #element-dialog.editor-dialog textarea {
+    min-height: 38px;
+    margin-top: 4px;
+    border: 1px solid #29445c;
+    border-radius: 8px;
+    color: #e7f6ff;
+    background: #091a28;
+    outline: none;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+body.map-master-suite #element-dialog.editor-dialog textarea { min-height: 78px; }
+body.map-master-suite #element-dialog.editor-dialog input:focus,
+body.map-master-suite #element-dialog.editor-dialog select:focus,
+body.map-master-suite #element-dialog.editor-dialog textarea:focus {
+    border-color: #22d3ee;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, .10), 0 0 16px rgba(34, 211, 238, .06);
+}
+body.map-master-suite #element-dialog.editor-dialog footer {
+    padding: 11px 14px;
+    border-top: 1px solid rgba(56, 189, 248, .14);
+    background: rgba(6, 18, 30, .92);
+}
+body.map-master-suite #element-dialog.editor-dialog .primary-button {
+    min-height: 38px;
+    border-color: #0ea5e9 !important;
+    color: #ecfeff !important;
+    background: linear-gradient(180deg, #0e7490, #075985) !important;
+    box-shadow: 0 0 16px rgba(14, 165, 233, .12);
+}
+/* AFSERVICE_MAP_V0761_EDITOR_POLISH_END */
