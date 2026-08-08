@@ -1628,15 +1628,41 @@
         return `M${start.x},${start.y} L${middle},${start.y} L${middle},${end.y} L${end.x},${end.y}`;
     }
 
+    function roundedTowerPolyline(points, radius = 18) {
+        if (!Array.isArray(points) || points.length < 2) return "";
+        if (points.length === 2) return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
+        const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        let d = `M${points[0].x},${points[0].y}`;
+        for (let index = 1; index < points.length - 1; index += 1) {
+            const previous = points[index - 1];
+            const current = points[index];
+            const next = points[index + 1];
+            const r = Math.min(radius, distance(previous, current) / 2, distance(current, next) / 2);
+            const inScale = r / distance(previous, current);
+            const outScale = r / distance(current, next);
+            const before = {
+                x: current.x - (current.x - previous.x) * inScale,
+                y: current.y - (current.y - previous.y) * inScale,
+            };
+            const after = {
+                x: current.x + (next.x - current.x) * outScale,
+                y: current.y + (next.y - current.y) * outScale,
+            };
+            d += ` L${before.x},${before.y} Q${current.x},${current.y} ${after.x},${after.y}`;
+        }
+        const last = points.at(-1);
+        return `${d} L${last.x},${last.y}`;
+    }
+
     function towerOrthogonalPath(start, end, manual = [], laneIndex = 0) {
-        if (manual.length) return orthogonalPath(start, end, manual);
+        if (manual.length) return roundedTowerPolyline([start, ...manual, end], 22);
         const direction = end.x >= start.x ? 1 : -1;
         const lane = Math.abs(Number(laneIndex || 0)) % 8;
-        const sourceX = start.x + direction * (28 + lane * 11);
-        const targetX = end.x - direction * (28 + lane * 11);
-        const band = ((Math.floor(Number(laneIndex || 0) / 8) % 5) - 2) * 13;
-        const middleY = start.y + (end.y - start.y) / 2 + band;
-        return `M${start.x},${start.y} L${sourceX},${start.y} L${sourceX},${middleY} L${targetX},${middleY} L${targetX},${end.y} L${end.x},${end.y}`;
+        const bend = 64 + lane * 13;
+        const band = ((Math.floor(Number(laneIndex || 0) / 8) % 5) - 2) * 16;
+        const c1 = { x: start.x + direction * bend, y: start.y + band };
+        const c2 = { x: end.x - direction * bend, y: end.y + band };
+        return `M${start.x},${start.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${end.x},${end.y}`;
     }
 
     function drawContainerLinks() {

@@ -1,0 +1,267 @@
+/* AFSERVICE MAP v0.77.1 — optical budget + compact rack/tower + UI consolidation */
+:root {
+    --v077-bg: #071521;
+    --v077-panel: #0b2030;
+    --v077-panel-2: #0e2a3d;
+    --v077-border: #28506b;
+    --v077-accent: #22d3ee;
+    --v077-accent-strong: #38bdf8;
+    --v077-text: #e7f4ff;
+    --v077-muted: #9db5c8;
+    --v077-danger: #fb7185;
+    --v077-radius: 12px;
+}
+
+/* 1. DIO: cada cavidade/bandeja física sempre mostra as 12 portas.
+   O runtime antigo fixava cada unidade em 52px e, abaixo de 1150px, mudava
+   a cavidade para 6 colunas. Isso recortava a última porta no rack 19". */
+#container-dialog .master-dio-tray-v07510,
+.map-dio-port-group-v07538,
+#map-master-container .v07539-dio-cavity { overflow: visible !important; min-width: 0 !important; }
+#map-master-container .v07539-dio-cavity > div {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 7px 5px !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+}
+#map-master-container .v07539-dio-cavity .v07558-dio-unit {
+    width: 42px !important; min-width: 0 !important; max-width: 42px !important;
+    height: 42px !important; min-height: 42px !important; justify-self: center !important;
+}
+#map-master-container .v07539-dio-cavity .v07558-dio-dot {
+    width: 24px !important; min-width: 24px !important; height: 24px !important; min-height: 24px !important;
+}
+#container-dialog .master-dio-tray-ports-v07510,
+.map-dio-port-group-v07538 > div {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(24px, 1fr)) !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    padding-right: 8px !important;
+    padding-left: 8px !important;
+}
+#container-dialog .master-dio-tray-ports-v07510 > button,
+.map-dio-port-group-v07538 > div > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 38px !important;
+    justify-self: center !important;
+}
+#container-dialog .master-dio-large-v07510 { width: 590px !important; }
+
+/* 3. Rack compacto. O desenho de fios deixa de competir com as matrizes Portas/Fusões. */
+#container-dialog.map-v0758-rack .master-container-tabs,
+#container-dialog.map-v0758-rack .master-container-toolbar { min-height: 36px !important; padding: 3px 6px !important; gap: 4px !important; }
+#container-dialog.map-v0758-rack .master-container-tabs button,
+#container-dialog.map-v0758-rack .master-container-toolbar button { min-height: 28px !important; padding: 3px 7px !important; font-size: 10px !important; }
+#container-dialog.map-v0758-rack .master-canvas-scroll { min-height: 480px !important; }
+#container-dialog.map-v0758-rack .master-canvas { min-height: 560px !important; width: 1120px !important; }
+#container-dialog.map-v0758-rack .master-canvas-links,
+#container-dialog.map-v0758-rack .v07542-rack-links,
+#container-dialog.map-v0758-rack .map-rack-association-links-v07538 { display: none !important; }
+#container-dialog.map-v0758-rack .master-canvas-node:not(.master-dio-large-v07510):not(.master-olt-chassis-v07510) {
+    width: 215px !important; min-height: 88px !important; border-radius: 9px !important;
+}
+#container-dialog.map-v0758-rack .master-canvas-node > header { min-height: 31px !important; padding: 4px 7px !important; }
+#container-dialog.map-v0758-rack .master-node-ports { gap: 3px 6px !important; padding: 5px 7px !important; }
+#container-dialog.map-v0758-rack .master-node-port { min-height: 24px !important; padding: 2px 5px !important; font-size: 8px !important; }
+
+
+#container-dialog.map-v0758-rack:not(.master-container-fullscreen) {
+    width: min(1220px, calc(100vw - 42px)) !important;
+    height: min(760px, calc(100vh - 42px)) !important;
+}
+
+/* 5. Torre: equipamentos realmente horizontais e portas lado a lado. */
+#container-dialog.map-v0758-tower .master-canvas-node { min-height: 94px !important; }
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="switch"] { width: 620px !important; }
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="router"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="firewall"] { width: 480px !important; }
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="onu"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="ptp"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="access_point"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="pto"],
+#container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="other"] { width: 360px !important; }
+#container-dialog.map-v0758-tower .master-canvas-node:not([data-equipment-type="dio"]):not([data-equipment-type="olt"]) .master-node-ports {
+    display: flex !important; flex-flow: row nowrap !important; align-items: stretch !important;
+    gap: 6px !important; padding: 9px 14px 18px !important; overflow-x: auto !important; overflow-y: visible !important;
+}
+#container-dialog.map-v0758-tower .master-canvas-node:not([data-equipment-type="dio"]):not([data-equipment-type="olt"]) .master-node-port {
+    flex: 1 1 46px !important; min-width: 44px !important; max-width: 92px !important; min-height: 38px !important;
+    padding: 4px 5px !important; text-align: center !important;
+}
+#container-dialog.map-v0758-tower .master-canvas-node:not([data-equipment-type="dio"]):not([data-equipment-type="olt"]) .master-node-port.left i,
+#container-dialog.map-v0758-tower .master-canvas-node:not([data-equipment-type="dio"]):not([data-equipment-type="olt"]) .master-node-port.right i {
+    top: auto !important; right: auto !important; bottom: -13px !important; left: 50% !important; transform: translateX(-50%) !important;
+}
+#container-dialog.map-v0758-tower .master-canvas-links path[data-master-link] {
+    stroke-width: 2.5px !important; filter: drop-shadow(0 0 3px rgba(34, 211, 238, .22));
+}
+#container-dialog.map-v0758-tower .master-canvas-links path.selected { stroke-width: 4px !important; }
+
+/* 4. Olho OFF: nomes somem, mas pontos estruturais continuam identificáveis no hover. */
+body.map-labels-hidden .leaflet-tooltip.network-hover-name { display: block !important; }
+body.map-labels-hidden .network-hover-name { opacity: 1 !important; }
+
+/* 7/9/12/14/15/16. Linguagem visual única para diálogos, desenho, régua, área, busca e PTP. */
+#element-dialog > form > header,
+#cable-dialog > form > header,
+#project-dialog > form > header,
+#quick-input-dialog > form > header,
+.map-v07512-ptp-dialog header,
+.map-master-equipment-dialog > form > header,
+.map-master-small-dialog > form > header {
+    background: transparent !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(56, 189, 248, .18) !important;
+    box-shadow: none !important;
+    padding: 12px 4px 11px !important;
+}
+#element-dialog > form > header h2,
+#cable-dialog > form > header h2,
+#project-dialog > form > header h2,
+#quick-input-dialog > form > header h2 { color: var(--v077-text) !important; letter-spacing: -.02em; }
+.editor-dialog .dialog-close,
+.map-v07512-ptp-dialog [data-close],
+.map-master-equipment-dialog [data-close] {
+    width: 34px !important; height: 34px !important; border: 1px solid var(--v077-border) !important;
+    border-radius: 9px !important; color: #cdeeff !important; background: #0a1c2a !important;
+}
+
+#drawing-bar,
+#map-ruler-panel-v072,
+#map-area-panel-v072,
+#map-ruler-result-v072,
+#map-ruler-cable-dialog-v072,
+.map-search,
+.map-v07512-ptp-dialog,
+.map-context-menu,
+#map-context-v074 {
+    border: 1px solid var(--v077-border) !important;
+    border-radius: var(--v077-radius) !important;
+    color: var(--v077-text) !important;
+    background: rgba(7, 21, 33, .97) !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, .42), 0 0 0 1px rgba(34, 211, 238, .04) !important;
+    backdrop-filter: blur(10px);
+}
+#drawing-bar { padding: 7px 9px !important; gap: 7px !important; }
+#drawing-bar span { color: var(--v077-muted) !important; font-size: 11px !important; }
+#drawing-bar button,
+#map-ruler-panel-v072 button,
+#map-area-panel-v072 button,
+#map-ruler-result-v072 button,
+#map-ruler-cable-dialog-v072 button,
+.map-v07512-ptp-dialog button,
+.map-context-menu button,
+#map-context-v074 button {
+    min-height: 32px !important; padding: 5px 10px !important; border: 1px solid #315a73 !important;
+    border-radius: 8px !important; color: #daf4ff !important; background: #0c2a3c !important;
+}
+#drawing-bar button:hover,
+#map-ruler-panel-v072 button:hover,
+#map-area-panel-v072 button:hover,
+.map-v07512-ptp-dialog button:hover,
+.map-context-menu button:hover,
+#map-context-v074 button:hover { border-color: var(--v077-accent) !important; background: #103b50 !important; }
+#finish-drawing { color: #05202b !important; background: #38d7ef !important; border-color: #67e8f9 !important; font-weight: 800 !important; }
+#cancel-drawing { color: #ffd1d9 !important; border-color: rgba(251,113,133,.5) !important; background: rgba(127,29,29,.28) !important; }
+
+.map-search { padding: 8px !important; gap: 7px !important; }
+.map-search input,
+.map-search select,
+#map-ruler-cable-dialog-v072 input,
+#map-ruler-cable-dialog-v072 select,
+.map-v07512-ptp-dialog select {
+    min-height: 38px !important; border: 1px solid #31566f !important; border-radius: 9px !important;
+    color: var(--v077-text) !important; background: #081b29 !important; outline: none !important;
+}
+.map-search input:focus,
+.map-search select:focus { border-color: var(--v077-accent) !important; box-shadow: 0 0 0 2px rgba(34,211,238,.12) !important; }
+.map-search-results { border-color: #31566f !important; border-radius: 9px !important; background: #081b29 !important; }
+
+.map-context-menu { padding: 6px !important; min-width: 205px !important; }
+.map-context-menu > strong { display: block; padding: 6px 8px; color: #7dd3fc; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
+.map-context-menu button { width: 100%; justify-content: flex-start; text-align: left; margin: 2px 0; }
+
+/* 10. Visual moderno do editor de equipamentos. */
+.map-master-equipment-dialog,
+#map-master-equipment-create,
+.v07542-equipment-dialog {
+    border: 1px solid #31566f !important; border-radius: 14px !important;
+    color: var(--v077-text) !important; background: #071521 !important;
+    box-shadow: 0 28px 90px rgba(0,0,0,.58) !important;
+}
+.map-master-equipment-dialog::backdrop,
+#map-master-equipment-create::backdrop,
+.v07542-equipment-dialog::backdrop { background: rgba(2,9,16,.62) !important; backdrop-filter: blur(2px); }
+.master-legacy-hidden { display: none !important; }
+
+/* 11. Tooltip de potência óptica estimada. */
+.ixc-optical-signal-tooltip {
+    position: fixed; z-index: 2147482000; display: grid; gap: 3px; min-width: 210px; max-width: 340px;
+    padding: 9px 11px; pointer-events: none; border: 1px solid #22d3ee; border-radius: 9px;
+    color: #e8fbff; background: rgba(5, 22, 32, .97); box-shadow: 0 14px 38px rgba(0,0,0,.52);
+    font-size: 11px; line-height: 1.35;
+}
+.ixc-optical-signal-tooltip[hidden] { display: none !important; }
+.ixc-optical-signal-tooltip strong { color: #67e8f9; font-size: 12px; }
+.ixc-optical-signal-tooltip .signal-good { color: #86efac; }
+.ixc-optical-signal-tooltip .signal-warn { color: #fde047; }
+.ixc-optical-signal-tooltip .signal-bad { color: #fda4af; }
+.ixc-optical-signal-tooltip small { color: #9fb6c8; }
+
+/* 13. Tema claro com contraste de verdade. */
+body.map-theme-light-v072,
+body.map-theme-light-v0722 {
+    --v077-bg: #eef5f9; --v077-panel: #ffffff; --v077-panel-2: #e7f0f5;
+    --v077-border: #6f93aa; --v077-text: #102536; --v077-muted: #415f72;
+}
+body.map-theme-light-v072 .map-sidebar,
+body.map-theme-light-v0722 .map-sidebar { color: #102536 !important; background: #f7fbfd !important; border-color: #8aa8ba !important; }
+body.map-theme-light-v072 .map-sidebar a,
+body.map-theme-light-v072 .map-sidebar button,
+body.map-theme-light-v072 .map-sidebar label,
+body.map-theme-light-v072 .map-sidebar small,
+body.map-theme-light-v0722 .map-sidebar a,
+body.map-theme-light-v0722 .map-sidebar button,
+body.map-theme-light-v0722 .map-sidebar label,
+body.map-theme-light-v0722 .map-sidebar small { color: #18384c !important; opacity: 1 !important; }
+body.map-theme-light-v072 .map-sidebar svg,
+body.map-theme-light-v0722 .map-sidebar svg { stroke: #0f5c82 !important; opacity: 1 !important; }
+body.map-theme-light-v072 .map-context-menu,
+body.map-theme-light-v072 .map-search,
+body.map-theme-light-v072 #map-ruler-panel-v072,
+body.map-theme-light-v072 #map-area-panel-v072,
+body.map-theme-light-v0722 .map-context-menu,
+body.map-theme-light-v0722 .map-search { color: #102536 !important; background: rgba(248,252,254,.98) !important; border-color: #789bb0 !important; }
+body.map-theme-light-v072 .map-context-menu button,
+body.map-theme-light-v0722 .map-context-menu button { color: #12384e !important; background: #e9f3f8 !important; border-color: #82a4b7 !important; }
+
+@media (max-width: 1050px) {
+    #container-dialog.map-v0758-tower .master-canvas-node[data-equipment-type="switch"] { width: 520px !important; }
+    #container-dialog .master-dio-large-v07510 { width: 520px !important; }
+}
+
+/* Editor físico do Rack também segue a linguagem v0.77. */
+.v07542-equipment-dialog {
+    border: 1px solid #31566f !important; border-radius: 14px !important;
+    color: var(--v077-text) !important; background: #071521 !important;
+    box-shadow: 0 28px 90px rgba(0,0,0,.58) !important;
+}
+.v07542-equipment-dialog form > header {
+    background: transparent !important; border-bottom: 1px solid rgba(56,189,248,.18) !important;
+}
+.v07542-equipment-dialog input, .v07542-equipment-dialog select {
+    border-color: #31566f !important; border-radius: 9px !important; color: var(--v077-text) !important; background: #081b29 !important;
+}
+
+/* v0.77.1 — o toolbar v0.72.2 recriava/reexibia "Enlaces" a cada sync.
+   Este bloqueio é intencional e redundante com map-v077.js: mesmo se
+   algum timer remover o atributo hidden, o atalho continua fora da UI. */
+[data-v072-links],
+[data-v0722-links] {
+    display: none !important;
+}

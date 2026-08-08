@@ -772,10 +772,6 @@
     "use strict";
 
     const VERSION = "0.76.1";
-    const OPTICAL_TYPES = new Set([
-        "pon", "dio", "sfp_1g", "sfp_plus_10g", "sfp28_25g",
-        "qsfp_plus_40g", "qsfp28_100g", "sc_apc", "sc_upc", "lc",
-    ]);
     const state = {
         elementId: null,
         dioId: null,
@@ -849,7 +845,7 @@
                 <div class="dio-port-matrix-status-v0761" data-port-matrix-status></div>
                 <main class="dio-port-matrix-body-v0761">
                     <section class="dio-port-column-v0761 source">
-                        <header><strong>Portas de origem</strong><small>PONs e interfaces ópticas livres da OLT</small></header>
+                        <header><strong>Portas de origem</strong><small>Somente portas PON livres da OLT</small></header>
                         <div data-port-matrix-sources></div>
                     </section>
                     <section class="dio-port-column-v0761 destination">
@@ -878,7 +874,7 @@
         return state.equipment.flatMap((equipment) => {
             if (Number(equipment.id) === Number(state.dioId)) return [];
             if (String(equipment.type || "").toLowerCase() !== "olt") return [];
-            const ports = (equipment.ports || []).filter((port) => OPTICAL_TYPES.has(String(port.type || "")));
+            const ports = (equipment.ports || []).filter((port) => String(port.type || "").toLowerCase() === "pon");
             return ports.map((port) => ({ equipment, port }));
         });
     }
@@ -925,7 +921,7 @@
                         </button>`;
                     }).join("")}
                 </div>
-            </article>`).join("") : `<div class="dio-port-empty-v0761">Nenhuma porta óptica disponível nas OLTs deste Rack/Torre.</div>`;
+            </article>`).join("") : `<div class="dio-port-empty-v0761">Nenhuma porta PON disponível nas OLTs deste Rack/Torre.</div>`;
 
         const dioPorts = state.dio?.ports || [];
         dioHost.innerHTML = dioPorts.map((row) => {

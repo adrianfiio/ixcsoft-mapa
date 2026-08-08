@@ -62,6 +62,12 @@ def sync_splice_box(element, tray_count, splitters_per_tray, ratio):
     element.splice_trays.filter(number__gt=tray_count).delete()
 
 
+CTO_CAPACITY_RATIOS = {
+    8: CTOSplitter.Ratio.ONE_TO_8,
+    16: CTOSplitter.Ratio.ONE_TO_16,
+}
+
+
 class NetworkElementMapSerializer(serializers.ModelSerializer):
 
     latitude = serializers.SerializerMethodField()
@@ -175,15 +181,21 @@ class NetworkElementSerializer(serializers.ModelSerializer):
         ]
 
 
+    def validate_cto_capacity(self, value):
+        value = int(value)
+        if value not in CTO_CAPACITY_RATIOS:
+            raise serializers.ValidationError("A CTO deve possuir capacidade de 8 ou 16 portas.")
+        return value
+
+
     def create(self, validated_data):
-        cto_capacity = validated_data.pop("cto_capacity", 8)
-        splitter_ratio = validated_data.pop(
-            "splitter_ratio",
-            CTOSplitter.Ratio.ONE_TO_8,
-        )
-        splitter_ports = validated_data.pop("splitter_ports", 8)
+        cto_capacity = int(validated_data.pop("cto_capacity", 8))
+        validated_data.pop("splitter_ratio", None)
+        validated_data.pop("splitter_ports", None)
         validated_data.pop("splitter_input_cable_id", None)
         validated_data.pop("splitter_input_fiber_id", None)
+        splitter_ratio = CTO_CAPACITY_RATIOS[cto_capacity]
+        splitter_ports = cto_capacity
         internal_equipment = validated_data.pop("internal_equipment", [])
         element_subtype = validated_data.pop("element_subtype", "")
 
@@ -240,10 +252,10 @@ class NetworkElementSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         cto_capacity = validated_data.pop("cto_capacity", None)
-        splitter_ratio = validated_data.pop("splitter_ratio", None)
-        splitter_ports = validated_data.pop("splitter_ports", None)
-        input_cable_id = validated_data.pop("splitter_input_cable_id", None)
-        input_fiber_id = validated_data.pop("splitter_input_fiber_id", None)
+        validated_data.pop("splitter_ratio", None)
+        validated_data.pop("splitter_ports", None)
+        validated_data.pop("splitter_input_cable_id", None)
+        validated_data.pop("splitter_input_fiber_id", None)
         internal_equipment = validated_data.pop("internal_equipment", None)
         element_subtype = validated_data.pop("element_subtype", None)
 
@@ -289,84 +301,43 @@ class NetworkElementSerializer(serializers.ModelSerializer):
             except CTO.DoesNotExist:
                 cto = None
 
-        if cto is not None:
-            if cto_capacity is not None:
-                cto.capacity = cto_capacity
-            if splitter_ratio is not None:
-                cto.splitter_ratio = splitter_ratio
-            cto.save()
+        if cto is not None and cto_capacity is not None:
+            target_capacity = int(cto_capacity)
+            target_ratio = CTO_CAPACITY_RATIOS[target_capacity]
+            busy_commercial = CTOSplitterPort.objects.filter(
+                splitter__cto=cto, number__gt=target_capacity
+            ).exclude(status=CTOSplitterPort.Status.FREE).exists()
+            busy_graphical = SpliceTraySplitterPort.objects.filter(
+                splitter__tray__splice_box=cto,
+                number__gt=target_capacity,
+                output_fiber__isnull=False,
+            ).exists()
+            busy_cascade = SpliceTraySplitter.objects.filter(
+                tray__splice_box=cto,
+                input_splitter_port__number__gt=target_capacity,
+            ).exists()
+            if busy_commercial or busy_graphical or busy_cascade:
+                raise serializers.ValidationError({
+                    "cto_capacity": "Existem ligações nas portas acima da nova capacidade. Remova essas ligações antes de reduzir a CTO."
+                })
+            cto.capacity = target_capacity
+            cto.splitter_ratio = target_ratio
+            cto.save(update_fields=["capacity", "splitter_ratio", "updated_at"])
             splitter, _created = CTOSplitter.objects.get_or_create(
                 cto=cto,
                 position=1,
                 defaults={
                     "name": "Splitter 1",
-                    "ratio": splitter_ratio or CTOSplitter.Ratio.ONE_TO_8,
-                    "output_ports": splitter_ports or cto.capacity,
+                    "ratio": target_ratio,
+                    "output_ports": target_capacity,
                 },
             )
-            if splitter_ratio is not None:
-                splitter.ratio = splitter_ratio
-                splitter.save(update_fields=["ratio", "updated_at"])
-            if splitter_ports is not None:
-                sync_splitter_ports(splitter, splitter_ports)
-            if input_cable_id is not None:
-                previous_fiber = splitter.input_fiber
-                try:
-                    input_cable = FiberCable.objects.get(
-                        pk=input_cable_id,
-                        project=cto.project,
-                    )
-                except FiberCable.DoesNotExist:
-                    raise serializers.ValidationError({
-                        "splitter_input_cable_id": "Cabo não pertence ao projeto."
-                    })
-                if not (
-                    input_cable.origin_id == cto.id
-                    or input_cable.destination_id == cto.id
-                ):
-                    raise serializers.ValidationError({
-                        "splitter_input_cable_id": "O cabo não está conectado a esta CTO."
-                    })
-                splitter.input_cable = input_cable
-                splitter.input_fiber = None
-                if previous_fiber is not None:
-                    previous_fiber.status = FiberStrand.Status.FREE
-                    previous_fiber.destination_element = None
-                    previous_fiber.usage = ""
-                    previous_fiber.save(update_fields=[
-                        "status", "destination_element", "usage", "updated_at"
-                    ])
-                    previous_cable = previous_fiber.cable
-                    previous_cable.used_fibers = previous_cable.fibers.filter(
-                        status=FiberStrand.Status.USED
-                    ).count()
-                    previous_cable.save(update_fields=["used_fibers", "updated_at"])
-            if input_fiber_id is not None:
-                try:
-                    input_fiber = FiberStrand.objects.select_related("cable").get(
-                        pk=input_fiber_id,
-                        cable=splitter.input_cable,
-                    )
-                except FiberStrand.DoesNotExist:
-                    raise serializers.ValidationError({
-                        "splitter_input_fiber_id": "Fibra não pertence ao cabo selecionado."
-                    })
-                splitter.input_fiber = input_fiber
-                input_fiber.status = FiberStrand.Status.USED
-                input_fiber.destination_element = cto
-                input_fiber.usage = f"Entrada do {splitter.name} em {cto.name}"
-                input_fiber.save(update_fields=[
-                    "status", "destination_element", "usage", "updated_at"
-                ])
-                input_cable = input_fiber.cable
-                input_cable.used_fibers = input_cable.fibers.filter(
-                    status=FiberStrand.Status.USED
-                ).count()
-                input_cable.save(update_fields=["used_fibers", "updated_at"])
-            if input_cable_id is not None or input_fiber_id is not None:
-                splitter.save(update_fields=[
-                    "input_cable", "input_fiber", "updated_at"
-                ])
+            splitter.ratio = target_ratio
+            splitter.input_cable = None
+            splitter.input_fiber = None
+            splitter.save(update_fields=["ratio", "input_cable", "input_fiber", "updated_at"])
+            sync_splitter_ports(splitter, target_capacity)
+            sync_splice_box(cto, 1, 1, target_ratio)
         if (
             instance.element_type == NetworkElement.ElementType.SPLICE_BOX
             and not instance.splice_trays.exists()

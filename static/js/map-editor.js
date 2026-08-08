@@ -584,7 +584,7 @@
             // properties of undefined (reading '0')".
             const splitters = Array.isArray(element.cto.splitters) ? element.cto.splitters : [];
             const splitter = splitters[0];
-            elementForm.elements.cto_capacity.value = element.cto.capacity || 8;
+            elementForm.elements.cto_capacity.value = Number(element.cto.capacity || 8) > 8 ? 16 : 8;
             elementForm.elements.splitter_ratio.value = splitter?.ratio || element.cto.splitter_ratio || "1:8";
             elementForm.elements.splitter_ports.value = splitter?.output_ports || element.cto.capacity || 8;
             populateSplitterCables(element.cto, splitter?.input_cable?.id);
@@ -1380,13 +1380,16 @@
                     ? "CPD/POP" : p.tipo === "splice_box" && p.subtype === "cdo" ? "CDO" : p.tipo.toUpperCase();
                 if (!unifiedEditor) marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
                 const pointSubtype = String(p.subtype || "").toLowerCase();
-                const hoverOnlyLabel = ["cto", "splice_box", "rack", "tower"].includes(p.tipo)
+                const hoverCapableLabel = ["cto", "splice_box", "rack", "tower"].includes(p.tipo)
                     || ["cpd", "pop"].includes(pointSubtype);
-                marker.bindTooltip(escapeHtml(p.nome), {
-                    permanent: !hoverOnlyLabel,
+                const labelsEnabled = document.getElementById("layer-labels")?.checked !== false;
+                if (labelsEnabled || hoverCapableLabel) marker.bindTooltip(escapeHtml(p.nome), {
+                    permanent: labelsEnabled,
                     direction: "top",
                     offset: [0, -22],
-                    className: hoverOnlyLabel ? "network-name-label network-hover-name" : "network-name-label",
+                    className: !labelsEnabled && hoverCapableLabel
+                        ? "network-name-label network-hover-name"
+                        : "network-name-label",
                 });
                 marker.on("click", (event) => {
                     if (state.tool !== "cable") {
@@ -2071,7 +2074,10 @@
         loadStructure().catch((error) => notify(error.message, true));
     };
     document.getElementById("layer-light-flow").onchange = () => loadStructure().catch((error) => notify(error.message, true));
-    document.getElementById("layer-labels").onchange = refreshMapLabels;
+    document.getElementById("layer-labels").onchange = () => {
+        refreshMapLabels();
+        loadStructure().catch((error) => notify(error.message, true));
+    };
     refreshMapLabels();
     cableForm.elements.cable_type.onchange = () => {
         if (!state.editingCableId) cableForm.elements.name.value = "";

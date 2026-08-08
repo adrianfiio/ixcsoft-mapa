@@ -749,7 +749,7 @@
         if (!global.mapRackViewportV07546) installRackZoom(root, scroll);
         root.classList.add("v07542-physical-rack");
         enhanceRackEquipmentFaces(root);
-        const geometry = { x: 280, y: 48, innerWidth: 620, width: 740, duct: 42, gutter: 18, header: 46, unitHeight: 48 };
+        const geometry = { x: 240, y: 42, innerWidth: 580, width: 680, duct: 36, gutter: 14, header: 42, unitHeight: 44 };
         const rows = equipmentRows(data, root);
         prepareEquipmentMeasurement(rows, geometry);
         const { units, assignments } = buildAssignments(rows, data, geometry.unitHeight);
