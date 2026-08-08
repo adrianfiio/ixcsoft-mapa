@@ -137,7 +137,7 @@
                     {% for release in recent_trust_releases %}
                     <tr>
                         <td><strong>{{ release.company.trade_name|default:release.company.name }}</strong></td>
-                        <td>{{ release.requested_by.get_full_name|default:release.requested_by.username|default:"—" }}</td>
+                        <td>{% if release.requested_by %}{{ release.requested_by.get_full_name|default:release.requested_by.username }}{% else %}—{% endif %}</td>
                         <td>{{ release.granted_until|date:"d/m/Y H:i" }}</td>
                         <td>{{ release.created_at|date:"d/m/Y H:i" }}</td>
                     </tr>

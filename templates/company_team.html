@@ -68,6 +68,29 @@
                     </span>
                     {% endif %}
                 </div>
+                {% if membership.role == "technician" and membership.pk != own_membership_id %}
+                <div class="technician-projects-row">
+                    <form method="post" class="technician-projects-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="set_technician_projects">
+                        <input type="hidden" name="membership_id" value="{{ membership.pk }}">
+                        <small>Projetos liberados no app do técnico:</small>
+                        {% with allowed=membership.technician_projects.all %}
+                        <div class="technician-projects-list">
+                            {% for project in company_projects %}
+                            <label class="check-row">
+                                <input type="checkbox" name="project_ids" value="{{ project.id }}" {% if project in allowed %}checked{% endif %}>
+                                {{ project.name }}
+                            </label>
+                            {% empty %}
+                            <span class="empty-state">Nenhum projeto cadastrado nesta empresa.</span>
+                            {% endfor %}
+                        </div>
+                        {% endwith %}
+                        {% if company_projects %}<button type="submit" class="secondary-action">Salvar projetos</button>{% endif %}
+                    </form>
+                </div>
+                {% endif %}
                 {% empty %}
                 <p class="empty-state">Nenhum membro cadastrado ainda.</p>
                 {% endfor %}

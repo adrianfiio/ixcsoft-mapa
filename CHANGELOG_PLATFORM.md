@@ -15,6 +15,60 @@ compartilhavam uma única numeração `vX.Y.Z` global) está em
 arquitetura do financeiro — construídos nesta ordem, do zero, nesta
 sessão).
 
+## [platform-0.85.0] - 2026-08-08
+
+Modernização visual de Minha equipe/Alertas/Financeiro do Superadmin/
+edição de empresa, ciclo de vida real dos Alertas, escopo de projeto
+por técnico e correção do 500 no Financeiro do Superadmin.
+
+- **Minha equipe**: `.dashboard-grid`/`.dashboard-column` (layout de 2
+  colunas) não existiam em nenhum CSS — os cards empilhavam sem grid
+  nenhum. Adicionadas em `app.css`.
+- **Alertas**: só mostra o que ainda está `OPEN`/`ACKNOWLEDGED`/
+  `RECOVERING` — fechado (manual ou automático) some da lista. Novo
+  botão "Limpar" por alerta e "Limpar todos" (fecha, não apaga —
+  mantém histórico). Excluir o equipamento/porta/link/CTO/rota/OLT/
+  PON/ONU referenciado por um alerta ainda ativo agora fecha esse
+  alerta automaticamente (`apps/alerts/signals.py`, `pre_delete`) — a
+  FK sempre foi `SET_NULL`, então o alerta ficava órfão e ativo pra
+  sempre. Template trocou classes inventadas (`.alert-row`,
+  `.monitoring-alert-list`) pelas reais (`.alert-item`, `.alert-list`).
+- **`company_email_settings.html`**: `.secondary-action` não tinha
+  estilo — adicionada em `app.css`.
+- **Superadmin · editar empresa**: mesmo bug do toggle binário de
+  papel que eu já tinha corrigido em `company_team.html` (rebaixava
+  ADMIN/TÉCNICO pra EDIT silenciosamente) — agora um `<select>` com os
+  4 papéis. Formulário ganhou `logo`/`brand_color` (whitelabel) — antes
+  só editável pela própria empresa, o Superadmin não conseguia nem ver.
+- **Financeiro do Superadmin — HTTP 500 corrigido**: causa raiz
+  confirmada no log de produção —
+  `templates/billing/platform_financial_overview.html` encadeava
+  `release.requested_by.username` como argumento do filtro `default`
+  mesmo quando `requested_by` é `None` (`SET_NULL`, usuário que pediu a
+  liberação de confiança foi excluído depois) — `AttributeError:
+  'NoneType' object has no attribute 'username'`. Trocado por um
+  `{% if %}` guardando o acesso.
+- **App do Técnico**: puxa `brand_color`/`logo` da empresa (mesmo
+  mecanismo whitelabel de `base.html`). Camadas viram exatamente CTO,
+  Rack, Torre, POP/CPD, Cabos, Rotas — "Clientes" removida por
+  completo (info demais pro campo; elementos desse tipo nem entram
+  mais no estado do app, não é só uma camada desmarcada). Rotas
+  (`NetworkRoute`) é capacidade nova — o endpoint já existia
+  (`/api/map/routes/`) mas o app nunca chamava.
+- **Técnico só vê os projetos liberados pra ele**: novo campo
+  `CompanyMembership.technician_projects` (M2M com `NetworkProject`) —
+  vazio = nenhum projeto aparece no app até o admin liberar
+  explicitamente em Minha equipe (comportamento combinado
+  explicitamente com o usuário; afeta técnicos que já existiam antes
+  desta versão). `/api/map/projects/` filtra por isso quando
+  `is_technician_only(user)`; papel misto (técnico numa empresa, outro
+  papel em outra) não é afetado.
+- Migration nova: `core.0015_companymembership_technician_projects`
+  (só o campo M2M — sem alterações de índice/campo não relacionadas
+  que o `makemigrations` automático também detectou como drift
+  pré-existente e que eu deixei de fora de propósito).
+- Mapa fica de fora desta rodada — `MAP_VERSION` inalterada.
+
 ## [platform-0.84.0] - 2026-08-07
 
 PWA de Técnico de Campo (`/app/`) integrada de verdade, e correção de

@@ -2,22 +2,52 @@
 {% block title %}Alertas | AFService Map{% endblock %}
 {% block topbar_title %}Alertas da empresa{% endblock %}
 {% block content %}
-<section class="page-heading"><div><p class="eyebrow">MONITORAMENTO</p><h1>Central de alertas</h1><p>Clientes, equipamentos, portas, cabos, backbone e enlaces PTP da sua empresa.</p></div></section>
-<div class="account-items alert-list monitoring-alert-list">
-{% for alert in alerts %}
-  <div class="alert-row alert-{{ alert.state }} severity-{{ alert.severity }}">
-    <span>
-      <strong>{{ alert.title }}</strong>
-      <small>{{ alert.message }}</small>
-      <small>
-        {{ alert.get_scope_display }} · {{ alert.get_severity_display }} · {{ alert.opened_at|date:"d/m/Y H:i" }}
-        {% if alert.monitored_link %} · {{ alert.monitored_link.name }}{% endif %}
-        {% if alert.container_equipment %} · {{ alert.container_equipment.name }}{% endif %}
-        {% if alert.equipment_port %} · {{ alert.equipment_port.label }}{% endif %}
-      </small>
-    </span>
-    <b>{{ alert.get_state_display }}</b>
-  </div>
-{% empty %}<p>Nenhum alerta registrado para sua empresa.</p>{% endfor %}
-</div>
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">MONITORAMENTO</p>
+        <h1>Central de alertas</h1>
+        <p>Clientes, equipamentos, portas, cabos, backbone e enlaces PTP da sua empresa — só o que ainda está alertando.</p>
+    </div>
+</section>
+
+<article class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Alertas ativos</h2>
+        {% if alerts %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="clear_all">
+            <button type="submit" class="secondary-action">Limpar todos</button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="alert-list">
+        {% for alert in alerts %}
+        <div class="alert-item">
+            <span class="legend-dot severity-{{ alert.severity }}"></span>
+            <span>
+                <strong>{{ alert.title }}</strong>
+                <small>{{ alert.message }}</small>
+                <small>
+                    {{ alert.get_scope_display }} · {{ alert.get_severity_display }} · {{ alert.opened_at|date:"d/m/Y H:i" }}
+                    {% if alert.monitored_link %} · {{ alert.monitored_link.name }}{% endif %}
+                    {% if alert.container_equipment %} · {{ alert.container_equipment.name }}{% endif %}
+                    {% if alert.equipment_port %} · {{ alert.equipment_port.label }}{% endif %}
+                </small>
+            </span>
+            <span style="display: flex; align-items: center; gap: 10px;">
+                <small>{{ alert.get_state_display }}</small>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="clear_alert">
+                    <input type="hidden" name="alert_id" value="{{ alert.id }}">
+                    <button type="submit" class="secondary-action">Limpar</button>
+                </form>
+            </span>
+        </div>
+        {% empty %}
+        <p class="empty-state">Nenhum alerta ativo no momento.</p>
+        {% endfor %}
+    </div>
+</article>
 {% endblock %}

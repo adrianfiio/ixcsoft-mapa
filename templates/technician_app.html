@@ -14,13 +14,15 @@
   <link rel="apple-touch-icon" href="{% static 'pwa/icons/icon-192.png' %}">
   <link rel="manifest" href="{% static 'pwa/manifest.webmanifest' %}?v=0.1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="{% static 'css/technician-app.css' %}?v=0.1.0">
+  <link rel="stylesheet" href="{% static 'css/technician-app.css' %}?v=0.2.0">
+  {% if current_company.brand_color %}<style>:root{--primary:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
 <body
   class="tech-app"
   data-projects-url="/api/map/projects/"
   data-elements-url="/api/map/elements/"
   data-cables-url="/api/map/cables/"
+  data-routes-url="/api/map/routes/"
   data-login-url="{% url 'login' %}"
   data-service-worker-url="{% url 'technician-service-worker' %}"
   data-company-name="{{ current_company.trade_name|default:current_company.name|default:'AFService Map' }}"
@@ -43,7 +45,7 @@
   </header>
 
   <section id="search-panel" class="search-panel" hidden>
-    <label for="search-input">Buscar CTO, POP, cliente ou equipamento</label>
+    <label for="search-input">Buscar CTO, Rack, Torre, POP ou equipamento</label>
     <div class="search-row">
       <input id="search-input" type="search" autocomplete="off" placeholder="Nome, endereço, ID ou tipo">
       <button id="search-close" type="button" class="small-button">Fechar</button>
@@ -68,10 +70,11 @@
     <fieldset class="layer-fieldset">
       <legend>Camadas</legend>
       <label><input type="checkbox" data-layer="cto" checked> CTO</label>
+      <label><input type="checkbox" data-layer="rack" checked> Rack</label>
+      <label><input type="checkbox" data-layer="tower" checked> Torre</label>
       <label><input type="checkbox" data-layer="pop" checked> POP / CPD</label>
-      <label><input type="checkbox" data-layer="client" checked> Clientes</label>
-      <label><input type="checkbox" data-layer="infrastructure" checked> Infraestrutura</label>
       <label><input type="checkbox" data-layer="cables" checked> Cabos</label>
+      <label><input type="checkbox" data-layer="routes" checked> Rotas</label>
     </fieldset>
 
     <div class="drawer-actions">

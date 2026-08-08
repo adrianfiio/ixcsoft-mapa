@@ -97,7 +97,7 @@ class MapV07553ContractTests(unittest.TestCase):
     def test_version_is_current_and_platform_untouched(self):
         settings = content("config/settings.py")
         self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.76.0")', settings)
-        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.84.0"))', settings)
+        self.assertIn('PLATFORM_VERSION = os.getenv("PLATFORM_VERSION", os.getenv("APP_VERSION", "0.85.0"))', settings)
         self.assertIn("v0.76.0", content("VERSIONS.md"))
         self.assertIn("MAP v0.75.53", content("docs/releases/map/map-v0.75.53.md"))
 

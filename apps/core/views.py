@@ -528,7 +528,7 @@ def platform_company_edit(request, company_id):
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "save_company":
-            form = SuperadminCompanyEditForm(request.POST, instance=company)
+            form = SuperadminCompanyEditForm(request.POST, request.FILES, instance=company)
             if form.is_valid():
                 saved = form.save(commit=False)
                 if saved.is_designer:
@@ -615,6 +615,7 @@ def platform_company_edit(request, company_id):
             "team": CompanyMembership.objects.filter(company=company)
             .select_related("user")
             .order_by("user__first_name", "user__username"),
+            "role_choices": CompanyMembership.Role.choices,
         },
     )
 
@@ -773,6 +774,26 @@ def company_team(request):
                 messages.success(request, "Nível de acesso atualizado.")
         return redirect("company-team")
 
+    if action == "set_technician_projects":
+        target = (
+            CompanyMembership.objects.filter(
+                pk=request.POST.get("membership_id"),
+                company=company,
+                role=CompanyMembership.Role.TECHNICIAN,
+            )
+            .exclude(pk=membership.pk)
+            .first()
+        )
+        if target is None:
+            messages.error(request, "Técnico não encontrado nesta empresa.")
+        else:
+            project_ids = request.POST.getlist("project_ids")
+            target.technician_projects.set(
+                NetworkProject.objects.filter(company=company, id__in=project_ids)
+            )
+            messages.success(request, "Projetos liberados para o técnico atualizados.")
+        return redirect("company-team")
+
     form = CompanyTeamMemberForm(request.POST if action == "create" else None)
     if action == "create" and form.is_valid():
         new_user = User.objects.create_user(
@@ -792,6 +813,7 @@ def company_team(request):
     team = (
         CompanyMembership.objects.filter(company=company)
         .select_related("user")
+        .prefetch_related("technician_projects")
         .order_by("user__first_name", "user__username")
     )
     return render(
@@ -803,6 +825,7 @@ def company_team(request):
             "team": team,
             "own_membership_id": membership.pk,
             "role_choices": CompanyMembership.Role.choices,
+            "company_projects": NetworkProject.objects.filter(company=company, enabled=True).order_by("name"),
         },
     )
 
@@ -1076,16 +1099,53 @@ def company_alerts(request):
     if not request.user.is_superuser and membership and membership.company.is_designer:
         raise PermissionDenied
     company_ids = accessible_company_ids(request.user)
-    alerts = AlertEvent.objects.select_related(
-        "rule", "olt", "cto", "monitored_link", "container_equipment", "equipment_port",
+
+    def scoped_alerts():
+        alerts = AlertEvent.objects.select_related(
+            "rule", "olt", "cto", "monitored_link", "container_equipment", "equipment_port",
+        )
+        if company_ids is not None:
+            alerts = alerts.filter(
+                Q(company_id__in=company_ids)
+                | Q(cto__company_id__in=company_ids)
+                | Q(olt__cpd__company_id__in=company_ids)
+                | Q(route__company_id__in=company_ids)
+            ).distinct()
+        return alerts
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if not has_any_edit_access(request.user):
+            messages.error(request, "Seu acesso é somente para visualização.")
+            return redirect("company-alerts")
+        active_states = [
+            AlertEvent.State.OPEN,
+            AlertEvent.State.ACKNOWLEDGED,
+            AlertEvent.State.RECOVERING,
+        ]
+        if action == "clear_alert":
+            updated = scoped_alerts().filter(
+                pk=request.POST.get("alert_id"), state__in=active_states
+            ).update(state=AlertEvent.State.CLOSED, closed_at=timezone.now())
+            if updated:
+                messages.success(request, "Alerta limpo.")
+        elif action == "clear_all":
+            updated = scoped_alerts().filter(state__in=active_states).update(
+                state=AlertEvent.State.CLOSED, closed_at=timezone.now()
+            )
+            messages.success(request, f"{updated} alerta(s) limpo(s).")
+        return redirect("company-alerts")
+
+    # MAP_V085_ALERTS_ACTIVE_ONLY: só mostra o que ainda está alertando de
+    # verdade -- fechado (manualmente ou pelo fechamento automático quando
+    # o equipamento volta a operar/é excluído) some da lista.
+    alerts = scoped_alerts().filter(
+        state__in=[
+            AlertEvent.State.OPEN,
+            AlertEvent.State.ACKNOWLEDGED,
+            AlertEvent.State.RECOVERING,
+        ]
     )
-    if company_ids is not None:
-        alerts = alerts.filter(
-            Q(company_id__in=company_ids)
-            | Q(cto__company_id__in=company_ids)
-            | Q(olt__cpd__company_id__in=company_ids)
-            | Q(route__company_id__in=company_ids)
-        ).distinct()
     return render(request, "company_alerts.html", {"alerts": alerts[:200]})
 
 
