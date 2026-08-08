@@ -357,7 +357,7 @@ def dio_fusion_matrix_v07537(request, element_id, equipment_id):
                     cable=fiber.cable,
                     cable_fiber=fiber,
                     link_type=ContainerPortLink.LinkType.FIBER,
-                    loss_db=Decimal("0.05"),
+                    loss_db=Decimal("0.10"),
                     notes="Fusão criada pela matriz do DIO v0.75.37",
                 )
                 fiber.status = FiberStrand.Status.USED
@@ -435,7 +435,7 @@ def dio_fusion_matrix_v07537(request, element_id, equipment_id):
                         cable=cable,
                         cable_fiber=fiber,
                         link_type=ContainerPortLink.LinkType.FIBER,
-                        loss_db=Decimal("0.05"),
+                        loss_db=Decimal("0.10"),
                         notes="Auto fusão sequencial DIO v0.75.37",
                     )
                     fiber.status = FiberStrand.Status.USED

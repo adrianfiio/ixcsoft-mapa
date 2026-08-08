@@ -236,8 +236,16 @@ def dio_dual_face_v07539(request, element_id, equipment_id):
             pk=data.get("destination_port_id"),
             equipment=equipment,
         )
-        if source.port_type not in OPTICAL_PORT_TYPES or destination.port_type not in OPTICAL_PORT_TYPES:
-            return JsonResponse({"detail": "As duas portas precisam ser ópticas."}, status=400)
+        if (
+            source.equipment.equipment_type != ContainerEquipment.EquipmentType.OLT
+            or source.port_type != ContainerEquipmentPort.PortType.PON
+        ):
+            return JsonResponse({"detail": "A frente do DIO deve receber uma porta PON de OLT."}, status=400)
+        if (
+            destination.equipment.equipment_type != ContainerEquipment.EquipmentType.DIO
+            or destination.port_type != ContainerEquipmentPort.PortType.DIO
+        ):
+            return JsonResponse({"detail": "O destino precisa ser uma porta do DIO."}, status=400)
         if source.equipment_id == destination.equipment_id:
             return JsonResponse({"detail": "A frente do DIO deve ser ligada a outro equipamento."}, status=400)
         if ContainerPortLink.objects.filter(source_port=source).exists():
@@ -251,7 +259,7 @@ def dio_dual_face_v07539(request, element_id, equipment_id):
                     source_port=source,
                     destination_port=destination,
                     link_type=ContainerPortLink.LinkType.FIBER,
-                    loss_db=_decimal(data.get("loss_db"), "0.30"),
+                    loss_db=_decimal(data.get("loss_db"), "0.50"),
                     notes=str(data.get("notes") or "Cordão frontal OLT/equipamento → DIO")[:180],
                 )
         except IntegrityError:

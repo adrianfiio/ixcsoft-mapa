@@ -781,18 +781,6 @@ def element_detail_payload(element):
         # derrubar /api/map/elements/<id>/ com HTTP 500.
         if not cto.splitters.exists() or not element.splice_trays.exists():
             ensure_cto_default_splitters(cto, cto.capacity)
-        legacy_splitter = cto.splitters.order_by("position").first()
-        optical_splitter = SpliceTraySplitter.objects.filter(
-            tray__splice_box=element
-        ).order_by("tray__number", "position").first()
-        if (
-            legacy_splitter
-            and legacy_splitter.input_fiber_id
-            and optical_splitter
-            and not optical_splitter.input_fiber_id
-        ):
-            optical_splitter.input_fiber_id = legacy_splitter.input_fiber_id
-            optical_splitter.save(update_fields=["input_fiber", "updated_at"])
         connected_cables = FiberCable.objects.filter(
             Q(origin=cto) | Q(destination=cto)
         ).order_by("name")
@@ -1207,13 +1195,27 @@ def _port_budget_dbm(port):
     return round(power, 2)
 
 
-# Atenuação padrão de fibra monomodo em enlace de acesso, usada como
-# estimativa quando não há medição real (valor de referência amplamente
-# usado em orçamento de rede FTTH).
+# Orçamento óptico de PROJETO. Estes valores são estimativas, não medição.
+# Regras operacionais solicitadas: porta DIO 0,50 dB; cada fusão 0,10 dB.
+DIO_PORT_LOSS_DB = 0.50
+FUSION_LOSS_DB = 0.10
 FIBER_ATTENUATION_DB_PER_KM = 0.35
 
+# Perdas máximas de referência para PLC balanceado (famílias comerciais FTTH).
 BALANCED_SPLITTER_LOSS_DB = {
-    "1:2": 3.6, "1:4": 7.2, "1:8": 10.5, "1:16": 13.8, "1:32": 17.1, "1:64": 20.5,
+    "1:2": 3.7, "1:4": 7.0, "1:8": 10.5, "1:16": 13.5, "1:32": 16.7, "1:64": 20.4,
+}
+
+# FBT 1x2 desbalanceado. O modelo grava a perna de menor percentual primeiro
+# (ex. 10:90), então P1 = saída secundária/baixa potência e P2 = saída
+# primária/alta potência. Valores máximos de inserção de referência.
+UNBALANCED_SPLITTER_LOSS_DB = {
+    "10:90": (11.2, 0.8),
+    "15:85": (9.2, 1.0),
+    "20:80": (7.8, 1.3),
+    "30:70": (6.0, 2.0),
+    "40:60": (4.7, 2.7),
+    "45:55": (4.1, 3.2),
 }
 
 
@@ -1229,13 +1231,12 @@ def _cable_length_km(cable):
 def _splitter_output_loss_db(ratio, port_number):
     if ratio in BALANCED_SPLITTER_LOSS_DB:
         return BALANCED_SPLITTER_LOSS_DB[ratio]
-    try:
-        percent = [int(part) for part in ratio.split(":")][port_number - 1]
-    except (ValueError, IndexError, AttributeError):
-        return 0.0
-    if percent <= 0:
-        return 0.0
-    return round(-10 * math.log10(percent / 100) + 0.3, 2)
+    if ratio in UNBALANCED_SPLITTER_LOSS_DB:
+        try:
+            return UNBALANCED_SPLITTER_LOSS_DB[ratio][int(port_number) - 1]
+        except (ValueError, IndexError, TypeError):
+            return 0.0
+    return 0.0
 
 
 def _trace_fiber_upstream(fiber, visited=None):
@@ -1255,11 +1256,11 @@ def _trace_fiber_upstream(fiber, visited=None):
         cord = ContainerPortLink.objects.filter(
             destination_port=fusion.destination_port, source_port__isnull=False,
         ).select_related("source_port__equipment").first()
-        loss = float(fusion.loss_db)
+        loss = FUSION_LOSS_DB
         path = [{"type": "dio", "name": fusion.destination_port.equipment.name}]
         if cord:
             olt = cord.source_port.equipment
-            loss += float(cord.loss_db)
+            loss += DIO_PORT_LOSS_DB
             path.insert(0, {"type": "olt", "name": olt.name})
             tx_power = float(olt.tx_power_dbm) if olt.tx_power_dbm is not None else None
             return path, loss, tx_power
@@ -1271,7 +1272,7 @@ def _trace_fiber_upstream(fiber, visited=None):
     if splice:
         upstream_path, upstream_loss, tx_power = _trace_fiber_upstream(splice.input_fiber, visited)
         cable_km = _cable_length_km(splice.input_fiber.cable)
-        loss = upstream_loss + float(splice.loss_db) + cable_km * FIBER_ATTENUATION_DB_PER_KM
+        loss = upstream_loss + FUSION_LOSS_DB + cable_km * FIBER_ATTENUATION_DB_PER_KM
         return [*upstream_path, {"type": "splice_box", "name": splice.splice_box.name}], loss, tx_power
 
     port = SpliceTraySplitterPort.objects.filter(output_fiber=fiber).select_related(
@@ -1312,34 +1313,39 @@ def _trace_splitter_port_upstream(port, visited=None):
     return [*upstream_path, {"type": "splitter", "name": f"Splitter {splitter.ratio} · {box_name}"}], loss, tx_power
 
 
-def _fiber_budget_payload(fiber):
+def _fiber_budget_payload(fiber, element=None):
     path, loss_db, tx_power = _trace_fiber_upstream(fiber)
-    if tx_power is None:
-        return {
-            "path": path,
-            "loss_db": round(loss_db, 2),
-            "budget_dbm": None,
-        }
-    return {
+    # _trace_fiber_upstream devolve a potência no INÍCIO do segmento atual.
+    # Ao inspecionar a fibra numa caixa que é o destino desse cabo, soma-se
+    # também a atenuação do próprio segmento para obter a potência NA PONTA.
+    if fiber is not None and element is not None and fiber.cable.destination_id == element.id:
+        cable_loss = _cable_length_km(fiber.cable) * FIBER_ATTENUATION_DB_PER_KM
+        loss_db += cable_loss
+        path = [*path, {"type": "cable", "name": fiber.cable.name}]
+    payload = {
         "path": path,
         "loss_db": round(loss_db, 2),
-        "budget_dbm": round(tx_power - loss_db, 2),
+        "tx_dbm": round(tx_power, 2) if tx_power is not None else None,
+        "budget_dbm": None,
+        "estimated": True,
     }
+    if tx_power is not None:
+        payload["budget_dbm"] = round(tx_power - loss_db, 2)
+    return payload
 
 
 def _splitter_port_budget_payload(port):
     path, loss_db, tx_power = _trace_splitter_port_upstream(port)
-    if tx_power is None:
-        return {
-            "path": path,
-            "loss_db": round(loss_db, 2),
-            "budget_dbm": None,
-        }
-    return {
+    payload = {
         "path": path,
         "loss_db": round(loss_db, 2),
-        "budget_dbm": round(tx_power - loss_db, 2),
+        "tx_dbm": round(tx_power, 2) if tx_power is not None else None,
+        "budget_dbm": None,
+        "estimated": True,
     }
+    if tx_power is not None:
+        payload["budget_dbm"] = round(tx_power - loss_db, 2)
+    return payload
 
 
 def _fiber_payload(fiber):
@@ -1688,8 +1694,8 @@ def container_port_links(request, element_id):
             company=container.company,
         ).exists():
             return JsonResponse({"detail": "Fibra não pertence a um cabo deste rack/torre."}, status=400)
-        if ContainerPortLink.objects.filter(cable_fiber=cable_fiber).exists():
-            return JsonResponse({"detail": "Esta fibra já está em uso."}, status=409)
+        if ContainerPortLink.objects.filter(container=container, cable_fiber=cable_fiber).exists():
+            return JsonResponse({"detail": "Esta fibra já está ligada neste Rack/Torre."}, status=409)
         cable = cable_fiber.cable
     elif request.data.get("cable_id"):
         cable = get_object_or_404(
@@ -2841,6 +2847,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
                             "color_name": fiber.color.name,
                             "color_hex": fiber.color.hex_color,
                             "status": fiber.status,
+                            "budget": _fiber_budget_payload(fiber, element),
                         }
                         for fiber in cable.fibers.all()
                     ],
@@ -2865,7 +2872,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
                         "color_name": splice.output_fiber.color.name,
                         "color_hex": splice.output_fiber.color.hex_color,
                     },
-                    "loss_db": float(splice.loss_db),
+                    "loss_db": FUSION_LOSS_DB,
                     "budget": _fiber_budget_payload(splice.output_fiber),
                 }
                 for splice in element.fiber_splices.select_related(
@@ -2882,7 +2889,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
                     "input_fiber_id": splitter.input_fiber_id,
                     "input_splitter_port_id": splitter.input_splitter_port_id,
                     "input_budget": (
-                        _fiber_budget_payload(splitter.input_fiber)
+                        _fiber_budget_payload(splitter.input_fiber, element)
                         if splitter.input_fiber_id
                         else _splitter_port_budget_payload(splitter.input_splitter_port)
                         if splitter.input_splitter_port_id
@@ -3010,6 +3017,7 @@ def splice_box_fibers(request, element_id, splice_id=None):
             splice_box=element,
             input_fiber=input_fiber,
             output_fiber=output_fiber,
+            loss_db=Decimal("0.10"),
         )
     except (ValueError, Exception) as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=400)

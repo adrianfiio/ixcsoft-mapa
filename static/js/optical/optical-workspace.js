@@ -88,6 +88,7 @@
                     </aside>
                 </div>
                 <div class="ixc-optical-context-menu" data-optical-context-menu hidden role="menu"></div>
+                <div class="ixc-optical-signal-tooltip" data-optical-signal-tooltip hidden></div>
                 <footer class="ixc-optical-footer">
                     <span data-optical-status>Inicializando…</span>
                     <span>ligações ponta a ponta · sessão <b data-optical-session></b></span>
@@ -267,7 +268,11 @@
                 const endpoint = { kind: "fiber", id: Number(fiber.id) };
                 const selected = pendingKey === state.endpointKey(endpoint);
                 const used = state.isFiberUsed(session, fiber.id);
-                return `<button type="button" data-action="select-endpoint" data-endpoint-kind="fiber" data-endpoint-id="${fiber.id}" class="ixc-optical-fiber ${used ? "is-used" : ""} ${selected ? "is-selected" : ""}" title="${escapeHtml(fiber.color_name)} · ${escapeHtml(fiber.status)}">
+                const signal = fiber.budget?.budget_dbm;
+                const signalTitle = signal === null || signal === undefined
+                    ? "Sinal estimado indisponível"
+                    : `Sinal estimado ${Number(signal).toFixed(2)} dBm · perda ${Number(fiber.budget.loss_db || 0).toFixed(2)} dB`;
+                return `<button type="button" data-action="select-endpoint" data-endpoint-kind="fiber" data-endpoint-id="${fiber.id}" class="ixc-optical-fiber ${used ? "is-used" : ""} ${selected ? "is-selected" : ""}" title="${escapeHtml(fiber.color_name)} · ${escapeHtml(fiber.status)} · ${escapeHtml(signalTitle)}">
                     <i style="--fiber-color:${escapeHtml(fiber.color_hex || "#aaa")}"></i><span>F${fiber.number}</span>${selected ? "<b>1</b>" : ""}
                 </button>`;
             }).join("")}</div>`;
@@ -876,6 +881,46 @@
         }
     }
 
+    function endpointBudget(session, endpoint) {
+        const { state } = dependencies();
+        if (!endpoint) return null;
+        if (endpoint.kind === "fiber") return state.fiberById(session, endpoint.id)?.budget || null;
+        if (endpoint.kind === "splitter-output") return state.splitterPortById(session, endpoint.id)?.budget || null;
+        if (endpoint.kind === "splitter-input") return state.splitterById(session, endpoint.id)?.input_budget || null;
+        return null;
+    }
+
+    function hideSignalTooltip(session) {
+        const tooltip = session.root?.querySelector("[data-optical-signal-tooltip]");
+        if (tooltip) tooltip.hidden = true;
+    }
+
+    function showSignalTooltip(session, event, hit) {
+        const tooltip = session.root?.querySelector("[data-optical-signal-tooltip]");
+        if (!tooltip) return;
+        const endpoint = hit?.type === "endpoint" ? hit.endpoint : null;
+        if (!endpoint) return hideSignalTooltip(session);
+        const budget = endpointBudget(session, endpoint);
+        const label = dependencies().state.endpointLabel(session, endpoint);
+        const signal = budget?.budget_dbm;
+        const signalClass = signal === null || signal === undefined
+            ? "signal-warn"
+            : Number(signal) >= -24 ? "signal-good" : Number(signal) >= -28 ? "signal-warn" : "signal-bad";
+        const main = signal === null || signal === undefined
+            ? "Sinal estimado indisponível"
+            : `Sinal estimado ${Number(signal).toFixed(2)} dBm`;
+        const loss = budget ? `${Number(budget.loss_db || 0).toFixed(2)} dB de perda acumulada` : "Caminho incompleto até a OLT";
+        const tx = budget?.tx_dbm === null || budget?.tx_dbm === undefined
+            ? "TX da OLT não encontrado/cadastrado"
+            : `TX OLT ${Number(budget.tx_dbm).toFixed(2)} dBm`;
+        tooltip.innerHTML = `<strong>${escapeHtml(label)}</strong><span class="${signalClass}">${escapeHtml(main)}</span><small>${escapeHtml(loss)} · ${escapeHtml(tx)}</small><small>Estimativa de projeto, não medição de campo.</small>`;
+        tooltip.hidden = false;
+        const left = Math.min(window.innerWidth - 360, event.clientX + 16);
+        const top = Math.min(window.innerHeight - 110, event.clientY + 16);
+        tooltip.style.left = `${Math.max(8, left)}px`;
+        tooltip.style.top = `${Math.max(8, top)}px`;
+    }
+
     function bindCanvas(session) {
         const canvas = session.canvas;
         const { renderer } = dependencies();
@@ -936,9 +981,14 @@
             };
         });
         canvas.addEventListener("pointermove", (event) => {
-            if (!session.dragging || !isCurrent(session)) return;
+            if (!isCurrent(session)) return;
             const rect = canvas.getBoundingClientRect();
             const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+            if (!session.dragging) {
+                showSignalTooltip(session, event, renderer.hitTest(session, screen));
+                return;
+            }
+            hideSignalTooltip(session);
             if (session.dragging.type === "link-point") {
                 renderer.moveLinkPoint(session, session.dragging.linkId, session.dragging.pointIndex, screen);
                 renderer.render(session);
@@ -980,6 +1030,7 @@
             }
             scheduleLayoutSave(session);
         };
+        canvas.addEventListener("pointerleave", () => hideSignalTooltip(session));
         canvas.addEventListener("pointerup", (event) => { finish(event); });
         canvas.addEventListener("pointercancel", (event) => { finish(event); });
         canvas.addEventListener("dblclick", (event) => {

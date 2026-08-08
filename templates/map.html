@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="{% static 'css/map-rack-integrity-v07548.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-rack-maintenance-v07549.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-rack-runtime-v07552.css' %}?v={{ map_version }}">
+    <link rel="stylesheet" href="{% static 'css/map-v077.css' %}?v={{ map_version }}-v0771">
     {% if current_company.brand_color %}<style>:root{--map-brand-accent:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
 <!-- IXCSOFT_MAP_UI_V072 -->
@@ -58,7 +59,7 @@
     <form id="map-csrf-token" hidden aria-hidden="true">{% csrf_token %}</form>
     {{ google_maps_config|json_script:"google-maps-config" }}
     <div class="map-shell">
-        <aside class="map-sidebar collapsed" id="map-sidebar">
+        <aside class="map-sidebar" id="map-sidebar">
             <button class="collapse-button" id="collapse-sidebar" type="button" title="Recolher menu">‹</button>
             <nav class="collapsed-tools" aria-label="Atalhos do editor">
                 <a class="collapsed-back" href="{% url 'dashboard' %}" title="Voltar para visão geral">←</a>
@@ -274,26 +275,18 @@
             </fieldset>
             <fieldset id="cto-fields" class="cto-fields" hidden>
                 <legend>Atendimento óptico da CTO</legend>
-                <label>Capacidade total da caixa<input name="cto_capacity" type="number" min="1" max="128" value="8"></label>
-                <div class="dialog-grid">
-                    <label>Splitter
-                        <select name="splitter_ratio">
-                            <option value="1:2">1:2</option><option value="1:4">1:4</option>
-                            <option value="1:8" selected>1:8</option><option value="1:16">1:16</option>
-                            <option value="1:32">1:32</option><option value="1:64">1:64</option>
-                        </select>
-                    </label>
-                    <label>Portas de atendimento<input name="splitter_ports" type="number" min="1" max="128" value="8"></label>
-                </div>
-                <div class="dialog-grid splitter-input-fields">
-                    <label>Cabo de entrada
-                        <select name="splitter_input_cable_id"><option value="">Selecione o cabo conectado</option></select>
-                    </label>
-                    <label>Fibra que alimenta o splitter
-                        <select name="splitter_input_fiber_id"><option value="">Selecione primeiro o cabo</option></select>
-                    </label>
-                </div>
-                <p>As portas serão criadas automaticamente e aparecerão no unifilar.</p>
+                <label>Capacidade total da caixa
+                    <select name="cto_capacity">
+                        <option value="8" selected>8 portas · splitter 1:8</option>
+                        <option value="16">16 portas · splitter 1:16</option>
+                    </select>
+                </label>
+                <input name="splitter_ratio" type="hidden" value="1:8">
+                <input name="splitter_ports" type="hidden" value="8">
+                <!-- Mantidos como selects ocultos porque o runtime legado ainda os referencia; v0.77 não os usa para alimentar o splitter. -->
+                <select name="splitter_input_cable_id" hidden><option value=""></option></select>
+                <select name="splitter_input_fiber_id" hidden><option value=""></option></select>
+                <p>A CTO cria automaticamente um splitter compatível. O cabo e a fibra de entrada passam a ser definidos pela ligação física feita no editor óptico.</p>
             </fieldset>
             <fieldset id="container-fields" class="cto-fields" hidden>
                 <legend id="container-fields-title">Estrutura interna</legend>
@@ -566,5 +559,6 @@
     <script src="{% static 'js/map-v07512-links-ptp.js' %}?v={{ map_version }}"></script>
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
+    <script src="{% static 'js/map-v077.js' %}?v={{ map_version }}-v0771"></script>
 </body>
 </html>
