@@ -381,9 +381,9 @@ def _parse_generic_equipment(row: dict[str, Any], index: int) -> ParsedEquipment
     if not isinstance(row, dict):
         raise EquipmentYAMLV07551Error(f"equipment #{index} precisa ser um objeto.")
     equipment_type = _text(row.get("equipment_type") or row.get("type") or "switch").casefold()
-    if equipment_type not in {"switch", "router", "firewall"}:
+    if equipment_type not in {"switch", "router", "firewall", "access_point", "ptp"}:
         raise EquipmentYAMLV07551Error(
-            f"equipment #{index}: somente switch, router ou firewall são aceitos neste importador tipado."
+            f"equipment #{index}: somente switch, router, firewall, access_point ou ptp são aceitos neste importador tipado."
         )
     name = _text(row.get("name") or row.get("model") or row.get("external_key"))
     if not name:

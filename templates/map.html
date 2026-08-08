@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="{% static 'css/map-rack-maintenance-v07549.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-rack-runtime-v07552.css' %}?v={{ map_version }}">
     <link rel="stylesheet" href="{% static 'css/map-v077.css' %}?v={{ map_version }}-v0771">
+    <link rel="stylesheet" href="{% static 'css/map-v078.css' %}?v={{ map_version }}-v0780-r2">
     {% if current_company.brand_color %}<style>:root{--map-brand-accent:{{ current_company.brand_color }};}</style>{% endif %}
 </head>
 <!-- IXCSOFT_MAP_UI_V072 -->
@@ -494,8 +495,15 @@
             <header><h2 id="pole-action-title">Adicionar ao poste</h2><button class="dialog-close" type="button">×</button></header>
             <input name="action" type="hidden">
             <input name="element_type" type="hidden">
+            <input name="element_subtype" type="hidden">
             <label id="pole-action-name-wrap">Nome
                 <input name="name" maxlength="180" autocomplete="off" placeholder="Ex.: CTO-IMB-001">
+            </label>
+            <label id="pole-action-code-wrap">Código
+                <input name="code" maxlength="100" autocomplete="off" placeholder="Código ou identificação">
+            </label>
+            <label id="pole-action-description-wrap">Descrição
+                <textarea name="description" rows="2" maxlength="1000" placeholder="Observações do ponto"></textarea>
             </label>
             <label id="pole-action-cable-wrap" hidden>Cabo que passa pelo poste
                 <select name="cable_id"></select>
@@ -560,5 +568,6 @@
     <script src="{% static 'js/kmz-import-wizard.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/kmz-element-cables.js' %}?v={{ app_version }}"></script>
     <script src="{% static 'js/map-v077.js' %}?v={{ map_version }}-v0771"></script>
+    <script src="{% static 'js/map-v078.js' %}?v={{ map_version }}-v0780-r2"></script>
 </body>
 </html>

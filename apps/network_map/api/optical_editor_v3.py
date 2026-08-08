@@ -389,9 +389,10 @@ def assign_asset_route_v3(request):
     if element.element_type not in {
         NetworkElement.ElementType.CTO,
         NetworkElement.ElementType.SPLICE_BOX,
+        NetworkElement.ElementType.TOWER,
     }:
         return JsonResponse(
-            {"detail": "Somente CTO, CEO e CDO podem ser adicionados manualmente a rotas."},
+            {"detail": "Somente CTO, CEO, CDO e Torre podem ser adicionados manualmente a rotas."},
             status=400,
         )
 

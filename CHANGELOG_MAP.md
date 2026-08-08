@@ -1,3 +1,16 @@
+## MAP v0.78.0 — Rack/Torre físico, rotas exportáveis, SNMP integrado e orçamento óptico robusto
+
+- Switch e Router obedecem layout físico fixo no Rack: até 16 portas em uma linha, 24 em 12+12 e 48 em 24+24, reduzindo o tamanho das portas para caber sem quebra arbitrária;
+- Rack sem o backdrop/quadriculado móvel, cards mais compactos e sem Firewall nos fluxos novos de criação;
+- Torre com Canvas ampliado, conexões saindo pelo rodapé em corredores suaves/editáveis, DROP externo à direita, ONU/ONT compacta e DIO com Bandejas de 12 portas e organizador entre elas;
+- editor físico de portas para Switch, Router, AP e PTP, incluindo criação/remoção com proteção de porta já ligada; importação YAML tipada ampliada para AP/PTP;
+- integração SNMP no editor usa a community padrão da empresa, sincroniza interfaces e permite vincular/criar portas físicas;
+- poste modernizado com CTO, CEO, CDO e Reserva, preservando nome/código/descrição;
+- orçamento óptico rastreia fusões em ambos os sentidos e usa TX por PON/OLT para estimar OLT → DIO → cabo → fusões → splitters → ponta;
+- Rotas: Nenhuma desativa filtro, Todas mostra a união das rotas, Rack permanece visível e Torre passa a ser membro multirrota; exportação por rota em KMZ e diagrama HTML offline;
+- correção de `ReferenceError: editing is not defined` nas reservas do mapa;
+- sem migration nova.
+
 ## MAP v0.76.0 — corte real de cabo, rotas com CTO exclusiva/CEO-CDO compartilhado, portas de splitter PPPoE/DROP
 
 Implementação de um pacote de handoff fornecido pelo usuário

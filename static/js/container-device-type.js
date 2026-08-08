@@ -97,7 +97,8 @@
         const legacyUrl = `/api/map/elements/${id}/equipment/import-yaml/`;
         const typedUrl = `/api/map/v07551/elements/${id}/equipment/import-yaml/`;
         const selectedType = String(yamlForm.elements.equipment_type?.value || "auto");
-        const useTypedSwitch = selectedType === "switch" || lastYamlEquipmentTypeV07551 === "switch";
+        const typedEquipmentTypesV078 = new Set(["switch", "router", "access_point", "ptp"]);
+        const useTypedSwitch = typedEquipmentTypesV078.has(selectedType) || typedEquipmentTypesV078.has(lastYamlEquipmentTypeV07551);
         let data;
         try {
             data = await request(useTypedSwitch ? typedUrl : legacyUrl, { method: "POST", body: formData });

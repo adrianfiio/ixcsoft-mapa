@@ -533,8 +533,10 @@ def _save_equipment_from_yaml(container, parsed, *, name_override="", type_overr
         ContainerEquipment.EquipmentType.SWITCH,
         ContainerEquipment.EquipmentType.ROUTER,
         ContainerEquipment.EquipmentType.FIREWALL,
+        ContainerEquipment.EquipmentType.ACCESS_POINT,
+        ContainerEquipment.EquipmentType.PTP,
     }:
-        raise ValueError("O YAML tipado aceita Switch, Roteador ou Firewall.")
+        raise ValueError("O YAML tipado aceita Switch, Roteador, Firewall, Access Point ou PTP.")
     equipment = _find_equipment(container, parsed, name)
     created_equipment = equipment is None
     if equipment and equipment.equipment_type != selected_type:
