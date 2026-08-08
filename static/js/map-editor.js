@@ -228,13 +228,12 @@
         }
         return { x: x + el.offsetWidth / 2, y: y + el.offsetHeight / 2 };
     }
-    const BALANCED_SPLITTER_LOSS_DB = { "1:2": 3.6, "1:4": 7.2, "1:8": 10.5, "1:16": 13.8, "1:32": 17.1, "1:64": 20.5 };
+    const BALANCED_SPLITTER_LOSS_DB = { "1:2": 3.7, "1:4": 7.0, "1:8": 10.5, "1:16": 13.5, "1:32": 16.7, "1:64": 20.4 };
+    const UNBALANCED_SPLITTER_LOSS_DB = { "10:90": [11.2, 0.8], "15:85": [9.2, 1.0], "20:80": [7.8, 1.3], "30:70": [6.0, 2.0], "40:60": [4.7, 2.7], "45:55": [4.1, 3.2] };
     function splitterLossLabel(ratio) {
         if (BALANCED_SPLITTER_LOSS_DB[ratio] !== undefined) return `~${BALANCED_SPLITTER_LOSS_DB[ratio]}dB`;
-        const [a, b] = ratio.split(":").map(Number);
-        if (!a || !b) return "";
-        const legLoss = (percent) => (-10 * Math.log10(percent / 100) + 0.3).toFixed(1);
-        return `~${legLoss(a)}/${legLoss(b)}dB`;
+        if (UNBALANCED_SPLITTER_LOSS_DB[ratio]) return `~${UNBALANCED_SPLITTER_LOSS_DB[ratio][0]}/${UNBALANCED_SPLITTER_LOSS_DB[ratio][1]}dB`;
+        return "";
     }
     function formatBudgetTooltip(budget) {
         if (!budget) return "";
@@ -1218,9 +1217,10 @@
         document.getElementById("pole-cables").innerHTML = data.cables.map((item) =>
             `<div class="pole-list-item"><svg viewBox="0 0 24 24"><path d="M3 17c5 0 5-10 10-10s4 7 8 7"></path><circle cx="3" cy="17" r="2"></circle><circle cx="21" cy="14" r="2"></circle></svg>${escapeHtml(item.name)}</div>`
         ).join("") || '<p class="help-text">Nenhum cabo passa a até 8 metros deste poste.</p>';
-        document.getElementById("pole-equipment").innerHTML = data.equipment.map((item) =>
-            `<div class="pole-list-item">${escapeHtml(item.name)} · ${escapeHtml(item.type === "splice_box" ? "CEO" : "CTO")}</div>`
-        ).join("") || '<p class="help-text">Nenhuma CTO ou CEO instalada neste poste.</p>';
+        document.getElementById("pole-equipment").innerHTML = data.equipment.map((item) => {
+            const label = item.type === "splice_box" ? (item.subtype === "cdo" ? "CDO" : "CEO") : "CTO";
+            return `<div class="pole-list-item">${escapeHtml(item.name)} · ${escapeHtml(label)}</div>`;
+        }).join("") || '<p class="help-text">Nenhuma CTO, CEO ou CDO instalada neste poste.</p>';
         document.getElementById("pole-add-reserve").disabled = !data.cables.length;
         document.getElementById("pole-help").textContent = data.cables.length
             ? "A reserva será vinculada a um dos cabos detectados neste poste."
@@ -1232,8 +1232,11 @@
         poleActionForm.reset();
         poleActionForm.elements.action.value = "add_equipment";
         poleActionForm.elements.element_type.value = elementType;
+        poleActionForm.elements.element_subtype.value = "";
         document.getElementById("pole-action-title").textContent = `Instalar ${label} no poste`;
         document.getElementById("pole-action-name-wrap").hidden = false;
+        document.getElementById("pole-action-code-wrap").hidden = false;
+        document.getElementById("pole-action-description-wrap").hidden = false;
         document.getElementById("pole-action-cable-wrap").hidden = true;
         document.getElementById("pole-action-length-wrap").hidden = true;
         document.getElementById("pole-action-label-wrap").hidden = true;
@@ -1248,6 +1251,8 @@
         poleActionForm.elements.cable_id.innerHTML = cables.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("");
         document.getElementById("pole-action-title").textContent = "Adicionar reserva no poste";
         document.getElementById("pole-action-name-wrap").hidden = true;
+        document.getElementById("pole-action-code-wrap").hidden = true;
+        document.getElementById("pole-action-description-wrap").hidden = true;
         document.getElementById("pole-action-cable-wrap").hidden = false;
         document.getElementById("pole-action-length-wrap").hidden = false;
         document.getElementById("pole-action-label-wrap").hidden = false;
@@ -1608,17 +1613,17 @@
             }
             if (!window.mapV092 || window.mapV092.areReservesVisible()) (p.reservas || []).forEach((reserve) => {
                 const marker = L.marker([reserve.latitude, reserve.longitude], {
-                    draggable: editing,
+                    draggable: canEdit && state.mapMode === "edit",
                     // MAP_V07525_ICON_SET: mesmo ícone de "espiral de cabo" do kit
                     // SVG fornecido, igual ao usado nos demais tipos de elemento.
                     icon: L.divIcon({ className: "", html: '<div class="reserve-marker"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12 12-5.373 12-12c0-4.418-2.386-8.284-6-10.392"></path><path d="M16 10c-3.314 0-6 2.686-6 6s2.686 6 6 6 6-2.686 6-6c0-2.21-1.193-4.142-3-5.196"></path><path d="M16 14c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2"></path></svg></div>', iconSize: [32, 32], iconAnchor: [16, 16] }),
-                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${editing ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
+                }).bindPopup(`<strong>Reserva técnica</strong><br>${reserve.metragem} m<br>${escapeHtml(reserve.label || "")}${canEdit && state.mapMode === "edit" ? `<br><button data-edit-reserve="${reserve.id}">Editar</button><button data-convert-reserve="${reserve.id}">Virar CTO/CEO/CDO</button><button class="danger" data-delete-reserve="${reserve.id}">Excluir</button>` : ""}`);
                 marker.on("popupopen", () => {
                     popupAction(`[data-edit-reserve="${reserve.id}"]`, () => editReserve(p.id, reserve).catch((error) => notify(error.message, true)));
                     popupAction(`[data-convert-reserve="${reserve.id}"]`, () => convertReserve(p.id, reserve.id).catch((error) => notify(error.message, true)));
                     popupAction(`[data-delete-reserve="${reserve.id}"]`, () => deleteReserve(p.id, reserve.id).catch((error) => notify(error.message, true)));
                 });
-                if (editing) marker.on("dragend", () => {
+                if (canEdit && state.mapMode === "edit") marker.on("dragend", () => {
                     const point = marker.getLatLng();
                     api(`/api/map/cables/${p.id}/reserves/${reserve.id}/`, {
                         method: "PATCH",

@@ -58,6 +58,8 @@ from apps.network_map.api.map_v07548 import olt_editor_v07548, olt_port_path_v07
 from apps.network_map.api.map_v07549 import olt_uplink_slots_v07549
 from apps.network_map.api.map_v07551 import import_equipment_yaml_v07551, switch_hardware_v07551
 from apps.network_map.api.map_v07552 import olt_uplink_slots_v07552
+from apps.network_map.api.map_v078 import equipment_ports_v078, fiber_budget_v078
+from apps.network_map.api.route_exports_v078 import route_export_html_v078, route_export_kmz_v078
 from apps.network_map.api.map_master_views import (
     assign_cable_route_master,
     asset_qr_master,
@@ -136,6 +138,10 @@ urlpatterns = [
     path("v07551/elements/<int:element_id>/switch/<int:equipment_id>/hardware/", switch_hardware_v07551, name="switch-hardware-v07551"),
     path("v07551/elements/<int:element_id>/equipment/import-yaml/", import_equipment_yaml_v07551, name="equipment-import-yaml-v07551"),
     path("v07552/elements/<int:element_id>/olt/<int:equipment_id>/uplinks/", olt_uplink_slots_v07552, name="uplinks-v07552"),
+    path("v078/elements/<int:element_id>/equipment/<int:equipment_id>/ports/", equipment_ports_v078, name="equipment-ports-v078"),
+    path("v078/fibers/<int:fiber_id>/budget/", fiber_budget_v078, name="fiber-budget-v078"),
+    path("v078/routes/<int:route_id>/export.kmz", route_export_kmz_v078, name="route-export-kmz-v078"),
+    path("v078/routes/<int:route_id>/diagram.html", route_export_html_v078, name="route-export-html-v078"),
     path("elements/<int:element_id>/container-layout-v3/", container_layout_v3, name="container-layout-v3"),
     path("elements/<int:element_id>/equipment/<int:equipment_id>/details-v3/", container_equipment_details_v3, name="container-equipment-details-v3"),
     path("elements/<int:element_id>/passive-endpoints-v3/", create_passive_endpoint_v3, name="passive-endpoints-v3"),

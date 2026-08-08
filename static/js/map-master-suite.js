@@ -1656,13 +1656,18 @@
 
     function towerOrthogonalPath(start, end, manual = [], laneIndex = 0) {
         if (manual.length) return roundedTowerPolyline([start, ...manual, end], 22);
-        const direction = end.x >= start.x ? 1 : -1;
-        const lane = Math.abs(Number(laneIndex || 0)) % 8;
-        const bend = 64 + lane * 13;
-        const band = ((Math.floor(Number(laneIndex || 0) / 8) % 5) - 2) * 16;
-        const c1 = { x: start.x + direction * bend, y: start.y + band };
-        const c2 = { x: end.x - direction * bend, y: end.y + band };
-        return `M${start.x},${start.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${end.x},${end.y}`;
+        // MAP_V078_TOWER_BOTTOM_LANES: toda ligação automática sai pelo rodapé
+        // do equipamento, desce para um corredor horizontal exclusivo e só
+        // então volta à porta de destino. Isso mantém as linhas fora dos cards
+        // e preserva a edição manual por pontos do Canvas.
+        const lane = Math.abs(Number(laneIndex || 0)) % 18;
+        const laneY = Math.max(start.y, end.y) + 48 + lane * 14;
+        return roundedTowerPolyline([
+            start,
+            { x: start.x, y: laneY },
+            { x: end.x, y: laneY },
+            end,
+        ], 18);
     }
 
     function drawContainerLinks() {
@@ -1675,15 +1680,18 @@
             const externalPosition = state.container.layout.externalLinks?.[String(link.id)];
             const fiberStart = link.cable_fiber_id ? fiberAnchor(link.cable_fiber_id) : null;
             const cableStart = link.cable_id ? cableAnchor(link.cable_id, end) : null;
+            const isTower = String(state.container.data?.container?.type || "") === "tower";
+            const defaultExternal = end
+                ? (isTower ? { x: end.x + 190, y: end.y } : { x: 24, y: end.y })
+                : null;
             const start = link.source_port_id
                 ? portAnchor(link.source_port_id, "front")
-                : fiberStart || cableStart || (end ? externalPosition || { x: 24, y: end.y } : null);
+                : fiberStart || cableStart || (end ? externalPosition || defaultExternal : null);
             if (!start || !end) return "";
             const manual = state.container.layout.routes[String(link.id)] || [];
             const external = !link.source_port_id && !fiberStart && !cableStart
                 ? `<circle data-drop-entry="${link.id}" class="master-drop-entry" cx="${start.x}" cy="${start.y}" r="7"></circle><text class="master-drop-label" x="${start.x + 11}" y="${start.y - 9}">${escapeHtml(link.cable || "DROP")}</text>`
                 : "";
-            const isTower = String(state.container.data?.container?.type || "") === "tower";
             const route = isTower
                 ? towerOrthogonalPath(start, end, manual, linkIndex)
                 : orthogonalPath(start, end, manual);

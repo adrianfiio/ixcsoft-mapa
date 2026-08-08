@@ -257,7 +257,6 @@
         const addMenu = qs("#tower-add-menu-v0750", root);
         const extraTypes = [
             ["olt", "OLT", "Chassi óptico"],
-            ["firewall", "Firewall", "Segurança e borda"],
             ["other", "Outro", "Equipamento personalizado"],
         ];
         extraTypes.forEach(([type, label, help]) => {
@@ -300,8 +299,8 @@
             }
         }
 
-        const rackAllowed = new Set(["olt", "dio", "switch", "router", "firewall"]);
-        const towerAllowed = new Set(["dio", "switch", "router", "firewall", "access_point", "ptp", "onu", "pto", "other"]);
+        const rackAllowed = new Set(["olt", "dio", "switch", "router"]);
+        const towerAllowed = new Set(["dio", "switch", "router", "access_point", "ptp", "onu", "pto", "other"]);
         const allowed = identity.type === "rack" ? rackAllowed : towerAllowed;
         qsa("[data-quick-add]", root).forEach((button) => {
             button.hidden = !allowed.has(String(button.dataset.quickAdd));
@@ -415,7 +414,7 @@
             ? "Abrir fusões"
             : "Abrir editor técnico";
         const routeButton = qs('[data-action="route"]', menu);
-        routeButton.hidden = !["cto", "splice_box"].includes(String(element?.tipo));
+        routeButton.hidden = !["cto", "splice_box", "tower"].includes(String(element?.tipo));
         routeButton.onclick = () => {
             menu.hidden = true;
             window.mapMasterSuite?.openElementRoute?.(

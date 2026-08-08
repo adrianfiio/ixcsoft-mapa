@@ -42,6 +42,7 @@ from apps.network_map.models import (
 from apps.network_map.serializers import NetworkElementSerializer, sync_splice_box
 from apps.network_map.route_metadata import element_route_payload
 from apps.network_map.cto_defaults import ensure_cto_default_splitters
+from apps.network_map.api.map_v078 import _trace_fiber as _trace_fiber_v078, _trace_splitter_port as _trace_splitter_port_v078
 from apps.network_map.services import (
     FiberStructureError,
     generate_cable_fibers,
@@ -168,19 +169,24 @@ def pole_infrastructure(request, element_id):
             if not pole.point:
                 return JsonResponse({"error": "O poste não possui localização no mapa."}, status=400)
             element_type = request.data.get("element_type")
+            element_subtype = str(request.data.get("element_subtype") or "").strip().lower()
             if element_type not in {
                 NetworkElement.ElementType.CTO,
                 NetworkElement.ElementType.SPLICE_BOX,
             }:
-                return JsonResponse({"error": "Escolha CTO ou CEO."}, status=400)
+                return JsonResponse({"error": "Escolha CTO, CEO ou CDO."}, status=400)
+            if element_type == NetworkElement.ElementType.SPLICE_BOX and element_subtype not in {"", "ceo", "cdo"}:
+                return JsonResponse({"error": "Subtipo de caixa inválido."}, status=400)
             name = str(request.data.get("name", "")).strip()
             if not name:
                 return JsonResponse({"error": "Informe o nome do equipamento."}, status=400)
             serializer = NetworkElementSerializer(data={
                 "project": pole.project_id,
                 "element_type": element_type,
+                "element_subtype": element_subtype if element_type == NetworkElement.ElementType.SPLICE_BOX else "",
                 "name": name,
                 "code": str(request.data.get("code", "")).strip() or name,
+                "description": str(request.data.get("description", "")).strip(),
                 "latitude": pole.point.y,
                 "longitude": pole.point.x,
                 "enabled": True,
@@ -226,7 +232,12 @@ def pole_infrastructure(request, element_id):
             for cable in passing_cables
         ],
         "equipment": [
-            {"id": item.id, "name": item.name, "type": item.element_type}
+            {
+                "id": item.id,
+                "name": item.name,
+                "type": item.element_type,
+                "subtype": str((item.metadata or {}).get("import_subtype") or "").lower(),
+            }
             for item in installed_equipment
         ],
     })
@@ -1240,78 +1251,13 @@ def _splitter_output_loss_db(ratio, port_number):
 
 
 def _trace_fiber_upstream(fiber, visited=None):
-    """Percorre a fibra para trás (cordão/fusão -> emenda -> splitter -> cabo
-    anterior) até achar a OLT de origem. Retorna (caminho, perda_total_db,
-    potencia_tx_dbm) — potencia_tx_dbm vem None se a OLT não tiver potência
-    cadastrada, ou se o caminho não chegar a nenhuma OLT."""
-    visited = visited if visited is not None else set()
-    if fiber is None or ("fiber", fiber.id) in visited or len(visited) > 40:
-        return [], 0.0, None
-    visited.add(("fiber", fiber.id))
-
-    fusion = ContainerPortLink.objects.filter(
-        cable_fiber=fiber, destination_port__port_type=ContainerEquipmentPort.PortType.DIO,
-    ).select_related("destination_port__equipment").first()
-    if fusion:
-        cord = ContainerPortLink.objects.filter(
-            destination_port=fusion.destination_port, source_port__isnull=False,
-        ).select_related("source_port__equipment").first()
-        loss = FUSION_LOSS_DB
-        path = [{"type": "dio", "name": fusion.destination_port.equipment.name}]
-        if cord:
-            olt = cord.source_port.equipment
-            loss += DIO_PORT_LOSS_DB
-            path.insert(0, {"type": "olt", "name": olt.name})
-            tx_power = float(olt.tx_power_dbm) if olt.tx_power_dbm is not None else None
-            return path, loss, tx_power
-        return path, loss, None
-
-    splice = FiberSplice.objects.filter(output_fiber=fiber).select_related(
-        "input_fiber__cable", "splice_box",
-    ).first()
-    if splice:
-        upstream_path, upstream_loss, tx_power = _trace_fiber_upstream(splice.input_fiber, visited)
-        cable_km = _cable_length_km(splice.input_fiber.cable)
-        loss = upstream_loss + FUSION_LOSS_DB + cable_km * FIBER_ATTENUATION_DB_PER_KM
-        return [*upstream_path, {"type": "splice_box", "name": splice.splice_box.name}], loss, tx_power
-
-    port = SpliceTraySplitterPort.objects.filter(output_fiber=fiber).select_related(
-        "splitter__input_fiber__cable", "splitter__input_splitter_port",
-        "splitter__tray__splice_box",
-    ).first()
-    if port:
-        return _trace_splitter_port_upstream(port, visited)
-
-    return [], 0.0, None
+    """Compatibilidade dos endpoints existentes com o rastreador bidirecional v0.78."""
+    return _trace_fiber_v078(fiber, visited)
 
 
 def _trace_splitter_port_upstream(port, visited=None):
-    """Percorre para trás a partir de uma porta de saída de splitter. Uma
-    porta pode alimentar outra fibra normal OU, em cascata, entrar
-    diretamente na entrada de outro splitter sem que exista uma fibra
-    própria entre os dois (splitter->splitter físico dentro da mesma
-    caixa) — por isso este cálculo não depende de `output_fiber`."""
-    visited = visited if visited is not None else set()
-    if port is None or ("port", port.id) in visited or len(visited) > 40:
-        return [], 0.0, None
-    visited.add(("port", port.id))
-
-    splitter = port.splitter
-    if splitter.input_fiber_id:
-        upstream_path, upstream_loss, tx_power = _trace_fiber_upstream(splitter.input_fiber, visited)
-        cable_loss = _cable_length_km(splitter.input_fiber.cable) * FIBER_ATTENUATION_DB_PER_KM
-    elif splitter.input_splitter_port_id:
-        upstream_path, upstream_loss, tx_power = _trace_splitter_port_upstream(
-            splitter.input_splitter_port, visited
-        )
-        cable_loss = 0.0
-    else:
-        return [], 0.0, None
-    split_loss = _splitter_output_loss_db(splitter.ratio, port.number)
-    loss = upstream_loss + cable_loss + split_loss
-    box_name = splitter.tray.splice_box.name
-    return [*upstream_path, {"type": "splitter", "name": f"Splitter {splitter.ratio} · {box_name}"}], loss, tx_power
-
+    """Compatibilidade dos endpoints existentes com o rastreador de splitter v0.78."""
+    return _trace_splitter_port_v078(port, set() if visited is None else visited)
 
 def _fiber_budget_payload(fiber, element=None):
     path, loss_db, tx_power = _trace_fiber_upstream(fiber)
