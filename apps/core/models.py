@@ -179,6 +179,16 @@ class CompanyMembership(TimeStampedModel):
         blank=True,
         verbose_name="ID da configuração ERP",
     )
+    # MAP_V085_TECHNICIAN_PROJECT_SCOPE: só usado quando role=TECHNICIAN.
+    # Vazio = nenhum projeto aparece no app do técnico até o admin liberar
+    # explicitamente pela Minha equipe -- não é um "veto" pros outros
+    # papéis, que continuam vendo tudo da empresa via accessible_company_ids.
+    technician_projects = models.ManyToManyField(
+        "network_map.NetworkProject",
+        blank=True,
+        related_name="technician_members",
+        verbose_name="Projetos liberados para o técnico",
+    )
 
     class Meta:
         verbose_name = "Acesso à empresa"

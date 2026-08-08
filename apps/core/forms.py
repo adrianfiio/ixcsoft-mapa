@@ -282,13 +282,19 @@ class SuperadminCompanyEditForm(forms.ModelForm):
     de cadastro de SuperadminCompanyForm, sem os campos de primeiro
     usuário (é edição, não criação). Diferente de CompanyOnboardingForm
     (self-service): company_type nunca fica travado aqui — só o
-    Superadmin pode mudar o tipo depois de definido."""
+    Superadmin pode mudar o tipo depois de definido.
+
+    Inclui logo/brand_color (whitelabel) -- antes só editável pela própria
+    empresa em "Marca"; o Superadmin precisa poder ver/ajustar isso também."""
+
+    MAX_LOGO_SIZE = 2 * 1024 * 1024
 
     class Meta:
         model = Company
         fields = (
             "name", "trade_name", "document", "contact_name", "contact_phone",
             "contact_email", "address", "company_type", "integration_mode",
+            "logo", "brand_color",
         )
         labels = {
             "name": "Razão social ou nome",
@@ -300,12 +306,24 @@ class SuperadminCompanyEditForm(forms.ModelForm):
             "address": "Endereço",
             "company_type": "Tipo de empresa",
             "integration_mode": "Modo de operação",
+            "logo": "Logo (whitelabel)",
+            "brand_color": "Cor de destaque (whitelabel)",
+        }
+        widgets = {
+            "brand_color": forms.TextInput(attrs={"type": "color"}),
+            "logo": forms.FileInput(attrs={"accept": "image/*"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name in ("name", "document", "company_type"):
             self.fields[name].required = True
+
+    def clean_logo(self):
+        logo = self.cleaned_data.get("logo")
+        if logo and hasattr(logo, "size") and logo.size > self.MAX_LOGO_SIZE:
+            raise forms.ValidationError("A logo deve ter no máximo 2MB.")
+        return logo
 
 
 class TeamPasswordResetForm(forms.Form):

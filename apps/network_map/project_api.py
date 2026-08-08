@@ -10,6 +10,7 @@ from apps.core.access import (
     can_edit_company,
     can_view_company,
     editable_company_ids,
+    is_technician_only,
     scope_company_queryset,
 )
 from apps.network_map.models import (
@@ -40,10 +41,20 @@ def project_payload(project, user=None):
 @permission_classes([IsAuthenticatedOrReadOnly])
 def projects(request):
     if request.method == "GET":
-        queryset = scope_company_queryset(
-            NetworkProject.objects.filter(enabled=True),
-            request.user,
-        ).order_by("name")
+        if is_technician_only(request.user):
+            # MAP_V085_TECHNICIAN_PROJECT_SCOPE: técnico só vê os projetos
+            # explicitamente liberados pra ele (Minha equipe) -- não o
+            # escopo inteiro da empresa como os outros papéis.
+            queryset = NetworkProject.objects.filter(
+                enabled=True,
+                technician_members__user=request.user,
+                technician_members__active=True,
+            ).distinct().order_by("name")
+        else:
+            queryset = scope_company_queryset(
+                NetworkProject.objects.filter(enabled=True),
+                request.user,
+            ).order_by("name")
         return JsonResponse(
             {
                 "success": True,

@@ -6,7 +6,7 @@
   --line: rgba(255,255,255,.12);
   --text: #f4f7fb;
   --muted: #a9b7c6;
-  --accent: #43b8ff;
+  --accent: var(--primary, #43b8ff);
   --good: #43d17d;
   --bad: #ff667a;
   --warn: #ffbf5a;
@@ -90,12 +90,12 @@ button { cursor:pointer; }
 .detail-item span { color:var(--muted); font-size:11px; margin-bottom:3px; }
 .detail-item strong { font-size:14px; }
 .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
-.tech-marker { width:28px; height:28px; display:grid; place-items:center; border:2px solid rgba(255,255,255,.88); border-radius:9px; background:#168bd2; color:#fff; font-size:10px; font-weight:900; box-shadow:0 4px 12px rgba(0,0,0,.32); }
+.tech-marker { width:28px; height:28px; display:grid; place-items:center; border:2px solid rgba(255,255,255,.88); border-radius:9px; background:#168bd2; color:#fff; font-size:9px; font-weight:900; box-shadow:0 4px 12px rgba(0,0,0,.32); }
 .tech-marker.pop { border-radius:50%; background:#8a64e8; }
-.tech-marker.client { width:20px; height:20px; border-radius:50%; background:var(--good); font-size:0; }
-.tech-marker.client.offline { background:var(--bad); }
 .tech-marker.infrastructure { background:#788798; }
 .tech-marker.cto { background:#168bd2; }
+.tech-marker.rack { background:#e08a3c; }
+.tech-marker.tower { background:#3ca85f; }
 .user-location { width:18px; height:18px; border:4px solid white; border-radius:50%; background:#2d9cff; box-shadow:0 0 0 5px rgba(45,156,255,.22); }
 @media (min-width: 900px) {
   .tech-topbar { width:420px; right:auto; }

@@ -6,6 +6,7 @@
     projects: body.dataset.projectsUrl,
     elements: body.dataset.elementsUrl,
     cables: body.dataset.cablesUrl,
+    routes: body.dataset.routesUrl,
     login: body.dataset.loginUrl || '/login/',
     sw: body.dataset.serviceWorkerUrl || '/app/sw.js',
   };
@@ -15,14 +16,19 @@
     projectId: null,
     elements: [],
     cables: [],
+    routes: [],
     markers: [],
     cableLayers: [],
+    routeLayers: [],
     selected: null,
     userLatLng: null,
     userMarker: null,
     accuracyCircle: null,
     deferredInstallPrompt: null,
-    layers: { cto: true, pop: true, client: true, infrastructure: true, cables: true },
+    // MAP_V085_TECH_APP_LAYERS: sem "client" -- info demais pro campo.
+    // "infrastructure" fica sem checkbox própria (CEO/CDO, postes etc.
+    // continuam visíveis, só não tem toggle dedicado).
+    layers: { cto: true, rack: true, tower: true, pop: true, infrastructure: true, cables: true, routes: true },
   };
 
   const el = (id) => document.getElementById(id);
@@ -63,6 +69,10 @@
     return [];
   }
 
+  function isClientLike(type) {
+    return type.includes('client') || type.includes('cliente') || type.includes('customer');
+  }
+
   function normalizeElement(raw) {
     const props = raw?.properties ? { ...raw.properties } : { ...raw };
     const geometry = raw?.geometry || props.geometry;
@@ -71,34 +81,37 @@
     const lng = Number(props.longitude ?? props.lng ?? props.lon ?? (coords ? coords[0] : NaN));
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     const type = String(props.element_type ?? props.type ?? props.subtype ?? 'infrastructure').toLowerCase();
+    // MAP_V085_TECH_APP_LAYERS: cliente nem entra no estado -- não é só
+    // uma camada desmarcada, é descartado antes de renderizar/buscar.
+    if (isClientLike(type)) return null;
     return { ...props, id: props.id ?? raw.id, lat, lng, _type: type, _raw: raw };
   }
 
   function categoryFor(item) {
     const type = item._type;
     if (type.includes('cto')) return 'cto';
+    if (type.includes('rack')) return 'rack';
+    if (type.includes('tower') || type.includes('torre')) return 'tower';
     if (type.includes('pop') || type.includes('cpd')) return 'pop';
-    if (type.includes('client') || type.includes('cliente') || type.includes('customer')) return 'client';
     return 'infrastructure';
   }
 
   function markerLabel(item, category) {
     if (category === 'cto') return 'CTO';
+    if (category === 'rack') return 'RACK';
+    if (category === 'tower') return 'TORRE';
     if (category === 'pop') return 'POP';
-    if (category === 'client') return '';
     const type = item._type.replaceAll('_', ' ').slice(0, 4).toUpperCase();
     return type || '•';
   }
 
   function makeMarkerIcon(item) {
     const category = categoryFor(item);
-    const status = String(item.status ?? item.operational_status ?? '').toLowerCase();
-    const offline = category === 'client' && ['offline', 'down', 'inativo', 'disabled'].some(v => status.includes(v));
     return L.divIcon({
       className: '',
-      html: `<div class="tech-marker ${category}${offline ? ' offline' : ''}">${markerLabel(item, category)}</div>`,
-      iconSize: category === 'client' ? [20, 20] : [28, 28],
-      iconAnchor: category === 'client' ? [10, 10] : [14, 14],
+      html: `<div class="tech-marker ${category}">${markerLabel(item, category)}</div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
     });
   }
 
@@ -159,19 +172,49 @@
     state.cableLayers.push(layer);
   }
 
+  function normalizeRoute(raw) {
+    const props = raw?.properties ? { ...raw.properties } : { ...raw };
+    const geometry = raw?.geometry || props.geometry;
+    if (geometry?.type !== 'MultiLineString' || !Array.isArray(geometry.coordinates)) return null;
+    const segments = geometry.coordinates
+      .map(line => line.map(([lng, lat]) => [Number(lat), Number(lng)]).filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng)))
+      .filter(segment => segment.length >= 2);
+    if (!segments.length) return null;
+    return { ...props, id: props.id ?? raw.id, _segments: segments };
+  }
+
+  function addRoute(route) {
+    if (!state.layers.routes) return;
+    const layer = L.polyline(route._segments, { color: '#ffb84d', weight: 3, opacity: .75, dashArray: '8 6', interactive: true });
+    layer.bindTooltip(text(route.nome ?? route.name ?? `Rota #${route.id}`));
+    layer.addTo(state.map);
+    state.routeLayers.push(layer);
+  }
+
   function renderNetwork() {
     state.markers.forEach(m => m.remove());
     state.cableLayers.forEach(l => l.remove());
+    state.routeLayers.forEach(l => l.remove());
     state.markers = [];
     state.cableLayers = [];
+    state.routeLayers = [];
     state.elements.forEach(addElementMarker);
     state.cables.forEach(addCable);
-    setStatus(`${state.elements.length} elementos • ${state.cables.length} cabos`);
+    state.routes.forEach(addRoute);
+    setStatus(`${state.elements.length} elementos • ${state.cables.length} cabos • ${state.routes.length} rotas`);
   }
 
   async function loadProjects() {
     const payload = await fetchJson(endpoints.projects);
-    const projects = Array.isArray(payload?.data?.projects) ? payload.data.projects : extractRows(payload);
+    // MAP_V085_TECH_APP_PROJECTS_SHAPE: /api/map/projects/ sempre devolveu
+    // {success, projects: [...]} -- não bate com nenhum dos formatos que
+    // extractRows reconhece (.features/.results/.data/array puro), então
+    // o seletor de projeto nunca populava, desde a primeira versão do app.
+    const projects = Array.isArray(payload?.data?.projects)
+      ? payload.data.projects
+      : Array.isArray(payload?.projects)
+        ? payload.projects
+        : extractRows(payload);
     projectSelect.innerHTML = '';
     if (!projects.length) {
       projectSelect.append(new Option('Nenhum projeto disponível', ''));
@@ -195,15 +238,20 @@
     localStorage.setItem('afservice.tech.project', state.projectId);
     setStatus('Atualizando mapa...');
     try {
-      const [elementsPayload, cablesPayload] = await Promise.all([
+      const [elementsPayload, cablesPayload, routesPayload] = await Promise.all([
         fetchJson(`${endpoints.elements}?project_id=${encodeURIComponent(projectId)}`),
         fetchJson(`${endpoints.cables}?project_id=${encodeURIComponent(projectId)}`).catch(err => {
           console.warn('Camada de cabos indisponível:', err);
           return [];
         }),
+        fetchJson(`${endpoints.routes}?project_id=${encodeURIComponent(projectId)}`).catch(err => {
+          console.warn('Camada de rotas indisponível:', err);
+          return [];
+        }),
       ]);
       state.elements = extractRows(elementsPayload).map(normalizeElement).filter(Boolean);
       state.cables = extractRows(cablesPayload).map(normalizeCable).filter(Boolean);
+      state.routes = extractRows(routesPayload).map(normalizeRoute).filter(Boolean);
       renderNetwork();
       fitNetwork(false);
     } catch (error) {
@@ -234,12 +282,6 @@
       return common.concat([
         ['Capacidade', item.capacity], ['Modelo', item.model], ['Splitters', item.splitters],
         ['Portas', item.ports], ['Ocupadas', item.occupied_ports ?? item.used_ports], ['Livres', item.free_ports],
-      ]);
-    }
-    if (category === 'client') {
-      return common.concat([
-        ['Endereço', item.address], ['Login / IXC', item.ixc_id ?? item.login],
-        ['CTO', item.cto_name ?? item.cto], ['Porta', item.box_slot ?? item.port], ['Sinal', item.signal_dbm != null ? `${item.signal_dbm} dBm` : null],
       ]);
     }
     return common.concat([
