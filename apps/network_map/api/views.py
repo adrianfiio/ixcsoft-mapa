@@ -2295,6 +2295,13 @@ def create_fiber_cable(request):
             status=400,
         )
 
+    effective_fiber_count = cable_model.fiber_count if cable_model else fiber_count
+    if cable_type == FiberCable.CableType.DROP and effective_fiber_count not in {1, 2}:
+        return JsonResponse(
+            {"success": False, "error": "Cabo DROP deve possuir somente 1 ou 2 fibras."},
+            status=400,
+        )
+
     if not isinstance(coordinates, list) or len(coordinates) < 2:
         return JsonResponse(
             {

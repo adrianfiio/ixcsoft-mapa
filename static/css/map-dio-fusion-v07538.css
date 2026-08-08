@@ -602,3 +602,178 @@ body.map-dio-fusion-open-v07538 { overflow: hidden; }
 .map-rack-association-links-v07538 path {
     stroke-width: 2.3;
 }
+
+/* AFSERVICE_MAP_V0761_DIO_PORT_MATRIX_CSS_BEGIN */
+.map-open-dio-ports-v0761 {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    min-height: 28px !important;
+    padding: 4px 8px !important;
+    margin-left: auto;
+    border: 1px solid rgba(34, 211, 238, .48) !important;
+    border-radius: 7px !important;
+    color: #cffafe !important;
+    background: linear-gradient(180deg, rgba(8, 47, 73, .92), rgba(6, 30, 48, .94)) !important;
+    box-shadow: inset 0 0 0 1px rgba(56, 189, 248, .06), 0 0 14px rgba(34, 211, 238, .09) !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+}
+.map-open-dio-ports-v0761:hover {
+    border-color: #22d3ee !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(34, 211, 238, .22) !important;
+}
+
+#dio-port-matrix-v0761 {
+    width: min(1180px, calc(100vw - 36px));
+    height: min(780px, calc(100vh - 36px));
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #1e5676;
+    border-radius: 14px;
+    color: #e6f6ff;
+    background: #06111d;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, .58), 0 0 28px rgba(34, 211, 238, .08);
+}
+#dio-port-matrix-v0761::backdrop {
+    background: rgba(2, 8, 18, .76);
+    backdrop-filter: blur(3px);
+}
+#dio-port-matrix-v0761 > section {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    height: 100%;
+}
+.dio-port-matrix-head-v0761,
+#dio-port-matrix-v0761 > section > footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(56, 189, 248, .18);
+    background: linear-gradient(180deg, rgba(10, 31, 49, .98), rgba(7, 21, 35, .98));
+}
+#dio-port-matrix-v0761 > section > footer {
+    border-top: 1px solid rgba(56, 189, 248, .16);
+    border-bottom: 0;
+    color: #8aa8bd;
+    font-size: 10px;
+}
+.dio-port-matrix-head-v0761 h2 { margin: 2px 0 0; font-size: 17px; }
+.dio-port-matrix-head-v0761 p { margin: 2px 0 0; color: #7f9cb2; font-size: 10px; }
+.dio-port-eyebrow-v0761 { color: #22d3ee; font-size: 8px; font-weight: 900; letter-spacing: .16em; }
+.dio-port-matrix-head-actions-v0761 { display: flex; gap: 6px; }
+.dio-port-matrix-head-actions-v0761 button,
+#dio-port-matrix-v0761 > section > footer button {
+    min-width: 34px;
+    min-height: 31px;
+    border: 1px solid #244967;
+    border-radius: 8px;
+    color: #d8efff;
+    background: #0a2032;
+    font-weight: 800;
+}
+.dio-port-matrix-head-actions-v0761 button:hover,
+#dio-port-matrix-v0761 > section > footer button:hover { border-color: #38bdf8; background: #0d2d45; }
+.dio-port-matrix-status-v0761 {
+    min-height: 40px;
+    padding: 9px 14px;
+    color: #b9d4e5;
+    background: rgba(7, 27, 43, .84);
+    border-bottom: 1px solid rgba(56, 189, 248, .12);
+    font-size: 10px;
+}
+.dio-port-matrix-status-v0761 b { color: #67e8f9; }
+.dio-port-matrix-status-v0761 span { margin-left: 8px; color: #facc15; }
+.dio-port-matrix-body-v0761 {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    gap: 10px;
+    min-height: 0;
+    padding: 10px;
+    overflow: hidden;
+}
+.dio-port-column-v0761 {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid rgba(56, 189, 248, .18);
+    border-radius: 11px;
+    background: rgba(8, 22, 36, .88);
+}
+.dio-port-column-v0761 > header {
+    display: grid;
+    gap: 2px;
+    padding: 9px 11px;
+    border-bottom: 1px solid rgba(56, 189, 248, .14);
+    background: rgba(11, 34, 53, .8);
+}
+.dio-port-column-v0761 > header strong { font-size: 12px; }
+.dio-port-column-v0761 > header small { color: #7696ad; font-size: 9px; }
+.dio-port-column-v0761 > div { min-height: 0; overflow: auto; padding: 9px; }
+.dio-source-equipment-v0761 { margin-bottom: 9px; border: 1px solid rgba(148, 163, 184, .14); border-radius: 9px; overflow: hidden; }
+.dio-source-equipment-v0761 > header { display: flex; justify-content: space-between; gap: 8px; padding: 7px 9px; background: #0b2032; }
+.dio-source-equipment-v0761 > header small { color: #7896aa; font-size: 9px; }
+.dio-source-ports-v0761 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 7px; }
+.dio-source-port-v0761 {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 7px 9px;
+    text-align: left;
+    border: 1px solid #27435a;
+    border-radius: 8px;
+    color: #d7e9f5;
+    background: #091926;
+}
+.dio-source-port-v0761 span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 800; }
+.dio-source-port-v0761 small { color: #7393a8; font-size: 8px; }
+.dio-source-port-v0761:not(:disabled):hover { border-color: #22d3ee; background: #0b2b3b; }
+.dio-source-port-v0761.selected { border-color: #facc15; box-shadow: 0 0 0 1px rgba(250, 204, 21, .25), 0 0 14px rgba(250, 204, 21, .08); }
+.dio-source-port-v0761.linked { border-color: rgba(34, 197, 94, .45); background: rgba(7, 50, 36, .72); }
+.dio-source-port-v0761.busy { opacity: .56; }
+.dio-front-grid-v0761 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-content: start; gap: 7px; }
+.dio-front-port-v0761 { position: relative; min-width: 0; }
+.dio-front-port-v0761 > button:first-child {
+    display: grid;
+    width: 100%;
+    min-height: 72px;
+    padding: 7px 8px;
+    border: 1px solid #29465d;
+    border-radius: 9px;
+    color: #dbeefd;
+    background: #091a28;
+    text-align: left;
+}
+.dio-front-port-v0761.free > button:first-child:hover { border-color: #22d3ee; background: #0b2b3d; }
+.dio-front-port-v0761.occupied > button:first-child { border-color: rgba(34, 197, 94, .5); background: rgba(6, 45, 33, .72); }
+.dio-front-port-v0761 b { color: #67e8f9; font-size: 11px; }
+.dio-front-port-v0761 span { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
+.dio-front-port-v0761 small { margin-top: 3px; color: #7998ac; font-size: 8px; line-height: 1.25; }
+.dio-front-port-v0761.occupied small { color: #86efac; }
+.dio-front-unlink-v0761 {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0 !important;
+    border: 1px solid rgba(251, 113, 133, .4) !important;
+    border-radius: 6px !important;
+    color: #fecdd3 !important;
+    background: rgba(80, 20, 31, .82) !important;
+    z-index: 2;
+}
+.dio-port-empty-v0761 { padding: 24px 12px; color: #7592a6; text-align: center; font-size: 10px; }
+@media (max-width: 900px) {
+    .dio-port-matrix-body-v0761 { grid-template-columns: 1fr; overflow: auto; }
+    .dio-port-column-v0761 { min-height: 300px; }
+    .dio-front-grid-v0761 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* AFSERVICE_MAP_V0761_DIO_PORT_MATRIX_CSS_END */

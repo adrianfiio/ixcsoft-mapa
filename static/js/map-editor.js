@@ -1379,8 +1379,15 @@
                 const typeLabel = ["cpd", "pop"].includes(String(p.subtype || "").toLowerCase())
                     ? "CPD/POP" : p.tipo === "splice_box" && p.subtype === "cdo" ? "CDO" : p.tipo.toUpperCase();
                 if (!unifiedEditor) marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
-                const hoverOnlyLabel = ["cto", "splice_box"].includes(p.tipo);
-                marker.bindTooltip(escapeHtml(p.nome), { permanent: !hoverOnlyLabel, direction: "top", offset: [0, -22], className: "network-name-label" });
+                const pointSubtype = String(p.subtype || "").toLowerCase();
+                const hoverOnlyLabel = ["cto", "splice_box", "rack", "tower"].includes(p.tipo)
+                    || ["cpd", "pop"].includes(pointSubtype);
+                marker.bindTooltip(escapeHtml(p.nome), {
+                    permanent: !hoverOnlyLabel,
+                    direction: "top",
+                    offset: [0, -22],
+                    className: hoverOnlyLabel ? "network-name-label network-hover-name" : "network-name-label",
+                });
                 marker.on("click", (event) => {
                     if (state.tool !== "cable") {
                         if (!unifiedEditor) return;
@@ -1905,7 +1912,24 @@
     elementForm.elements.splitter_input_cable_id.onchange = (event) => {
         loadSplitterFibers(event.target.value).catch((error) => notify(error.message, true));
     };
+    function syncNewCableModelChoices() {
+        if (state.editingCableId) return;
+        const type = String(cableForm.elements.cable_type.value || "");
+        const select = cableForm.elements.cable_model_id;
+        const current = String(select.value || "");
+        const models = [...state.cableModels.values()];
+        const allowed = type === "drop"
+            ? models.filter((model) => [1, 2].includes(Number(model.fiber_count)))
+            : models;
+        select.innerHTML = '<option value="">Escolha a quantidade/modelo</option>';
+        allowed.forEach((model) => select.add(new Option(`${model.fiber_count} fibras`, model.id)));
+        if (allowed.some((model) => String(model.id) === current)) select.value = current;
+        else select.value = "";
+        cableForm.elements.fiber_count.max = type === "drop" ? "2" : "4096";
+    }
+
     function updateCableDefaults() {
+        syncNewCableModelChoices();
         const model = state.cableModels.get(String(cableForm.elements.cable_model_id.value));
         cableForm.elements.fiber_count.value = model ? model.fiber_count : "";
         if (!cableForm.elements.name.value && state.cableOriginId && state.cableDestinationId) {
@@ -1925,6 +1949,7 @@
         cableForm.elements.cable_model_id.disabled = false;
         document.getElementById("edit-geometry-button").hidden = true;
         document.getElementById("cable-dialog-title").textContent = "Novo cabo";
+        syncNewCableModelChoices();
         updateCableDefaults();
         cableDialog.showModal();
     }
@@ -2048,6 +2073,11 @@
     document.getElementById("layer-light-flow").onchange = () => loadStructure().catch((error) => notify(error.message, true));
     document.getElementById("layer-labels").onchange = refreshMapLabels;
     refreshMapLabels();
+    cableForm.elements.cable_type.onchange = () => {
+        if (!state.editingCableId) cableForm.elements.name.value = "";
+        syncNewCableModelChoices();
+        updateCableDefaults();
+    };
     cableForm.elements.cable_model_id.onchange = () => {
         if (!state.editingCableId) cableForm.elements.name.value = "";
         updateCableDefaults();
