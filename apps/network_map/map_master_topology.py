@@ -16,6 +16,7 @@ from apps.network_map.models import (
     NetworkElement,
     NetworkProject,
     NetworkRoute,
+    NetworkRouteElementMembership,
 )
 
 
@@ -80,6 +81,17 @@ def project_route_topology(project: NetworkProject) -> dict[str, Any]:
         NetworkRoute.objects.filter(project=project, enabled=True).order_by("name", "code")
     )
     route_ids = [route.id for route in routes]
+    memberships = list(
+        NetworkRouteElementMembership.objects.filter(
+            route_id__in=route_ids,
+            element__project=project,
+            element__enabled=True,
+        ).select_related("element", "route")
+    )
+    explicit_element_ids_by_route: dict[int, set[int]] = defaultdict(set)
+    for membership in memberships:
+        explicit_element_ids_by_route[membership.route_id].add(membership.element_id)
+
     cables = list(
         FiberCable.objects.filter(project=project, route_id__in=route_ids)
         .select_related("route", "origin", "destination", "cable_model")
@@ -102,6 +114,8 @@ def project_route_topology(project: NetworkProject) -> dict[str, Any]:
         if cable.destination_id:
             element_ids.add(cable.destination_id)
     element_ids.update(passage.element_id for passage in passages)
+    for values in explicit_element_ids_by_route.values():
+        element_ids.update(values)
 
     equipment_qs = ContainerEquipment.objects.filter(enabled=True).only(
         "id", "container_id", "equipment_type", "name"
@@ -123,7 +137,9 @@ def project_route_topology(project: NetworkProject) -> dict[str, Any]:
     payload_routes: list[dict[str, Any]] = []
     for route in routes:
         route_cables = cables_by_route.get(route.id, [])
-        route_element_ids: set[int] = set()
+        route_element_ids: set[int] = set(
+            explicit_element_ids_by_route.get(route.id, set())
+        )
         route_reserve_ids: list[int] = []
         route_graph: dict[str, set[str]] = defaultdict(set)
         incomplete_cable_ids: list[int] = []

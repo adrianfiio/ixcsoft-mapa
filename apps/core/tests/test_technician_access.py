@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.text import slugify
 
 from apps.core.access import is_technician_only
 from apps.core.models import Company, CompanyMembership
@@ -10,7 +11,9 @@ User = get_user_model()
 
 
 def make_company(name):
-    return Company.objects.create(name=name, company_type=Company.CompanyType.PROVIDER)
+    return Company.objects.create(
+        name=name, slug=slugify(name), company_type=Company.CompanyType.PROVIDER
+    )
 
 
 def make_member(company, username, role, active=True):
@@ -55,9 +58,9 @@ class TechnicianAccessTests(TestCase):
 
     def test_admin_can_write_map(self):
         self.client.force_login(self.admin_user)
-        response = self.client.post(
+        response = self.client.patch(
             f"/api/map/elements/{self.element.id}/position/",
-            data={"lat": -23.5, "lng": -46.6},
+            data={"latitude": -23.5, "longitude": -46.6},
             content_type="application/json",
         )
         self.assertNotEqual(response.status_code, 403)
@@ -70,9 +73,9 @@ class TechnicianAccessTests(TestCase):
 
     def test_edit_can_write_map(self):
         self.client.force_login(self.edit_user)
-        response = self.client.post(
+        response = self.client.patch(
             f"/api/map/elements/{self.element.id}/position/",
-            data={"lat": -23.5, "lng": -46.6},
+            data={"latitude": -23.5, "longitude": -46.6},
             content_type="application/json",
         )
         self.assertNotEqual(response.status_code, 403)
@@ -80,9 +83,9 @@ class TechnicianAccessTests(TestCase):
     # 4. VIEW não grava no mapa.
     def test_view_cannot_write_map(self):
         self.client.force_login(self.view_user)
-        response = self.client.post(
+        response = self.client.patch(
             f"/api/map/elements/{self.element.id}/position/",
-            data={"lat": -23.5, "lng": -46.6},
+            data={"latitude": -23.5, "longitude": -46.6},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)

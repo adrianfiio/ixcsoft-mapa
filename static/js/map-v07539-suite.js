@@ -334,21 +334,53 @@
         const data = existing || await loadCable(cableId, false, true);
         const dialog = showModal({
             title: "Associar cabo a uma caixa",
-            subtitle: "A associação registra passagem, conexão, corte ou derivação.",
+            subtitle: "Passagem associa; Realizar corte divide o cabo e preserva as ligações ópticas.",
             kicker: "TOPOLOGIA DO CABO",
-            body: `<form data-associate-form class="v07539-form"><label>Caixa<select name="element_id" required><option value="">Selecione</option>${data.available_boxes.map((item) => `<option value="${item.id}">${escapeHtml(item.type_label)} · ${escapeHtml(item.name)}</option>`).join("")}</select></label><label>Ação<select name="passage_action"><option value="pass">Passagem sem corte</option><option value="connect">Conectado na ponta</option><option value="cut">Corte</option><option value="branch">Derivação</option></select></label><p data-form-status></p><footer class="v07539-modal-footer"><button type="button" data-modal-cancel>Cancelar</button><button type="submit" class="primary">Associar caixa</button></footer></form>`,
+            body: `<form data-associate-form class="v07539-form"><label>Caixa<select name="element_id" required><option value="">Selecione</option>${data.available_boxes.map((item) => `<option value="${item.id}">${escapeHtml(item.type_label)} · ${escapeHtml(item.name)}</option>`).join("")}</select></label><label>Ação<select name="passage_action"><option value="pass">Passagem sem corte</option><option value="connect">Conectado na ponta</option><option value="cut">Realizar corte</option><option value="branch">Derivação</option></select></label><p data-form-status></p><footer class="v07539-modal-footer"><button type="button" data-modal-cancel>Cancelar</button><button type="submit" class="primary" data-associate-submit>Associar caixa</button></footer></form>`,
         });
         const form = qs("[data-associate-form]", dialog);
+        const actionSelect = qs('select[name="passage_action"]', form);
+        const submit = qs("[data-associate-submit]", form);
+        const syncLabel = () => {
+            submit.textContent = actionSelect.value === "cut"
+                ? "Realizar corte"
+                : "Associar caixa";
+        };
+        actionSelect.onchange = syncLabel;
+        syncLabel();
         qs("[data-modal-cancel]", form).onclick = () => dialog.close();
         form.onsubmit = async (event) => {
             event.preventDefault();
+            const payload = formDataObject(form);
             try {
-                await request(cableUrl(cableId), { method: "POST", body: JSON.stringify({ action: "associate_element", ...formDataObject(form) }) });
+                if (payload.passage_action === "cut") {
+                    await request(
+                        `/api/map/elements/${Number(payload.element_id)}/cables/${Number(cableId)}/cut/`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({ max_distance_m: 60 }),
+                        }
+                    );
+                    clearCableCache(cableId);
+                    dialog.close();
+                    await global.networkMap?.loadStructure?.();
+                    notify("Corte realizado. Os dois segmentos e referências ópticas foram atualizados.");
+                    return;
+                }
+                await request(cableUrl(cableId), {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "associate_element",
+                        ...payload,
+                    }),
+                });
                 clearCableCache(cableId);
                 dialog.close();
                 await global.networkMap?.loadStructure?.();
                 notify("Caixa associada ao cabo.");
-            } catch (error) { setFormStatus(form, error.message, true); }
+            } catch (error) {
+                setFormStatus(form, error.message, true);
+            }
         };
     }
 
@@ -358,7 +390,8 @@
             <header><strong>Cabo #${Number(cableId)}</strong><small>Ações da topologia</small></header>
             <button type="button" data-cable-action="info">Informações</button>
             <button type="button" data-cable-action="edit" ${canEdit() ? "" : "disabled"}>Editar cabo</button>
-            <button type="button" data-cable-action="route" ${canEdit() ? "" : "disabled"}>Editar rota</button>
+            <button type="button" data-cable-action="route" ${canEdit() ? "" : "disabled"}>Adicionar na rota</button>
+            <button type="button" data-cable-action="geometry" ${canEdit() ? "" : "disabled"}>Editar traçado</button>
             <button type="button" data-cable-action="reverse" ${canEdit() ? "" : "disabled"}>Alterar sentido</button>
             <hr><button type="button" data-cable-action="cto" ${canEdit() ? "" : "disabled"}>Adicionar CTO</button><button type="button" data-cable-action="ceo" ${canEdit() ? "" : "disabled"}>Adicionar CEO</button><button type="button" data-cable-action="cdo" ${canEdit() ? "" : "disabled"}>Adicionar CDO</button>
             <button type="button" data-cable-action="reserve" ${canEdit() ? "" : "disabled"}>Adicionar reserva</button><button type="button" data-cable-action="associate" ${canEdit() ? "" : "disabled"}>Associar à caixa</button>
@@ -370,11 +403,8 @@
             try {
                 if (action === "info") return openCableInfo(cableId);
                 if (action === "edit") return openCableEdit(cableId);
-                // MAP_V07557_CABLE_MENU_MERGE: cai direto no modo de edição
-                // de traçado completo (arrastar qualquer ponto), já
-                // implementado em map-editor.js e exposto via
-                // window.networkMap especificamente pra ser chamado daqui.
-                if (action === "route") return global.networkMap?.startGeometryEdit?.(cableId);
+                if (action === "route") return global.mapMasterSuite?.openCableRoute?.(cableId);
+                if (action === "geometry") return global.networkMap?.startGeometryEdit?.(cableId);
                 if (action === "reverse") return reverseCable(cableId);
                 if (["cto", "ceo", "cdo"].includes(action)) return openCreateBox(cableId, action, latlng);
                 if (action === "reserve") return openReserveForm(cableId, latlng);

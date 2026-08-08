@@ -73,13 +73,13 @@ class MapV07555ContractTests(unittest.TestCase):
 
     def test_version_is_current_and_platform_untouched(self):
         settings = content("config/settings.py")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.64")', settings)
-        self.assertIn('"0.83.1"', settings)
-        self.assertIn("v0.75.64", content("VERSIONS.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.76.0")', settings)
+        self.assertIn('"0.84.0"', settings)
+        self.assertIn("v0.76.0", content("VERSIONS.md"))
 
     def test_no_new_migration(self):
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
-        self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
+        self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 33)
 
 
 if __name__ == "__main__":

@@ -42,9 +42,15 @@ class MapV07557ContractTests(unittest.TestCase):
         self.assertIn('show("port-count", portCountTypes.includes(type));', js)
 
     def test_real_cable_menu_has_editar_rota(self):
+        # MAP_V076 (rodada seguinte) desfez esse merge por pedido do usuário:
+        # "route" e a edição de traçado viraram duas ações separadas de novo
+        # ("Adicionar na rota" x "Editar traçado") -- ver
+        # test_route_cut_v076.py::test_map_ui_exposes_route_and_cut_actions.
         js = content("static/js/map-v07539-suite.js")
         self.assertIn('data-cable-action="route"', js)
-        self.assertIn('if (action === "route") return global.networkMap?.startGeometryEdit?.(cableId);', js)
+        self.assertIn('data-cable-action="geometry"', js)
+        self.assertIn('if (action === "route") return global.mapMasterSuite?.openCableRoute?.(cableId);', js)
+        self.assertIn('if (action === "geometry") return global.networkMap?.startGeometryEdit?.(cableId);', js)
 
     def test_duplicate_cable_context_menu_system_is_gone(self):
         js = content("static/js/map-editor.js")
@@ -75,11 +81,11 @@ class MapV07557ContractTests(unittest.TestCase):
         self.assertIn("fill: #38bdf8;", css)
 
     def test_version_is_current_and_no_migration(self):
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.64")', content("config/settings.py"))
-        self.assertIn('"0.83.1"', content("config/settings.py"))
-        self.assertIn("v0.75.64", content("VERSIONS.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.76.0")', content("config/settings.py"))
+        self.assertIn('"0.84.0"', content("config/settings.py"))
+        self.assertIn("v0.76.0", content("VERSIONS.md"))
         migrations_dir = ROOT / "apps" / "network_map" / "migrations"
-        self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 32)
+        self.assertEqual(len(list(migrations_dir.glob("0*.py"))), 33)
 
 
 if __name__ == "__main__":

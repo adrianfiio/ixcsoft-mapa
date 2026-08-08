@@ -139,9 +139,6 @@
 #map-v07539-drop-drag path { fill: none; stroke: #4ade80; stroke-width: 3; stroke-dasharray: 9 5; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(74,222,128,.5)); }
 body.v07539-drop-dragging, body.v07539-drop-dragging * { cursor: crosshair !important; user-select: none !important; }
 
-/* Linha central em CTO/CEO/CDO fica por trás do Canvas e não captura mouse. */
-.ixc-optical-stage-has-divider::before { border-left-color: rgba(56, 189, 248, .34) !important; }
-
 @media (max-width: 920px) {
     .v07539-form-grid, .v07539-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .v07539-info-list { grid-template-columns: 1fr; }

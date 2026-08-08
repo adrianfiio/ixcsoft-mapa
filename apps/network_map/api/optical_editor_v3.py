@@ -18,6 +18,7 @@ from apps.network_map.models import (
     FiberCable,
     NetworkElement,
     NetworkRoute,
+    NetworkRouteElementMembership,
 )
 
 
@@ -358,33 +359,57 @@ def assign_asset_route_v3(request):
         return JsonResponse({"detail": "Informe um elemento ou um cabo."}, status=400)
 
     route_id = request.data.get("route_id")
-    if not route_id:
-        if cable_id:
-            cable = get_object_or_404(
-                scope_company_queryset(FiberCable.objects, request.user),
-                pk=cable_id,
-            )
-            if not can_edit_company(request.user, cable.company_id):
-                return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    if cable_id:
+        cable = get_object_or_404(
+            scope_company_queryset(FiberCable.objects, request.user),
+            pk=cable_id,
+        )
+        if not can_edit_company(request.user, cable.company_id):
+            return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+        if not route_id:
             cable.route = None
             cable.save(update_fields=["route", "updated_at"])
             return JsonResponse({"success": True, "asset": "cable", "route": ""})
-        element = get_object_or_404(
-            scope_company_queryset(NetworkElement.objects, request.user),
-            pk=element_id,
+        route = get_object_or_404(
+            scope_company_queryset(NetworkRoute.objects, request.user),
+            pk=route_id,
+            project=cable.project,
+            company=cable.company,
         )
-        if not can_edit_company(request.user, element.company_id):
-            return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-        try:
-            cto = element.cto
-        except Exception:
-            cto = None
+        cable.route = route
+        cable.save(update_fields=["route", "updated_at"])
+        return JsonResponse({"success": True, "asset": "cable", "route": route.name})
+
+    element = get_object_or_404(
+        scope_company_queryset(NetworkElement.objects, request.user),
+        pk=element_id,
+    )
+    if not can_edit_company(request.user, element.company_id):
+        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
+    if element.element_type not in {
+        NetworkElement.ElementType.CTO,
+        NetworkElement.ElementType.SPLICE_BOX,
+    }:
+        return JsonResponse(
+            {"detail": "Somente CTO, CEO e CDO podem ser adicionados manualmente a rotas."},
+            status=400,
+        )
+
+    try:
+        cto = element.cto
+    except Exception:
+        cto = None
+
+    if not route_id:
         if cto is not None:
             cto.route = None
             cto.save(update_fields=["route", "updated_at"])
+        else:
+            NetworkRouteElementMembership.objects.filter(element=element).delete()
         metadata = _metadata(element)
         metadata.pop("route_id", None)
         metadata.pop("route_name", None)
+        metadata.pop("route_ids", None)
         element.metadata = metadata
         element.save(update_fields=["metadata", "updated_at"])
         return JsonResponse({"success": True, "asset": "element", "route": ""})
@@ -392,27 +417,44 @@ def assign_asset_route_v3(request):
     route = get_object_or_404(
         scope_company_queryset(NetworkRoute.objects, request.user),
         pk=route_id,
+        project=element.project,
+        company=element.company,
     )
-    if cable_id:
-        cable = get_object_or_404(FiberCable, pk=cable_id, project=route.project, company=route.company)
-        if not can_edit_company(request.user, cable.company_id):
-            return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-        cable.route = route
-        cable.save(update_fields=["route", "updated_at"])
-        return JsonResponse({"success": True, "asset": "cable", "route": route.name})
-    element = get_object_or_404(NetworkElement, pk=element_id, project=route.project, company=route.company)
-    if not can_edit_company(request.user, element.company_id):
-        return JsonResponse({"detail": "Sem permissão para editar esta empresa."}, status=403)
-    try:
-        cto = element.cto
-    except Exception:
-        cto = None
+
     if cto is not None:
+        if cto.route_id and cto.route_id != route.id:
+            return JsonResponse(
+                {
+                    "detail": "Essa CTO já tem rota.",
+                    "current_route": {
+                        "id": cto.route_id,
+                        "name": cto.route.name if cto.route else "",
+                    },
+                },
+                status=409,
+            )
         cto.route = route
         cto.save(update_fields=["route", "updated_at"])
+        route_ids = [route.id]
+    else:
+        NetworkRouteElementMembership.objects.get_or_create(route=route, element=element)
+        route_ids = list(
+            NetworkRouteElementMembership.objects.filter(element=element)
+            .order_by("route__name")
+            .values_list("route_id", flat=True)
+        )
+
     metadata = _metadata(element)
     metadata["route_id"] = route.id
     metadata["route_name"] = route.name
+    metadata["route_ids"] = route_ids
     element.metadata = metadata
     element.save(update_fields=["metadata", "updated_at"])
-    return JsonResponse({"success": True, "asset": "element", "route": route.name})
+    return JsonResponse(
+        {
+            "success": True,
+            "asset": "element",
+            "route": route.name,
+            "route_ids": route_ids,
+        }
+    )

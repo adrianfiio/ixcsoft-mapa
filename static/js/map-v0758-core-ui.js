@@ -323,6 +323,7 @@
             <strong data-title>Elemento</strong>
             <button type="button" data-action="edit">Editar informações</button>
             <button type="button" data-action="open">Abrir editor</button>
+            <button type="button" data-action="route" hidden>Adicionar na rota</button>
             <button type="button" data-action="duplicates" hidden>Resolver duplicados</button>
             <button type="button" class="danger" data-action="delete">Excluir este registro</button>`;
         document.body.appendChild(menu);
@@ -413,6 +414,15 @@
         qs('[data-action="open"]', menu).textContent = ["cto", "splice_box"].includes(String(element?.tipo))
             ? "Abrir fusões"
             : "Abrir editor técnico";
+        const routeButton = qs('[data-action="route"]', menu);
+        routeButton.hidden = !["cto", "splice_box"].includes(String(element?.tipo));
+        routeButton.onclick = () => {
+            menu.hidden = true;
+            window.mapMasterSuite?.openElementRoute?.(
+                currentId,
+                String(element?.tipo || "")
+            );
+        };
         const duplicateButton = qs('[data-action="duplicates"]', menu);
         duplicateButton.hidden = duplicates.length < 2;
         duplicateButton.textContent = `Resolver duplicados (${duplicates.length})`;

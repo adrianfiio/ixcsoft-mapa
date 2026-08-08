@@ -45,9 +45,9 @@ class MapV07554ContractTests(unittest.TestCase):
 
     def test_version_is_current_and_platform_untouched(self):
         settings = content("config/settings.py")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.64")', settings)
-        self.assertIn('"0.83.1"', settings)
-        self.assertIn("v0.75.64", content("VERSIONS.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.76.0")', settings)
+        self.assertIn('"0.84.0"', settings)
+        self.assertIn("v0.76.0", content("VERSIONS.md"))
 
     def test_no_new_migration_files_only_fixed_existing_ones(self):
         access_migrations = sorted(p.name for p in (ROOT / "apps/access/migrations").glob("0*.py"))
@@ -55,7 +55,7 @@ class MapV07554ContractTests(unittest.TestCase):
         self.assertIn("0002_add_ftth_fields.py", access_migrations)
         self.assertEqual(len(access_migrations), 2)
         self.assertIn("0003_sync_company_fields_state.py", network_map_migrations)
-        self.assertEqual(len(network_map_migrations), 32)
+        self.assertEqual(len(network_map_migrations), 33)
 
 
 if __name__ == "__main__":

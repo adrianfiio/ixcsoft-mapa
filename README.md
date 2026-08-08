@@ -14,7 +14,7 @@ independentes — ver [VERSIONS.md](VERSIONS.md).
 | Componente | Versão |
 |---|---:|
 | Plataforma | v0.84.0 |
-| Mapa | v0.75.64 |
+| Mapa | v0.76.0 |
 
 - **Plataforma** (Dashboard, Financeiro, Visão geral, Superadmin, empresas,
   usuários): usuário com papel VIEW passa a ver só Visão geral e Mapa

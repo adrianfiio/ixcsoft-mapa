@@ -855,7 +855,7 @@
                     ${splitter.input_cable ? `<strong>${escapeHtml(splitter.input_cable.name)}</strong><span>Fibra ${splitter.input_fiber?.number || "não escolhida"} · ${escapeHtml(splitter.input_fiber?.color_name || "sem cor")}</span>` : "<strong>Cabo não conectado</strong><span>Edite a CTO para escolher cabo e fibra</span>"}
                 </div>
                 <div class="unifilar-flow" style="--fiber-color:${escapeHtml(splitter.input_fiber?.color_hex || "#2dd4bf")}">
-                    <div class="unifilar-input">Entrada do splitter</div><div class="unifilar-line"></div>
+                    <div class="unifilar-input">Entrada do splitter</div>
                     <div class="port-grid">${splitter.ports.map((port) => `<div class="port ${escapeHtml(port.status)}">P${port.number}<br>${escapeHtml(port.status_label)}</div>`).join("")}</div>
                 </div>
             </article>`).join("") : '<p class="help-text">Nenhum splitter configurado.</p>';
@@ -1379,7 +1379,8 @@
                 const typeLabel = ["cpd", "pop"].includes(String(p.subtype || "").toLowerCase())
                     ? "CPD/POP" : p.tipo === "splice_box" && p.subtype === "cdo" ? "CDO" : p.tipo.toUpperCase();
                 if (!unifiedEditor) marker.bindPopup(`<strong>${escapeHtml(p.nome)}</strong><br>${escapeHtml(typeLabel)}<br>${escapeHtml(p.codigo || "")}<br><button type="button" data-show-element-cables="${p.id}">Cabos e ligações</button>${actions}`);
-                marker.bindTooltip(escapeHtml(p.nome), { permanent: true, direction: "top", offset: [0, -22], className: "network-name-label" });
+                const hoverOnlyLabel = ["cto", "splice_box"].includes(p.tipo);
+                marker.bindTooltip(escapeHtml(p.nome), { permanent: !hoverOnlyLabel, direction: "top", offset: [0, -22], className: "network-name-label" });
                 marker.on("click", (event) => {
                     if (state.tool !== "cable") {
                         if (!unifiedEditor) return;

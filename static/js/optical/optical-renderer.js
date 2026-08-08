@@ -504,16 +504,13 @@
 
 
     function drawDistributionDivider(ctx, width, height) {
+        // MAP_V076_REMOVE_FIXED_DIVIDER_LINE: o traço tracejado fixo aqui não
+        // representava nenhuma fibra/conexão real -- era desenhado sempre,
+        // independente dos dados. Mantemos só os rótulos de orientação
+        // (Entrada/chegada, Saída/distribuição); as conexões reais continuam
+        // desenhadas por drawSavedLinks/drawDraft, sem nenhuma mudança aqui.
         const dividerX = 560;
         ctx.save();
-        ctx.setLineDash([9, 7]);
-        ctx.strokeStyle = "rgba(111, 183, 255, .35)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(dividerX, 24);
-        ctx.lineTo(dividerX, height - 24);
-        ctx.stroke();
-        ctx.setLineDash([]);
         ctx.fillStyle = "rgba(215, 233, 247, .9)";
         ctx.font = "700 11px system-ui";
         ctx.textAlign = "center";

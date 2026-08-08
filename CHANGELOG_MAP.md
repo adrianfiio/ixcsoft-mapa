@@ -1,3 +1,58 @@
+## MAP v0.76.0 — corte real de cabo, rotas com CTO exclusiva/CEO-CDO compartilhado, portas de splitter PPPoE/DROP
+
+Implementação de um pacote de handoff fornecido pelo usuário
+(`AFService Map Handoff — route/cut v0.76`, checksums conferidos),
+com revisão completa do diff antes do commit — dois problemas reais
+achados e corrigidos além do que o pacote trazia (ver abaixo).
+
+- **Corte de cabo em CTO/CEO/CDO**: "Realizar corte" agora divide o
+  cabo de verdade em dois segmentos na geometria real (não é mais só
+  metadado de passagem), renomeando os dois pelos endpoints (`CABO
+  CTO 1 → CTO 3 12 F` cortado na CTO 2 vira `CABO CTO 1 → CTO 2 12 F`
+  + `CABO CTO 2 → CTO 3 12 F`). O bloqueio por fusão/terminação ativa
+  foi removido — em vez de proibir o corte, o segundo segmento recebe
+  estrutura própria de fibras e as referências ópticas (fusões,
+  splitters, links) do trecho posterior são migradas automaticamente,
+  preservando número/tubo/cor/status/uso. Na própria caixa do corte,
+  `input_fiber` (chegada) fica no primeiro trecho e `output_fiber`
+  (distribuição) migra pro segundo — semântica confirmada com teste
+  real de fusão ativa dos dois lados;
+- **Rotas**: CTO continua exclusiva de uma rota (HTTP 409 "Essa CTO já
+  tem rota." ao tentar uma segunda); CEO/CDO agora podem pertencer a
+  várias rotas via `NetworkRouteElementMembership` (tabela nova, sem
+  virar tudo M:N). Botão "Rotas" aparece mesmo sem nenhuma rota
+  cadastrada, com "+ Nova rota" (nome + código opcional, código único
+  gerado automaticamente). Botão direito no cabo ganha "Adicionar na
+  rota" separado de "Editar traçado" (tinham sido fundidos numa rodada
+  anterior); botão direito em CTO/CEO/CDO também ganha "Adicionar na
+  rota";
+- **Splitter CTO — PPPoE vs DROP físico**: vincular um AccessPoint/
+  PPPoE do ERP ocupa a porta sem criar nenhuma `FiberStrand` sintética
+  (associação lógica/comercial, não fibra física); um cabo DROP
+  desenhado manualmente ocupa a porta como ligação física real, com
+  detecção automática quando o DROP já foi desenhado direto no canvas
+  (`SpliceTraySplitterPort.output_fiber`, sem duplicar dado);
+- hover em CTO/CEO/CDO mostra o nome sem depender só da camada
+  permanente de labels;
+- **Achados na revisão, corrigidos além do pacote original**: (1)
+  vincular um cabo DROP já ocupado por outra porta estourava
+  `IntegrityError` (HTTP 500) em vez de erro claro — agora checa antes
+  e devolve 409; (2) o "risco/linha fixa" que o usuário pediu pra
+  remover do meio do splitter existia em **dois lugares
+  independentes** que o pacote não tocou — um traço tracejado
+  desenhado sempre no Canvas 2D (`drawDistributionDivider` em
+  `optical-renderer.js`) e um par de pseudo-elementos CSS
+  (`::before`/`::after` em `.ixc-optical-stage-has-divider`) aplicado
+  incondicionalmente no HTML do workspace óptico — o pacote só
+  corrigiu um `#unifilar-dialog` legado que hoje é código morto (a
+  visualização real de fusões é o `IXCOpticalWorkspace`, canvas);
+  ambos corrigidos, confirmado visualmente (Playwright) que a linha
+  sumiu e a Entrada/Saída/conexões reais continuam.
+- migration `0033_route_memberships_and_cto_drop_ports` (tabela nova +
+  2 campos em `CTOSplitterPort` + migração de dados dos
+  `route_id`/`route_ids` antigos em metadata pra memberships reais);
+  sem alteração na versão da Plataforma.
+
 ## MAP v0.75.64 — organizador visual no Switch
 
 - A pedido do usuário: uma barra vertical, tracejada e só decorativa,
