@@ -148,7 +148,7 @@
         controls.id = "map-master-controls";
         controls.className = "map-master-controls";
         controls.innerHTML = `
-            <button type="button" data-master-routes title="Rotas conectadas" hidden>Rotas</button>
+            <button type="button" data-master-routes title="Criar, selecionar e filtrar rotas">Rotas</button>
             <button type="button" data-master-trace title="Rastrear caminho óptico">Rastrear</button>
             <button type="button" data-master-sidebar title="Alternar menu compacto">Menu</button>`;
         map.appendChild(controls);
@@ -171,10 +171,11 @@
         drawer.hidden = true;
         drawer.innerHTML = `
             <header>
-                <div><strong>Rotas conectadas</strong><small>Somente trajetos com origem e caixas ligadas</small></div>
+                <div><strong>Rotas</strong><small>Crie, selecione e filtre rotas do projeto</small></div>
                 <button type="button" data-route-close aria-label="Fechar">×</button>
             </header>
             <div class="route-master-actions">
+                <button type="button" data-route-create>+ Nova rota</button>
                 <button type="button" data-route-all>Todas</button>
                 <button type="button" data-route-none>Nenhuma</button>
             </div>
@@ -190,6 +191,9 @@
             </details>`;
         map?.appendChild(drawer);
         drawer.querySelector("[data-route-close]").onclick = () => toggleRouteDrawer(false);
+        drawer.querySelector("[data-route-create]").onclick = () => {
+            createRoute().catch((error) => notify(error.message, true));
+        };
         drawer.querySelector("[data-route-all]").onclick = () => {
             state.allRoutes = true;
             state.selectedRoutes.clear();
@@ -226,36 +230,38 @@
     function renderRouteDrawer() {
         installCompactShell();
         const drawer = ensureRouteDrawer();
-        const routes = validRoutes();
+        const routes = state.bootstrap?.topology?.routes || [];
         const button = qs("[data-master-routes]");
         const oldPanel = qs("#route-filter-v092");
         if (oldPanel) oldPanel.hidden = true;
-        drawer.hidden = routes.length === 0;
-        if (button) button.hidden = routes.length === 0;
-        if (!routes.length) {
-            drawer.classList.add("collapsed");
-            return;
-        }
+        drawer.hidden = false;
+        if (button) button.hidden = false;
         const list = qs("[data-route-master-list]", drawer);
-        list.innerHTML = routes.map((route) => `
-            <label class="route-master-item">
-                <input type="checkbox" value="${route.id}" ${state.allRoutes || state.selectedRoutes.has(String(route.id)) ? "checked" : ""}>
-                <span><strong>${escapeHtml(route.name)}</strong><small>${route.counts.cables} cabos · ${route.counts.ctos} CTO · ${route.counts.splice_boxes} CEO/CDO</small></span>
-                <button type="button" data-only-route="${route.id}">Só</button>
-            </label>`).join("");
+        if (!routes.length) {
+            list.innerHTML = '<p class="help-text">Nenhuma rota cadastrada. Use “+ Nova rota”.</p>';
+        } else {
+            list.innerHTML = routes.map((route) => `
+                <label class="route-master-item ${route.valid ? "" : "invalid"}">
+                    <input type="checkbox" value="${route.id}" ${state.allRoutes || state.selectedRoutes.has(String(route.id)) ? "checked" : ""}>
+                    <span><strong>${escapeHtml(route.name)}</strong><small>${route.counts.cables} cabos · ${route.counts.ctos} CTO · ${route.counts.splice_boxes} CEO/CDO${route.valid ? "" : ` · ${escapeHtml(route.reason)}`}</small></span>
+                    <button type="button" data-only-route="${route.id}">Só</button>
+                </label>`).join("");
+        }
         qsa('input[type="checkbox"]', list).forEach((input) => {
             input.onchange = () => {
-                if (state.allRoutes) state.selectedRoutes = new Set(routes.map((item) => String(item.id)));
+                if (state.allRoutes) {
+                    state.selectedRoutes = new Set(routes.map((item) => String(item.id)));
+                }
                 state.allRoutes = false;
                 if (input.checked) state.selectedRoutes.add(input.value);
                 else state.selectedRoutes.delete(input.value);
                 applyRouteChanges();
             };
         });
-        qsa("[data-only-route]", list).forEach((button) => {
-            button.onclick = () => {
+        qsa("[data-only-route]", list).forEach((onlyButton) => {
+            onlyButton.onclick = () => {
                 state.allRoutes = false;
-                state.selectedRoutes = new Set([String(button.dataset.onlyRoute)]);
+                state.selectedRoutes = new Set([String(onlyButton.dataset.onlyRoute)]);
                 applyRouteChanges();
             };
         });
@@ -324,31 +330,111 @@
         dialog.className = "editor-dialog map-master-small-dialog";
         dialog.innerHTML = `
             <form>
-                <header><div><h2>Rota do cabo</h2><p>A rota é definida no cabo e herdada pelos elementos conectados.</p></div><button type="button" data-close>×</button></header>
+                <header><div><h2 data-route-dialog-title>Adicionar na rota</h2><p>Selecione uma rota existente ou crie uma nova.</p></div><button type="button" data-close>×</button></header>
                 <label>Rota<select name="route_id"></select></label>
+                <button type="button" data-create-inline>+ Criar nova rota</button>
                 <p data-status></p>
-                <footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Salvar rota</button></footer>
+                <footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Adicionar na rota</button></footer>
             </form>`;
         document.body.appendChild(dialog);
         dialog.querySelector("[data-close]").onclick = () => dialog.close();
         dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
+        dialog.querySelector("[data-create-inline]").onclick = async () => {
+            const route = await createRoute();
+            if (!route) return;
+            const select = qs("select", dialog);
+            const option = document.createElement("option");
+            option.value = String(route.id);
+            option.textContent = route.name;
+            select.appendChild(option);
+            select.value = String(route.id);
+        };
         return dialog;
+    }
+
+    function routeCreateDialog() {
+        let dialog = qs("#map-master-route-create-dialog");
+        if (dialog) return dialog;
+        dialog = document.createElement("dialog");
+        dialog.id = "map-master-route-create-dialog";
+        dialog.className = "editor-dialog map-master-small-dialog";
+        dialog.innerHTML = `
+            <form>
+                <header><div><h2>Nova rota</h2><p>O código é gerado automaticamente e permanece único por empresa.</p></div><button type="button" data-close>×</button></header>
+                <label>Nome da rota<input name="name" maxlength="180" required placeholder="Ex.: Rota Centro 01"></label>
+                <label>Código opcional<input name="code" maxlength="80" placeholder="Ex.: CENTRO-01"></label>
+                <p data-status></p>
+                <footer><button type="button" data-cancel>Cancelar</button><button type="submit" class="primary-button">Criar rota</button></footer>
+            </form>`;
+        document.body.appendChild(dialog);
+        return dialog;
+    }
+
+    async function createRoute() {
+        const id = projectId();
+        if (!id) throw new Error("Selecione um projeto antes de criar a rota.");
+        const dialog = routeCreateDialog();
+        const form = qs("form", dialog);
+        const status = qs("[data-status]", dialog);
+        form.reset();
+        status.textContent = "";
+        if (!dialog.open) dialog.showModal();
+        return new Promise((resolve) => {
+            let settled = false;
+            const finish = (value) => {
+                if (settled) return;
+                settled = true;
+                if (dialog.open) dialog.close();
+                resolve(value);
+            };
+            form.onsubmit = async (event) => {
+                event.preventDefault();
+                const payload = Object.fromEntries(new FormData(form));
+                payload.project_id = Number(id);
+                try {
+                    const data = await request("/api/map/routes/", {
+                        method: "POST",
+                        body: JSON.stringify(payload),
+                    });
+                    await refreshBootstrap();
+                    notify(`Rota ${data.route.name} criada.`);
+                    finish(data.route);
+                } catch (error) {
+                    status.textContent = error.message;
+                }
+            };
+            dialog.oncancel = (event) => {
+                event.preventDefault();
+                finish(null);
+            };
+            qs("[data-cancel]", dialog).onclick = () => finish(null);
+            qs("[data-close]", dialog).onclick = () => finish(null);
+        });
+    }
+
+    function fillRouteSelect(select) {
+        const routes = state.bootstrap?.topology?.routes || [];
+        select.innerHTML = '<option value="">Sem rota definida</option>' + routes.map((route) =>
+            `<option value="${route.id}">${escapeHtml(route.name)}${route.valid ? "" : ` · ${escapeHtml(route.reason)}`}</option>`
+        ).join("");
     }
 
     async function openCableRoute(cableId) {
         if (!state.bootstrap) await refreshBootstrap();
         const dialog = routeDialog();
+        qs("[data-route-dialog-title]", dialog).textContent = "Adicionar cabo na rota";
         const select = qs("select", dialog);
-        const routes = state.bootstrap?.topology?.routes || [];
-        select.innerHTML = '<option value="">Sem rota definida</option>' + routes.map((route) =>
-            `<option value="${route.id}">${escapeHtml(route.name)}${route.valid ? "" : ` · ${escapeHtml(route.reason)}`}</option>`
-        ).join("");
+        fillRouteSelect(select);
+        qs("[data-status]", dialog).textContent = "";
         qs("form", dialog).onsubmit = async (event) => {
             event.preventDefault();
             try {
-                await request(`/api/map/master/cables/${cableId}/route/`, {
-                    method: "PATCH",
-                    body: JSON.stringify({ route_id: select.value }),
+                await request("/api/map/assets/route/", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        cable_id: Number(cableId),
+                        route_id: select.value,
+                    }),
                 });
                 dialog.close();
                 await refreshBootstrap();
@@ -358,7 +444,42 @@
                 qs("[data-status]", dialog).textContent = error.message;
             }
         };
-        dialog.showModal();
+        if (!dialog.open) dialog.showModal();
+    }
+
+    async function openElementRoute(elementId, elementType = "") {
+        if (!state.bootstrap) await refreshBootstrap();
+        const dialog = routeDialog();
+        const isCto = String(elementType) === "cto";
+        qs("[data-route-dialog-title]", dialog).textContent = isCto
+            ? "Adicionar CTO na rota"
+            : "Adicionar CEO/CDO na rota";
+        const select = qs("select", dialog);
+        fillRouteSelect(select);
+        qs("[data-status]", dialog).textContent = "";
+        qs("form", dialog).onsubmit = async (event) => {
+            event.preventDefault();
+            try {
+                const data = await request("/api/map/assets/route/", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        element_id: Number(elementId),
+                        route_id: select.value,
+                    }),
+                });
+                dialog.close();
+                await refreshBootstrap();
+                await window.networkMap?.loadStructure?.();
+                notify(
+                    data.route
+                        ? `Elemento adicionado à rota ${data.route}.`
+                        : "Rotas do elemento atualizadas."
+                );
+            } catch (error) {
+                qs("[data-status]", dialog).textContent = error.message;
+            }
+        };
+        if (!dialog.open) dialog.showModal();
     }
 
     function flattenCableCoordinates(cable) {
@@ -2245,6 +2366,8 @@
             refresh: refreshBootstrap,
             openReserve,
             openCableRoute,
+            openElementRoute,
+            createRoute,
             enhanceContainer,
             openContainerWorkspace,
         };

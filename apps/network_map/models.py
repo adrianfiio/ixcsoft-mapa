@@ -123,6 +123,29 @@ class NetworkElement(CompanyScopedModel, NamedModel):
         ]
 
 
+class NetworkRouteElementMembership(TimeStampedModel):
+    # Associação explícita de elementos compartilháveis (CEO/CDO) a rotas.
+    route = models.ForeignKey(
+        NetworkRoute,
+        on_delete=models.CASCADE,
+        related_name="element_memberships",
+    )
+    element = models.ForeignKey(
+        NetworkElement,
+        on_delete=models.CASCADE,
+        related_name="route_memberships",
+    )
+
+    class Meta:
+        ordering = ["route", "element"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["route", "element"],
+                name="unique_element_membership_per_route",
+            )
+        ]
+
+
 class CTO(NetworkElement):
     ixc_box_id = models.CharField(max_length=80, null=True, blank=True, db_index=True)
     route = models.ForeignKey(
@@ -449,6 +472,14 @@ class CTOSplitterPort(TimeStampedModel):
         blank=True,
         related_name="cto_splitter_ports",
     )
+    direct_drop_cable = models.OneToOneField(
+        "FiberCable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cto_splitter_port",
+    )
+    direct_drop_label = models.CharField(max_length=180, blank=True)
     notes = models.TextField(blank=True)
 
     class Meta:

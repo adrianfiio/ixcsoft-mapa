@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.text import slugify
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.permissions import AllowAny
@@ -163,9 +164,61 @@ def project_detail(request, project_id):
     return JsonResponse({"success": True, "project": project_payload(project, request.user)})
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def project_routes_geojson(request):
+    if request.method == "POST":
+        project_id = request.data.get("project_id")
+        if not project_id:
+            return JsonResponse(
+                {"success": False, "error": "Informe project_id."},
+                status=400,
+            )
+        project = get_object_or_404(
+            scope_company_queryset(NetworkProject.objects.all(), request.user),
+            pk=project_id,
+        )
+        if not can_edit_company(request.user, project.company_id):
+            return JsonResponse(
+                {"success": False, "error": "Sem permissão para editar esta empresa."},
+                status=403,
+            )
+        name = str(request.data.get("name") or "").strip()
+        if not name:
+            return JsonResponse(
+                {"success": False, "error": "Nome da rota é obrigatório."},
+                status=400,
+            )
+        requested_code = str(request.data.get("code") or "").strip()
+        route_slug = slugify(requested_code or name).upper() or "ROTA"
+        prefix = slugify(project.code).upper()
+        base_code = f"{prefix}-{route_slug}"[:80] if prefix else route_slug[:80]
+        candidate = base_code
+        suffix = 2
+        while NetworkRoute.objects.filter(
+            company=project.company,
+            code__iexact=candidate,
+        ).exists():
+            tail = f"-{suffix}"
+            candidate = f"{base_code[:80-len(tail)]}{tail}"
+            suffix += 1
+        route = NetworkRoute.objects.create(
+            company=project.company,
+            project=project,
+            name=name,
+            code=candidate,
+        )
+        return JsonResponse({
+            "success": True,
+            "route": {
+                "id": route.id,
+                "name": route.name,
+                "code": route.code,
+                "status": route.status,
+                "project_id": route.project_id,
+            },
+        }, status=201)
+
     project_id = request.GET.get("project_id")
     queryset = NetworkRoute.objects.all()
     if project_id:

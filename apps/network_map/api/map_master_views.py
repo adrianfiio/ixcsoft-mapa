@@ -10,6 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from apps.core.access import can_edit_company, scope_company_queryset
+from apps.access.models import AccessPoint
 from apps.network_map.map_master_models import (
     MapDiagramRevision,
     MapIconStyle,
@@ -19,6 +20,7 @@ from apps.network_map.models import (
     CTO,
     CTOSplitter,
     CTOSplitterPort,
+    SpliceTraySplitterPort,
     ContainerEquipment,
     ContainerEquipmentPort,
     FiberCable,
@@ -273,21 +275,171 @@ def splitter_ports_master(request, cto_id):
         scope_company_queryset(CTO.objects.all(), request.user),
         pk=cto_id,
     )
-    ports = CTOSplitterPort.objects.filter(splitter__cto=cto).select_related("splitter", "access_point")
+    ports = CTOSplitterPort.objects.filter(splitter__cto=cto).select_related(
+        "splitter",
+        "access_point",
+        "direct_drop_cable",
+        "direct_drop_cable__origin",
+        "direct_drop_cable__destination",
+    )
+    # A ligação física desenhada no canvas usa SpliceTraySplitterPort.output_fiber.
+    # Derivamos a ocupação comercial pela mesma posição de splitter/porta, sem
+    # criar fibra sintética para associação ERP.
+    graphic_drop_rows = (
+        SpliceTraySplitterPort.objects.filter(
+            splitter__tray__splice_box=cto,
+            output_fiber__cable__cable_type=FiberCable.CableType.DROP,
+        )
+        .select_related(
+            "splitter",
+            "output_fiber__cable",
+            "output_fiber__cable__origin",
+            "output_fiber__cable__destination",
+        )
+        .order_by("splitter__position", "number")
+    )
+    physical_drop_by_port = {
+        (row.splitter.position, row.number): row.output_fiber.cable
+        for row in graphic_drop_rows
+        if row.output_fiber_id
+    }
     if request.method == "PATCH":
         denied = _require_edit(request, cto.company_id)
         if denied:
             return denied
         port = get_object_or_404(ports, pk=request.data.get("port_id"))
-        status = str(request.data.get("status") or port.status)
-        if status not in dict(CTOSplitterPort.Status.choices):
-            return JsonResponse({"detail": "Status inválido."}, status=400)
-        port.status = status
-        port.notes = str(request.data.get("notes") or port.notes)
+
+        if "notes" in request.data:
+            port.notes = str(request.data.get("notes") or "")
+        if "direct_drop_label" in request.data:
+            port.direct_drop_label = str(request.data.get("direct_drop_label") or "").strip()
+
         access_point_id = request.data.get("access_point_id", "__missing__")
         if access_point_id != "__missing__":
-            port.access_point_id = int(access_point_id) if access_point_id else None
-        port.save(update_fields=["status", "notes", "access_point", "updated_at"])
+            if access_point_id:
+                port.access_point = get_object_or_404(
+                    AccessPoint,
+                    pk=access_point_id,
+                    company_id=cto.company_id,
+                )
+            else:
+                port.access_point = None
+
+        direct_drop_cable_id = request.data.get("direct_drop_cable_id", "__missing__")
+        if direct_drop_cable_id != "__missing__":
+            if direct_drop_cable_id:
+                candidate_drop_cable = get_object_or_404(
+                    FiberCable,
+                    pk=direct_drop_cable_id,
+                    company_id=cto.company_id,
+                    project_id=cto.project_id,
+                    cable_type=FiberCable.CableType.DROP,
+                )
+                # MAP_V076_DROP_PORT_CONFLICT: direct_drop_cable é OneToOne
+                # (um DROP não pode ocupar duas portas) -- sem essa checagem,
+                # o save() abaixo estoura IntegrityError não tratado (500)
+                # em vez de devolver um erro claro pro operador.
+                conflict = (
+                    CTOSplitterPort.objects.filter(direct_drop_cable=candidate_drop_cable)
+                    .exclude(pk=port.pk)
+                    .exists()
+                )
+                if conflict:
+                    return JsonResponse(
+                        {"detail": "Esse cabo DROP já está vinculado a outra porta."},
+                        status=409,
+                    )
+                port.direct_drop_cable = candidate_drop_cable
+            else:
+                port.direct_drop_cable = None
+                if "direct_drop_label" not in request.data:
+                    port.direct_drop_label = ""
+
+        explicit_status = request.data.get("status")
+        if explicit_status:
+            status_value = str(explicit_status)
+            if status_value not in dict(CTOSplitterPort.Status.choices):
+                return JsonResponse({"detail": "Status inválido."}, status=400)
+            port.status = status_value
+
+        if port.access_point_id or port.direct_drop_cable_id:
+            port.status = CTOSplitterPort.Status.OCCUPIED
+        elif not explicit_status and port.status == CTOSplitterPort.Status.OCCUPIED:
+            port.status = CTOSplitterPort.Status.FREE
+
+        port.save(
+            update_fields=[
+                "status",
+                "notes",
+                "access_point",
+                "direct_drop_cable",
+                "direct_drop_label",
+                "updated_at",
+            ]
+        )
+
+    splitters = (
+        CTOSplitter.objects.filter(cto=cto, enabled=True)
+        .prefetch_related(
+            models.Prefetch(
+                "ports",
+                queryset=ports.order_by("number"),
+            )
+        )
+        .order_by("position")
+    )
+
+    def port_payload(port):
+        access_label = ""
+        if port.access_point:
+            access_label = (
+                port.access_point.customer_name
+                or port.access_point.username
+                or str(port.access_point)
+            )
+        physical_drop = physical_drop_by_port.get(
+            (port.splitter.position, port.number)
+        )
+        drop_cable = port.direct_drop_cable or physical_drop
+        drop_endpoint = ""
+        if drop_cable:
+            endpoint = drop_cable.destination
+            if endpoint and endpoint.id == cto.id:
+                endpoint = drop_cable.origin
+            drop_endpoint = port.direct_drop_label or (
+                endpoint.name if endpoint else drop_cable.name
+            )
+        effective_status = (
+            CTOSplitterPort.Status.OCCUPIED
+            if port.access_point_id or drop_cable
+            else port.status
+        )
+        occupied_label = access_label or drop_endpoint
+        return {
+            "id": port.id,
+            "number": port.number,
+            "label": port.label or f"Porta {port.number}",
+            "status": effective_status,
+            "status_label": dict(CTOSplitterPort.Status.choices).get(
+                effective_status, effective_status
+            ),
+            "access_point_id": port.access_point_id,
+            "access_point": None if not port.access_point else {
+                "id": port.access_point.id,
+                "pppoe": port.access_point.username,
+                "customer_name": port.access_point.customer_name,
+                "label": access_label,
+            },
+            "direct_drop_cable_id": drop_cable.id if drop_cable else None,
+            "direct_drop": None if not drop_cable else {
+                "cable_id": drop_cable.id,
+                "cable": drop_cable.name,
+                "endpoint": drop_endpoint,
+                "source": "manual_canvas" if physical_drop else "port_binding",
+            },
+            "occupied_by": occupied_label,
+            "notes": port.notes,
+        }
 
     return JsonResponse({
         "cto": {"id": cto.id, "name": cto.name, "capacity": cto.capacity},
@@ -295,18 +447,12 @@ def splitter_ports_master(request, cto_id):
             "id": splitter.id,
             "name": splitter.name,
             "ratio": splitter.ratio,
-            "ports": [{
-                "id": port.id,
-                "number": port.number,
-                "label": port.label or f"Porta {port.number}",
-                "status": port.status,
-                "status_label": port.get_status_display(),
-                "access_point_id": port.access_point_id,
-                "access_point": str(port.access_point) if port.access_point else "",
-                "notes": port.notes,
-            } for port in splitter.ports.all()],
-        } for splitter in CTOSplitter.objects.filter(cto=cto, enabled=True).prefetch_related("ports")],
+            "output_ports": splitter.output_ports,
+            "ports": [port_payload(port) for port in splitter.ports.all()],
+        } for splitter in splitters],
     })
+
+
 
 
 @api_view(["GET", "PATCH"])

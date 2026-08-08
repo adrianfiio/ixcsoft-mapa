@@ -102,9 +102,9 @@ class MapV07551ContractTests(unittest.TestCase):
 
     def test_version_and_release_are_current_without_platform_bump(self):
         settings = content("config/settings.py")
-        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.75.64")', settings)
-        self.assertIn('"0.83.1"', settings)
-        self.assertIn("v0.75.64", content("VERSIONS.md"))
+        self.assertIn('MAP_VERSION = os.getenv("MAP_VERSION", "0.76.0")', settings)
+        self.assertIn('"0.84.0"', settings)
+        self.assertIn("v0.76.0", content("VERSIONS.md"))
         self.assertIn("MAP v0.75.51", content("docs/releases/map/map-v0.75.51.md"))
 
     def test_runtime_has_no_native_popup_or_observer_fetch_loop(self):

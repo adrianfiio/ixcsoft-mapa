@@ -72,7 +72,7 @@
                         <div class="ixc-optical-fiber-list" data-fiber-list></div>
                         <div class="ixc-optical-nearby" data-nearby-cables></div>
                     </aside>
-                    <main class="ixc-optical-stage ixc-optical-stage-has-divider">
+                    <main class="ixc-optical-stage">
                         <div class="ixc-optical-loading" data-loading>
                             <span class="ixc-optical-spinner"></span>
                             <strong>Carregando editor óptico…</strong>
